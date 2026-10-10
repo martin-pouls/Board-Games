@@ -105,6 +105,13 @@ describe('turnHints', () => {
 			{ command: 'drawOnlyOne', text: 'Draw only 1 at turn end' }
 		]);
 	});
+	it('says no card may follow a STOP', () => {
+		const v = structuredClone(extremeMyTurn);
+		v.turn!.constraints.stopPlayed = true;
+		expect(texts(v, true)[0]).toBe('STOP: no more cards, end your turn');
+		v.turn!.activePlayerId = 'p_ben';
+		expect(texts(v, false)[0]).toBe('Ben played STOP');
+	});
 	it('ignores commands that are not visible', () => {
 		const v = structuredClone(playingOthersTurn);
 		v.activeCommands = [{ command: 'noCommunication', pile: 0 }];

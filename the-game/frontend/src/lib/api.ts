@@ -95,8 +95,14 @@ export function playCard(
 ): Promise<PlayerView> {
 	return request('POST', `${game(code)}/plays`, { token, body: { card, pile } });
 }
+export function undoPlay(code: string, token: string): Promise<PlayerView> {
+	return request('POST', `${game(code)}/undo`, { token });
+}
 export function endTurn(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/end-turn`, { token });
+}
+export function giveUp(code: string, token: string): Promise<PlayerView> {
+	return request('POST', `${game(code)}/give-up`, { token });
 }
 export function endGame(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/end-game`, { token });

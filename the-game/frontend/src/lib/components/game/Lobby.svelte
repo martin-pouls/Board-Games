@@ -140,8 +140,9 @@
 				/>
 			</div>
 			<p class="text-sm text-muted-foreground">
-				Hand size {view.rules.handSize} · min {view.rules.minCardsPerTurn} cards per turn{#if extreme}
-					· Extreme{/if}
+				Hand size {view.rules.handSize} · min {view.rules.minCardsPerTurn} cards per turn{extreme
+					? ' · Extreme'
+					: ''}
 			</p>
 		</Card.Content>
 	</Card.Root>

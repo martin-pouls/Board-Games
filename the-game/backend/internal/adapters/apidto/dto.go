@@ -16,6 +16,14 @@ type HandCard struct {
 	Card
 	LegalPiles []int  `json:"legalPiles"`
 	Blocked    string `json:"blocked,omitempty"` // error code of the command that blocks this card (only when legalPiles is empty)
+	// Vetoes: piles the base rules allow but a command forbids, with the error code.
+	Vetoes []PileVeto `json:"vetoes,omitempty"`
+}
+
+// PileVeto is a command veto of a placement on Pile.
+type PileVeto struct {
+	Pile int    `json:"pile"`
+	Code string `json:"code"`
 }
 
 // GameOptions are the host-selectable settings.
@@ -86,6 +94,7 @@ type Turn struct {
 	CardsPlayed     int             `json:"cardsPlayed"`
 	RequiredMinimum int             `json:"requiredMinimum"`
 	CanEndTurn      bool            `json:"canEndTurn"`
+	Stuck           bool            `json:"stuck"` // no card fits and the turn cannot end: undo or give up
 	Plays           []Play          `json:"plays"`
 	Constraints     TurnConstraints `json:"constraints"`
 }
@@ -140,6 +149,7 @@ const (
 	EventFirstPlayerChosen = "firstPlayerChosen"
 	EventTurnStarted       = "turnStarted"
 	EventCardPlayed        = "cardPlayed"
+	EventPlayUndone        = "playUndone"
 	EventTurnEnded         = "turnEnded"
 	EventPlayerSkipped     = "playerSkipped"
 	EventGameFinished      = "gameFinished"
@@ -155,7 +165,6 @@ type Event struct {
 	Pile          *int   `json:"pile,omitempty"`
 	Number        *int   `json:"number,omitempty"`
 	CardsDrawn    *int   `json:"cardsDrawn,omitempty"`
-	Auto          bool   `json:"auto,omitempty"`
 	Outcome       string `json:"outcome,omitempty"`
 	Score         *int   `json:"score,omitempty"`
 	StuckPlayerID string `json:"stuckPlayerId,omitempty"`

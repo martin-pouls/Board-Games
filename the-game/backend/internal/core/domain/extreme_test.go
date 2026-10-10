@@ -279,15 +279,18 @@ func TestExactlyThreeEndTurn(t *testing.T) {
 		})
 	}
 
-	t.Run("hand empties at exactly 3: auto-end", func(t *testing.T) {
+	t.Run("hand empties at exactly 3: no auto-end, End turn draws 3", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{19, 20, 22}, {98}}, draw: []int{90, 91, 93}}.build(t)
 		playOK(t, g, 19, 0)
 		playOK(t, g, 20, 0)
 		g.PullEvents()
 		playOK(t, g, 22, 0)
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{CardPlayed{PlayerID: pid(0), Card: NumberCard(22), Pile: 0}}) {
+			t.Fatalf("events %#v", evs)
+		}
+		mustOK(t, g.EndTurn(pid(0)))
 		want := []Event{
-			CardPlayed{PlayerID: pid(0), Card: NumberCard(22), Pile: 0},
-			TurnEnded{PlayerID: pid(0), CardsDrawn: 3, Auto: true},
+			TurnEnded{PlayerID: pid(0), CardsDrawn: 3},
 			TurnStarted{PlayerID: pid(1), Number: 2},
 		}
 		if evs := g.PullEvents(); !reflect.DeepEqual(evs, want) {
@@ -295,7 +298,7 @@ func TestExactlyThreeEndTurn(t *testing.T) {
 		}
 	})
 
-	t.Run("3 reached with cards left: not stuck, no auto-end (D3)", func(t *testing.T) {
+	t.Run("3 reached with cards left: not stuck, the player ends the turn", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{19, 20, 22, 30}, {98}}, draw: []int{90}}.build(t)
 		playOK(t, g, 19, 0)
 		playOK(t, g, 20, 0)
@@ -329,30 +332,52 @@ func TestExactlyThreeEndTurn(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	t.Run("STOP as the first card: auto-end, minimum overridden", func(t *testing.T) {
+	t.Run("STOP as the first card: no further card, minimum overridden, End turn", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{30, 40, 50, 60, 62, 63, 95}, {99}}, draw: []int{10, 11, 12}}.build(t)
 		playOK(t, g, 95, 0)
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{CardPlayed{PlayerID: pid(0), Card: xcard(95), Pile: 0}}) {
+			t.Fatalf("events %#v", evs)
+		}
+		if g.Turn.Number != 1 || !g.commands().stopPlayed || g.CanEndTurn() != nil || g.LegalMoves(pid(0)) != nil || g.ActivePlayerStuck() {
+			t.Fatalf("turn %+v can end %v moves %v", g.Turn, g.CanEndTurn(), g.LegalMoves(pid(0)))
+		}
+		expectPlayErr(t, g, ErrStopPlayed, 30, 1)
+		expectPlayErr(t, g, ErrStopPlayed, 62, 2)
+		mustOK(t, g.EndTurn(pid(0)))
 		want := []Event{
-			CardPlayed{PlayerID: pid(0), Card: xcard(95), Pile: 0},
-			TurnEnded{PlayerID: pid(0), CardsDrawn: 1, Auto: true},
+			TurnEnded{PlayerID: pid(0), CardsDrawn: 1},
 			TurnStarted{PlayerID: pid(1), Number: 2},
 		}
 		if evs := g.PullEvents(); !reflect.DeepEqual(evs, want) {
 			t.Fatalf("events %#v", evs)
 		}
-		if g.Revision != 2 || g.Turn.ActiveSeat != 1 || g.Turn.Plays != nil {
+		if g.Revision != 3 || g.Turn.ActiveSeat != 1 || g.Turn.Plays != nil {
 			t.Fatalf("rev %d turn %+v", g.Revision, g.Turn)
 		}
 		if got := values(g.Players[0].Hand); !reflect.DeepEqual(got, []int{12, 30, 40, 50, 60, 62, 63}) {
 			t.Fatalf("hand %v", got)
 		}
-		// The former player can no longer play.
-		expectErr(t, g, ErrNotYourTurn, func(g *Game) error { return g.PlayCard(pid(0), 30, 1) })
+	})
+
+	t.Run("STOP undone: cards may be played again", func(t *testing.T) {
+		g := table{opts: extreme, hands: [][]int{{30, 40, 95}, {99}}, draw: []int{10}}.build(t)
+		playOK(t, g, 95, 0)
+		mustOK(t, g.UndoPlay(pid(0)))
+		if g.commands().stopPlayed || g.CanEndTurn() == nil {
+			t.Fatalf("STOP still counts after undo: can end %v", g.CanEndTurn())
+		}
+		playOK(t, g, 30, 0)
+		playOK(t, g, 40, 0)
+		mustOK(t, g.EndTurn(pid(0)))
 	})
 
 	t.Run("STOP as the second card with Pro (minimum 3)", func(t *testing.T) {
 		g := table{opts: extremePro, hands: [][]int{{40, 50, 95}, {99}}, draw: []int{90}, piles: [][]int{{30}}, plays: []Play{play(30, 0)}}.build(t)
 		playOK(t, g, 95, 1)
+		if g.Turn.Number != 1 || g.CanEndTurn() != nil || g.LegalMoves(pid(0)) != nil {
+			t.Fatalf("turn %+v can end %v", g.Turn, g.CanEndTurn())
+		}
+		mustOK(t, g.EndTurn(pid(0)))
 		if g.Turn.ActiveSeat != 1 || g.Turn.Number != 2 || g.Phase != PhasePlaying {
 			t.Fatalf("turn %+v", g.Turn)
 		}
@@ -362,6 +387,7 @@ func TestStop(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{40, 95}}, draw: []int{90, 91}}.build(t)
 		g.PullEvents()
 		playOK(t, g, 95, 0)
+		mustOK(t, g.EndTurn(pid(0)))
 		evs := g.PullEvents()
 		if g.Turn.ActiveSeat != 0 || g.Turn.Number != 2 || g.Turn.StartHandSize != 3 ||
 			!reflect.DeepEqual(evs[len(evs)-1], TurnStarted{PlayerID: pid(0), Number: 2}) {
@@ -381,12 +407,16 @@ func TestStop(t *testing.T) {
 		}
 	})
 
-	t.Run("STOP as the last hand card (draw pile empty): exactly one TurnEnded", func(t *testing.T) {
+	t.Run("STOP as the last hand card (draw pile empty): the turn waits for End turn", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{95}, {30}}}.build(t)
 		playOK(t, g, 95, 0)
+		if g.Turn.Number != 1 || g.Phase != PhasePlaying || g.ActivePlayerStuck() {
+			t.Fatalf("phase %s turn %+v", g.Phase, g.Turn)
+		}
+		mustOK(t, g.EndTurn(pid(0)))
 		want := []Event{
 			CardPlayed{PlayerID: pid(0), Card: xcard(95), Pile: 0},
-			TurnEnded{PlayerID: pid(0), Auto: true},
+			TurnEnded{PlayerID: pid(0)},
 			TurnStarted{PlayerID: pid(1), Number: 2},
 		}
 		if evs := g.PullEvents(); !reflect.DeepEqual(evs, want) {
@@ -431,9 +461,10 @@ func TestStop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := table{opts: extreme, hands: [][]int{{95, 99}, {98}}, draw: []int{90}, piles: tt.piles, plays: tt.plays}.build(t)
 			playOK(t, g, tt.card, tt.pile)
-			if g.Turn.ActiveSeat != 1 || g.Turn.Number != 2 {
-				t.Fatalf("turn not ended: %+v", g.Turn)
+			if g.CanEndTurn() != nil || g.LegalMoves(pid(0)) != nil {
+				t.Fatalf("after STOP: can end %v moves %v", g.CanEndTurn(), g.LegalMoves(pid(0)))
 			}
+			mustOK(t, g.EndTurn(pid(0)))
 		})
 	}
 }
@@ -466,7 +497,7 @@ func TestSkull(t *testing.T) {
 		}
 	})
 
-	t.Run("no covering card: stuck, lost", func(t *testing.T) {
+	t.Run("no covering card: stuck; undo or give up", func(t *testing.T) {
 		// 29 fits nowhere once the skull lies on pile 1.
 		g := table{
 			opts:  extreme,
@@ -476,46 +507,51 @@ func TestSkull(t *testing.T) {
 			plays: []Play{play(39, 1), play(40, 1)},
 		}.build(t)
 		playOK(t, g, 41, 1)
+		if g.Phase != PhasePlaying || !g.ActivePlayerStuck() {
+			t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
+		}
+		if v, _ := g.ViewFor(pid(0)); !v.Turn.Stuck {
+			t.Fatal("view does not show the player as stuck")
+		}
+		// Undo is the way out ...
+		undone := g.Clone()
+		mustOK(t, undone.UndoPlay(pid(0)))
+		if undone.ActivePlayerStuck() || undone.CanEndTurn() != nil {
+			t.Fatalf("still stuck after undo: %v", undone.CanEndTurn())
+		}
+		// ... or giving up loses the game.
+		g.PullEvents()
+		mustOK(t, g.GiveUp(pid(0)))
 		want := Result{Outcome: OutcomeLost, Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
 		if g.Phase != PhaseFinished || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
-		wantEv := []Event{
-			CardPlayed{PlayerID: pid(0), Card: xcard(41), Pile: 1},
-			GameFinished{Outcome: OutcomeLost, Score: 3, StuckPlayerID: pid(0)},
-		}
-		if evs := g.PullEvents(); !reflect.DeepEqual(evs, wantEv) {
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameFinished{Outcome: OutcomeLost, Score: 3, StuckPlayerID: pid(0)}}) {
 			t.Fatalf("events %#v", evs)
 		}
 	})
 
-	t.Run("skull as the last card overall: lost, score 0", func(t *testing.T) {
+	t.Run("skull as the last card overall: stuck, not won; give up scores 0", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{41}, {}}, piles: [][]int{{30}}}.build(t)
 		playOK(t, g, 41, 0)
-		want := Result{Outcome: OutcomeLost, StuckPlayerID: pid(0)}
-		if g.Phase != PhaseFinished || *g.Result != want {
+		if g.Phase != PhasePlaying || !g.ActivePlayerStuck() {
+			t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
+		}
+		mustOK(t, g.GiveUp(pid(0)))
+		if want := (Result{Outcome: OutcomeLost, StuckPlayerID: pid(0)}); g.Phase != PhaseFinished || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
-		}
-		wantEv := []Event{
-			CardPlayed{PlayerID: pid(0), Card: xcard(41), Pile: 0},
-			GameFinished{Outcome: OutcomeLost, StuckPlayerID: pid(0)},
-		}
-		if evs := g.PullEvents(); !reflect.DeepEqual(evs, wantEv) {
-			t.Fatalf("events %#v", evs)
 		}
 	})
 
-	t.Run("skull as the last hand card while others hold cards: no auto-end, lost", func(t *testing.T) {
+	t.Run("skull as the last hand card while others hold cards: stuck, no auto-end", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{41}, {50}}, piles: [][]int{{30}}}.build(t)
 		playOK(t, g, 41, 0)
-		want := Result{Outcome: OutcomeLost, Score: 1, CardsLeftInHands: 1, StuckPlayerID: pid(0)}
-		if g.Phase != PhaseFinished || *g.Result != want {
-			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
+		if g.Phase != PhasePlaying || g.Turn.Number != 1 || !g.ActivePlayerStuck() {
+			t.Fatalf("phase %s turn %+v", g.Phase, g.Turn)
 		}
-		for _, e := range g.PullEvents() {
-			if _, ok := e.(TurnEnded); ok {
-				t.Fatal("turn auto-ended with the skull showing")
-			}
+		mustOK(t, g.GiveUp(pid(0)))
+		if want := (Result{Outcome: OutcomeLost, Score: 1, CardsLeftInHands: 1, StuckPlayerID: pid(0)}); *g.Result != want {
+			t.Fatalf("result %+v", g.Result)
 		}
 	})
 
@@ -612,7 +648,8 @@ func TestDrawOnlyOne(t *testing.T) {
 	t.Run("Q7: a 1-card hand while the draw pile has cards: plays it, then lost", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{10, 20}}, draw: []int{30, 40}, piles: [][]int{nil, nil, {76}}}.build(t)
 		playOK(t, g, 10, 0)
-		playOK(t, g, 20, 0) // hand empty: auto-end, draws only 40
+		playOK(t, g, 20, 0)
+		mustOK(t, g.EndTurn(pid(0))) // draws only 40
 		if g.Turn.Number != 2 || g.Phase != PhasePlaying || !reflect.DeepEqual(values(g.Players[0].Hand), []int{40}) || g.RequiredMinimum() != 2 {
 			t.Fatalf("turn %+v hand %v", g.Turn, values(g.Players[0].Hand))
 		}
@@ -620,6 +657,7 @@ func TestDrawOnlyOne(t *testing.T) {
 			t.Fatal("stuck while a card fits")
 		}
 		playOK(t, g, 40, 0)
+		mustOK(t, g.GiveUp(pid(0)))
 		want := Result{Outcome: OutcomeLost, Score: 1, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
 		if g.Phase != PhaseFinished || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)

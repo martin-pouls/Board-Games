@@ -16,7 +16,9 @@ const (
 	CmdStartGame         = "startGame"
 	CmdChooseFirstPlayer = "chooseFirstPlayer"
 	CmdPlayCard          = "playCard"
+	CmdUndoPlay          = "undoPlay"
 	CmdEndTurn           = "endTurn"
+	CmdGiveUp            = "giveUp"
 	CmdEndGame           = "endGame"
 	CmdRematch           = "rematch"
 )

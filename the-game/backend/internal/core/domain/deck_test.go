@@ -129,7 +129,7 @@ func TestCommandClass(t *testing.T) {
 			t.Errorf("%q: IsLightning %v IsInfinity %v", tt.cmd, tt.cmd.IsLightning(), tt.cmd.IsInfinity())
 		}
 	}
-	// Wire strings are camelCase and fixed (plan §1).
+	// Wire strings are camelCase and fixed (they are the JSON values).
 	wire := map[Command]string{
 		CommandStop: "stop", CommandSkull: "skull", CommandExactlyThree: "exactlyThree",
 		CommandNoCommunication: "noCommunication", CommandNoBackwardsTrick: "noBackwardsTrick",

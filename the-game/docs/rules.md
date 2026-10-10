@@ -54,8 +54,12 @@ Cooperative game for 1–5 players. The team wins together or loses together.
 ### End of game
 - The game ends **immediately** when the active player **cannot play the required minimum**: 2 cards while the draw pile has cards, 1 card once it is empty.
   - *Interpretation (decided by the project owner):* there is no lookahead. The game is lost only once the active player has **no legal card to play and cannot end the turn**. A player who can still play a card keeps playing, even if the minimum is out of reach. The score counts the cards left at that moment.
-- *App decisions:* the host picks the starting player after the cards are dealt (there is no random default; a solo game starts immediately). The turn ends automatically when the active player's hand becomes empty and the minimum is met. Once the game is over, every player's remaining hand is revealed.
+- *App decisions:* the host picks the starting player after the cards are dealt (there is no random default; a solo game starts immediately). Once the game is over, every player's remaining hand is revealed.
+- *App decision (owner, 2026-10-10): ending the turn is always a deliberate action.* The turn never ends by itself, not after a STOP and not when the hand becomes empty; the player presses *End turn*. Only playing the very last card of the game ends it at once (won).
+- *App decision (owner, 2026-10-10): undo.* Until the turn ends, the active player may **undo** the cards played this turn, one at a time, last card first. The card goes back into their hand and every command effect it had is gone. Cards of earlier turns are final.
+  - **Stuck mid-turn is not lost yet:** a player who has played cards this turn and now has no legal card *and* cannot end the turn may undo, or **give up** (game lost). The game is lost automatically only when the player is stuck at the **start** of the turn, with nothing to undo.
 - *App decision:* the **host can end a game early**: in the lobby, while choosing the first player, or during play. The game finishes with outcome `aborted`; the score counts the cards left at that moment (0 when ended in the lobby, since nothing was dealt), hands are revealed, and a rematch can be started as usual.
+- *App decision:* **play again.** After a game is finished, any player can start a rematch: a new lobby with the same players (same seats and names) and the same options. The player who starts it becomes host. The others join it from the results screen; nobody is moved there automatically, so everyone can still look at the revealed hands.
 - **Score** = cards not played = all cards left in hands + cards left in the draw pile. Lower is better. Fewer than 10 is "excellent". **0 = won** (all 98 cards played).
 
 ### Communication
@@ -104,6 +108,7 @@ They take effect immediately, apply **only to the player who played them**, and 
 
 - **STOP:** the turn **ends immediately**. It may be the **first** card of the turn; the turn then ends after that single card.
   - *Interpretation:* this overrides the usual minimum of 2 cards.
+  - *In this app:* after a STOP no further card may be played; the player ends the turn with *End turn* (or undoes the STOP).
 - **Skull:** must be **covered by another card in the same turn**. No skull may be visible on top of a pile at the end of the turn.
   - If all 98 cards are played but a skull from the very last turn stays visible, the game is still **lost**.
 - **3!:** the player must play **exactly 3 cards** this turn, counting this one.
@@ -130,11 +135,11 @@ They take effect from the moment the card is played and **apply to everyone** fo
 - **Extreme combines with Pro and with the reduced hand size** (Q4, owner) exactly as the classic game does: Pro means minimum 3; the reduced hand size is only allowed together with Pro.
 - **A card that would leave a skull uncoverable because of 3! is blocked** (Q5, owner): any 3rd card of a 3! turn that leaves a skull from this turn uncovered. This covers a Skull as the 3rd card after 3!, a 3! as the 3rd card while a skull is uncovered (unless that 3! itself covers the skull), and a plain 3rd card on another pile after 3! and a Skull (owner decision 2026-10-10). No 4th card would be allowed, so the skull would stay visible.
 - **No communication applies only while the game is being played** (Q6, owner): it is never in effect in the lobby, while choosing the first player, or after the game ended.
-- **Draw only one can shrink a hand below the minimum while the draw pile still has cards** (Q7, owner): the literal base rule applies. The player plays what they can, is then stuck and the game is lost. The minimum is not capped at the hand size.
+- **Draw only one can shrink a hand below the minimum while the draw pile still has cards** (Q7, owner): the literal base rule applies. The player plays what they can, is then stuck and the game is lost (they may undo or give up, see *End of game*). The minimum is not capped at the hand size.
 - **3! as the 4th or later card of a turn is blocked**, because the turn could no longer have exactly 3 cards.
-- **A STOP that would leave a skull from this turn uncovered is blocked**, because STOP ends the turn at once. A STOP placed on the skull covers it and is allowed.
+- **A STOP that would leave a skull from this turn uncovered is blocked**, because no card may follow a STOP. A STOP placed on the skull covers it and is allowed.
 - **STOP overrides the minimum**, but not 3! (STOP only as the 3rd card) and not the Skull rule.
-- **The turn does not end automatically after the 3rd card of a 3!** (unless the hand is empty): the player ends it. No further card can be played.
+- **The turn does not end automatically after the 3rd card of a 3!**: the player ends it. No further card can be played.
 - **Lightning cards count only in the turn they were played.** STOP and 3! keep counting for the rest of that turn even when covered. A skull counts while it is the top card.
 - **Draw only one:** we evaluate whether it is visible at the end of the turn, when drawing.
 
@@ -144,6 +149,7 @@ The engine rejects any action that would break a command, returning a domain err
 | Situation | Blocked action |
 |---|---|
 | Placement breaks base rules, No backwards trick, or Single pile | the card play |
+| Any card after a STOP this turn | the card play |
 | A 4th card after 3!, or a 3! as the 4th or later card | the card play |
 | STOP after 3! as the 1st or 2nd card | the card play |
 | STOP while a Skull from this turn stays visible on another pile | the card play |
@@ -153,9 +159,10 @@ The engine rejects any action that would break a command, returning a domain err
 | Turn would end with fewer than 3 cards after 3! | ending the turn |
 | Turn would end below the minimum (unless STOP was played) | ending the turn |
 
-- STOP ends the turn automatically once it is played; no further card can be played that turn.
+- After a STOP no further card can be played that turn; the player ends it with *End turn*.
 - **Stuck player = lost game.** The engine does not look ahead to warn players. If the active player has no legal action left (no playable card *and* ending the turn is blocked), the game is **lost**, just like failing the minimum in the base game. Example: a Skull is played and no hand card can cover it.
-- This also covers the "skull visible after the last card" rule: playing the final card as an uncovered Skull leaves the player stuck, so the game is lost.
+  - With undo (see *End of game*): stuck at the start of a turn loses at once; stuck mid-turn, the player undoes cards or gives up, and giving up loses the game.
+- This also covers the "skull visible after the last card" rule: playing the final card as an uncovered Skull leaves the player stuck, not won. Unless they undo it, giving up loses with score 0.
 
 ---
 

@@ -240,7 +240,11 @@ func TestViewNeverRevealsHandsBeforeFinished(t *testing.T) {
 					break
 				}
 			}
-			if !played {
+			switch {
+			case played:
+			case v.Turn.Stuck:
+				mustOK(t, g.GiveUp(active))
+			default:
 				mustOK(t, g.EndTurn(active))
 			}
 		}
@@ -280,6 +284,13 @@ func TestHandCardBlocked(t *testing.T) {
 			if !reflect.DeepEqual(h.LegalPiles, tt.legal) {
 				t.Fatalf("legal piles %v, want %v", h.LegalPiles, tt.legal)
 			}
+			// Every veto is exactly what PlayCard returns on that pile.
+			for _, veto := range h.Vetoes {
+				err := g.Clone().PlayCard(tt.viewer, tt.card, veto.Pile)
+				if err == nil || err.Error() != veto.Err.Error() {
+					t.Fatalf("PlayCard on pile %d = %v, veto = %v", veto.Pile, err, veto.Err)
+				}
+			}
 			if tt.blocked == nil {
 				if h.Blocked != nil {
 					t.Fatalf("blocked = %v, want nil", h.Blocked)
@@ -300,6 +311,35 @@ func TestHandCardBlocked(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestHandCardVetoes(t *testing.T) {
+	// A skull from this turn on pile 0: STOP may only cover it; elsewhere it is vetoed.
+	g := table{opts: extreme, hands: [][]int{{3, 95}, {50}}, draw: []int{90}, piles: [][]int{{41}}, plays: []Play{play(41, 0)}}.build(t)
+	v, err := g.ViewFor(pid(0))
+	mustOK(t, err)
+	stop := v.Hand[1]
+	if stop.Card.Value != 95 || !reflect.DeepEqual(stop.LegalPiles, []int{0}) || stop.Blocked != nil {
+		t.Fatalf("STOP %+v", stop)
+	}
+	var piles []int
+	for _, veto := range stop.Vetoes {
+		if !errors.Is(veto.Err, ErrSkullUncovered) {
+			t.Fatalf("veto %+v", veto)
+		}
+		piles = append(piles, veto.Pile)
+	}
+	if !reflect.DeepEqual(piles, []int{1, 2, 3}) {
+		t.Fatalf("vetoed piles %v", piles)
+	}
+	// 3 is base-illegal on pile 0 (not a veto) and legal on the descending piles.
+	if low := v.Hand[0]; low.Vetoes != nil || !reflect.DeepEqual(low.LegalPiles, []int{1, 2, 3}) {
+		t.Fatalf("3: %+v", low)
+	}
+	// Other players get no vetoes.
+	if other, _ := g.ViewFor(pid(1)); other.Hand[0].Vetoes != nil {
+		t.Fatalf("other player's vetoes %+v", other.Hand[0].Vetoes)
 	}
 }
 
@@ -395,6 +435,10 @@ func TestViewForExtremeFinished(t *testing.T) {
 	t.Run("lost with an uncovered skull", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{41}}, piles: [][]int{nil, nil, nil, {92}}}.build(t)
 		mustOK(t, g.PlayCard(pid(0), 41, 3))
+		if v, _ := g.ViewFor(pid(0)); v.Phase != PhasePlaying || !v.Turn.Stuck || v.Turn.CanEndTurn {
+			t.Fatalf("before giving up: phase %s turn %+v", v.Phase, v.Turn)
+		}
+		mustOK(t, g.GiveUp(pid(0)))
 		v, _ := g.ViewFor(pid(0))
 		if v.Result.Outcome != OutcomeLost || v.Result.Score != 0 || v.Result.StuckPlayerID != pid(0) ||
 			!reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{SkullPiles: []int{3}}) || v.CommunicationRestricted {

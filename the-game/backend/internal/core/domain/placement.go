@@ -95,8 +95,19 @@ func (r exactCountRule) Check(g *Game, p Placement) error {
 	return nil
 }
 
-// stopRule allows a STOP only if the turn could legally end right after it, because
-// STOP ends the turn the moment it lands (single-card look via withPlay, not a search).
+// afterStopRule vetoes every card once a STOP was played this turn: the player may only
+// end the turn (or undo the STOP).
+type afterStopRule struct{ cs commandState }
+
+func (r afterStopRule) Check(_ *Game, _ Placement) error {
+	if r.cs.stopPlayed {
+		return fmt.Errorf("%w: no card may follow a STOP", ErrStopPlayed)
+	}
+	return nil
+}
+
+// stopRule allows a STOP only if the turn could legally end right after it, because no
+// card may follow a STOP (single-card look via withPlay, not a search).
 type stopRule struct{}
 
 func (stopRule) Check(g *Game, p Placement) error {
@@ -110,7 +121,7 @@ func (stopRule) Check(g *Game, p Placement) error {
 	case errors.Is(err, ErrExactCountRequired):
 		return fmt.Errorf("%w: STOP must be the third card after 3!", ErrStopTooEarly)
 	default:
-		return fmt.Errorf("STOP would end the turn: %w", err)
+		return fmt.Errorf("no card may follow STOP: %w", err)
 	}
 }
 
@@ -136,6 +147,7 @@ func (skullConflictRule) Check(g *Game, p Placement) error {
 func (g *Game) placementConstraints() []PlacementConstraint {
 	cs := g.commands()
 	return []PlacementConstraint{
+		afterStopRule{cs},  // pile-independent
 		exactCountRule{cs}, // count first: pile-independent
 		singlePileRule{cs},
 		noBackwardsTrickRule{cs},

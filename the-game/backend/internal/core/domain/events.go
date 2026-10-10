@@ -28,10 +28,16 @@ type CardPlayed struct {
 	Pile     int
 }
 
+// PlayUndone: the active player took the last card of this turn back from Pile.
+type PlayUndone struct {
+	PlayerID PlayerID
+	Card     Card
+	Pile     int
+}
+
 type TurnEnded struct {
 	PlayerID   PlayerID
 	CardsDrawn int
-	Auto       bool
 }
 
 type PlayerSkipped struct{ PlayerID PlayerID }
@@ -48,6 +54,7 @@ func (GameStarted) isEvent()       {}
 func (FirstPlayerChosen) isEvent() {}
 func (TurnStarted) isEvent()       {}
 func (CardPlayed) isEvent()        {}
+func (PlayUndone) isEvent()        {}
 func (TurnEnded) isEvent()         {}
 func (PlayerSkipped) isEvent()     {}
 func (GameFinished) isEvent()      {}

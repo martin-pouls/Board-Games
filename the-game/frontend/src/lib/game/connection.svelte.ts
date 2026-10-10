@@ -96,8 +96,14 @@ export class GameConnection {
 	playCard(card: number, pile: number): Promise<void> {
 		return this.send({ type: 'playCard', card, pile });
 	}
+	undoPlay(): Promise<void> {
+		return this.send({ type: 'undoPlay' });
+	}
 	endTurn(): Promise<void> {
 		return this.send({ type: 'endTurn' });
+	}
+	giveUp(): Promise<void> {
+		return this.send({ type: 'giveUp' });
 	}
 	endGame(): Promise<void> {
 		return this.send({ type: 'endGame' });

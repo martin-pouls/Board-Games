@@ -246,7 +246,8 @@ func TestDrawPileEmptyMinimumOne(t *testing.T) {
 	}
 }
 
-func TestAutoEndTurn(t *testing.T) {
+// TestEmptyHandWaitsForEndTurn: an empty hand never ends the turn by itself.
+func TestEmptyHandWaitsForEndTurn(t *testing.T) {
 	tests := []struct {
 		name     string
 		hands    [][]int
@@ -268,22 +269,27 @@ func TestAutoEndTurn(t *testing.T) {
 			for _, v := range tt.play {
 				mustOK(t, g.PlayCard(pid(0), v, 0))
 			}
+			if g.Phase != PhasePlaying || g.Turn.ActiveSeat != 0 || g.Turn.Number != 1 || len(g.Players[0].Hand) != 0 {
+				t.Fatalf("phase %s turn %+v", g.Phase, g.Turn)
+			}
+			g.PullEvents()
+			mustOK(t, g.EndTurn(pid(0)))
 			if g.Phase != PhasePlaying || g.Turn.ActiveSeat != tt.nextSeat || g.Turn.Number != 2 {
 				t.Fatalf("phase %s turn %+v", g.Phase, g.Turn)
 			}
 			if got := values(g.Players[0].Hand); !reflect.DeepEqual(got, tt.wantHand) {
 				t.Fatalf("hand %v, want %v", got, tt.wantHand)
 			}
-			if g.Revision != int64(1+len(tt.play)) {
+			if g.Revision != int64(2+len(tt.play)) {
 				t.Fatalf("revision %d", g.Revision)
 			}
 			evs := g.PullEvents()
-			want := []Event{CardPlayed{PlayerID: pid(0), Card: NumberCard(tt.play[len(tt.play)-1]), Pile: 0}, TurnEnded{PlayerID: pid(0), CardsDrawn: tt.drawn, Auto: true}}
+			want := []Event{TurnEnded{PlayerID: pid(0), CardsDrawn: tt.drawn}}
 			for _, s := range tt.skipped {
 				want = append(want, PlayerSkipped{PlayerID: s})
 			}
 			want = append(want, TurnStarted{PlayerID: pid(tt.nextSeat), Number: 2})
-			if got := evs[len(evs)-len(want):]; !reflect.DeepEqual(got, want) {
+			if got := evs; !reflect.DeepEqual(got, want) {
 				t.Fatalf("events %#v\nwant %#v", got, want)
 			}
 		})
@@ -378,6 +384,11 @@ func TestNotStuckWhileACardFits(t *testing.T) {
 	}
 	g.PullEvents()
 	mustOK(t, g.PlayCard(pid(1), 98, 1))
+	// Stuck mid-turn: not lost yet, the player may undo or give up.
+	if g.Phase != PhasePlaying || !g.ActivePlayerStuck() {
+		t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
+	}
+	mustOK(t, g.GiveUp(pid(1)))
 	want := Result{Outcome: OutcomeLost, Score: 9, CardsLeftInHands: 8, CardsLeftInDrawPile: 1, StuckPlayerID: pid(1)}
 	if g.Phase != PhaseFinished || *g.Result != want {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
@@ -395,10 +406,117 @@ func TestStuckWhenHandEmptiesBelowMinimum(t *testing.T) {
 	// Artificial: a 1-card hand while the draw pile still has cards (minimum 2).
 	g := table{hands: [][]int{{10}, {30}}, draw: []int{81}}.build(t)
 	mustOK(t, g.PlayCard(pid(0), 10, 0))
+	if g.Phase != PhasePlaying || !g.ActivePlayerStuck() {
+		t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
+	}
+	mustOK(t, g.GiveUp(pid(0)))
 	want := Result{Outcome: OutcomeLost, Score: 2, CardsLeftInHands: 1, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
 	if g.Phase != PhaseFinished || *g.Result != want {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 	}
+}
+
+func TestUndoPlay(t *testing.T) {
+	t.Run("takes back cards one by one, last first", func(t *testing.T) {
+		g := table{hands: [][]int{{10, 20, 95}, {30}}, draw: []int{81, 82}, piles: [][]int{nil, nil, {50}}}.build(t)
+		start := g.Clone()
+		mustOK(t, g.PlayCard(pid(0), 10, 0))
+		mustOK(t, g.PlayCard(pid(0), 20, 0))
+		mustOK(t, g.PlayCard(pid(0), 95, 1))
+		g.PullEvents()
+
+		mustOK(t, g.UndoPlay(pid(0)))
+		if got := values(g.Players[0].Hand); !reflect.DeepEqual(got, []int{95}) || len(g.Piles[1].Cards) != 0 || len(g.Turn.Plays) != 2 {
+			t.Fatalf("after 1st undo: hand %v plays %v", got, g.Turn.Plays)
+		}
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{PlayUndone{PlayerID: pid(0), Card: NumberCard(95), Pile: 1}}) {
+			t.Fatalf("events %#v", evs)
+		}
+		mustOK(t, g.UndoPlay(pid(0)))
+		mustOK(t, g.UndoPlay(pid(0)))
+		if !reflect.DeepEqual(g.Players, start.Players) || !reflect.DeepEqual(g.Piles, start.Piles) || !reflect.DeepEqual(g.Turn, start.Turn) {
+			t.Fatalf("not back at turn start:\n%+v\n%+v", g.Turn, start.Turn)
+		}
+		if g.Revision != start.Revision+6 {
+			t.Fatalf("revision %d", g.Revision)
+		}
+		expectErr(t, g, ErrNothingToUndo, func(g *Game) error { return g.UndoPlay(pid(0)) })
+	})
+
+	t.Run("plays of an ended turn are final", func(t *testing.T) {
+		g := table{hands: [][]int{{10, 20, 30}, {40}}, draw: []int{81, 82}}.build(t)
+		mustOK(t, g.PlayCard(pid(0), 10, 0))
+		mustOK(t, g.PlayCard(pid(0), 20, 0))
+		mustOK(t, g.EndTurn(pid(0)))
+		expectErr(t, g, ErrNotYourTurn, func(g *Game) error { return g.UndoPlay(pid(0)) })
+		expectErr(t, g, ErrNothingToUndo, func(g *Game) error { return g.UndoPlay(pid(1)) })
+	})
+
+	t.Run("not your turn, unknown player, wrong phase", func(t *testing.T) {
+		g := table{hands: [][]int{{10, 20}, {40}}, draw: []int{81}, plays: []Play{play(5, 0)}, piles: [][]int{{5}}}.build(t)
+		expectErr(t, g, ErrNotYourTurn, func(g *Game) error { return g.UndoPlay(pid(1)) })
+		expectErr(t, g, ErrUnknownPlayer, func(g *Game) error { return g.UndoPlay("nobody") })
+		lobby := lobbyWith(t, 2, classic)
+		expectErr(t, lobby, ErrWrongPhase, func(g *Game) error { return g.UndoPlay(pid(0)) })
+	})
+
+	t.Run("the winning card cannot be undone", func(t *testing.T) {
+		g := table{hands: [][]int{{10}, {}}}.build(t)
+		mustOK(t, g.PlayCard(pid(0), 10, 0))
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.UndoPlay(pid(0)) })
+	})
+}
+
+func TestUndoRevertsCommands(t *testing.T) {
+	tests := []struct {
+		name  string
+		hand  []int
+		piles [][]int
+		plays []int // played on pile 0 in order; the last one is undone
+		check func(t *testing.T, g *Game)
+	}{
+		{"3! no longer demands 3 cards", []int{10, 20, 81, 90}, nil, []int{10, 20, 81}, func(t *testing.T, g *Game) {
+			if g.commands().exactCount != 0 || g.CanEndTurn() != nil {
+				t.Fatalf("exact count %d, can end %v", g.commands().exactCount, g.CanEndTurn())
+			}
+		}},
+		{"skull no longer needs covering", []int{10, 20, 41, 90}, nil, []int{10, 20, 41}, func(t *testing.T, g *Game) {
+			if len(g.commands().skullPiles) != 0 || g.CanEndTurn() != nil {
+				t.Fatalf("skull piles %v, can end %v", g.commands().skullPiles, g.CanEndTurn())
+			}
+		}},
+		{"Single pile binding lifted", []int{10, 68, 90}, nil, []int{68}, func(t *testing.T, g *Game) {
+			if g.commands().singlePile || !slices.Equal(legalPilesOf(g, 90), []int{0, 1, 2, 3}) {
+				t.Fatalf("legal piles of 90: %v", legalPilesOf(g, 90))
+			}
+		}},
+		{"covered Single pile binds again", []int{72, 99}, [][]int{{68}}, []int{72}, func(t *testing.T, g *Game) {
+			if cs := g.commands(); cs.boundPile != -1 || !cs.singlePile {
+				t.Fatalf("command state %+v", cs)
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := table{opts: extreme, hands: [][]int{tt.hand, {98}}, draw: []int{90, 91}, piles: tt.piles}.build(t)
+			for _, v := range tt.plays {
+				playOK(t, g, v, 0)
+			}
+			mustOK(t, g.UndoPlay(pid(0)))
+			tt.check(t, g)
+		})
+	}
+}
+
+func TestGiveUp(t *testing.T) {
+	g := table{hands: [][]int{{10, 20}, {40}}, draw: []int{81}}.build(t)
+	expectErr(t, g, ErrNotStuck, func(g *Game) error { return g.GiveUp(pid(0)) })
+	expectErr(t, g, ErrNotYourTurn, func(g *Game) error { return g.GiveUp(pid(1)) })
+	mustOK(t, g.PlayCard(pid(0), 10, 0))
+	mustOK(t, g.PlayCard(pid(0), 20, 0))
+	// The turn can end: no giving up.
+	expectErr(t, g, ErrNotStuck, func(g *Game) error { return g.GiveUp(pid(0)) })
+	expectErr(t, lobbyWith(t, 2, classic), ErrWrongPhase, func(g *Game) error { return g.GiveUp(pid(0)) })
 }
 
 func TestBackwardsTrickEnablesSequence(t *testing.T) {
@@ -465,14 +583,21 @@ func TestRandomGames(t *testing.T) {
 			rev := g.Revision
 			active := g.Players[g.Turn.ActiveSeat].ID
 			moves := g.LegalMoves(active)
-			if len(moves) == 0 && g.CanEndTurn() != nil {
-				t.Fatalf("seed %d: stuck player left in playing", seed)
+			stuck := len(moves) == 0 && g.CanEndTurn() != nil
+			if stuck != g.ActivePlayerStuck() {
+				t.Fatalf("seed %d: ActivePlayerStuck disagrees", seed)
 			}
-			turn := g.Turn.Number
+			if stuck && len(g.Turn.Plays) == 0 {
+				t.Fatalf("seed %d: stuck at turn start left in playing", seed)
+			}
 			playedStop := false
-			if g.CanEndTurn() == nil && (len(moves) == 0 || rng.IntN(3) == 0) {
+			switch {
+			case stuck:
+				// Mid-turn: the bot gives up instead of undoing.
+				mustOK(t, g.GiveUp(active))
+			case g.CanEndTurn() == nil && (len(moves) == 0 || rng.IntN(3) == 0):
 				mustOK(t, g.EndTurn(active))
-			} else {
+			default:
 				// Prefer the smallest jump (the trick counts as a negative jump).
 				best := moves[0]
 				jump := func(m Move) int {
@@ -490,13 +615,23 @@ func TestRandomGames(t *testing.T) {
 				_, seat, _ := g.PlayerByID(active)
 				idx := slices.IndexFunc(g.Players[seat].Hand, func(c Card) bool { return c.Value == best.Card })
 				playedStop = g.Players[seat].Hand[idx].Command == CommandStop
+				before := g.Clone()
 				mustOK(t, g.PlayCard(active, best.Card, best.Pile))
+				// Undo restores the table exactly as it was before the play.
+				if g.Phase == PhasePlaying {
+					u := g.Clone()
+					mustOK(t, u.UndoPlay(active))
+					if !reflect.DeepEqual(u.Piles, before.Piles) || !reflect.DeepEqual(u.Players, before.Players) ||
+						!reflect.DeepEqual(u.Turn, before.Turn) || u.Revision != g.Revision+1 {
+						t.Fatalf("seed %d: undo of %v did not restore the state", seed, best)
+					}
+				}
 			}
 			if g.Revision != rev+1 {
 				t.Fatalf("seed %d: revision %d -> %d", seed, rev, g.Revision)
 			}
-			if playedStop && g.Phase == PhasePlaying && g.Turn.Number == turn {
-				t.Fatalf("seed %d: turn did not end after STOP", seed)
+			if playedStop && g.Phase == PhasePlaying && (g.LegalMoves(active) != nil || g.CanEndTurn() != nil) {
+				t.Fatalf("seed %d: after STOP a card fits or the turn cannot end", seed)
 			}
 			if totalCards(g) != 98 {
 				t.Fatalf("seed %d: %d cards", seed, totalCards(g))

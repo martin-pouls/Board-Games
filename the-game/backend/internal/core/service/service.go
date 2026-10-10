@@ -203,6 +203,16 @@ func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.
 	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PlayCard(player, card, pile) })
 }
 
+// UndoPlay implements ports.GameService.
+func (s *Service) UndoPlay(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.UndoPlay(player) })
+}
+
+// GiveUp implements ports.GameService.
+func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.GiveUp(player) })
+}
+
 // EndTurn implements ports.GameService.
 func (s *Service) EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
 	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndTurn(player) })

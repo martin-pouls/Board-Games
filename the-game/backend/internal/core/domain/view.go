@@ -51,6 +51,9 @@ type HandCard struct {
 	// with no legal pile that the base rules alone would allow somewhere; nil otherwise.
 	// Only set for the active viewer in playing.
 	Blocked error
+	// Vetoes are the piles the base rules allow but a command forbids, with the reason,
+	// in pile order. Only set for the active viewer in playing.
+	Vetoes []PileVeto
 }
 
 // PileView is the public state of a pile.
@@ -75,8 +78,10 @@ type TurnView struct {
 	CardsPlayed     int
 	RequiredMinimum int
 	CanEndTurn      bool // CanEndTurn() == nil
-	Plays           []Play
-	Constraints     TurnConstraints // zero value = no command constrains this turn
+	// Stuck: the active player can neither play nor end the turn; they must undo or give up.
+	Stuck       bool
+	Plays       []Play
+	Constraints TurnConstraints // zero value = no command constrains this turn
 }
 
 // TurnConstraints are the command constraints on the current turn (server facts the
@@ -86,7 +91,7 @@ type TurnConstraints struct {
 	SinglePile bool  // a visible Single pile card restricts this turn
 	BoundPile  *int  // pile all further cards must go on; nil = unbound (the next card picks) or no Single pile
 	SkullPiles []int // piles showing a Skull played this turn; nil = none
-	StopPlayed bool  // only ever true in a finished game (STOP auto-ends the turn)
+	StopPlayed bool  // a STOP was played this turn: no further card, only End turn (or undo)
 }
 
 // ResultView is the public final result.
@@ -173,7 +178,10 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 	for _, c := range me.Hand {
 		hc := HandCard{Card: c}
 		if active {
-			hc.LegalPiles, hc.Blocked = g.cardLegality(cons, c)
+			hc.LegalPiles, hc.Vetoes = g.cardLegality(cons, c)
+			if len(hc.LegalPiles) == 0 && len(hc.Vetoes) > 0 {
+				hc.Blocked = hc.Vetoes[0].Err
+			}
 		}
 		v.Hand = append(v.Hand, hc)
 	}
@@ -202,6 +210,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 			CardsPlayed:     len(g.Turn.Plays),
 			RequiredMinimum: g.RequiredMinimum(),
 			CanEndTurn:      g.CanEndTurn() == nil,
+			Stuck:           g.ActivePlayerStuck(),
 			Plays:           slices.Clone(g.Turn.Plays),
 			Constraints: TurnConstraints{
 				ExactCount: cs.exactCount,

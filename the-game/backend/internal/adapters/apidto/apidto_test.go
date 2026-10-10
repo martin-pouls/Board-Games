@@ -63,7 +63,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{ID: "p2", Name: "Ben", Seat: 1, HandCount: 4, IsYou: true},
 		},
 		Hand: []domain.HandCard{
-			{Card: domain.NumberCard(7), LegalPiles: []int{0, 2}},
+			{Card: domain.NumberCard(7), LegalPiles: []int{0, 2}, Vetoes: []domain.PileVeto{{Pile: 1, Err: fmt.Errorf("x: %w", domain.ErrSinglePileViolation)}, {Pile: 3, Err: errors.New("odd")}}},
 			{Card: domain.Card{Value: 81, Kind: domain.CardKindNumber, Command: domain.CommandExactlyThree}, Blocked: fmt.Errorf("%w: start hand 2", domain.ErrExactCountUnreachable)},
 			{Card: domain.NumberCard(50), Blocked: errors.New("odd")},
 		},
@@ -74,7 +74,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		},
 		DrawPileCount: 60,
 		Turn: &domain.TurnView{
-			Number: 4, ActivePlayerID: "p1", CardsPlayed: 1, RequiredMinimum: 3, CanEndTurn: true,
+			Number: 4, ActivePlayerID: "p1", CardsPlayed: 1, RequiredMinimum: 3, CanEndTurn: true, Stuck: true,
 			Plays:       []domain.Play{{Card: top, Pile: 0}},
 			Constraints: domain.TurnConstraints{ExactCount: 3, SinglePile: true, BoundPile: &bound, SkullPiles: []int{0}, StopPlayed: true},
 		},
@@ -96,7 +96,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{ID: "p2", Name: "Ben", Seat: 1, HandCount: 4, IsYou: true},
 		},
 		Hand: []HandCard{
-			{Card: Card{Value: 7, Kind: "number"}, LegalPiles: []int{0, 2}},
+			{Card: Card{Value: 7, Kind: "number"}, LegalPiles: []int{0, 2}, Vetoes: []PileVeto{{Pile: 1, Code: "single_pile_violation"}}},
 			{Card: Card{Value: 81, Kind: "number", Command: "exactlyThree"}, LegalPiles: []int{}, Blocked: "exact_count_unreachable"},
 			{Card: Card{Value: 50, Kind: "number"}, LegalPiles: []int{}},
 		},
@@ -107,7 +107,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		},
 		DrawPileCount: 60,
 		Turn: &Turn{
-			Number: 4, ActivePlayerID: "p1", CardsPlayed: 1, RequiredMinimum: 3, CanEndTurn: true,
+			Number: 4, ActivePlayerID: "p1", CardsPlayed: 1, RequiredMinimum: 3, CanEndTurn: true, Stuck: true,
 			Plays:       []Play{{Card: wantTop, Pile: 0}},
 			Constraints: TurnConstraints{ExactCount: &wantExact, SinglePile: true, BoundPile: &wantBound, SkullPiles: []int{0}, StopPlayed: true},
 		},
@@ -122,8 +122,11 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		t.Fatalf("FromView mismatch:\n got %+v\nwant %+v", got, want)
 	}
 	// HandCard embeds Card: JSON is flat.
-	if s := mustJSON(t, got.Hand[0]); s != `{"value":7,"kind":"number","legalPiles":[0,2]}` {
+	if s := mustJSON(t, got.Hand[0]); s != `{"value":7,"kind":"number","legalPiles":[0,2],"vetoes":[{"pile":1,"code":"single_pile_violation"}]}` {
 		t.Errorf("hand card JSON = %s", s)
+	}
+	if s := mustJSON(t, got.Hand[2]); s != `{"value":50,"kind":"number","legalPiles":[]}` {
+		t.Errorf("hand card JSON without vetoes = %s", s)
 	}
 	// Mapped LegalPiles must not alias the domain slice.
 	in.Hand[0].LegalPiles[0] = 3
@@ -187,7 +190,8 @@ func TestFromEvents(t *testing.T) {
 		domain.FirstPlayerChosen{PlayerID: "p1"},
 		domain.TurnStarted{PlayerID: "p1", Number: 1},
 		domain.CardPlayed{PlayerID: "p1", Card: domain.NumberCard(12), Pile: 0},
-		domain.TurnEnded{PlayerID: "p1", CardsDrawn: 0, Auto: true},
+		domain.PlayUndone{PlayerID: "p1", Card: domain.NumberCard(12), Pile: 0},
+		domain.TurnEnded{PlayerID: "p1", CardsDrawn: 0},
 		domain.PlayerSkipped{PlayerID: "p2"},
 		domain.GameFinished{Outcome: domain.OutcomeWon, Score: 0},
 		domain.GameFinished{Outcome: domain.OutcomeLost, Score: 12, StuckPlayerID: "p2"},
@@ -199,7 +203,8 @@ func TestFromEvents(t *testing.T) {
 		`{"type":"firstPlayerChosen","playerId":"p1"}`,
 		`{"type":"turnStarted","playerId":"p1","number":1}`,
 		`{"type":"cardPlayed","playerId":"p1","card":{"value":12,"kind":"number"},"pile":0}`,
-		`{"type":"turnEnded","playerId":"p1","cardsDrawn":0,"auto":true}`,
+		`{"type":"playUndone","playerId":"p1","card":{"value":12,"kind":"number"},"pile":0}`,
+		`{"type":"turnEnded","playerId":"p1","cardsDrawn":0}`,
 		`{"type":"playerSkipped","playerId":"p2"}`,
 		`{"type":"gameFinished","outcome":"won","score":0}`,
 		`{"type":"gameFinished","outcome":"lost","score":12,"stuckPlayerId":"p2"}`,
@@ -305,13 +310,16 @@ func TestErrorFor(t *testing.T) {
 		{"illegal placement", fmt.Errorf("%w: 5 on pile 0", domain.ErrIllegalPlacement), 422, "illegal_placement", "5 on pile 0"},
 		{"minimum", domain.ErrMinimumNotReached, 422, "minimum_not_reached", ""},
 		{"rematch", domain.ErrRematchExists, 409, "rematch_exists", ""},
+		{"nothing to undo", domain.ErrNothingToUndo, 409, "nothing_to_undo", ""},
+		{"not stuck", domain.ErrNotStuck, 409, "not_stuck", ""},
+		{"stop played", fmt.Errorf("%w: no card may follow", domain.ErrStopPlayed), 422, "stop_played", "no card may follow"},
 		{"backwards trick", domain.ErrBackwardsTrickBlocked, 422, "backwards_trick_blocked", ""},
 		{"single pile", fmt.Errorf("%w: pile 1", domain.ErrSinglePileViolation), 422, "single_pile_violation", "pile 1"},
 		{"exact exceeded", fmt.Errorf("%w: 4th card", domain.ErrExactCountExceeded), 422, "exact_count_exceeded", "4th card"},
 		{"exact unreachable", fmt.Errorf("%w: hand 2", domain.ErrExactCountUnreachable), 422, "exact_count_unreachable", "hand 2"},
 		{"exact required", fmt.Errorf("%w: 2 of 3", domain.ErrExactCountRequired), 422, "exact_count_required", "2 of 3"},
 		{"stop too early", fmt.Errorf("%w: 2nd card", domain.ErrStopTooEarly), 422, "stop_too_early", "2nd card"},
-		{"skull uncovered", fmt.Errorf("STOP would end the turn: %w", domain.ErrSkullUncovered), 422, "skull_uncovered", "STOP would end"},
+		{"skull uncovered", fmt.Errorf("no card may follow STOP: %w", domain.ErrSkullUncovered), 422, "skull_uncovered", "no card may follow STOP"},
 		{"skull uncoverable", fmt.Errorf("svc: %w: x", domain.ErrSkullUncoverable), 422, "skull_uncoverable", "x"},
 		{"duplicate player", domain.ErrDuplicatePlayer, 500, "internal", "internal error"},
 		{"duplicate game id", ports.ErrDuplicateGameID, 500, "internal", "internal error"},

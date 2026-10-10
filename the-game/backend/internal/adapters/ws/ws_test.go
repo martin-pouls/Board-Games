@@ -133,8 +133,14 @@ func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.P
 	f.mu.Unlock()
 	return f.mutate(ctx, "PlayCard", id, p, domain.CardPlayed{PlayerID: p, Card: domain.NumberCard(card), Pile: pile})
 }
+func (f *fakeService) UndoPlay(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.mutate(ctx, "UndoPlay", id, p)
+}
 func (f *fakeService) EndTurn(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "EndTurn", id, p)
+}
+func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.mutate(ctx, "GiveUp", id, p)
 }
 func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "EndGame", id, p)
@@ -352,7 +358,9 @@ func TestAllCommands(t *testing.T) {
 		{`{"type":"startGame","requestId":"1"}`, "StartGame"},
 		{`{"type":"chooseFirstPlayer","requestId":"1","playerId":"p_guest"}`, "ChooseFirstPlayer"},
 		{`{"type":"playCard","requestId":"1","card":5,"pile":2}`, "PlayCard"},
+		{`{"type":"undoPlay","requestId":"1"}`, "UndoPlay"},
 		{`{"type":"endTurn","requestId":"1"}`, "EndTurn"},
+		{`{"type":"giveUp","requestId":"1"}`, "GiveUp"},
 		{`{"type":"endGame","requestId":"1"}`, "EndGame"},
 		{`{"type":"rematch","requestId":"1"}`, "Rematch"},
 	}

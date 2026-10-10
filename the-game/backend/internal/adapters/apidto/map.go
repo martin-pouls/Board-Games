@@ -69,11 +69,17 @@ func FromView(v domain.PlayerView) PlayerView {
 		})
 	}
 	for _, h := range v.Hand {
-		out.Hand = append(out.Hand, HandCard{
+		hc := HandCard{
 			Card:       FromCard(h.Card),
 			LegalPiles: intsOrEmpty(h.LegalPiles),
 			Blocked:    blockedCode(h.Blocked),
-		})
+		}
+		for _, veto := range h.Vetoes {
+			if code := blockedCode(veto.Err); code != "" {
+				hc.Vetoes = append(hc.Vetoes, PileVeto{Pile: veto.Pile, Code: code})
+			}
+		}
+		out.Hand = append(out.Hand, hc)
 	}
 	for _, p := range v.Piles {
 		pile := Pile{
@@ -101,6 +107,7 @@ func FromView(v domain.PlayerView) PlayerView {
 			CardsPlayed:     t.CardsPlayed,
 			RequiredMinimum: t.RequiredMinimum,
 			CanEndTurn:      t.CanEndTurn,
+			Stuck:           t.Stuck,
 			Plays:           make([]Play, 0, len(t.Plays)),
 			Constraints:     fromConstraints(t.Constraints),
 		}
@@ -167,8 +174,11 @@ func FromEvent(e domain.Event) (Event, bool) {
 	case domain.CardPlayed:
 		c := FromCard(e.Card)
 		return Event{Type: EventCardPlayed, PlayerID: string(e.PlayerID), Card: &c, Pile: ptr(e.Pile)}, true
+	case domain.PlayUndone:
+		c := FromCard(e.Card)
+		return Event{Type: EventPlayUndone, PlayerID: string(e.PlayerID), Card: &c, Pile: ptr(e.Pile)}, true
 	case domain.TurnEnded:
-		return Event{Type: EventTurnEnded, PlayerID: string(e.PlayerID), CardsDrawn: ptr(e.CardsDrawn), Auto: e.Auto}, true
+		return Event{Type: EventTurnEnded, PlayerID: string(e.PlayerID), CardsDrawn: ptr(e.CardsDrawn)}, true
 	case domain.PlayerSkipped:
 		return Event{Type: EventPlayerSkipped, PlayerID: string(e.PlayerID)}, true
 	case domain.GameFinished:

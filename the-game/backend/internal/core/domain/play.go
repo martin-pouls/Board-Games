@@ -87,11 +87,13 @@ func (g *Game) requireActive(by PlayerID) (int, error) {
 	return seat, nil
 }
 
-// PlayCard plays a card from by's hand onto a pile. A STOP ends the turn automatically,
-// as does an empty hand once the turn may end.
+// PlayCard plays a card from by's hand onto a pile. The turn never ends by itself: the
+// player ends it with EndTurn (after a STOP no further card may be played). Playing the
+// last card of the game wins at once.
 // Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrCardNotInHand, ErrInvalidPile,
-// ErrIllegalPlacement, ErrBackwardsTrickBlocked, ErrSinglePileViolation, ErrExactCountExceeded,
-// ErrExactCountUnreachable, ErrStopTooEarly, ErrSkullUncovered, ErrSkullUncoverable.
+// ErrIllegalPlacement, ErrStopPlayed, ErrBackwardsTrickBlocked, ErrSinglePileViolation,
+// ErrExactCountExceeded, ErrExactCountUnreachable, ErrStopTooEarly, ErrSkullUncovered,
+// ErrSkullUncoverable.
 func (g *Game) PlayCard(by PlayerID, value int, pile int) error {
 	seat, err := g.requireActive(by)
 	if err != nil {
@@ -107,27 +109,59 @@ func (g *Game) PlayCard(by PlayerID, value int, pile int) error {
 		return err
 	}
 
-	// Apply.
 	g.Players[seat].Hand = slices.Delete(hand, idx, idx+1)
 	g.Piles[pile].Cards = append(g.Piles[pile].Cards, card)
 	g.Turn.Plays = append(g.Turn.Plays, Play{Card: card, Pile: pile})
 	g.emit(CardPlayed{PlayerID: by, Card: card, Pile: pile})
 
-	// Follow-ups.
-	switch {
-	case g.noCardsLeft():
-		if g.CanEndTurn() == nil {
-			g.finish(OutcomeWon, "")
-		} else {
-			// An uncovered Skull as the very last card: lost with score 0 (rules.md §2).
-			g.finish(OutcomeLost, by)
-		}
-	case (card.Command == CommandStop || len(g.Players[seat].Hand) == 0) && g.CanEndTurn() == nil:
-		// STOP always lands here: stopRule pre-validated the after-state.
-		g.endTurn(true)
-	default:
-		g.checkStuck()
+	// No stuck check here: a player stuck mid-turn may still undo or give up. An
+	// uncovered Skull as the very last card of the game is such a case (rules.md §2).
+	if g.noCardsLeft() && g.CanEndTurn() == nil {
+		g.finish(OutcomeWon, "")
 	}
+	g.commit()
+	return nil
+}
+
+// UndoPlay takes back the last card played this turn: it leaves its pile and returns to
+// by's hand. Repeat to take back earlier cards; the plays of earlier turns are final.
+// Every command state derives from the piles and this turn's plays, so it reverts too.
+// Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrNothingToUndo.
+func (g *Game) UndoPlay(by PlayerID) error {
+	seat, err := g.requireActive(by)
+	if err != nil {
+		return err
+	}
+	n := len(g.Turn.Plays)
+	if n == 0 {
+		return fmt.Errorf("%w: no card played this turn", ErrNothingToUndo)
+	}
+	last := g.Turn.Plays[n-1]
+	// The last play is still its pile's top card: nobody else plays during a turn.
+	cards := g.Piles[last.Pile].Cards
+	g.Piles[last.Pile].Cards = slices.Clip(cards[:len(cards)-1])
+	hand := append(g.Players[seat].Hand, last.Card)
+	sortCards(hand)
+	g.Players[seat].Hand = hand
+	g.Turn.Plays = slices.Clip(g.Turn.Plays[:n-1])
+	if n == 1 {
+		g.Turn.Plays = nil // as at turn start
+	}
+	g.emit(PlayUndone{PlayerID: by, Card: last.Card, Pile: last.Pile})
+	g.commit()
+	return nil
+}
+
+// GiveUp ends the game as lost when the active player is stuck mid-turn and does not
+// want to undo their cards. Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrNotStuck.
+func (g *Game) GiveUp(by PlayerID) error {
+	if _, err := g.requireActive(by); err != nil {
+		return err
+	}
+	if !g.ActivePlayerStuck() {
+		return fmt.Errorf("%w: a card can still be played or the turn ended", ErrNotStuck)
+	}
+	g.finish(OutcomeLost, by)
 	g.commit()
 	return nil
 }
@@ -148,13 +182,13 @@ func (g *Game) EndTurn(by PlayerID) error {
 	if err := g.CanEndTurn(); err != nil {
 		return err
 	}
-	g.endTurn(false)
+	g.endTurn()
 	g.commit()
 	return nil
 }
 
 // endTurn draws for the active player, emits TurnEnded and advances. Checks must have passed.
-func (g *Game) endTurn(auto bool) {
+func (g *Game) endTurn() {
 	seat := g.Turn.ActiveSeat
 	n := g.drawCount()
 	if n > 0 {
@@ -165,7 +199,7 @@ func (g *Game) endTurn(auto bool) {
 		g.Players[seat].Hand = hand
 		g.DrawPile = slices.Clip(g.DrawPile[:top])
 	}
-	g.emit(TurnEnded{PlayerID: g.Players[seat].ID, CardsDrawn: n, Auto: auto})
+	g.emit(TurnEnded{PlayerID: g.Players[seat].ID, CardsDrawn: n})
 	g.advanceTurn()
 }
 
@@ -230,27 +264,27 @@ func (g *Game) LegalMoves(by PlayerID) []Move {
 	return moves
 }
 
+// PileVeto is a command veto of a placement the base rules allowed on Pile.
+type PileVeto struct {
+	Pile int
+	Err  error // a typed command sentinel from errors.go, wrapped
+}
+
 // cardLegality checks c against every pile with the given constraints: the legal piles
-// (nil if none), and, when there are none, the first command veto (in pile order) of a
-// placement the base rules allowed (nil otherwise). It does not check phase or turn.
-func (g *Game) cardLegality(cons []PlacementConstraint, c Card) (piles []int, blocked error) {
+// and the vetoed ones (both in pile order, nil if none). It does not check phase or turn.
+func (g *Game) cardLegality(cons []PlacementConstraint, c Card) (piles []int, vetoes []PileVeto) {
 	for pi := range g.Piles {
 		p, err := g.basePlacementAt(c, pi)
 		if err != nil {
 			continue
 		}
 		if err := g.checkConstraints(cons, p); err != nil {
-			if blocked == nil {
-				blocked = err
-			}
+			vetoes = append(vetoes, PileVeto{Pile: pi, Err: err})
 			continue
 		}
 		piles = append(piles, pi)
 	}
-	if len(piles) > 0 {
-		return piles, nil
-	}
-	return nil, blocked
+	return piles, vetoes
 }
 
 // CanEndTurn returns nil if the active player may end the turn now (phase check, then all

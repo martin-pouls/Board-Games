@@ -37,6 +37,7 @@
 	let pending = $state(false);
 	let confirmEnd = $state(false);
 	let ending = $state(false);
+	let confirmGiveUp = $state(false);
 	// The pile whose history is open; kept by index so the dialog follows live updates.
 	let inspecting = $state<number | null>(null);
 	let inspectOpen = $state(false);
@@ -73,6 +74,11 @@
 		if (selected !== null && (!myTurn || !selectedCard)) selected = null;
 	});
 
+	// Close the give-up dialog once giving up is no option any more (undone elsewhere, game over).
+	$effect(() => {
+		if (confirmGiveUp && !(myTurn && view.turn?.stuck)) confirmGiveUp = false;
+	});
+
 	// A short buzz when it becomes your turn (phones only; ignored elsewhere).
 	$effect(() => {
 		const events = client.lastEvents;
@@ -92,12 +98,19 @@
 		if (readonly) return;
 		untrack(() => {
 			for (const e of events) {
-				if (e.type !== 'cardPlayed') continue;
+				if (e.type !== 'cardPlayed' && e.type !== 'playUndone') continue;
+				const name = view.players.find((p) => p.id === e.playerId)?.name ?? 'Someone';
+				if (e.type === 'playUndone') {
+					if (e.playerId !== view.you) toast(`${name} took back ${e.card.value}.`, { id: 'undo' });
+					continue;
+				}
 				if (e.card.command === 'stop') {
-					const name = view.players.find((p) => p.id === e.playerId)?.name ?? 'Someone';
-					toast(e.playerId === view.you ? 'STOP: your turn is over.' : `${name} played STOP.`, {
-						id: 'stop'
-					});
+					toast(
+						e.playerId === view.you
+							? 'STOP: no more cards. End your turn.'
+							: `${name} played STOP.`,
+						{ id: 'stop' }
+					);
 				} else if (e.card.command === 'noCommunication') {
 					toast('No communication until the card is covered.', { id: 'no-comm' });
 				}
@@ -128,7 +141,9 @@
 	async function onpile(index: number) {
 		if (!interactive || !selectedCard) return;
 		if (!selectedCard.legalPiles.includes(index)) {
-			toast.error(errorText('illegal_placement'), { id: 'illegal' });
+			// A command veto names its rule; otherwise the base rules forbid the pile.
+			const veto = selectedCard.vetoes?.find((v) => v.pile === index);
+			toast.error(errorText(veto?.code ?? 'illegal_placement'), { id: 'illegal' });
 			return;
 		}
 		const value = selectedCard.value;
@@ -156,17 +171,26 @@
 		}
 	}
 
-	async function endTurn() {
+	/** Runs one turn action (undo, end turn, give up) with the board locked meanwhile. */
+	async function turnAction(action: () => Promise<void>) {
 		if (pending) return;
 		selected = null;
 		pending = true;
 		try {
-			await client.endTurn();
+			await action();
 		} catch (e) {
 			fail(e);
 		} finally {
 			pending = false;
 		}
+	}
+
+	const undo = () => turnAction(() => client.undoPlay());
+	const endTurn = () => turnAction(() => client.endTurn());
+
+	async function giveUp() {
+		await turnAction(() => client.giveUp());
+		confirmGiveUp = false;
 	}
 </script>
 
@@ -260,7 +284,15 @@
 		{#if controls}
 			{@render controls()}
 		{:else}
-			<TurnBar {view} isMyTurn={myTurn} disabled={!connected} {pending} onendturn={endTurn} />
+			<TurnBar
+				{view}
+				isMyTurn={myTurn}
+				disabled={!connected}
+				{pending}
+				onundo={undo}
+				onendturn={endTurn}
+				ongiveup={() => (confirmGiveUp = true)}
+			/>
 		{/if}
 		<Hand cards={view.hand} {selected} {interactive} {onselect} />
 		<p class="h-4 text-center text-xs text-muted-foreground">
@@ -288,6 +320,28 @@
 				onclick={endGame}
 			>
 				End game
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root bind:open={confirmGiveUp}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Give up and lose the game?</AlertDialog.Title>
+			<AlertDialog.Description>
+				No card fits and your turn can't end. You can still undo your cards from this turn and try
+				another way.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={pending}>Keep trying</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class="bg-destructive text-white hover:bg-destructive/90"
+				disabled={pending || !connected}
+				onclick={giveUp}
+			>
+				Give up
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

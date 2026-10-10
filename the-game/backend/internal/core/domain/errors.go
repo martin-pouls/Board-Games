@@ -19,9 +19,12 @@ var (
 	ErrIllegalPlacement  = errors.New("illegal placement")
 	ErrMinimumNotReached = errors.New("minimum not reached")
 	ErrRematchExists     = errors.New("rematch exists")
+	ErrNothingToUndo     = errors.New("nothing to undo") // UndoPlay: no card played this turn
+	ErrNotStuck          = errors.New("not stuck")       // GiveUp: a card fits or the turn can end
 
 	// Extreme command vetoes (rules.md §2 Enforcement). None of them wraps
 	// ErrIllegalPlacement or ErrMinimumNotReached.
+	ErrStopPlayed            = errors.New("stop played")             // PlayCard: a STOP was played this turn
 	ErrBackwardsTrickBlocked = errors.New("backwards trick blocked") // PlayCard: a No backwards trick card is visible
 	ErrSinglePileViolation   = errors.New("single pile violation")   // PlayCard: card not on the bound pile
 	ErrExactCountExceeded    = errors.New("exact count exceeded")    // PlayCard: a 4th card after 3!, or 3! as the 4th+ card

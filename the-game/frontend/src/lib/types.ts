@@ -19,6 +19,12 @@ export interface HandCard extends Card {
 	legalPiles: number[];
 	/** Code of the command that blocks this card (only when legalPiles is empty). */
 	blocked?: ApiErrorCode;
+	/** Piles the base rules allow but a command forbids, with the reason. */
+	vetoes?: PileVeto[];
+}
+export interface PileVeto {
+	pile: number;
+	code: ApiErrorCode;
 }
 export interface GameOptions {
 	variant: Variant;
@@ -77,6 +83,8 @@ export interface Turn {
 	cardsPlayed: number;
 	requiredMinimum: number;
 	canEndTurn: boolean;
+	/** No card fits and the turn cannot end: the active player must undo or give up. */
+	stuck: boolean;
 	plays: Play[];
 	constraints: TurnConstraints;
 }
@@ -133,7 +141,8 @@ export type GameEvent =
 	| { type: 'firstPlayerChosen'; playerId: string }
 	| { type: 'turnStarted'; playerId: string; number: number }
 	| { type: 'cardPlayed'; playerId: string; card: Card; pile: number }
-	| { type: 'turnEnded'; playerId: string; cardsDrawn: number; auto?: boolean }
+	| { type: 'playUndone'; playerId: string; card: Card; pile: number }
+	| { type: 'turnEnded'; playerId: string; cardsDrawn: number }
 	| { type: 'playerSkipped'; playerId: string }
 	| { type: 'gameFinished'; outcome: Outcome; score: number; stuckPlayerId?: string };
 export type ApiErrorCode =
@@ -155,6 +164,9 @@ export type ApiErrorCode =
 	| 'illegal_placement'
 	| 'minimum_not_reached'
 	| 'rematch_exists'
+	| 'nothing_to_undo'
+	| 'not_stuck'
+	| 'stop_played'
 	| 'backwards_trick_blocked'
 	| 'single_pile_violation'
 	| 'exact_count_exceeded'
@@ -181,7 +193,9 @@ export type ClientCommand =
 	| { type: 'startGame' }
 	| { type: 'chooseFirstPlayer'; playerId: string }
 	| { type: 'playCard'; card: number; pile: number }
+	| { type: 'undoPlay' }
 	| { type: 'endTurn' }
+	| { type: 'giveUp' }
 	| { type: 'endGame' }
 	| { type: 'rematch' };
 // sent as ClientCommand & { requestId: string }

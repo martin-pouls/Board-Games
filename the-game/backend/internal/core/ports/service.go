@@ -26,7 +26,11 @@ type GameService interface {
 	StartGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	ChooseFirstPlayer(ctx context.Context, id domain.GameID, player, first domain.PlayerID) (domain.PlayerView, error)
 	PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card, pile int) (domain.PlayerView, error)
+	// UndoPlay takes back the active player's last card of the current turn.
+	UndoPlay(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
+	// GiveUp loses the game for a player stuck mid-turn (instead of undoing).
+	GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	// EndGame lets the host end a game early, from the lobby on (outcome "aborted").
 	EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	// Rematch returns the actor's view of the old game, which now carries NextGameID.

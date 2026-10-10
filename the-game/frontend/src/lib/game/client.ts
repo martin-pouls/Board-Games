@@ -18,7 +18,9 @@ export type GameClient = Pick<
 	| 'startGame'
 	| 'chooseFirstPlayer'
 	| 'playCard'
+	| 'undoPlay'
 	| 'endTurn'
+	| 'giveUp'
 	| 'endGame'
 	| 'rematch'
 >;

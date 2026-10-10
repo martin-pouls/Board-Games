@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import Undo2 from '@lucide/svelte/icons/undo-2';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { commandInfo, targetCount, turnHints } from '#lib/game/commands.js';
 	import { cn } from '#lib/utils.js';
@@ -12,13 +13,18 @@
 		isMyTurn,
 		disabled = false,
 		pending = false,
-		onendturn
+		onundo,
+		onendturn,
+		ongiveup
 	}: {
 		view: PlayerView;
 		isMyTurn: boolean;
 		disabled?: boolean;
 		pending?: boolean;
+		onundo?: () => void;
 		onendturn?: () => void;
+		/** Shown instead of End turn while the player is stuck. */
+		ongiveup?: () => void;
 	} = $props();
 
 	const turn = $derived(view.turn);
@@ -41,7 +47,7 @@
 			)}
 			aria-live="polite"
 		>
-			<div class="flex min-h-11 items-center gap-3">
+			<div class="flex min-h-11 items-center gap-2">
 				<div class="min-w-0 flex-1">
 					{#if isMyTurn}
 						<p class="font-semibold">Your turn</p>
@@ -60,6 +66,9 @@
 								>{turn.cardsPlayed}/{target} played{#if exactly}&nbsp;· exactly{/if}</span
 							>
 						</p>
+						{#if turn.stuck}
+							<p class="text-sm font-medium text-destructive">Stuck: undo a card or give up</p>
+						{/if}
 					{:else}
 						<p class="truncate font-semibold">{active?.name ?? 'Someone'}'s turn</p>
 						<p class="text-sm text-muted-foreground tabular-nums">{turn.cardsPlayed} played</p>
@@ -67,13 +76,35 @@
 				</div>
 				{#if isMyTurn}
 					<Button
+						variant="outline"
 						size="lg"
-						class="h-12 min-w-32 px-6 text-base"
-						disabled={disabled || pending || !turn.canEndTurn}
-						onclick={onendturn}
+						class="h-12 px-3 text-base"
+						disabled={disabled || pending || turn.cardsPlayed === 0}
+						title="Take back the last card"
+						onclick={onundo}
 					>
-						End turn
+						<Undo2 class="size-5" aria-hidden="true" />
+						<span class="max-sm:sr-only">Undo</span>
 					</Button>
+					{#if turn.stuck}
+						<Button
+							size="lg"
+							class="h-12 min-w-28 bg-destructive px-5 text-base text-white hover:bg-destructive/90"
+							disabled={disabled || pending}
+							onclick={ongiveup}
+						>
+							Give up
+						</Button>
+					{:else}
+						<Button
+							size="lg"
+							class="h-12 min-w-28 px-5 text-base"
+							disabled={disabled || pending || !turn.canEndTurn}
+							onclick={onendturn}
+						>
+							End turn
+						</Button>
+					{/if}
 				{/if}
 			</div>
 			{#if hints.length > 0}

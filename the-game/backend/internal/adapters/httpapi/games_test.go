@@ -154,8 +154,16 @@ func (f *fakeService) PlayCard(_ context.Context, id domain.GameID, p domain.Pla
 	return f.viewCall("PlayCard", id, p)
 }
 
+func (f *fakeService) UndoPlay(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.viewCall("UndoPlay", id, p)
+}
+
 func (f *fakeService) EndTurn(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.viewCall("EndTurn", id, p)
+}
+
+func (f *fakeService) GiveUp(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.viewCall("GiveUp", id, p)
 }
 
 func (f *fakeService) EndGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
@@ -324,7 +332,9 @@ func TestAuthedRoutes(t *testing.T) {
 		{"POST", "/api/games/%s/start", "", "StartGame"},
 		{"POST", "/api/games/%s/first-player", `{"playerId":"p_guest"}`, "ChooseFirstPlayer"},
 		{"POST", "/api/games/%s/plays", `{"card":42,"pile":3}`, "PlayCard"},
+		{"POST", "/api/games/%s/undo", "", "UndoPlay"},
 		{"POST", "/api/games/%s/end-turn", "", "EndTurn"},
+		{"POST", "/api/games/%s/give-up", "", "GiveUp"},
 		{"POST", "/api/games/%s/end-game", "", "EndGame"},
 		{"POST", "/api/games/%s/rematch", "", "Rematch"},
 	}

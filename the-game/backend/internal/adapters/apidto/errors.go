@@ -30,8 +30,11 @@ const (
 	CodeIllegalPlacement  = "illegal_placement"
 	CodeMinimumNotReached = "minimum_not_reached"
 	CodeRematchExists     = "rematch_exists"
+	CodeNothingToUndo     = "nothing_to_undo"
+	CodeNotStuck          = "not_stuck"
 
 	// Extreme command vetoes (all 422).
+	CodeStopPlayed            = "stop_played"
 	CodeBackwardsTrickBlocked = "backwards_trick_blocked"
 	CodeSinglePileViolation   = "single_pile_violation"
 	CodeExactCountExceeded    = "exact_count_exceeded"
@@ -70,6 +73,8 @@ var errorTable = []struct {
 	{domain.ErrRematchExists, CodeRematchExists, http.StatusConflict},
 	{domain.ErrNameTaken, CodeNameTaken, http.StatusConflict},
 	{domain.ErrNotYourTurn, CodeNotYourTurn, http.StatusConflict},
+	{domain.ErrNothingToUndo, CodeNothingToUndo, http.StatusConflict},
+	{domain.ErrNotStuck, CodeNotStuck, http.StatusConflict},
 	{ports.ErrVersionConflict, CodeConflict, http.StatusConflict},
 	{domain.ErrInvalidName, CodeInvalidName, http.StatusUnprocessableEntity},
 	{domain.ErrInvalidOptions, CodeInvalidOptions, http.StatusUnprocessableEntity},
@@ -78,6 +83,7 @@ var errorTable = []struct {
 	{domain.ErrInvalidPile, CodeInvalidPile, http.StatusUnprocessableEntity},
 	{domain.ErrIllegalPlacement, CodeIllegalPlacement, http.StatusUnprocessableEntity},
 	{domain.ErrMinimumNotReached, CodeMinimumNotReached, http.StatusUnprocessableEntity},
+	{domain.ErrStopPlayed, CodeStopPlayed, http.StatusUnprocessableEntity},
 	{domain.ErrBackwardsTrickBlocked, CodeBackwardsTrickBlocked, http.StatusUnprocessableEntity},
 	{domain.ErrSinglePileViolation, CodeSinglePileViolation, http.StatusUnprocessableEntity},
 	{domain.ErrExactCountExceeded, CodeExactCountExceeded, http.StatusUnprocessableEntity},

@@ -147,8 +147,12 @@ func (h *Handler) dispatch(ctx context.Context, c *conn, msg apidto.ClientMessag
 			return apidto.BadRequest("card and pile are required")
 		}
 		_, err = h.svc.PlayCard(ctx, id, p, *msg.Card, *msg.Pile)
+	case apidto.CmdUndoPlay:
+		_, err = h.svc.UndoPlay(ctx, id, p)
 	case apidto.CmdEndTurn:
 		_, err = h.svc.EndTurn(ctx, id, p)
+	case apidto.CmdGiveUp:
+		_, err = h.svc.GiveUp(ctx, id, p)
 	case apidto.CmdEndGame:
 		_, err = h.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:

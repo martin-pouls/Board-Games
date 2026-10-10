@@ -30,7 +30,9 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games/{code}/start", a.authed(a.start))
 	mux.HandleFunc("POST /api/games/{code}/first-player", a.authed(a.chooseFirstPlayer))
 	mux.HandleFunc("POST /api/games/{code}/plays", a.authed(a.playCard))
+	mux.HandleFunc("POST /api/games/{code}/undo", a.authed(a.undoPlay))
 	mux.HandleFunc("POST /api/games/{code}/end-turn", a.authed(a.endTurn))
+	mux.HandleFunc("POST /api/games/{code}/give-up", a.authed(a.giveUp))
 	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
 	mux.HandleFunc("POST /api/games/{code}/rematch", a.authed(a.rematch))
 }
@@ -178,8 +180,16 @@ func (a *gamesAPI) playCard(w http.ResponseWriter, r *http.Request, id domain.Ga
 	return a.svc.PlayCard(r.Context(), id, p, *req.Card, *req.Pile)
 }
 
+func (a *gamesAPI) undoPlay(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return a.svc.UndoPlay(r.Context(), id, p)
+}
+
 func (a *gamesAPI) endTurn(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return a.svc.EndTurn(r.Context(), id, p)
+}
+
+func (a *gamesAPI) giveUp(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return a.svc.GiveUp(r.Context(), id, p)
 }
 
 func (a *gamesAPI) rematch(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {

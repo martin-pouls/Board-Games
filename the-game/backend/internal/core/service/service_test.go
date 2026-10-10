@@ -631,11 +631,36 @@ func TestExtremeGame(t *testing.T) {
 	if len(got) != before+1 {
 		t.Fatalf("STOP published %d updates, want 1", len(got)-before)
 	}
-	if want := []string{"CardPlayed", "TurnEnded", "TurnStarted"}; !reflect.DeepEqual(eventTypes(got[before].Events), want) {
+	if want := []string{"CardPlayed"}; !reflect.DeepEqual(eventTypes(got[before].Events), want) {
 		t.Fatalf("STOP events = %v, want %v", eventTypes(got[before].Events), want)
 	}
-	if v.Turn == nil || v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 {
+	if v.Turn == nil || v.Turn.Number != 1 || !v.Turn.CanEndTurn || !v.Turn.Constraints.StopPlayed {
 		t.Fatalf("turn after STOP = %+v", v.Turn)
+	}
+
+	// Undo and replay the STOP, then end the turn.
+	v, err = f.svc.UndoPlay(ctx, host.GameID, host.PlayerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := f.rec.all(); !reflect.DeepEqual(eventTypes(got[len(got)-1].Events), []string{"PlayUndone"}) {
+		t.Fatalf("undo events = %v", eventTypes(got[len(got)-1].Events))
+	}
+	if v.Turn.CardsPlayed != 0 || v.Piles[0].TopCard != nil || len(v.Hand) != 8 {
+		t.Fatalf("after undo: turn %+v pile %+v hand %d", v.Turn, v.Piles[0], len(v.Hand))
+	}
+	if _, err := f.svc.GiveUp(ctx, host.GameID, host.PlayerID); !errors.Is(err, domain.ErrNotStuck) {
+		t.Fatalf("give up while not stuck: %v", err)
+	}
+	if _, err := f.svc.PlayCard(ctx, host.GameID, host.PlayerID, 95, 0); err != nil {
+		t.Fatal(err)
+	}
+	v, err = f.svc.EndTurn(ctx, host.GameID, host.PlayerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Turn == nil || v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 {
+		t.Fatalf("turn after STOP + end turn = %+v", v.Turn)
 	}
 
 	v, err = f.svc.PlayCard(ctx, host.GameID, host.PlayerID, 92, 2)

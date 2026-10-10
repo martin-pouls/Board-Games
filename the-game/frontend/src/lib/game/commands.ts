@@ -22,7 +22,7 @@ export const COMMANDS: Record<CommandName, CommandInfo> = {
 		kind: 'lightning',
 		label: 'STOP',
 		short: 'STOP',
-		description: 'Ends the turn immediately.'
+		description: 'No more cards this turn: only End turn.'
 	},
 	skull: {
 		kind: 'lightning',
@@ -51,7 +51,7 @@ export const COMMANDS: Record<CommandName, CommandInfo> = {
 	singlePile: {
 		kind: 'infinity',
 		label: 'Single pile',
-		short: 'One pile',
+		short: 'Single pile',
 		description: 'All cards of a turn on one pile while it is visible.'
 	},
 	drawOnlyOne: {
@@ -83,9 +83,15 @@ export function turnHints(view: PlayerView, isMyTurn: boolean): TurnHint[] {
 	const c = turn.constraints;
 	const visible = (cmd: CommandName) => view.activeCommands.some((a) => a.command === cmd);
 	const hints: TurnHint[] = [];
+	const name = view.players.find((p) => p.id === turn.activePlayerId)?.name ?? 'Someone';
 
+	if (c.stopPlayed) {
+		hints.push({
+			command: 'stop',
+			text: isMyTurn ? 'STOP: no more cards, end your turn' : `${name} played STOP`
+		});
+	}
 	if (c.skullPiles.length > 0) {
-		const name = view.players.find((p) => p.id === turn.activePlayerId)?.name ?? 'Someone';
 		hints.push({
 			command: 'skull',
 			text: isMyTurn ? 'Cover the skull before ending your turn' : `${name} must cover the skull`

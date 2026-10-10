@@ -3,7 +3,7 @@
 A web implementation of the cooperative card game **"The Game"** (Steffen Benndorf, NSV), played live by 1–5 players in the browser.
 
 - **Phase 1:** the regular game, including the Pro variant. Implemented.
-- **Phase 2:** **The Game Extreme**, which adds command cards. Implemented (plan and design decisions: [docs/extreme-plan.md](docs/extreme-plan.md)). The host enables it with the *Extreme* lobby toggle, which combines freely with Pro and Reduced hand size.
+- **Phase 2:** **The Game Extreme**, which adds command cards. Implemented. The host enables it with the *Extreme* lobby toggle, which combines freely with Pro and Reduced hand size.
 
 Keep every domain concept open for further card kinds (the mini-expansions Joker, Zehner, On Fire), the way Extreme slotted in (see *Extensibility* below).
 
@@ -47,10 +47,10 @@ frontend/                     SvelteKit SPA
   src/lib/components/game/    game screen components (Lobby, Board, GameOver, ...)
   src/lib/components/ui/      shadcn-svelte components (generated — don't hand-edit heavily)
   src/routes/                 pages
-docs/rules.md                 rules reference (authoritative)
-docs/plan.md                  Phase 1 implementation plan / wire contract
-docs/extreme-plan.md          Phase 2 (Extreme) plan / wire contract changes
+docs/rules.md                 rules reference (authoritative), including app decisions
 ```
+
+The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS mirror).
 
 ## Architecture: hexagonal (ports and adapters)
 
@@ -72,12 +72,14 @@ These are built in and Extreme relies on them; keep them when adding card kinds:
 - **Variant / ruleset config on the game:** variant (`classic` | `extreme`), min cards per turn, hand-size table, Pro flag. Rules read from the config and never hard-code 2/6/7/8.
 - **Cards are structs, not ints.** For example `Card{Value int; Command *Command}` (or a kind field), because Extreme cards carry commands and the mini-expansions (Joker, Zehner, On Fire) would add other card kinds.
 - **The deck is built by a variant-specific factory.** Extreme swaps in the 28 command cards listed in docs/rules.md.
-- **Turn state is explicit.** Track cards played this turn and the piles touched, because commands constrain the *current turn*: STOP ends it, 3! needs an exact count, Single pile, Skull must be covered.
+- **The rules follow the cards, not the variant.** No rule code checks the variant; a classic deck simply has no command cards, so every command rule is a no-op there.
+- **Turn state is explicit.** Track cards played this turn and the piles touched, because commands constrain the *current turn*: STOP blocks further cards, 3! needs an exact count, Single pile, Skull must be covered.
 - **Placement validation is a composable rule check.** Base ascending/descending/backwards-trick rules, plus modifiers derived from the active (visible) Infinity commands and the lightning commands played this turn.
 - **Hooks at turn end:** end-of-turn checks (Skull covered, 3! satisfied) and a draw-count policy (normal refill vs. Draw only one).
-- **Communication restriction is game state.** The UI must be able to disable chat or hints while a "No communication" card is visible.
+- **Communication restriction is game state.** The UI must be able to disable chat or hints while a "No communication" card is visible. There is no chat yet; a future chat must enforce the flag server-side.
 - **Illegal moves are blocked, never punished.** Every action that would break a rule or command is rejected with a typed domain error, and state stays unchanged. The game is lost only when the active player is *stuck*: no legal card play and ending the turn is blocked. See *Enforcement* in docs/rules.md.
 - **Stuck detection has no lookahead** (owner decision): the game is lost only when the active player has no legal card play *and* cannot end the turn. A player who can still play a card but can no longer reach the minimum keeps playing until nothing fits.
+- **Turns end only by End turn, and plays of the current turn can be undone** (owner decision). Command state is derived from the piles and `Turn.Plays`, never cached, so `UndoPlay` just pops the last play. Being stuck loses automatically only at turn start; mid-turn the player undoes or gives up (`GiveUp`).
 
 ## Commands
 
@@ -123,7 +125,10 @@ Live at https://yoshi-und-kruemli.de/the-game/. The server is a Hetzner arm64 Ub
 ## Conventions and gotchas
 
 - **SvelteKit 3 uses Node subpath imports (`#lib`), not `$lib`.** Imports need an explicit file, e.g. `#lib/api.js` (resolves to `api.ts`) or `#lib/components/ui/card/index.js`.
-- **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `$effect`). No legacy `export let` or stores for new code unless there's a reason.
+- **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `$effect`). No legacy `export let` or stores for new code unless there's a reason. A TS module that uses runes must be named `*.svelte.ts`.
+- **Secure-context APIs** (`crypto.randomUUID`, `navigator.clipboard`, `navigator.share`) are missing when phones test over `http://192.168.x.x`: always feature-detect and fall back.
+- **Domain methods validate fully before mutating:** on error the state stays unchanged (tests assert this).
+- The player token travels in the WS query string: don't log full URLs at the reverse proxy.
 - **Adding shadcn components:** `npx shadcn-svelte@latest add <name> -y`.
   - If it fails with `File '$app/tsconfig' not found`, run `npx svelte-kit sync` first; an npm install can wipe the generated `node_modules/$app`.
   - The generated components live in `src/lib/components/ui/` and are lint-exempt from `svelte/no-navigation-without-resolve`.

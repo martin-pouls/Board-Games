@@ -5,6 +5,7 @@ package domain
 // Both sides include the Extreme commands: LegalMoves applies every placement constraint
 // and CanEndTurn the Skull and 3! checks. There is no lookahead for reaching the minimum
 // or fulfilling a command (plan 11.1). It is false unless playing.
+// Mid-turn a stuck player may still undo cards or give up; see checkStuck.
 func (g *Game) ActivePlayerStuck() bool {
 	if g.Phase != PhasePlaying {
 		return false
@@ -13,9 +14,10 @@ func (g *Game) ActivePlayerStuck() bool {
 	return len(g.LegalMoves(active)) == 0 && g.CanEndTurn() != nil
 }
 
-// checkStuck ends the game as lost when the active player is stuck.
+// checkStuck ends the game as lost when the active player is stuck with nothing to undo
+// (at the start of a turn).
 func (g *Game) checkStuck() {
-	if g.ActivePlayerStuck() {
+	if len(g.Turn.Plays) == 0 && g.ActivePlayerStuck() {
 		g.finish(OutcomeLost, g.Players[g.Turn.ActiveSeat].ID)
 	}
 }

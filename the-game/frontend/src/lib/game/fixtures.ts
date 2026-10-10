@@ -211,6 +211,7 @@ export const playingMyTurn: PlayerView = {
 		cardsPlayed: 1,
 		requiredMinimum: 2,
 		canEndTurn: false,
+		stuck: false,
 		plays: [{ card: card(34), pile: 0 }],
 		constraints: noConstraints
 	},
@@ -236,6 +237,7 @@ export const playingOthersTurn: PlayerView = {
 		cardsPlayed: 2,
 		requiredMinimum: 2,
 		canEndTurn: true,
+		stuck: false,
 		plays: [
 			{ card: card(77), pile: 2 },
 			{ card: card(13), pile: 1 }
@@ -324,6 +326,7 @@ export const extremeMyTurn: PlayerView = {
 		cardsPlayed: 1,
 		requiredMinimum: 2,
 		canEndTurn: false,
+		stuck: false,
 		plays: [{ card: card(34), pile: 0 }],
 		constraints: { ...noConstraints, singlePile: true, boundPile: 0 }
 	},
@@ -344,6 +347,7 @@ const skullTurn: Turn = {
 	cardsPlayed: 2,
 	requiredMinimum: 2,
 	canEndTurn: false,
+	stuck: false,
 	plays: [
 		{ card: card(28, 'exactlyThree'), pile: 0 },
 		{ card: card(41, 'skull'), pile: 3 }
@@ -401,6 +405,7 @@ export const extremeOthersNoComm: PlayerView = {
 		cardsPlayed: 1,
 		requiredMinimum: 2,
 		canEndTurn: false,
+		stuck: false,
 		plays: [{ card: card(65, 'noCommunication'), pile: 2 }],
 		constraints: noConstraints
 	},
@@ -458,6 +463,7 @@ export const finishedLostSkull: PlayerView = {
 		cardsPlayed: 2,
 		requiredMinimum: 1,
 		canEndTurn: false,
+		stuck: false,
 		plays: [
 			{ card: card(4), pile: 3 },
 			{ card: card(87, 'skull'), pile: 1 }

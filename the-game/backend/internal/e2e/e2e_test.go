@@ -442,7 +442,15 @@ func playToEnd(t *testing.T, a *app, code string, tokens map[string]string) apid
 		}
 		card, pile, ok := pickPlay(v)
 		if !ok {
-			t.Fatalf("active player stuck but game not finished: %+v", v)
+			// Stuck mid-turn: the bot gives up instead of undoing.
+			if !v.Turn.Stuck || v.Turn.CardsPlayed == 0 {
+				t.Fatalf("no play, no end turn, but not stuck mid-turn: %+v", v)
+			}
+			a.call(t, http.MethodPost, "/api/games/"+code+"/give-up", tok, nil, nil, http.StatusOK)
+			continue
+		}
+		if v.Turn.Stuck {
+			t.Fatalf("stuck although %d fits on pile %d", card, pile)
 		}
 		a.call(t, http.MethodPost, "/api/games/"+code+"/plays", tok, apidto.PlayCardRequest{Card: intp(card), Pile: intp(pile)}, nil, http.StatusOK)
 	}
@@ -584,21 +592,51 @@ func TestExtremeSoloDeterministic(t *testing.T) {
 		t.Fatalf("end-turn code = %q", e.Error.Code)
 	}
 
-	// STOP ends the turn at once; the draw refills the hand.
+	// STOP overrides the minimum and blocks every further card; the turn stays open.
 	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(95), Pile: intp(0)}, &v, http.StatusOK)
+	if v.Turn.Number != 1 || v.Turn.CardsPlayed != 1 || !v.Turn.CanEndTurn || !v.Turn.Constraints.StopPlayed || v.Turn.Stuck {
+		t.Fatalf("after STOP: turn %+v", v.Turn)
+	}
+	for _, hc := range v.Hand {
+		if len(hc.LegalPiles) != 0 || hc.Blocked != apidto.CodeStopPlayed {
+			t.Fatalf("after STOP: card %+v", hc)
+		}
+	}
+	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(96), Pile: intp(0)}, &e, http.StatusUnprocessableEntity)
+	if e.Error.Code != apidto.CodeStopPlayed {
+		t.Fatalf("play after STOP code = %q", e.Error.Code)
+	}
+
+	// Undo takes the STOP back into the hand.
+	a.call(t, http.MethodPost, "/api/games/"+code+"/undo", s.Token, nil, &v, http.StatusOK)
+	if v.Turn.CardsPlayed != 0 || v.Turn.Constraints.StopPlayed || v.Piles[0].TopCard != nil || !slices.Contains(handValues(v), 95) {
+		t.Fatalf("after undo: turn %+v pile 0 %+v hand %v", v.Turn, v.Piles[0], handValues(v))
+	}
+	m := ws.until("undo update", func(m wireMsg) bool {
+		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventPlayUndone })
+	})
+	if len(m.Events) != 1 || m.Events[0].Card == nil || m.Events[0].Card.Value != 95 || m.Events[0].Pile == nil || *m.Events[0].Pile != 0 {
+		t.Fatalf("undo events = %s", m.raw)
+	}
+	a.call(t, http.MethodPost, "/api/games/"+code+"/undo", s.Token, nil, &e, http.StatusConflict)
+	if e.Error.Code != apidto.CodeNothingToUndo {
+		t.Fatalf("second undo code = %q", e.Error.Code)
+	}
+
+	// STOP again, then End turn: the draw refills the hand.
+	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(95), Pile: intp(0)}, &v, http.StatusOK)
+	a.call(t, http.MethodPost, "/api/games/"+code+"/end-turn", s.Token, nil, &v, http.StatusOK)
 	if v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 || !slices.Equal(handValues(v), []int{91, 92, 93, 94, 96, 97, 98, 99}) {
 		t.Fatalf("after STOP: turn %+v hand %v", v.Turn, handValues(v))
 	}
 	if top := v.Piles[0].TopCard; top == nil || top.Command != "stop" || v.Piles[0].CommandActive {
 		t.Fatalf("pile 0 = %+v", v.Piles[0])
 	}
-	m := ws.until("STOP update", func(m wireMsg) bool {
-		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventCardPlayed })
+	m = ws.until("end turn update", func(m wireMsg) bool {
+		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventTurnEnded })
 	})
-	if len(m.Events) != 3 || m.Events[0].Type != apidto.EventCardPlayed || m.Events[0].Card == nil || m.Events[0].Card.Command != "stop" ||
-		m.Events[1].Type != apidto.EventTurnEnded || !m.Events[1].Auto || m.Events[1].CardsDrawn == nil || *m.Events[1].CardsDrawn != 1 ||
-		m.Events[2].Type != apidto.EventTurnStarted {
-		t.Fatalf("STOP events = %s", m.raw)
+	if len(m.Events) != 2 || m.Events[0].CardsDrawn == nil || *m.Events[0].CardsDrawn != 1 || m.Events[1].Type != apidto.EventTurnStarted {
+		t.Fatalf("end turn events = %s", m.raw)
 	}
 
 	// No communication on a descending pile is an Infinity card: active while visible.
