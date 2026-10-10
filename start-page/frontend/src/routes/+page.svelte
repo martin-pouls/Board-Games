@@ -5,6 +5,14 @@
 	import * as Card from '#lib/components/ui/card/index.js';
 </script>
 
+<svelte:head>
+	<title>Card Games</title>
+	<meta
+		name="description"
+		content="Cooperative card games to play live with friends in the browser."
+	/>
+</svelte:head>
+
 <header class="mb-10 text-center sm:mb-14">
 	<p class="mb-3 text-2xl tracking-[0.5em] text-muted-foreground" aria-hidden="true">
 		♠<span class="text-suit-red">♥</span>♣<span class="text-suit-red">♦</span>

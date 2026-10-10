@@ -315,6 +315,7 @@ func TestErrorFor(t *testing.T) {
 		{"json syntax", fmt.Errorf("decode: %w", syntaxErr), 400, "bad_request", ""},
 		{"json type", typeErr, 400, "bad_request", ""},
 		{"max bytes", &http.MaxBytesError{Limit: 4096}, 400, "bad_request", ""},
+		{"rate limited", ErrRateLimited, 429, "rate_limited", ""},
 		{"unauthorized", ports.ErrUnauthorized, 401, "unauthorized", ""},
 		{"not host", domain.ErrNotHost, 403, "not_host", ""},
 		{"game not found", fmt.Errorf("load: %w", ports.ErrGameNotFound), 404, "game_not_found", ""},

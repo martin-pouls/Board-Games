@@ -47,6 +47,7 @@ func run(logger *slog.Logger) error {
 	svc := service.New(repo, hub, service.Config{Logger: logger})
 	go janitor(ctx, logger, svc, cfg.GameRetention, cfg.CleanupInterval)
 
+	limits := httpapi.DefaultRateLimits()
 	srv := &http.Server{
 		Addr: cfg.Addr,
 		Handler: httpapi.NewRouter(httpapi.Deps{
@@ -55,6 +56,7 @@ func run(logger *slog.Logger) error {
 			StaticDir: cfg.StaticDir,
 			Games:     svc,
 			WS:        ws.NewHandler(hub, svc, ws.Options{OriginPatterns: cfg.WSOriginPatterns}),
+			Limits:    &limits,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

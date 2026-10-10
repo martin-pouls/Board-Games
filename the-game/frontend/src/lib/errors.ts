@@ -30,6 +30,7 @@ const messages: Record<ApiErrorCode, string> = {
 	stop_too_early: 'After 3!, STOP can only be your third card.',
 	skull_uncovered: "Cover the skull first: it can't stay on top when your turn ends.",
 	skull_uncoverable: 'After 3! no 4th card is allowed, so the skull could never be covered.',
+	rate_limited: 'Too many requests. Please wait a moment and try again.',
 	internal: 'Something went wrong on the server.',
 	network: "Can't reach the server.",
 	disconnected: 'Connection lost. Reconnecting…',

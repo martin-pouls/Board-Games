@@ -23,6 +23,7 @@ const messages: Record<ApiErrorCode, string> = {
 	unknown_player: 'That player is not in this game.',
 	card_not_in_hand: "That card isn't in your hand.",
 	rematch_exists: 'A new game was already created.',
+	rate_limited: 'Too many requests. Please wait a moment and try again.',
 	internal: 'Something went wrong on the server.',
 	network: "Can't reach the server.",
 	disconnected: 'Connection lost. Reconnecting…',

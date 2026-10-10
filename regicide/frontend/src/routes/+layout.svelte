@@ -5,7 +5,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { startPageHref } from '#lib/startPage.js';
+	import { privacyHref, startPageHref } from '#lib/startPage.js';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import { Toaster } from '#lib/components/ui/sonner/index.js';
 	import type { LayoutProps } from './$types';
@@ -38,4 +38,12 @@
 		<ThemeToggle />
 	</div>
 	{@render children()}
+	<footer class="mt-auto pt-10 text-center text-xs text-muted-foreground">
+		<!-- A page of the start page app: a full page load. -->
+		<a
+			href={privacyHref(page.url, import.meta.env.DEV)}
+			rel="external"
+			class="underline-offset-4 hover:underline">Datenschutz</a
+		>
+	</footer>
 </main>

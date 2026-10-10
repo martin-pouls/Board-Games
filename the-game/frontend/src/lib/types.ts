@@ -175,6 +175,7 @@ export type ApiErrorCode =
 	| 'stop_too_early'
 	| 'skull_uncovered'
 	| 'skull_uncoverable'
+	| 'rate_limited'
 	| 'internal'
 	| 'network'
 	| 'disconnected'

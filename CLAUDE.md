@@ -159,6 +159,8 @@ Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root vi
 - **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `$effect`). No legacy `export let` or stores for new code. A TS module that uses runes must be named `*.svelte.ts`.
 - **Secure-context APIs** (`crypto.randomUUID`, `navigator.clipboard`, `navigator.share`) are missing when phones test over `http://192.168.x.x`: always feature-detect and fall back.
 - The player token travels in the WS query string: don't log full URLs at the reverse proxy.
+- **Abuse limits** (`internal/adapters/httpapi/ratelimit.go`, identical in both games) cap game creation, 404 game lookups (code guessing) and WebSocket connections per client IP, answering 429 `rate_limited`. The client IP is the last `X-Forwarded-For` entry (set by Caddy). Loopback clients are exempt, so local dev is never limited. New routes under `/api/games/` or `/ws/` are covered automatically.
+- **Privacy policy:** [start-page/frontend/src/routes/datenschutz/+page.svelte](start-page/frontend/src/routes/datenschutz/+page.svelte) (German, linked from the footer of every app) describes exactly what data the apps process. Update it whenever that changes: new stored fields, browser storage, logging of IPs, cookies, or any third-party service or external resource.
 - **Adding shadcn components** (from `<game>/frontend/`): `npx shadcn-svelte@latest add <name> -y`.
   - If it fails with `File '$app/tsconfig' not found`, run `npx svelte-kit sync` first; an npm install can wipe the generated `node_modules/$app`.
   - The generated components live in `src/lib/components/ui/` and are lint-exempt from `svelte/no-navigation-without-resolve`.

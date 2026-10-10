@@ -44,7 +44,8 @@ const (
 	CodeSkullUncovered        = "skull_uncovered"
 	CodeSkullUncoverable      = "skull_uncoverable"
 
-	CodeInternal = "internal"
+	CodeRateLimited = "rate_limited"
+	CodeInternal    = "internal"
 )
 
 // ErrBadRequest marks malformed input (bad JSON, missing field, unknown WS type).
@@ -56,6 +57,9 @@ func BadRequest(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrBadRequest, fmt.Sprintf(format, args...))
 }
 
+// ErrRateLimited marks a request refused by the per-client abuse limits (429).
+var ErrRateLimited = errors.New("too many requests, please wait a moment")
+
 // InternalMessage is the message sent for unmapped errors (log the real error instead).
 const InternalMessage = "internal error"
 
@@ -65,6 +69,7 @@ var errorTable = []struct {
 	status int
 }{
 	{ErrBadRequest, CodeBadRequest, http.StatusBadRequest},
+	{ErrRateLimited, CodeRateLimited, http.StatusTooManyRequests},
 	{ports.ErrUnauthorized, CodeUnauthorized, http.StatusUnauthorized},
 	{domain.ErrNotHost, CodeNotHost, http.StatusForbidden},
 	{ports.ErrGameNotFound, CodeGameNotFound, http.StatusNotFound},

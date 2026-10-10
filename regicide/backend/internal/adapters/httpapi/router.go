@@ -23,6 +23,7 @@ type Deps struct {
 	StaticDir string            // optional: directory of the built SPA (frontend/build)
 	Games     ports.GameService // optional: when nil, the /api/games routes are not registered
 	WS        http.Handler      // optional: mounted at GET /ws/games/{code} when non-nil
+	Limits    *RateLimits       // optional: per-client abuse limits; nil disables them
 }
 
 // NewRouter builds the HTTP handler. Routes use Go 1.22+ method/path patterns.
@@ -62,7 +63,11 @@ func NewRouter(d Deps) http.Handler {
 		mux.Handle("/", spaHandler(d.StaticDir))
 	}
 
-	return logRequests(d.Logger, mux)
+	var h http.Handler = mux
+	if d.Limits != nil {
+		h = newRateLimiter(*d.Limits, d.Logger, time.Now).wrap(mux)
+	}
+	return logRequests(d.Logger, h)
 }
 
 // spaHandler serves static files and falls back to index.html for client-side routes.

@@ -151,6 +151,7 @@ export type ApiErrorCode =
 	| 'no_solo_jester'
 	| 'illegal_signal'
 	| 'rematch_exists'
+	| 'rate_limited'
 	| 'internal'
 	| 'network'
 	| 'disconnected'
