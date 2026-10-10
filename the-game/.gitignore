@@ -31,3 +31,10 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Local SQLite databases & build output
+data/
+*.db
+*.db-shm
+*.db-wal
+backend/bin/
