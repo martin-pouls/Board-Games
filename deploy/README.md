@@ -33,7 +33,7 @@ From Git Bash at the repo root, after this directory is committed (setup-server.
    ```
 3. **Get the server's host key line** over your already trusted root connection:
    ```sh
-   echo "yoshi-und-kruemli.de $(ssh -i ~/.ssh/hetzner_ed25519 root@yoshi-und-kruemli.de cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub)"
+   echo "yoshi-und-kruemli.de $(ssh -i ~/.ssh/hetzner_ed25519 root@yoshi-und-kruemli.de "cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub")"
    ```
 4. **On GitHub:** *Settings → Environments → New environment* `production`:
    - *Deployment branches and tags:* **Selected branches** → `main`.
