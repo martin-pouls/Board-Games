@@ -1,10 +1,14 @@
 <script lang="ts">
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import Target from '@lucide/svelte/icons/target';
+	import Skull from '@lucide/svelte/icons/skull';
 	import { scale } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { commandInfo } from '#lib/game/commands.js';
 	import { cn } from '#lib/utils.js';
 	import type { Pile } from '#lib/types.js';
+	import CommandChip from './CommandChip.svelte';
 
 	let {
 		pile,
@@ -12,6 +16,8 @@
 		dimmed = false,
 		disabled = false,
 		playsThisTurn = 0,
+		bound = false,
+		skull = false,
 		onclick
 	}: {
 		pile: Pile;
@@ -19,13 +25,23 @@
 		dimmed?: boolean;
 		disabled?: boolean;
 		playsThisTurn?: number;
+		/** Single pile: every further card this turn must go here. */
+		bound?: boolean;
+		/** A skull played this turn shows here and must be covered. */
+		skull?: boolean;
 		onclick?: () => void;
 	} = $props();
 
 	const up = $derived(pile.direction === 'up');
 	const empty = $derived(pile.topCard === null);
+	const command = $derived(pile.topCard?.command);
 	const label = $derived(
 		`${up ? 'Ascending' : 'Descending'} pile, ${empty ? 'empty' : `top card ${pile.topValue}`}` +
+			(command
+				? `, ${commandInfo(command).label}${pile.commandActive ? ' (active)' : ' (no effect any more)'}`
+				: '') +
+			(skull ? ', skull must be covered' : '') +
+			(bound ? ', all cards this turn go here' : '') +
 			(highlight ? ', tap to play here' : '')
 	);
 </script>
@@ -40,18 +56,38 @@
 		up
 			? 'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100'
 			: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100',
+		bound &&
+			'outline-2 outline-offset-2 outline-emerald-500 outline-dashed dark:outline-emerald-400',
+		skull && 'border-red-500 ring-[3px] ring-red-500/50 dark:border-red-400 dark:ring-red-400/50',
 		highlight &&
 			'border-emerald-500 shadow-lg ring-[3px] ring-emerald-500/60 dark:border-emerald-400 dark:ring-emerald-400/60',
 		dimmed && 'opacity-35 saturate-50',
 		disabled && !dimmed && 'cursor-default'
 	)}
 >
-	<span class="flex items-center justify-between text-xs font-semibold">
-		<span class="flex items-center gap-0.5">
-			{#if up}<ArrowUp class="size-4" />{:else}<ArrowDown class="size-4" />{/if}
-			<span class="tabular-nums">{up ? '1 → 99' : '100 → 2'}</span>
+	{#if skull}
+		<span
+			class="absolute -top-2 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[0.65rem] leading-none font-bold text-white shadow-sm motion-safe:animate-pulse"
+			aria-hidden="true"
+		>
+			<Skull class="size-3" />
+			Cover!
 		</span>
-		<span class="tabular-nums opacity-70" title="Cards on this pile">{pile.cardCount}</span>
+	{/if}
+
+	<span class="flex items-center justify-between gap-1 text-xs font-semibold">
+		<span class="flex min-w-0 items-center gap-0.5">
+			{#if up}<ArrowUp class="size-4 shrink-0" />{:else}<ArrowDown class="size-4 shrink-0" />{/if}
+			<span class="truncate tabular-nums">{up ? '1 → 99' : '100 → 2'}</span>
+			{#if bound}
+				<Target
+					class="ml-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+					aria-hidden="true"
+				/>
+			{/if}
+		</span>
+		<span class="shrink-0 tabular-nums opacity-70" title="Cards on this pile">{pile.cardCount}</span
+		>
 	</span>
 
 	<span class="flex flex-1 items-center justify-center">
@@ -70,7 +106,18 @@
 		{/key}
 	</span>
 
-	<span class="h-4 text-center text-[0.7rem] font-medium opacity-70">
-		{#if playsThisTurn > 0}+{playsThisTurn} this turn{/if}
-	</span>
+	{#if command}
+		<span class="flex h-5 min-w-0 items-center justify-between gap-1 text-[0.7rem] font-medium">
+			<CommandChip {command} size="xs" muted={!pile.commandActive} class="min-w-0" />
+			{#if playsThisTurn > 0}
+				<span class="shrink-0 opacity-70"
+					>+{playsThisTurn}<span class="@max-[10.5rem]:hidden"> this turn</span></span
+				>
+			{/if}
+		</span>
+	{:else}
+		<span class="h-4 text-center text-[0.7rem] font-medium opacity-70">
+			{#if playsThisTurn > 0}+{playsThisTurn} this turn{/if}
+		</span>
+	{/if}
 </button>

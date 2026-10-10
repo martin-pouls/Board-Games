@@ -196,6 +196,22 @@ func (g *Game) chooseFirst(seat int) {
 	g.beginTurn(seat)
 }
 
+// EndGame ends a running game early (host only), while choosing the first player or playing.
+// The game finishes with OutcomeAborted and the cards left at this moment as the score, so the
+// result screen and Rematch work as after a regular end.
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase. Emits GameFinished.
+func (g *Game) EndGame(by PlayerID) error {
+	if err := g.requireHost(by); err != nil {
+		return err
+	}
+	if g.Phase != PhaseChoosingFirstPlayer && g.Phase != PhasePlaying {
+		return fmt.Errorf("%w: only a running game can be ended", ErrWrongPhase)
+	}
+	g.finish(OutcomeAborted, "")
+	g.commit()
+	return nil
+}
+
 // Rematch creates the lobby for a new game with the same players (same IDs, names, seat order),
 // Options and an empty table; by becomes host. Any player may call it once the game is finished.
 // Errors: ErrUnknownPlayer, ErrWrongPhase (not finished), ErrRematchExists (NextGameID already set).

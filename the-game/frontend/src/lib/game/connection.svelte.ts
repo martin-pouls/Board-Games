@@ -99,6 +99,9 @@ export class GameConnection {
 	endTurn(): Promise<void> {
 		return this.send({ type: 'endTurn' });
 	}
+	endGame(): Promise<void> {
+		return this.send({ type: 'endGame' });
+	}
 	rematch(): Promise<void> {
 		return this.send({ type: 'rematch' });
 	}

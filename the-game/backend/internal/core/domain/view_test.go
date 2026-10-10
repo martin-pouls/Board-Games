@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -245,4 +246,166 @@ func TestViewNeverRevealsHandsBeforeFinished(t *testing.T) {
 		}
 		check()
 	}
+}
+
+func TestHandCardBlocked(t *testing.T) {
+	tests := []struct {
+		name    string
+		tb      table
+		viewer  PlayerID
+		card    int
+		legal   []int
+		blocked error // nil = no reason
+	}{
+		{"3! with start hand 2", table{opts: extreme, hands: [][]int{{28, 99}, {50}}, draw: []int{90}}, pid(0), 28, nil, ErrExactCountUnreachable},
+		{"base-illegal card", table{opts: extreme, hands: [][]int{{50, 99}, {98}}, draw: []int{90}, piles: [][]int{{96}, {97}, {5}, {4}}}, pid(0), 50, nil, nil},
+		{"legal somewhere, vetoed elsewhere", table{opts: extreme, hands: [][]int{{80, 99}, {98}}, draw: []int{90}, piles: [][]int{nil, nil, {70}}}, pid(0), 80, []int{0, 1, 3}, nil},
+		{"only the backwards trick fits", table{opts: extreme, hands: [][]int{{30, 99}, {98}}, draw: []int{90}, piles: [][]int{{40}, {32}, {5}, {4}}}, pid(0), 30, nil, ErrBackwardsTrickBlocked},
+		{"single pile", table{opts: extreme, hands: [][]int{{15, 99}, {98}}, draw: []int{90}, piles: [][]int{{20}, {9}, {5}, {4}}, plays: []Play{play(20, 0)}}, pid(0), 15, nil, ErrSinglePileViolation},
+		{"4th card after 3!", table{opts: extreme, hands: [][]int{{30}, {98}}, draw: []int{90}, piles: [][]int{{19, 20, 22}}, plays: []Play{play(19, 0), play(20, 0), play(22, 0)}}, pid(0), 30, nil, ErrExactCountExceeded},
+		{"STOP too early", table{opts: extreme, hands: [][]int{{95, 99}, {98}}, draw: []int{90}, piles: [][]int{{19}}, plays: []Play{play(19, 0)}}, pid(0), 95, nil, ErrStopTooEarly},
+		{"non-active viewer", table{opts: extreme, hands: [][]int{{50}, {28}}, draw: []int{90}}, pid(1), 28, nil, nil},
+		{"classic", table{hands: [][]int{{28, 99}, {50}}, draw: []int{90}}, pid(0), 28, []int{0, 1, 2, 3}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := tt.tb.build(t)
+			v, err := g.ViewFor(tt.viewer)
+			mustOK(t, err)
+			i := slices.IndexFunc(v.Hand, func(h HandCard) bool { return h.Card.Value == tt.card })
+			if i < 0 {
+				t.Fatalf("card %d not in hand %+v", tt.card, v.Hand)
+			}
+			h := v.Hand[i]
+			if !reflect.DeepEqual(h.LegalPiles, tt.legal) {
+				t.Fatalf("legal piles %v, want %v", h.LegalPiles, tt.legal)
+			}
+			if tt.blocked == nil {
+				if h.Blocked != nil {
+					t.Fatalf("blocked = %v, want nil", h.Blocked)
+				}
+				return
+			}
+			if !errors.Is(h.Blocked, tt.blocked) {
+				t.Fatalf("blocked = %v, want %v", h.Blocked, tt.blocked)
+			}
+			// The reason is exactly what PlayCard returns for the first base-legal pile.
+			for pile := range g.Piles {
+				if _, ok := basePlacement(g.Rules, g.Piles[pile], h.Card); ok {
+					err := g.Clone().PlayCard(tt.viewer, tt.card, pile)
+					if err == nil || err.Error() != h.Blocked.Error() {
+						t.Fatalf("PlayCard on pile %d = %v, blocked = %v", pile, err, h.Blocked)
+					}
+					break
+				}
+			}
+		})
+	}
+}
+
+func TestViewForExtreme(t *testing.T) {
+	// Pile 0: a skull from an earlier turn. Pile 1: 3! and a skull played this turn.
+	// Pile 2: No backwards trick. Pile 3: Single pile (visible since the turn started).
+	g := table{
+		opts:  extreme,
+		hands: [][]int{{18, 45, 50}, {99}},
+		draw:  []int{90},
+		piles: [][]int{{17}, {10, 28, 41}, {70}, {84}},
+		plays: []Play{play(28, 1), play(41, 1)},
+	}.build(t)
+
+	v, err := g.ViewFor(pid(0))
+	mustOK(t, err)
+	wantActive := []ActiveCommand{{CommandNoBackwardsTrick, 2}, {CommandSinglePile, 3}}
+	if !reflect.DeepEqual(v.ActiveCommands, wantActive) || v.CommunicationRestricted {
+		t.Fatalf("active %+v restricted %v", v.ActiveCommands, v.CommunicationRestricted)
+	}
+	for i, want := range []bool{false, true, true, true} {
+		if v.Piles[i].CommandActive != want {
+			t.Errorf("pile %d CommandActive = %v, want %v", i, v.Piles[i].CommandActive, want)
+		}
+	}
+	if top := v.Piles[1].TopCard; top == nil || *top != xcard(41) || top.Command != CommandSkull {
+		t.Fatalf("pile 1 top %+v", top)
+	}
+	one := 1
+	wantCons := TurnConstraints{ExactCount: 3, SinglePile: true, BoundPile: &one, SkullPiles: []int{1}}
+	if !reflect.DeepEqual(v.Turn.Constraints, wantCons) || v.Turn.CanEndTurn || v.Turn.CardsPlayed != 2 {
+		t.Fatalf("turn %+v", v.Turn)
+	}
+	h18, h45 := v.Hand[0], v.Hand[1]
+	if h18.LegalPiles != nil || !errors.Is(h18.Blocked, ErrSinglePileViolation) {
+		t.Fatalf("hand card 18: %+v", h18)
+	}
+	if !reflect.DeepEqual(h45.LegalPiles, []int{1}) || h45.Blocked != nil {
+		t.Fatalf("hand card 45: %+v", h45)
+	}
+
+	// Other players see the same public command state, but no legal piles or reasons.
+	other, err := g.ViewFor(pid(1))
+	mustOK(t, err)
+	if !reflect.DeepEqual(other.ActiveCommands, wantActive) || !reflect.DeepEqual(other.Turn.Constraints, wantCons) ||
+		other.Hand[0].LegalPiles != nil || other.Hand[0].Blocked != nil {
+		t.Fatalf("other view %+v", other)
+	}
+
+	// The view does not alias game state.
+	v.Turn.Constraints.SkullPiles[0] = 3
+	*v.Turn.Constraints.BoundPile = 3
+	v.ActiveCommands[0].Pile = 0
+	again, _ := g.ViewFor(pid(0))
+	if !reflect.DeepEqual(again.ActiveCommands, wantActive) || !reflect.DeepEqual(again.Turn.Constraints, wantCons) {
+		t.Fatalf("view aliases game state: %+v %+v", again.ActiveCommands, again.Turn.Constraints)
+	}
+
+	// Covering the skull with the 3rd card: the turn may end, no further card fits.
+	mustOK(t, g.PlayCard(pid(0), 45, 1))
+	v, _ = g.ViewFor(pid(0))
+	wantCons = TurnConstraints{ExactCount: 3, SinglePile: true, BoundPile: &one}
+	if !reflect.DeepEqual(v.Turn.Constraints, wantCons) || !v.Turn.CanEndTurn || v.Piles[1].CommandActive {
+		t.Fatalf("after covering: turn %+v pile %+v", v.Turn, v.Piles[1])
+	}
+	if h := v.Hand[1]; h.Card.Value != 50 || h.LegalPiles != nil || !errors.Is(h.Blocked, ErrExactCountExceeded) {
+		t.Fatalf("hand card 50: %+v", h)
+	}
+
+	// After the turn the next player sees the earlier lightning tops as inactive.
+	mustOK(t, g.EndTurn(pid(0)))
+	v, _ = g.ViewFor(pid(1))
+	if !reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{SinglePile: true}) {
+		t.Fatalf("next turn constraints %+v", v.Turn.Constraints)
+	}
+	for i, want := range []bool{false, false, true, true} {
+		if v.Piles[i].CommandActive != want {
+			t.Errorf("next turn: pile %d CommandActive = %v, want %v", i, v.Piles[i].CommandActive, want)
+		}
+	}
+}
+
+func TestViewForExtremeFinished(t *testing.T) {
+	t.Run("won with STOP", func(t *testing.T) {
+		g := table{opts: extreme, hands: [][]int{{95}, {}}}.build(t)
+		mustOK(t, g.PlayCard(pid(0), 95, 0))
+		v, _ := g.ViewFor(pid(1))
+		if v.Result.Outcome != OutcomeWon || !reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{StopPlayed: true}) ||
+			!v.Piles[0].CommandActive || v.CommunicationRestricted {
+			t.Fatalf("view %+v turn %+v", v, v.Turn)
+		}
+	})
+	t.Run("lost with an uncovered skull", func(t *testing.T) {
+		g := table{opts: extreme, hands: [][]int{{41}}, piles: [][]int{nil, nil, nil, {92}}}.build(t)
+		mustOK(t, g.PlayCard(pid(0), 41, 3))
+		v, _ := g.ViewFor(pid(0))
+		if v.Result.Outcome != OutcomeLost || v.Result.Score != 0 || v.Result.StuckPlayerID != pid(0) ||
+			!reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{SkullPiles: []int{3}}) || v.CommunicationRestricted {
+			t.Fatalf("view %+v turn %+v", v.Result, v.Turn)
+		}
+	})
+	t.Run("single pile active but unbound", func(t *testing.T) {
+		g := table{opts: extreme, hands: [][]int{{50}}, draw: []int{90}, piles: [][]int{nil, {9}}}.build(t)
+		v, _ := g.ViewFor(pid(0))
+		if !reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{SinglePile: true}) {
+			t.Fatalf("constraints %+v", v.Turn.Constraints)
+		}
+	})
 }

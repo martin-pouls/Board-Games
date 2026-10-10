@@ -20,8 +20,9 @@ type PlayerView struct {
 	DrawPileCount           int
 	Turn                    *TurnView // nil in lobby / choosingFirstPlayer
 	CommunicationRestricted bool
-	Result                  *ResultView // nil unless finished
-	NextGameID              GameID      // empty until a rematch exists
+	Result                  *ResultView     // nil unless finished
+	NextGameID              GameID          // empty until a rematch exists
+	ActiveCommands          []ActiveCommand // visible Infinity commands, pile order; nil if none
 }
 
 // RulesView is the public subset of the ruleset.
@@ -45,6 +46,10 @@ type PlayerSummary struct {
 type HandCard struct {
 	Card       Card
 	LegalPiles []int // empty unless viewer is active in playing
+	// Blocked is the first command veto (a typed sentinel from errors.go, wrapped) for a card
+	// with no legal pile that the base rules alone would allow somewhere; nil otherwise.
+	// Only set for the active viewer in playing.
+	Blocked error
 }
 
 // PileView is the public state of a pile.
@@ -55,6 +60,9 @@ type PileView struct {
 	TopValue   int
 	TopCard    *Card // nil when only the start card shows
 	CardCount  int   // played cards on the pile
+	// CommandActive says the top card's command is in effect: an Infinity top, or a
+	// lightning top played this turn.
+	CommandActive bool
 }
 
 // TurnView is the public state of the current turn.
@@ -65,6 +73,17 @@ type TurnView struct {
 	RequiredMinimum int
 	CanEndTurn      bool // CanEndTurn() == nil
 	Plays           []Play
+	Constraints     TurnConstraints // zero value = no command constrains this turn
+}
+
+// TurnConstraints are the command constraints on the current turn (server facts the
+// client renders without re-deriving rules).
+type TurnConstraints struct {
+	ExactCount int   // 3 once a 3! was played this turn; 0 = none
+	SinglePile bool  // a visible Single pile card restricts this turn
+	BoundPile  *int  // pile all further cards must go on; nil = unbound (the next card picks) or no Single pile
+	SkullPiles []int // piles showing a Skull played this turn; nil = none
+	StopPlayed bool  // only ever true in a finished game (STOP auto-ends the turn)
 }
 
 // ResultView is the public final result.
@@ -92,12 +111,13 @@ const excellentScoreBelow = 10
 
 // ViewFor builds the projection for player id. Errors: ErrUnknownPlayer.
 func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
-	me, _, ok := g.PlayerByID(id)
+	me, mySeat, ok := g.PlayerByID(id)
 	if !ok {
 		return PlayerView{}, fmt.Errorf("%w: %s", ErrUnknownPlayer, id)
 	}
 	playing := g.Phase == PhasePlaying
 	finished := g.Phase == PhaseFinished
+	cs := g.commands()
 
 	v := PlayerView{
 		GameID:   g.ID,
@@ -119,6 +139,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		DrawPileCount:           len(g.DrawPile),
 		CommunicationRestricted: g.CommunicationRestricted(),
 		NextGameID:              g.NextGameID,
+		ActiveCommands:          slices.Clone(cs.active),
 	}
 
 	for seat, p := range g.Players {
@@ -139,12 +160,17 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		v.Players[seat] = s
 	}
 
-	legal := map[int][]int{}
-	for _, m := range g.LegalMoves(id) { // nil unless id is the active player in playing
-		legal[m.Card] = append(legal[m.Card], m.Pile)
+	active := playing && mySeat == g.Turn.ActiveSeat
+	var cons []PlacementConstraint
+	if active {
+		cons = g.placementConstraints()
 	}
 	for _, c := range me.Hand {
-		v.Hand = append(v.Hand, HandCard{Card: c, LegalPiles: legal[c.Value]})
+		hc := HandCard{Card: c}
+		if active {
+			hc.LegalPiles, hc.Blocked = g.cardLegality(cons, c)
+		}
+		v.Hand = append(v.Hand, hc)
 	}
 
 	for i, p := range g.Piles {
@@ -157,6 +183,8 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		}
 		if top, ok := p.TopCard(); ok {
 			pv.TopCard = &top
+			pv.CommandActive = top.Command.IsInfinity() ||
+				(top.Command.IsLightning() && playedThisTurn(g.Turn.Plays, i))
 		}
 		v.Piles[i] = pv
 	}
@@ -169,6 +197,16 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 			RequiredMinimum: g.RequiredMinimum(),
 			CanEndTurn:      g.CanEndTurn() == nil,
 			Plays:           slices.Clone(g.Turn.Plays),
+			Constraints: TurnConstraints{
+				ExactCount: cs.exactCount,
+				SinglePile: cs.singlePile,
+				SkullPiles: slices.Clone(cs.skullPiles),
+				StopPlayed: cs.stopPlayed,
+			},
+		}
+		if cs.singlePile && cs.boundPile >= 0 {
+			bound := cs.boundPile
+			v.Turn.Constraints.BoundPile = &bound
 		}
 	}
 

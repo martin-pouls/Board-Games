@@ -208,6 +208,11 @@ func (s *Service) EndTurn(ctx context.Context, id domain.GameID, player domain.P
 	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndTurn(player) })
 }
 
+// EndGame implements ports.GameService.
+func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndGame(player) })
+}
+
 // Rematch implements ports.GameService. It is idempotent: when the old game already
 // has a NextGameID, the actor's view of the old game is returned unchanged.
 func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {

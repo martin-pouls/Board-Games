@@ -43,6 +43,9 @@
 	// Reduced hand size only exists together with Pro.
 	const setPro = (pro: boolean) => setOptions(pro ? { pro } : { pro, reducedHandSize: false });
 	const setReduced = (reducedHandSize: boolean) => setOptions({ reducedHandSize });
+	// Extreme is independent of Pro and Reduced hand size.
+	const extreme = $derived(view.options.variant === 'extreme');
+	const setExtreme = (on: boolean) => setOptions({ variant: on ? 'extreme' : 'classic' });
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3">
@@ -95,6 +98,18 @@
 			<Card.Title>Options</Card.Title>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-4">
+			<div class="flex flex-col gap-1.5">
+				<div class="flex items-center justify-between gap-3">
+					<Label for="opt-extreme" class="text-base">Extreme (command cards)</Label>
+					<Switch id="opt-extreme" disabled={!canEdit} bind:checked={() => extreme, setExtreme} />
+				</div>
+				{#if extreme}
+					<p class="text-sm text-muted-foreground">
+						28 cards carry commands: STOP, Skull, 3!, No communication, No backwards trick, Single
+						pile, Draw only one.
+					</p>
+				{/if}
+			</div>
 			<div class="flex items-center justify-between gap-3">
 				<Label for="opt-pro" class="text-base">Pro (min 3 cards per turn)</Label>
 				<Switch id="opt-pro" disabled={!canEdit} bind:checked={() => view.options.pro, setPro} />
@@ -110,7 +125,8 @@
 				/>
 			</div>
 			<p class="text-sm text-muted-foreground">
-				Hand size {view.rules.handSize} · min {view.rules.minCardsPerTurn} cards per turn
+				Hand size {view.rules.handSize} · min {view.rules.minCardsPerTurn} cards per turn{#if extreme}
+					· Extreme{/if}
 			</p>
 		</Card.Content>
 	</Card.Root>

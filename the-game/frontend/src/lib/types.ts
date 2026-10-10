@@ -1,16 +1,27 @@
 export type Phase = 'lobby' | 'choosingFirstPlayer' | 'playing' | 'finished';
 export type Direction = 'up' | 'down';
-export type Outcome = 'won' | 'lost';
+export type Outcome = 'won' | 'lost' | 'aborted';
+export type Variant = 'classic' | 'extreme';
+export type CommandName =
+	| 'stop'
+	| 'skull'
+	| 'exactlyThree'
+	| 'noCommunication'
+	| 'noBackwardsTrick'
+	| 'singlePile'
+	| 'drawOnlyOne';
 export interface Card {
 	value: number;
 	kind: 'number';
-	command?: string;
+	command?: CommandName;
 }
 export interface HandCard extends Card {
 	legalPiles: number[];
+	/** Code of the command that blocks this card (only when legalPiles is empty). */
+	blocked?: ApiErrorCode;
 }
 export interface GameOptions {
-	variant: 'classic';
+	variant: Variant;
 	pro: boolean;
 	reducedHandSize: boolean;
 }
@@ -38,6 +49,21 @@ export interface Pile {
 	topValue: number;
 	topCard: Card | null;
 	cardCount: number;
+	/** topCard.command is in effect now (Infinity top, or lightning top played this turn). */
+	commandActive: boolean;
+}
+export interface ActiveCommand {
+	command: CommandName;
+	pile: number;
+}
+export interface TurnConstraints {
+	/** 3 after a 3!, else null. */
+	exactCount: number | null;
+	singlePile: boolean;
+	/** Pile all further cards must go on; null = not bound. */
+	boundPile: number | null;
+	skullPiles: number[];
+	stopPlayed: boolean;
 }
 export interface Play {
 	card: Card;
@@ -50,6 +76,7 @@ export interface Turn {
 	requiredMinimum: number;
 	canEndTurn: boolean;
 	plays: Play[];
+	constraints: TurnConstraints;
 }
 export interface Result {
 	outcome: Outcome;
@@ -75,6 +102,8 @@ export interface PlayerView {
 	communicationRestricted: boolean;
 	result: Result | null;
 	nextGameId?: string;
+	/** Visible Infinity commands, in pile order. */
+	activeCommands: ActiveCommand[];
 }
 export interface GameSummary {
 	gameId: string;
@@ -120,6 +149,14 @@ export type ApiErrorCode =
 	| 'illegal_placement'
 	| 'minimum_not_reached'
 	| 'rematch_exists'
+	| 'backwards_trick_blocked'
+	| 'single_pile_violation'
+	| 'exact_count_exceeded'
+	| 'exact_count_unreachable'
+	| 'exact_count_required'
+	| 'stop_too_early'
+	| 'skull_uncovered'
+	| 'skull_uncoverable'
 	| 'internal'
 	| 'network'
 	| 'disconnected'
@@ -139,5 +176,6 @@ export type ClientCommand =
 	| { type: 'chooseFirstPlayer'; playerId: string }
 	| { type: 'playCard'; card: number; pile: number }
 	| { type: 'endTurn' }
+	| { type: 'endGame' }
 	| { type: 'rematch' };
 // sent as ClientCommand & { requestId: string }

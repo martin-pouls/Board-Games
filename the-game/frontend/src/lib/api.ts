@@ -97,6 +97,10 @@ export function playCard(
 export function endTurn(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/end-turn`, { token });
 }
+export function endGame(code: string, token: string): Promise<PlayerView> {
+	return request('POST', `${game(code)}/end-game`, { token });
+}
+
 export function rematch(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/rematch`, { token });
 }

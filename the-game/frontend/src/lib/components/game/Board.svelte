@@ -1,9 +1,11 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import House from '@lucide/svelte/icons/house';
 	import Layers from '@lucide/svelte/icons/layers';
+	import Flag from '@lucide/svelte/icons/flag';
+	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
@@ -13,6 +15,8 @@
 	import Hand from './Hand.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import TurnBar from './TurnBar.svelte';
+	import ActiveCommands from './ActiveCommands.svelte';
+	import NoCommunicationBanner from './NoCommunicationBanner.svelte';
 
 	let {
 		client,
@@ -30,12 +34,20 @@
 
 	let selected = $state<number | null>(null);
 	let pending = $state(false);
+	let confirmEnd = $state(false);
+	let ending = $state(false);
 
 	const connected = $derived(client.status === 'open');
+	const extreme = $derived(view.options.variant === 'extreme');
+	// Turn markers (bound pile, skull to cover) only matter while the game runs.
+	const playing = $derived(view.phase === 'playing');
 	const myTurn = $derived(
 		!readonly && view.phase === 'playing' && view.turn?.activePlayerId === view.you
 	);
 	const interactive = $derived(myTurn && connected && !pending);
+	const canEndGame = $derived(
+		view.hostId === view.you && (view.phase === 'playing' || view.phase === 'choosingFirstPlayer')
+	);
 	const selectedCard = $derived(
 		selected === null ? undefined : view.hand.find((c) => c.value === selected)
 	);
@@ -70,6 +82,25 @@
 		}
 	});
 
+	// Extreme: toasts for command cards that change the flow of play.
+	$effect(() => {
+		const events = client.lastEvents;
+		if (readonly) return;
+		untrack(() => {
+			for (const e of events) {
+				if (e.type !== 'cardPlayed') continue;
+				if (e.card.command === 'stop') {
+					const name = view.players.find((p) => p.id === e.playerId)?.name ?? 'Someone';
+					toast(e.playerId === view.you ? 'STOP: your turn is over.' : `${name} played STOP.`, {
+						id: 'stop'
+					});
+				} else if (e.card.command === 'noCommunication') {
+					toast('No communication until the card is covered.', { id: 'no-comm' });
+				}
+			}
+		});
+	});
+
 	function fail(e: unknown) {
 		toast.error(errorText(e instanceof ActionError ? e.code : 'internal'));
 	}
@@ -82,7 +113,9 @@
 		}
 		if (card.legalPiles.length === 0) {
 			selected = null;
-			toast('No legal pile for this card', { id: 'no-legal-pile' });
+			toast(card.blocked ? errorText(card.blocked) : 'No legal pile for this card', {
+				id: 'no-legal-pile'
+			});
 			return;
 		}
 		selected = card.value;
@@ -103,6 +136,19 @@
 			fail(e);
 		} finally {
 			pending = false;
+		}
+	}
+
+	async function endGame() {
+		if (ending) return;
+		ending = true;
+		try {
+			await client.endGame();
+			confirmEnd = false;
+		} catch (e) {
+			fail(e);
+		} finally {
+			ending = false;
 		}
 	}
 
@@ -137,16 +183,41 @@
 		{#if view.options.pro}
 			<span class="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold">PRO</span>
 		{/if}
+		{#if extreme}
+			<span class="rounded bg-violet-600 px-1.5 py-0.5 text-xs font-semibold text-white">
+				EXTREME
+			</span>
+		{/if}
 		<span
 			class="ml-auto flex items-center gap-1 text-muted-foreground tabular-nums"
 			title="Draw pile"
 		>
 			<Layers class="size-4" />
-			Deck {view.drawPileCount}
+			<span class={cn(extreme && 'max-[24rem]:sr-only')}>Deck</span>
+			{view.drawPileCount}
 		</span>
+		{#if canEndGame}
+			<button
+				type="button"
+				class="-mr-1 flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+				disabled={!connected}
+				title="End game"
+				onclick={() => (confirmEnd = true)}
+			>
+				<Flag class="size-4" />
+				<!-- The EXTREME badge leaves no room for the label on phones. -->
+				<span class={cn(extreme && 'max-[24rem]:sr-only')}>End game</span>
+			</button>
+		{/if}
 	</header>
 
+	{#if view.communicationRestricted}
+		<NoCommunicationBanner />
+	{/if}
+
 	<PlayerStrip players={view.players} online={client.online} showCounts={view.phase !== 'lobby'} />
+
+	<ActiveCommands commands={view.activeCommands} piles={view.piles} />
 
 	<div class="grid max-h-[34rem] min-h-56 flex-1 grid-cols-2 grid-rows-2 gap-2 sm:gap-3">
 		{#each piles as pile (pile.index)}
@@ -157,6 +228,8 @@
 				dimmed={!!selectedCard && !legal}
 				disabled={!interactive || !selectedCard}
 				playsThisTurn={playsByPile[pile.index] ?? 0}
+				bound={playing && view.turn?.constraints.boundPile === pile.index}
+				skull={playing && (view.turn?.constraints.skullPiles.includes(pile.index) ?? false)}
 				onclick={() => onpile(pile.index)}
 			/>
 		{/each}
@@ -178,3 +251,25 @@
 		</p>
 	</div>
 </div>
+
+<AlertDialog.Root bind:open={confirmEnd}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>End the game for everyone?</AlertDialog.Title>
+			<AlertDialog.Description>
+				The round stops now and the cards left are counted. You can start a new game from the
+				results screen.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={ending}>Keep playing</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class="bg-destructive text-white hover:bg-destructive/90"
+				disabled={ending || !connected}
+				onclick={endGame}
+			>
+				End game
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

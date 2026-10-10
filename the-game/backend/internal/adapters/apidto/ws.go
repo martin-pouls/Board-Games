@@ -17,6 +17,7 @@ const (
 	CmdChooseFirstPlayer = "chooseFirstPlayer"
 	CmdPlayCard          = "playCard"
 	CmdEndTurn           = "endTurn"
+	CmdEndGame           = "endGame"
 	CmdRematch           = "rematch"
 )
 

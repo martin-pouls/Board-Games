@@ -287,7 +287,7 @@ Use **refill to hand size**, not "number of cards played". The two are equal in 
 
 `ErrInvalidName`, `ErrNameTaken`, `ErrGameFull`, `ErrDuplicatePlayer`, `ErrInvalidOptions`, `ErrWrongPhase`, `ErrNotHost`, `ErrUnknownPlayer`, `ErrNotYourTurn`, `ErrCardNotInHand`, `ErrInvalidPile`, `ErrIllegalPlacement`, `ErrMinimumNotReached`.
 
-Reserved for Phase 2 (do not define now): `ErrTurnOver` (after STOP), `ErrSkullUncovered`, `ErrExactCountRequired`.
+Phase 2 (Extreme, see [extreme-plan.md](extreme-plan.md) §2.5) adds `ErrBackwardsTrickBlocked`, `ErrSinglePileViolation`, `ErrExactCountExceeded`, `ErrExactCountUnreachable`, `ErrStopTooEarly`, `ErrSkullUncovered`, `ErrExactCountRequired`, `ErrSkullUncoverable`. `ErrTurnOver` is not needed: STOP ends the turn automatically, so no card can follow it.
 
 ### 1.7 Events (`events.go`)
 
@@ -515,6 +515,7 @@ Auth: `Authorization: Bearer <token>`. A missing or invalid token gives 401 `una
 | `POST /api/games/{code}/first-player` | yes (host) | `{ "playerId": string }` | 200 `PlayerView` |
 | `POST /api/games/{code}/plays` | yes | `{ "card": number, "pile": number }` | 200 `PlayerView` |
 | `POST /api/games/{code}/end-turn` | yes | – | 200 `PlayerView` |
+| `POST /api/games/{code}/end-game` | yes | – | 200 `PlayerView` (host only; outcome `aborted`) |
 | `/api/` (anything else) | – | – | 404 `{error:{code:"not_found"}}`. Register `mux.HandleFunc("/api/", ...)` so the SPA fallback never swallows API typos. |
 
 Error body for every non-2xx response, on REST and on WS: `{"error":{"code":"<code>","message":"<human text>"}}`.
@@ -568,6 +569,7 @@ Error body for every non-2xx response, on REST and on WS: `{"error":{"code":"<co
 { "type": "chooseFirstPlayer", "requestId": "3", "playerId": "p_…" }
 { "type": "playCard",          "requestId": "4", "card": 42, "pile": 0 }
 { "type": "endTurn",           "requestId": "5" }
+{ "type": "endGame",           "requestId": "6" }
 ```
 An unknown `type` gets `error` with `bad_request`.
 
@@ -656,7 +658,7 @@ type Turn struct {
     Plays           []Play `json:"plays"`
 }
 type Result struct {
-    Outcome             string `json:"outcome"` // "won" | "lost"
+    Outcome             string `json:"outcome"` // "won" | "lost" | "aborted"
     Score               int    `json:"score"`
     Excellent           bool   `json:"excellent"`
     CardsLeftInHands    int    `json:"cardsLeftInHands"`
@@ -760,7 +762,7 @@ Event `type` strings: `playerJoined`, `optionsChanged`, `gameStarted`, `firstPla
 ```ts
 export type Phase = 'lobby' | 'choosingFirstPlayer' | 'playing' | 'finished';
 export type Direction = 'up' | 'down';
-export type Outcome = 'won' | 'lost';
+export type Outcome = 'won' | 'lost' | 'aborted';
 export interface Card { value: number; kind: 'number'; command?: string }
 export interface HandCard extends Card { legalPiles: number[] }
 export interface GameOptions { variant: 'classic'; pro: boolean; reducedHandSize: boolean }

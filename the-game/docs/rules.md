@@ -55,6 +55,7 @@ Cooperative game for 1–5 players. The team wins together or loses together.
 - The game ends **immediately** when the active player **cannot play the required minimum**: 2 cards while the draw pile has cards, 1 card once it is empty.
   - *Interpretation (decided by the project owner):* there is no lookahead. The game is lost only once the active player has **no legal card to play and cannot end the turn**. A player who can still play a card keeps playing, even if the minimum is out of reach. The score counts the cards left at that moment.
 - *App decisions:* the host picks the starting player after the cards are dealt (there is no random default; a solo game starts immediately). The turn ends automatically when the active player's hand becomes empty and the minimum is met. Once the game is over, every player's remaining hand is revealed.
+- *App decision:* the **host can end a running game early** (while choosing the first player or during play). The game finishes with outcome `aborted`; the score counts the cards left at that moment, hands are revealed, and a rematch can be started as usual.
 - **Score** = cards not played = all cards left in hands + cards left in the draw pile. Lower is better. Fewer than 10 is "excellent". **0 = won** (all 98 cards played).
 
 ### Communication
@@ -118,8 +119,22 @@ They take effect from the moment the card is played and **apply to everyone** fo
 
 ### Interpretations (decided)
 - **Single pile / no backwards trick played mid-turn:** "valid from the moment it is played". Only cards played *after* it in the same turn are restricted. Cards already played earlier in the turn on other piles stay where they are.
-- **Single pile played mid-turn binds to its own pile:** all remaining cards of that turn must go on the pile where the Single pile card was played. *(Decided by the project owner.)*
-  - If a Single pile card is already visible at the start of a turn, the active player's first card picks the pile, and all further cards that turn must go on it.
+- **Single pile played mid-turn binds to its own pile:** the following cards of that turn must go on the pile where the Single pile card was played, for as long as it stays visible (see the next point). *(Decided by the project owner.)*
+  - If a Single pile card is already visible at the start of a turn, the active player's first card picks the pile, and all further cards that turn must go on it while a Single pile card stays visible.
+- **Covering a Single pile card ends its binding at once** (Q1, owner, 2026-10-10). Consequences:
+  - A Single pile card played mid-turn only forces the **next** card onto its pile, because that card covers it. After that the player is free again (unless another Single pile card is still visible).
+  - A Single pile card visible at the start of a turn is neutralised if the first card goes on top of it. If another Single pile card is still visible elsewhere, the first card's pile is the bound pile.
+- **No backwards trick also forbids covering itself via the trick** (Q2, owner): the card is in effect while visible, and that placement happens while it is visible.
+- **An Infinity card may itself be placed by a move its own effect forbids** (Q3, owner), e.g. the No backwards trick card placed via the backwards trick. It takes effect only once it lies on the pile. Another visible No backwards trick card still blocks that trick.
+- **Extreme combines with Pro and with the reduced hand size** (Q4, owner) exactly as the classic game does: Pro means minimum 3; the reduced hand size is only allowed together with Pro.
+- **A card that would leave a skull uncoverable because of 3! is blocked** (Q5, owner): any 3rd card of a 3! turn that leaves a skull from this turn uncovered. This covers a Skull as the 3rd card after 3!, a 3! as the 3rd card while a skull is uncovered (unless that 3! itself covers the skull), and a plain 3rd card on another pile after 3! and a Skull (owner decision 2026-10-10). No 4th card would be allowed, so the skull would stay visible.
+- **No communication applies only while the game is being played** (Q6, owner): it is never in effect in the lobby, while choosing the first player, or after the game ended.
+- **Draw only one can shrink a hand below the minimum while the draw pile still has cards** (Q7, owner): the literal base rule applies. The player plays what they can, is then stuck and the game is lost. The minimum is not capped at the hand size.
+- **3! as the 4th or later card of a turn is blocked**, because the turn could no longer have exactly 3 cards.
+- **A STOP that would leave a skull from this turn uncovered is blocked**, because STOP ends the turn at once. A STOP placed on the skull covers it and is allowed.
+- **STOP overrides the minimum**, but not 3! (STOP only as the 3rd card) and not the Skull rule.
+- **The turn does not end automatically after the 3rd card of a 3!** (unless the hand is empty): the player ends it. No further card can be played.
+- **Lightning cards count only in the turn they were played.** STOP and 3! keep counting for the rest of that turn even when covered. A skull counts while it is the top card.
 - **Draw only one:** we evaluate whether it is visible at the end of the turn, when drawing.
 
 ### Enforcement: illegal moves are blocked (decided by the project owner)
@@ -128,9 +143,11 @@ The engine rejects any action that would break a command, returning a domain err
 | Situation | Blocked action |
 |---|---|
 | Placement breaks base rules, No backwards trick, or Single pile | the card play |
-| A 4th card after 3! | the card play |
+| A 4th card after 3!, or a 3! as the 4th or later card | the card play |
 | STOP after 3! as the 1st or 2nd card | the card play |
+| STOP while a Skull from this turn stays visible on another pile | the card play |
 | 3! when the player started the turn with fewer than 3 cards | the card play |
+| Any 3rd card of a 3! turn that leaves a Skull from this turn uncovered (Skull, 3! or plain card; Q5) | the card play |
 | Turn would end with a Skull visible on top of a pile | ending the turn |
 | Turn would end with fewer than 3 cards after 3! | ending the turn |
 | Turn would end below the minimum (unless STOP was played) | ending the turn |

@@ -13,11 +13,13 @@
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { resultHeadline, stuckLine } from '#lib/game/format.js';
+	import { endedLine, resultHeadline, stuckLine } from '#lib/game/format.js';
 	import { sessions } from '#lib/session.js';
 	import { cn } from '#lib/utils.js';
 	import type { PlayerView } from '#lib/types.js';
+	import { commandInfo } from '#lib/game/commands.js';
 	import Board from './Board.svelte';
+	import CommandIcon from './CommandIcon.svelte';
 
 	let { client, view }: { client: GameClient; view: PlayerView } = $props();
 
@@ -28,7 +30,7 @@
 
 	const result = $derived(view.result);
 	const won = $derived(result?.outcome === 'won');
-	const stuck = $derived(stuckLine(view));
+	const stuck = $derived(stuckLine(view) ?? endedLine(view));
 	const players = $derived([...view.players].sort((a, b) => a.seat - b.seat));
 	const connected = $derived(client.status === 'open');
 
@@ -87,14 +89,15 @@
 				class="flex w-full max-w-md flex-col gap-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-xl"
 			>
 				<div class="flex flex-col items-center gap-1 text-center">
-					{#if won || result.excellent}
+					{#if won || (result.excellent && result.outcome !== 'aborted')}
 						<Trophy class={cn('size-10', won ? 'text-amber-500' : 'text-sky-500')} />
 					{/if}
 					<h2 id="game-over-title" class="text-2xl font-bold">{resultHeadline(result)}</h2>
 					{#if stuck}<p class="text-muted-foreground">{stuck}</p>{/if}
 				</div>
 
-				{#if !won}
+				<!-- Lost with score 0 (uncovered skull as the last card): nothing left to count. -->
+				{#if !won && result.score > 0}
 					<dl class="grid grid-cols-2 gap-2 text-center">
 						<div class="rounded-lg bg-muted/60 p-2">
 							<dt class="text-xs text-muted-foreground">In hands</dt>
@@ -115,9 +118,19 @@
 								<span class="flex flex-wrap gap-1">
 									{#each p.revealedHand ?? [] as c (c.value)}
 										<span
-											class="flex h-8 w-7 items-center justify-center rounded border bg-background text-xs font-bold tabular-nums"
+											class={cn(
+												'flex h-8 w-7 flex-col items-center justify-center rounded border bg-background text-xs leading-none font-bold tabular-nums',
+												c.command &&
+													(commandInfo(c.command).kind === 'lightning'
+														? 'border-red-400 dark:border-red-500'
+														: 'border-violet-400 dark:border-violet-500')
+											)}
 										>
 											{c.value}
+											{#if c.command}
+												<CommandIcon command={c.command} class="size-2.5 opacity-80" />
+												<span class="sr-only">, {commandInfo(c.command).label}</span>
+											{/if}
 										</span>
 									{:else}
 										<span class="text-sm text-muted-foreground">No cards left</span>

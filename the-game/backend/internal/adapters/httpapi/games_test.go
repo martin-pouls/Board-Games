@@ -158,6 +158,10 @@ func (f *fakeService) EndTurn(_ context.Context, id domain.GameID, p domain.Play
 	return f.viewCall("EndTurn", id, p)
 }
 
+func (f *fakeService) EndGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.viewCall("EndGame", id, p)
+}
+
 func (f *fakeService) Rematch(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	v, err := f.viewCall("Rematch", id, p)
 	v.NextGameID = "NEXT2"
@@ -253,6 +257,15 @@ func TestCreateGame(t *testing.T) {
 	if svc.lastOpts != want {
 		t.Fatalf("opts = %+v, want %+v", svc.lastOpts, want)
 	}
+
+	w = do(t, h, "POST", "/api/games", "", `{"name":"Ann","options":{"variant":"extreme","pro":true}}`)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d", w.Code)
+	}
+	want = domain.Options{Variant: domain.VariantExtreme, Pro: true}
+	if svc.lastOpts != want {
+		t.Fatalf("opts = %+v, want %+v", svc.lastOpts, want)
+	}
 }
 
 func TestBadBodies(t *testing.T) {
@@ -312,6 +325,7 @@ func TestAuthedRoutes(t *testing.T) {
 		{"POST", "/api/games/%s/first-player", `{"playerId":"p_guest"}`, "ChooseFirstPlayer"},
 		{"POST", "/api/games/%s/plays", `{"card":42,"pile":3}`, "PlayCard"},
 		{"POST", "/api/games/%s/end-turn", "", "EndTurn"},
+		{"POST", "/api/games/%s/end-game", "", "EndGame"},
 		{"POST", "/api/games/%s/rematch", "", "Rematch"},
 	}
 	for _, rt := range routes {
@@ -401,6 +415,14 @@ func TestErrorTable(t *testing.T) {
 		{domain.ErrInvalidPile, 422, apidto.CodeInvalidPile},
 		{fmt.Errorf("%w: 42 on pile 1", domain.ErrIllegalPlacement), 422, apidto.CodeIllegalPlacement},
 		{domain.ErrMinimumNotReached, 422, apidto.CodeMinimumNotReached},
+		{domain.ErrBackwardsTrickBlocked, 422, apidto.CodeBackwardsTrickBlocked},
+		{domain.ErrSinglePileViolation, 422, apidto.CodeSinglePileViolation},
+		{domain.ErrExactCountExceeded, 422, apidto.CodeExactCountExceeded},
+		{domain.ErrExactCountUnreachable, 422, apidto.CodeExactCountUnreachable},
+		{domain.ErrExactCountRequired, 422, apidto.CodeExactCountRequired},
+		{domain.ErrStopTooEarly, 422, apidto.CodeStopTooEarly},
+		{fmt.Errorf("STOP would end the turn: %w", domain.ErrSkullUncovered), 422, apidto.CodeSkullUncovered},
+		{domain.ErrSkullUncoverable, 422, apidto.CodeSkullUncoverable},
 		{domain.ErrDuplicatePlayer, 500, apidto.CodeInternal},
 		{errors.New("disk on fire"), 500, apidto.CodeInternal},
 	}

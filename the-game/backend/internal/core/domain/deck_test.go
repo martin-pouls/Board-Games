@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -35,10 +36,109 @@ func TestNewDeckClassic(t *testing.T) {
 	}
 }
 
-func TestNewDeckExtremeRejected(t *testing.T) {
-	_, err := NewDeck(Ruleset{Variant: VariantExtreme})
-	if !errors.Is(err, ErrInvalidOptions) {
-		t.Fatalf("NewDeck(extreme) err = %v, want ErrInvalidOptions", err)
+func TestNewDeckExtreme(t *testing.T) {
+	deck, err := NewDeck(mustRules(t, extreme))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deck) != 98 {
+		t.Fatalf("len(deck) = %d, want 98", len(deck))
+	}
+	// rules.md §2 "Command → card values", copied independently of deck.go.
+	want := map[Command][]int{
+		CommandStop:             {6, 35, 57, 95},
+		CommandSkull:            {17, 41, 61, 87},
+		CommandExactlyThree:     {19, 28, 53, 81},
+		CommandNoCommunication:  {26, 65, 78, 92},
+		CommandNoBackwardsTrick: {21, 32, 59, 70},
+		CommandSinglePile:       {9, 47, 68, 84},
+		CommandDrawOnlyOne:      {13, 38, 43, 76},
+	}
+	got := map[Command][]int{}
+	for i, c := range deck {
+		if c.Value != i+2 {
+			t.Fatalf("deck[%d].Value = %d, want %d (2..99 ascending, each once)", i, c.Value, i+2)
+		}
+		if c.Kind != CardKindNumber {
+			t.Errorf("card %+v: kind %q, want number", c, c.Kind)
+		}
+		if c.Command != CommandNone {
+			got[c.Command] = append(got[c.Command], c.Value)
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("command values\n got %v\nwant %v", got, want)
+	}
+	total := 0
+	for _, vs := range got {
+		total += len(vs)
+	}
+	if total != 28 || len(got) != 7 {
+		t.Fatalf("%d command cards over %d commands, want 28 over 7", total, len(got))
+	}
+	// The extreme deck is a fresh slice: building it again yields the same deck.
+	again, _ := NewDeck(mustRules(t, extremePro))
+	if !reflect.DeepEqual(deck, again) {
+		t.Fatal("extreme deck differs between builds/options")
+	}
+}
+
+func TestNewDeckErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		r    Ruleset
+	}{
+		{"unknown variant", Ruleset{Variant: "bogus", LowestCard: 2, HighestCard: 99}},
+		{"empty variant", Ruleset{LowestCard: 2, HighestCard: 99}},
+		// Defensive: a command value outside [LowestCard, HighestCard].
+		{"extreme, command value outside the deck", Ruleset{Variant: VariantExtreme, LowestCard: 2, HighestCard: 50}},
+		{"extreme, empty range", Ruleset{Variant: VariantExtreme}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deck, err := NewDeck(tt.r)
+			if !errors.Is(err, ErrInvalidOptions) || deck != nil {
+				t.Fatalf("NewDeck = %v, %v; want ErrInvalidOptions", deck, err)
+			}
+		})
+	}
+}
+
+func TestCommandClass(t *testing.T) {
+	tests := []struct {
+		cmd       Command
+		class     CommandClass
+		lightning bool
+		infinity  bool
+	}{
+		{CommandNone, CommandClassNone, false, false},
+		{"bogus", CommandClassNone, false, false},
+		{CommandStop, CommandClassLightning, true, false},
+		{CommandSkull, CommandClassLightning, true, false},
+		{CommandExactlyThree, CommandClassLightning, true, false},
+		{CommandNoCommunication, CommandClassInfinity, false, true},
+		{CommandNoBackwardsTrick, CommandClassInfinity, false, true},
+		{CommandSinglePile, CommandClassInfinity, false, true},
+		{CommandDrawOnlyOne, CommandClassInfinity, false, true},
+	}
+	for _, tt := range tests {
+		if got := tt.cmd.Class(); got != tt.class {
+			t.Errorf("%q.Class() = %q, want %q", tt.cmd, got, tt.class)
+		}
+		if tt.cmd.IsLightning() != tt.lightning || tt.cmd.IsInfinity() != tt.infinity {
+			t.Errorf("%q: IsLightning %v IsInfinity %v", tt.cmd, tt.cmd.IsLightning(), tt.cmd.IsInfinity())
+		}
+	}
+	// Wire strings are camelCase and fixed (plan §1).
+	wire := map[Command]string{
+		CommandStop: "stop", CommandSkull: "skull", CommandExactlyThree: "exactlyThree",
+		CommandNoCommunication: "noCommunication", CommandNoBackwardsTrick: "noBackwardsTrick",
+		CommandSinglePile: "singlePile", CommandDrawOnlyOne: "drawOnlyOne",
+	}
+	for c, s := range wire {
+		if string(c) != s {
+			t.Errorf("command %q, want wire string %q", c, s)
+		}
 	}
 }
 

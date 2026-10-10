@@ -7,7 +7,7 @@ type Variant string
 
 const (
 	VariantClassic Variant = "classic"
-	VariantExtreme Variant = "extreme" // Phase 2; rejected for now
+	VariantExtreme Variant = "extreme" // command cards (rules.md §2); same hand sizes and minimums
 )
 
 // Options are the host-selectable game settings.
@@ -24,11 +24,10 @@ func DefaultOptions() Options {
 
 // Validate reports whether the options are allowed. Errors wrap ErrInvalidOptions.
 // An empty Variant is invalid; adapters map "empty on input" to classic.
+// Pro and the reduced hand size combine with either variant.
 func (o Options) Validate() error {
 	switch o.Variant {
-	case VariantClassic:
-	case VariantExtreme:
-		return fmt.Errorf("%w: variant %q is not available yet", ErrInvalidOptions, o.Variant)
+	case VariantClassic, VariantExtreme:
 	default:
 		return fmt.Errorf("%w: unknown variant %q", ErrInvalidOptions, o.Variant)
 	}

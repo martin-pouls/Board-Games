@@ -27,6 +27,8 @@ type GameService interface {
 	ChooseFirstPlayer(ctx context.Context, id domain.GameID, player, first domain.PlayerID) (domain.PlayerView, error)
 	PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card, pile int) (domain.PlayerView, error)
 	EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
+	// EndGame lets the host end a running game early (outcome "aborted").
+	EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	// Rematch returns the actor's view of the old game, which now carries NextGameID.
 	Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 }

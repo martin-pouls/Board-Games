@@ -96,7 +96,15 @@ func TestCheckPlacement(t *testing.T) {
 			}
 		})
 	}
-	if g.placementConstraints() != nil {
-		t.Fatal("Phase 1 has no placement constraints")
+	// Classic cards carry no commands, so no constraint ever vetoes a base-legal placement.
+	for _, con := range g.placementConstraints() {
+		for _, p := range []Placement{
+			{Card: NumberCard(31), PileIndex: 0, Pile: g.Piles[0], Kind: PlacementNormal},
+			{Card: NumberCard(20), PileIndex: 0, Pile: g.Piles[0], Kind: PlacementBackwardsTrick},
+		} {
+			if err := con.Check(g, p); err != nil {
+				t.Fatalf("%T vetoed a classic placement: %v", con, err)
+			}
+		}
 	}
 }

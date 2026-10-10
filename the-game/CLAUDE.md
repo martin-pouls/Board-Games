@@ -2,10 +2,10 @@
 
 A web implementation of the cooperative card game **"The Game"** (Steffen Benndorf, NSV), played live by 1–5 players in the browser.
 
-- **Phase 1:** the regular game, including the Pro variant.
-- **Phase 2:** **The Game Extreme**, which adds command cards.
+- **Phase 1:** the regular game, including the Pro variant. Implemented.
+- **Phase 2:** **The Game Extreme**, which adds command cards. Implemented (plan and design decisions: [docs/extreme-plan.md](docs/extreme-plan.md)). The host enables it with the *Extreme* lobby toggle, which combines freely with Pro and Reduced hand size.
 
-Design every domain concept so Extreme slots in without a rewrite (see *Extensibility* below).
+Keep every domain concept open for further card kinds (the mini-expansions Joker, Zehner, On Fire), the way Extreme slotted in (see *Extensibility* below).
 
 **Rules:** [docs/rules.md](docs/rules.md) is the source of truth. It contains the English rules summary, the Extreme card→command mapping, and the interpretations we chose for ambiguities. Read it before touching game logic. Do not re-read the PDFs or card photos. If a rule question is not answered there, ask, then record the answer in that file.
 
@@ -43,12 +43,13 @@ backend/                      Go module github.com/martin-pouls/the-game/backend
 frontend/                     SvelteKit SPA
   src/lib/api.ts              REST client
   src/lib/types.ts            TS mirror of the Go DTOs in apidto
-  src/lib/game/               WS protocol + GameConnection (runes), formatting helpers
+  src/lib/game/               WS protocol + GameConnection (runes), formatting helpers, Extreme command metadata (commands.ts), fixtures
   src/lib/components/game/    game screen components (Lobby, Board, GameOver, ...)
   src/lib/components/ui/      shadcn-svelte components (generated — don't hand-edit heavily)
   src/routes/                 pages
 docs/rules.md                 rules reference (authoritative)
 docs/plan.md                  Phase 1 implementation plan / wire contract
+docs/extreme-plan.md          Phase 2 (Extreme) plan / wire contract changes
 ```
 
 ## Architecture: hexagonal (ports and adapters)
@@ -66,7 +67,7 @@ docs/plan.md                  Phase 1 implementation plan / wire contract
 
 ## Extensibility for The Game Extreme
 
-Build these in from Phase 1 even if the regular game doesn't need them yet:
+These are built in and Extreme relies on them; keep them when adding card kinds:
 
 - **Variant / ruleset config on the game:** variant (`classic` | `extreme`), min cards per turn, hand-size table, Pro flag. Rules read from the config and never hard-code 2/6/7/8.
 - **Cards are structs, not ints.** For example `Card{Value int; Command *Command}` (or a kind field), because Extreme cards carry commands and the mini-expansions (Joker, Zehner, On Fire) would add other card kinds.

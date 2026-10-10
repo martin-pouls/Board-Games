@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -170,5 +171,94 @@ func TestMigrationsCreateTokensTableAndIndex(t *testing.T) {
 	var n int
 	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name IN ('player_tokens','games_updated_at')`).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("n=%d err=%v, want 2", n, err)
+	}
+}
+
+// extremeCard returns the card with value v as the Extreme deck defines it.
+func extremeCard(t *testing.T, rules domain.Ruleset, v int) domain.Card {
+	t.Helper()
+	deck, err := domain.NewDeck(rules)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range deck {
+		if c.Value == v {
+			return c
+		}
+	}
+	t.Fatalf("card %d not in deck", v)
+	return domain.Card{}
+}
+
+func TestRoundTripExtreme(t *testing.T) {
+	g, err := domain.NewGame("XTREM", "p1", "Ann", domain.Options{Variant: domain.VariantExtreme, Pro: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := g.AddPlayer("p2", "Bob"); err != nil {
+		t.Fatal(err)
+	}
+	ec := func(vs ...int) []domain.Card {
+		out := make([]domain.Card, len(vs))
+		for i, v := range vs {
+			out[i] = extremeCard(t, g.Rules, v)
+		}
+		return out
+	}
+	g.Phase = domain.PhasePlaying
+	g.Revision = 9
+	g.Players[0].Hand = ec(95, 92, 30, 31) // STOP, No communication, plain
+	g.Players[1].Hand = ec(9, 70, 8)       // Single pile, NBT, plain
+	g.DrawPile = ec(87, 53, 61, 99)        // Skull, 3!, Skull, plain
+	g.Piles[0].Cards = ec(28)              // 3! played this turn
+	g.Piles[1].Cards = ec(41)              // uncovered skull played this turn
+	g.Piles[2].Cards = ec(59)              // No backwards trick: Infinity top
+	g.Turn = domain.Turn{
+		Number: 4, ActiveSeat: 0, StartHandSize: 6,
+		Plays: []domain.Play{{Card: g.Piles[0].Cards[0], Pile: 0}, {Card: g.Piles[1].Cards[0], Pile: 1}},
+	}
+	before, err := g.ViewFor("p1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Turn == nil || before.Turn.Constraints.ExactCount != 3 || len(before.Turn.Constraints.SkullPiles) != 1 || len(before.ActiveCommands) != 1 {
+		t.Fatalf("test setup: unexpected view %+v", before)
+	}
+
+	ctx := context.Background()
+	db := openTestDB(t)
+	repo := NewGameRepository(db)
+	rec := &ports.GameRecord{Game: g, TokenHashes: map[domain.PlayerID]string{"p1": "h1", "p2": "h2"}}
+	if err := repo.Create(ctx, rec); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.Load(ctx, g.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := json.Marshal(toDTO(g))
+	have, _ := json.Marshal(toDTO(got.Game))
+	if string(want) != string(have) {
+		t.Errorf("round trip mismatch\nwant %s\nhave %s", want, have)
+	}
+	var status, variant string
+	if err := db.sql.QueryRow(`SELECT status, variant FROM games WHERE id = ?`, string(g.ID)).Scan(&status, &variant); err != nil {
+		t.Fatal(err)
+	}
+	if status != "running" || variant != "extreme" {
+		t.Errorf("status/variant = %s/%s, want running/extreme", status, variant)
+	}
+	after, err := got.Game.ViewFor("p1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before.ActiveCommands, after.ActiveCommands) {
+		t.Errorf("ActiveCommands %+v != %+v", before.ActiveCommands, after.ActiveCommands)
+	}
+	if !reflect.DeepEqual(before.Turn.Constraints, after.Turn.Constraints) {
+		t.Errorf("Constraints %+v != %+v", before.Turn.Constraints, after.Turn.Constraints)
+	}
+	if !reflect.DeepEqual(before.Piles, after.Piles) || after.Hand[0].Card.Command != domain.CommandStop {
+		t.Errorf("piles/hand differ after load: %+v", after)
 	}
 }

@@ -58,22 +58,82 @@ type table struct {
 	plays []Play  // already played this turn (cards must already be on the piles)
 }
 
+// Extreme option sets for tests.
+var (
+	extreme           = Options{Variant: VariantExtreme}
+	extremePro        = Options{Variant: VariantExtreme, Pro: true}
+	extremeProReduced = Options{Variant: VariantExtreme, Pro: true, ReducedHandSize: true}
+)
+
+// play is a Play of card value v on pile; table.build maps the value to the deck's card,
+// so with extreme options the command applies automatically.
+func play(v, pile int) Play { return Play{Card: NumberCard(v), Pile: pile} }
+
+// xcard returns the extreme deck's card with value v (with its command, if any).
+func xcard(v int) Card {
+	r, err := NewRuleset(extreme)
+	if err != nil {
+		panic(err)
+	}
+	deck, err := NewDeck(r)
+	if err != nil {
+		panic(err)
+	}
+	for _, c := range deck {
+		if c.Value == v {
+			return c
+		}
+	}
+	return NumberCard(v)
+}
+
 // build creates a game in PhasePlaying at the start of a turn (Revision 1, no events).
+// Every value (hands, draw pile, piles, plays) is mapped to the card of NewDeck(rules)
+// with that value, falling back to NumberCard(v): with extreme options the real command
+// values apply (95 = STOP, 41 = Skull, ...); classic is unchanged.
 func (tb table) build(t *testing.T) *Game {
 	t.Helper()
 	if tb.opts == (Options{}) {
 		tb.opts = DefaultOptions()
 	}
 	r := mustRules(t, tb.opts)
+	deck, err := NewDeck(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byValue := make(map[int]Card, len(deck))
+	for _, c := range deck {
+		byValue[c.Value] = c
+	}
+	card := func(v int) Card {
+		if c, ok := byValue[v]; ok {
+			return c
+		}
+		return NumberCard(v)
+	}
+	deckCards := func(vals []int) []Card {
+		out := make([]Card, len(vals))
+		for i, v := range vals {
+			out[i] = card(v)
+		}
+		return out
+	}
 	players := make([]Player, len(tb.hands))
 	for i, h := range tb.hands {
-		hand := cards(h...)
+		hand := deckCards(h)
 		sortCards(hand)
 		players[i] = Player{ID: pid(i), Name: fmt.Sprintf("Player %d", i), Hand: hand}
 	}
 	piles := NewPiles(r)
 	for i, pc := range tb.piles {
-		piles[i].Cards = append(piles[i].Cards, cards(pc...)...)
+		piles[i].Cards = append(piles[i].Cards, deckCards(pc)...)
+	}
+	var plays []Play
+	if tb.plays != nil {
+		plays = make([]Play, len(tb.plays))
+		for i, p := range tb.plays {
+			plays[i] = Play{Card: card(p.Card.Value), Pile: p.Pile}
+		}
 	}
 	return &Game{
 		ID:       "TEST2",
@@ -82,12 +142,12 @@ func (tb table) build(t *testing.T) *Game {
 		Phase:    PhasePlaying,
 		HostID:   pid(0),
 		Players:  players,
-		DrawPile: cards(tb.draw...),
+		DrawPile: deckCards(tb.draw),
 		Piles:    piles,
 		Turn: Turn{
 			Number:        1,
 			ActiveSeat:    tb.seat,
-			Plays:         tb.plays,
+			Plays:         plays,
 			StartHandSize: len(players[tb.seat].Hand) + len(tb.plays),
 		},
 		Revision: 1,

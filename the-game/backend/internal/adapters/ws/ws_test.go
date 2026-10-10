@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -134,6 +135,9 @@ func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.P
 }
 func (f *fakeService) EndTurn(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "EndTurn", id, p)
+}
+func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.mutate(ctx, "EndGame", id, p)
 }
 func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "Rematch", id, p, domain.RematchCreated{GameID: "NEXT2"})
@@ -349,6 +353,7 @@ func TestAllCommands(t *testing.T) {
 		{`{"type":"chooseFirstPlayer","requestId":"1","playerId":"p_guest"}`, "ChooseFirstPlayer"},
 		{`{"type":"playCard","requestId":"1","card":5,"pile":2}`, "PlayCard"},
 		{`{"type":"endTurn","requestId":"1"}`, "EndTurn"},
+		{`{"type":"endGame","requestId":"1"}`, "EndGame"},
 		{`{"type":"rematch","requestId":"1"}`, "Rematch"},
 	}
 	for _, tt := range tests {
@@ -387,6 +392,7 @@ func TestCommandErrors(t *testing.T) {
 		{"domain error", `{"type":"playCard","requestId":"7","card":42,"pile":0}`, "7", apidto.CodeIllegalPlacement, domain.ErrIllegalPlacement},
 		{"not host", `{"type":"startGame","requestId":"8"}`, "8", apidto.CodeNotHost, domain.ErrNotHost},
 		{"rematch exists", `{"type":"rematch","requestId":"8"}`, "8", apidto.CodeRematchExists, domain.ErrRematchExists},
+		{"skull uncovered", `{"type":"endTurn","requestId":"9"}`, "9", apidto.CodeSkullUncovered, fmt.Errorf("%w: pile 0", domain.ErrSkullUncovered)},
 		{"internal", `{"type":"endTurn","requestId":"8"}`, "8", apidto.CodeInternal, errors.New("boom")},
 		{"unknown type", `{"type":"dance","requestId":"3"}`, "3", apidto.CodeBadRequest, nil},
 		{"malformed", `{"type":`, "", apidto.CodeBadRequest, nil},

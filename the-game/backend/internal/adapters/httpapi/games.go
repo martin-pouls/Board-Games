@@ -31,6 +31,7 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games/{code}/first-player", a.authed(a.chooseFirstPlayer))
 	mux.HandleFunc("POST /api/games/{code}/plays", a.authed(a.playCard))
 	mux.HandleFunc("POST /api/games/{code}/end-turn", a.authed(a.endTurn))
+	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
 	mux.HandleFunc("POST /api/games/{code}/rematch", a.authed(a.rematch))
 }
 
@@ -183,4 +184,8 @@ func (a *gamesAPI) endTurn(_ http.ResponseWriter, r *http.Request, id domain.Gam
 
 func (a *gamesAPI) rematch(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return a.svc.Rematch(r.Context(), id, p)
+}
+
+func (a *gamesAPI) endGame(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return a.svc.EndGame(r.Context(), id, p)
 }

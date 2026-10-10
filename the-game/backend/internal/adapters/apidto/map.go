@@ -43,6 +43,10 @@ func FromView(v domain.PlayerView) PlayerView {
 		DrawPileCount:           v.DrawPileCount,
 		CommunicationRestricted: v.CommunicationRestricted,
 		NextGameID:              string(v.NextGameID),
+		ActiveCommands:          make([]ActiveCommand, 0, len(v.ActiveCommands)),
+	}
+	for _, a := range v.ActiveCommands {
+		out.ActiveCommands = append(out.ActiveCommands, FromActiveCommand(a))
 	}
 	for _, p := range v.Players {
 		var revealed []Card
@@ -61,15 +65,20 @@ func FromView(v domain.PlayerView) PlayerView {
 		})
 	}
 	for _, h := range v.Hand {
-		out.Hand = append(out.Hand, HandCard{Card: FromCard(h.Card), LegalPiles: intsOrEmpty(h.LegalPiles)})
+		out.Hand = append(out.Hand, HandCard{
+			Card:       FromCard(h.Card),
+			LegalPiles: intsOrEmpty(h.LegalPiles),
+			Blocked:    blockedCode(h.Blocked),
+		})
 	}
 	for _, p := range v.Piles {
 		pile := Pile{
-			Index:      p.Index,
-			Direction:  string(p.Direction),
-			StartValue: p.StartValue,
-			TopValue:   p.TopValue,
-			CardCount:  p.CardCount,
+			Index:         p.Index,
+			Direction:     string(p.Direction),
+			StartValue:    p.StartValue,
+			TopValue:      p.TopValue,
+			CardCount:     p.CardCount,
+			CommandActive: p.CommandActive,
 		}
 		if p.TopCard != nil {
 			c := FromCard(*p.TopCard)
@@ -85,6 +94,7 @@ func FromView(v domain.PlayerView) PlayerView {
 			RequiredMinimum: t.RequiredMinimum,
 			CanEndTurn:      t.CanEndTurn,
 			Plays:           make([]Play, 0, len(t.Plays)),
+			Constraints:     fromConstraints(t.Constraints),
 		}
 		for _, p := range t.Plays {
 			turn.Plays = append(turn.Plays, Play{Card: FromCard(p.Card), Pile: p.Pile})
@@ -159,6 +169,40 @@ func FromEvent(e domain.Event) (Event, bool) {
 	default:
 		return Event{}, false
 	}
+}
+
+// FromActiveCommand maps a visible Infinity command.
+func FromActiveCommand(a domain.ActiveCommand) ActiveCommand {
+	return ActiveCommand{Command: string(a.Command), Pile: a.Pile}
+}
+
+// fromConstraints maps turn constraints: ExactCount 0 is null, SkullPiles is never null,
+// BoundPile is copied into a fresh pointer.
+func fromConstraints(c domain.TurnConstraints) TurnConstraints {
+	out := TurnConstraints{
+		SinglePile: c.SinglePile,
+		SkullPiles: intsOrEmpty(c.SkullPiles),
+		StopPlayed: c.StopPlayed,
+	}
+	if c.ExactCount != 0 {
+		out.ExactCount = ptr(c.ExactCount)
+	}
+	if c.BoundPile != nil {
+		out.BoundPile = ptr(*c.BoundPile)
+	}
+	return out
+}
+
+// blockedCode maps a hand card's command veto to its wire error code:
+// "" for nil and for errors without a specific code (internal).
+func blockedCode(err error) string {
+	if err == nil {
+		return ""
+	}
+	if _, body := ErrorFor(err); body.Code != CodeInternal {
+		return body.Code
+	}
+	return ""
 }
 
 func ptr[T any](v T) *T { return &v }

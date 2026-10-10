@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -35,7 +36,17 @@ type app struct {
 	db  *sqlite.DB
 }
 
+// identityRNG never shuffles, so the deck stays ascending and deals are deterministic.
+type identityRNG struct{}
+
+func (identityRNG) Shuffle(int, func(i, j int)) {}
+
 func startApp(t *testing.T, dbPath string, seed uint64) *app {
+	t.Helper()
+	return startAppRNG(t, dbPath, func() domain.RNG { return rand.New(rand.NewPCG(seed, seed+1)) })
+}
+
+func startAppRNG(t *testing.T, dbPath string, newRNG func() domain.RNG) *app {
 	t.Helper()
 	db, err := sqlite.Open(context.Background(), dbPath)
 	if err != nil {
@@ -43,7 +54,7 @@ func startApp(t *testing.T, dbPath string, seed uint64) *app {
 	}
 	hub := ws.NewHub(nil)
 	svc := service.New(sqlite.NewGameRepository(db), hub, service.Config{
-		NewRNG: func() domain.RNG { return rand.New(rand.NewPCG(seed, seed+1)) },
+		NewRNG: newRNG,
 	})
 	srv := httptest.NewServer(httpapi.NewRouter(httpapi.Deps{
 		Health: db.Ping,
@@ -448,7 +459,10 @@ func checkFinished(t *testing.T, v apidto.PlayerView) {
 	if r.Score != r.CardsLeftInHands+r.CardsLeftInDrawPile {
 		t.Fatalf("score %d != %d + %d", r.Score, r.CardsLeftInHands, r.CardsLeftInDrawPile)
 	}
-	if (r.Outcome == "won") != (r.Score == 0) || r.Excellent != (r.Score < 10) {
+	// A won game always has score 0. A lost game has score 0 only when the last
+	// card played was an uncovered Skull (Extreme), i.e. a skull is on top of a pile.
+	skullOnTop := slices.ContainsFunc(v.Piles, func(p apidto.Pile) bool { return p.TopCard != nil && p.TopCard.Command == "skull" })
+	if r.Outcome == "won" && r.Score != 0 || r.Outcome == "lost" && r.Score == 0 && !skullOnTop || r.Excellent != (r.Score < 10) {
 		t.Fatalf("inconsistent result %+v", r)
 	}
 	if r.Outcome == "lost" && r.StuckPlayerID == "" {
@@ -535,5 +549,102 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	a.call(t, http.MethodPost, "/api/games/"+next+"/start", bob.Token, nil, &started, http.StatusOK)
 	if started.Phase != "choosingFirstPlayer" {
 		t.Fatalf("next game start: %s", started.Phase)
+	}
+}
+
+func TestExtremeSoloDeterministic(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "extreme.db")
+	a := startAppRNG(t, dbPath, func() domain.RNG { return identityRNG{} })
+	s := a.create(t, "Solo", &apidto.GameOptions{Variant: "extreme"})
+	code := s.GameID
+	var v apidto.PlayerView
+	a.call(t, http.MethodPost, "/api/games/"+code+"/start", s.Token, nil, &v, http.StatusOK)
+
+	// Identity RNG: ascending deck, hand 92..99, draw pile top 91.
+	if v.Phase != "playing" || v.Options.Variant != "extreme" || !slices.Equal(handValues(v), []int{92, 93, 94, 95, 96, 97, 98, 99}) {
+		t.Fatalf("start: phase %s variant %s hand %v", v.Phase, v.Options.Variant, handValues(v))
+	}
+	for _, hc := range v.Hand {
+		want := map[int]string{92: "noCommunication", 95: "stop"}[hc.Value]
+		if hc.Command != want {
+			t.Errorf("card %d command %q, want %q", hc.Value, hc.Command, want)
+		}
+	}
+	if v.ActiveCommands == nil || len(v.ActiveCommands) != 0 || v.CommunicationRestricted {
+		t.Fatalf("activeCommands %v restricted %v", v.ActiveCommands, v.CommunicationRestricted)
+	}
+	if c := v.Turn.Constraints; c.ExactCount != nil || c.SinglePile || c.BoundPile != nil || c.SkullPiles == nil || len(c.SkullPiles) != 0 || c.StopPlayed {
+		t.Fatalf("constraints = %+v", c)
+	}
+
+	ws := a.dial(t, "solo", code, s.Token)
+	var e apidto.ErrorResponse
+	a.call(t, http.MethodPost, "/api/games/"+code+"/end-turn", s.Token, nil, &e, http.StatusUnprocessableEntity)
+	if e.Error.Code != apidto.CodeMinimumNotReached {
+		t.Fatalf("end-turn code = %q", e.Error.Code)
+	}
+
+	// STOP ends the turn at once; the draw refills the hand.
+	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(95), Pile: intp(0)}, &v, http.StatusOK)
+	if v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 || !slices.Equal(handValues(v), []int{91, 92, 93, 94, 96, 97, 98, 99}) {
+		t.Fatalf("after STOP: turn %+v hand %v", v.Turn, handValues(v))
+	}
+	if top := v.Piles[0].TopCard; top == nil || top.Command != "stop" || v.Piles[0].CommandActive {
+		t.Fatalf("pile 0 = %+v", v.Piles[0])
+	}
+	m := ws.until("STOP update", func(m wireMsg) bool {
+		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventCardPlayed })
+	})
+	if len(m.Events) != 3 || m.Events[0].Type != apidto.EventCardPlayed || m.Events[0].Card == nil || m.Events[0].Card.Command != "stop" ||
+		m.Events[1].Type != apidto.EventTurnEnded || !m.Events[1].Auto || m.Events[1].CardsDrawn == nil || *m.Events[1].CardsDrawn != 1 ||
+		m.Events[2].Type != apidto.EventTurnStarted {
+		t.Fatalf("STOP events = %s", m.raw)
+	}
+
+	// No communication on a descending pile is an Infinity card: active while visible.
+	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(92), Pile: intp(2)}, &v, http.StatusOK)
+	wantActive := []apidto.ActiveCommand{{Command: "noCommunication", Pile: 2}}
+	if !v.CommunicationRestricted || !reflect.DeepEqual(v.ActiveCommands, wantActive) {
+		t.Fatalf("after NC: restricted %v active %v", v.CommunicationRestricted, v.ActiveCommands)
+	}
+
+	// Restart on the same DB: commands survive.
+	a.stop()
+	a2 := startAppRNG(t, dbPath, func() domain.RNG { return identityRNG{} })
+	got := a2.view(t, code, s.Token)
+	if got.Options.Variant != "extreme" || !got.CommunicationRestricted || !reflect.DeepEqual(got.ActiveCommands, wantActive) ||
+		got.Piles[0].TopCard == nil || got.Piles[0].TopCard.Command != "stop" ||
+		got.Piles[2].TopCard == nil || got.Piles[2].TopCard.Command != "noCommunication" || !got.Piles[2].CommandActive {
+		t.Fatalf("restored view: %+v", got)
+	}
+}
+
+func TestExtremeGamesToCompletion(t *testing.T) {
+	for _, players := range []int{1, 3} {
+		for _, pro := range []bool{false, true} {
+			for _, seed := range []uint64{1, 2, 3} {
+				if pro && seed != 1 {
+					continue
+				}
+				t.Run(fmt.Sprintf("%dp/pro=%v/seed%d", players, pro, seed), func(t *testing.T) {
+					a := startApp(t, filepath.Join(t.TempDir(), "x.db"), seed)
+					host := a.create(t, "P1", &apidto.GameOptions{Variant: "extreme", Pro: pro})
+					code := host.GameID
+					tokens := map[string]string{host.PlayerID: host.Token}
+					for i := 2; i <= players; i++ {
+						s := a.join(t, code, fmt.Sprintf("P%d", i))
+						tokens[s.PlayerID] = s.Token
+					}
+					var v apidto.PlayerView
+					a.call(t, http.MethodPost, "/api/games/"+code+"/start", host.Token, nil, &v, http.StatusOK)
+					if players > 1 {
+						a.call(t, http.MethodPost, "/api/games/"+code+"/first-player", host.Token, apidto.ChooseFirstPlayerRequest{PlayerID: host.PlayerID}, nil, http.StatusOK)
+					}
+					v = playToEnd(t, a, code, tokens)
+					checkFinished(t, v)
+					t.Logf("%s, score %d", v.Result.Outcome, v.Result.Score)
+				})
+			}
+		}
 	}
 }

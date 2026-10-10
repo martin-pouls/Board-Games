@@ -30,7 +30,18 @@ const (
 	CodeIllegalPlacement  = "illegal_placement"
 	CodeMinimumNotReached = "minimum_not_reached"
 	CodeRematchExists     = "rematch_exists"
-	CodeInternal          = "internal"
+
+	// Extreme command vetoes (all 422).
+	CodeBackwardsTrickBlocked = "backwards_trick_blocked"
+	CodeSinglePileViolation   = "single_pile_violation"
+	CodeExactCountExceeded    = "exact_count_exceeded"
+	CodeExactCountUnreachable = "exact_count_unreachable"
+	CodeExactCountRequired    = "exact_count_required"
+	CodeStopTooEarly          = "stop_too_early"
+	CodeSkullUncovered        = "skull_uncovered"
+	CodeSkullUncoverable      = "skull_uncoverable"
+
+	CodeInternal = "internal"
 )
 
 // ErrBadRequest marks malformed input (bad JSON, missing field, unknown WS type).
@@ -67,6 +78,14 @@ var errorTable = []struct {
 	{domain.ErrInvalidPile, CodeInvalidPile, http.StatusUnprocessableEntity},
 	{domain.ErrIllegalPlacement, CodeIllegalPlacement, http.StatusUnprocessableEntity},
 	{domain.ErrMinimumNotReached, CodeMinimumNotReached, http.StatusUnprocessableEntity},
+	{domain.ErrBackwardsTrickBlocked, CodeBackwardsTrickBlocked, http.StatusUnprocessableEntity},
+	{domain.ErrSinglePileViolation, CodeSinglePileViolation, http.StatusUnprocessableEntity},
+	{domain.ErrExactCountExceeded, CodeExactCountExceeded, http.StatusUnprocessableEntity},
+	{domain.ErrExactCountUnreachable, CodeExactCountUnreachable, http.StatusUnprocessableEntity},
+	{domain.ErrExactCountRequired, CodeExactCountRequired, http.StatusUnprocessableEntity},
+	{domain.ErrStopTooEarly, CodeStopTooEarly, http.StatusUnprocessableEntity},
+	{domain.ErrSkullUncovered, CodeSkullUncovered, http.StatusUnprocessableEntity},
+	{domain.ErrSkullUncoverable, CodeSkullUncoverable, http.StatusUnprocessableEntity},
 }
 
 // ErrorFor maps an error to an HTTP status and wire error body. It is used by

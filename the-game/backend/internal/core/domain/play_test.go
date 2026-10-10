@@ -445,12 +445,15 @@ func TestRandomGames(t *testing.T) {
 		DefaultOptions(),
 		{Variant: VariantClassic, Pro: true},
 		{Variant: VariantClassic, Pro: true, ReducedHandSize: true},
+		extreme,
+		extremePro,
 	}
+	const games = 250
 	won := 0
-	for seed := range uint64(150) {
+	for seed := range uint64(games) {
 		rng := rand.New(rand.NewPCG(seed, 99))
 		n := 1 + int(seed%5)
-		g := lobbyWith(t, n, optsList[seed%3])
+		g := lobbyWith(t, n, optsList[(seed/5)%uint64(len(optsList))]) // every option set with every player count
 		mustOK(t, g.Start(pid(0), rng))
 		if n > 1 {
 			mustOK(t, g.ChooseFirstPlayer(pid(0), pid(rng.IntN(n))))
@@ -465,6 +468,8 @@ func TestRandomGames(t *testing.T) {
 			if len(moves) == 0 && g.CanEndTurn() != nil {
 				t.Fatalf("seed %d: stuck player left in playing", seed)
 			}
+			turn := g.Turn.Number
+			playedStop := false
 			if g.CanEndTurn() == nil && (len(moves) == 0 || rng.IntN(3) == 0) {
 				mustOK(t, g.EndTurn(active))
 			} else {
@@ -482,10 +487,16 @@ func TestRandomGames(t *testing.T) {
 						best = m
 					}
 				}
+				_, seat, _ := g.PlayerByID(active)
+				idx := slices.IndexFunc(g.Players[seat].Hand, func(c Card) bool { return c.Value == best.Card })
+				playedStop = g.Players[seat].Hand[idx].Command == CommandStop
 				mustOK(t, g.PlayCard(active, best.Card, best.Pile))
 			}
 			if g.Revision != rev+1 {
 				t.Fatalf("seed %d: revision %d -> %d", seed, rev, g.Revision)
+			}
+			if playedStop && g.Phase == PhasePlaying && g.Turn.Number == turn {
+				t.Fatalf("seed %d: turn did not end after STOP", seed)
 			}
 			if totalCards(g) != 98 {
 				t.Fatalf("seed %d: %d cards", seed, totalCards(g))
@@ -495,8 +506,15 @@ func TestRandomGames(t *testing.T) {
 					t.Fatalf("seed %d: unsorted hand", seed)
 				}
 			}
-			if len(g.PullEvents()) == 0 {
+			evs := g.PullEvents()
+			if len(evs) == 0 {
 				t.Fatalf("seed %d: no events", seed)
+			}
+			// The piles do not change while a turn ends, so this is the state at turn end.
+			for _, e := range evs {
+				if te, ok := e.(TurnEnded); ok && g.commands().drawOnlyOne && te.CardsDrawn > 1 {
+					t.Fatalf("seed %d: drew %d cards while Draw only one was visible", seed, te.CardsDrawn)
+				}
 			}
 		}
 		h, d := g.Score()
@@ -511,10 +529,14 @@ func TestRandomGames(t *testing.T) {
 				t.Fatalf("seed %d: won with %+v", seed, r)
 			}
 		case OutcomeLost:
-			if r.Score == 0 || r.StuckPlayerID != g.Players[g.Turn.ActiveSeat].ID {
+			if r.StuckPlayerID != g.Players[g.Turn.ActiveSeat].ID {
 				t.Fatalf("seed %d: lost with %+v", seed, r)
+			}
+			// Score 0 only when the last card was an uncovered Skull.
+			if r.Score == 0 && len(g.commands().skullPiles) == 0 {
+				t.Fatalf("seed %d: lost with score 0 and no skull showing", seed)
 			}
 		}
 	}
-	t.Logf("won %d of 150 random games", won)
+	t.Logf("won %d of %d random games", won, games)
 }

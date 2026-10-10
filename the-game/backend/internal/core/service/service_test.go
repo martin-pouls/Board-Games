@@ -564,3 +564,85 @@ func TestPurgeInactive(t *testing.T) {
 		t.Errorf("second purge removed %d", n)
 	}
 }
+
+func TestEndGame(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, nil)
+	id, sessions := f.started(t, 2)
+	host, bob := sessions[0], sessions[1]
+
+	if _, err := f.svc.EndGame(ctx, id, bob.PlayerID); !errors.Is(err, domain.ErrNotHost) {
+		t.Fatalf("non-host EndGame: err = %v", err)
+	}
+	before := len(f.rec.all())
+	v, err := f.svc.EndGame(ctx, id, host.PlayerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Phase != domain.PhaseFinished || v.Result == nil || v.Result.Outcome != domain.OutcomeAborted {
+		t.Fatalf("view after EndGame: phase=%s result=%+v", v.Phase, v.Result)
+	}
+	pubs := f.rec.all()[before:]
+	if len(pubs) != 1 || !reflect.DeepEqual(eventTypes(pubs[0].Events), []string{"GameFinished"}) {
+		t.Fatalf("unexpected publishes: %+v", pubs)
+	}
+	if _, err := f.svc.Rematch(ctx, id, bob.PlayerID); err != nil {
+		t.Fatalf("rematch after EndGame: %v", err)
+	}
+}
+
+func TestExtremeGame(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, nil)
+	host, err := f.svc.CreateGame(ctx, "Ann", domain.Options{Variant: domain.VariantExtreme})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v, err := f.svc.SetOptions(ctx, host.GameID, host.PlayerID, domain.Options{Variant: domain.VariantExtreme, Pro: true}); err != nil ||
+		v.Options.Variant != domain.VariantExtreme || !v.Options.Pro {
+		t.Fatalf("set extreme+pro: %v %+v", err, v.Options)
+	}
+	if _, err := f.svc.SetOptions(ctx, host.GameID, host.PlayerID, domain.Options{Variant: domain.VariantExtreme}); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Phase != domain.PhasePlaying || len(v.Hand) != 8 || v.Hand[0].Card.Value != 92 {
+		t.Fatalf("unexpected start view: phase %s hand %+v", v.Phase, v.Hand)
+	}
+	commands := map[int]domain.Command{}
+	for _, h := range v.Hand {
+		if h.Card.Command != domain.CommandNone {
+			commands[h.Card.Value] = h.Card.Command
+		}
+	}
+	if !reflect.DeepEqual(commands, map[int]domain.Command{92: domain.CommandNoCommunication, 95: domain.CommandStop}) {
+		t.Fatalf("hand commands = %v", commands)
+	}
+
+	before := len(f.rec.all())
+	v, err = f.svc.PlayCard(ctx, host.GameID, host.PlayerID, 95, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := f.rec.all()
+	if len(got) != before+1 {
+		t.Fatalf("STOP published %d updates, want 1", len(got)-before)
+	}
+	if want := []string{"CardPlayed", "TurnEnded", "TurnStarted"}; !reflect.DeepEqual(eventTypes(got[before].Events), want) {
+		t.Fatalf("STOP events = %v, want %v", eventTypes(got[before].Events), want)
+	}
+	if v.Turn == nil || v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 {
+		t.Fatalf("turn after STOP = %+v", v.Turn)
+	}
+
+	v, err = f.svc.PlayCard(ctx, host.GameID, host.PlayerID, 92, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !v.CommunicationRestricted {
+		t.Fatal("communication should be restricted while No communication is visible")
+	}
+}

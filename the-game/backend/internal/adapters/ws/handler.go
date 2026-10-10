@@ -149,6 +149,8 @@ func (h *Handler) dispatch(ctx context.Context, c *conn, msg apidto.ClientMessag
 		_, err = h.svc.PlayCard(ctx, id, p, *msg.Card, *msg.Pile)
 	case apidto.CmdEndTurn:
 		_, err = h.svc.EndTurn(ctx, id, p)
+	case apidto.CmdEndGame:
+		_, err = h.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:
 		_, err = h.svc.Rematch(ctx, id, p)
 	default:

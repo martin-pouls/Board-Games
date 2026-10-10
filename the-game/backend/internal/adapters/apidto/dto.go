@@ -8,18 +8,19 @@ package apidto
 type Card struct {
 	Value   int    `json:"value"`
 	Kind    string `json:"kind"`              // "number"
-	Command string `json:"command,omitempty"` // Phase 2
+	Command string `json:"command,omitempty"` // stop|skull|exactlyThree|noCommunication|noBackwardsTrick|singlePile|drawOnlyOne
 }
 
 // HandCard is a card in the viewer's hand with the piles it may go on now.
 type HandCard struct {
 	Card
-	LegalPiles []int `json:"legalPiles"`
+	LegalPiles []int  `json:"legalPiles"`
+	Blocked    string `json:"blocked,omitempty"` // error code of the command that blocks this card (only when legalPiles is empty)
 }
 
 // GameOptions are the host-selectable settings.
 type GameOptions struct {
-	Variant         string `json:"variant"` // "classic"; empty on input means classic
+	Variant         string `json:"variant"` // "classic" | "extreme"; empty on input means classic
 	Pro             bool   `json:"pro"`
 	ReducedHandSize bool   `json:"reducedHandSize"`
 }
@@ -47,12 +48,28 @@ type PlayerSummary struct {
 
 // Pile is the public state of a pile.
 type Pile struct {
-	Index      int    `json:"index"`
-	Direction  string `json:"direction"` // "up" | "down"
-	StartValue int    `json:"startValue"`
-	TopValue   int    `json:"topValue"`
-	TopCard    *Card  `json:"topCard"` // null when only the start card shows
-	CardCount  int    `json:"cardCount"`
+	Index         int    `json:"index"`
+	Direction     string `json:"direction"` // "up" | "down"
+	StartValue    int    `json:"startValue"`
+	TopValue      int    `json:"topValue"`
+	TopCard       *Card  `json:"topCard"` // null when only the start card shows
+	CardCount     int    `json:"cardCount"`
+	CommandActive bool   `json:"commandActive"` // topCard.command is in effect now
+}
+
+// ActiveCommand is a visible Infinity command and the pile it lies on.
+type ActiveCommand struct {
+	Command string `json:"command"`
+	Pile    int    `json:"pile"`
+}
+
+// TurnConstraints are the command constraints on the current turn.
+type TurnConstraints struct {
+	ExactCount *int  `json:"exactCount"` // 3 after a 3!, else null
+	SinglePile bool  `json:"singlePile"`
+	BoundPile  *int  `json:"boundPile"`  // null = not bound
+	SkullPiles []int `json:"skullPiles"` // never null
+	StopPlayed bool  `json:"stopPlayed"`
 }
 
 // Play is a card played this turn.
@@ -63,17 +80,18 @@ type Play struct {
 
 // Turn is the public state of the current turn.
 type Turn struct {
-	Number          int    `json:"number"`
-	ActivePlayerID  string `json:"activePlayerId"`
-	CardsPlayed     int    `json:"cardsPlayed"`
-	RequiredMinimum int    `json:"requiredMinimum"`
-	CanEndTurn      bool   `json:"canEndTurn"`
-	Plays           []Play `json:"plays"`
+	Number          int             `json:"number"`
+	ActivePlayerID  string          `json:"activePlayerId"`
+	CardsPlayed     int             `json:"cardsPlayed"`
+	RequiredMinimum int             `json:"requiredMinimum"`
+	CanEndTurn      bool            `json:"canEndTurn"`
+	Plays           []Play          `json:"plays"`
+	Constraints     TurnConstraints `json:"constraints"`
 }
 
 // Result is the final result of a finished game.
 type Result struct {
-	Outcome             string `json:"outcome"` // "won" | "lost"
+	Outcome             string `json:"outcome"` // "won" | "lost" | "aborted"
 	Score               int    `json:"score"`
 	Excellent           bool   `json:"excellent"`
 	CardsLeftInHands    int    `json:"cardsLeftInHands"`
@@ -98,6 +116,7 @@ type PlayerView struct {
 	CommunicationRestricted bool            `json:"communicationRestricted"`
 	Result                  *Result         `json:"result"`
 	NextGameID              string          `json:"nextGameId,omitempty"`
+	ActiveCommands          []ActiveCommand `json:"activeCommands"` // never null
 }
 
 // GameSummary is public, pre-join information about a game.

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -15,7 +16,10 @@ func TestOptionsValidate(t *testing.T) {
 		{"pro", Options{Variant: VariantClassic, Pro: true}, false},
 		{"pro reduced", Options{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, false},
 		{"reduced without pro", Options{Variant: VariantClassic, ReducedHandSize: true}, true},
-		{"extreme rejected", Options{Variant: VariantExtreme}, true},
+		{"extreme", Options{Variant: VariantExtreme}, false},
+		{"extreme pro", Options{Variant: VariantExtreme, Pro: true}, false},
+		{"extreme pro reduced", Options{Variant: VariantExtreme, Pro: true, ReducedHandSize: true}, false},
+		{"extreme reduced without pro", Options{Variant: VariantExtreme, ReducedHandSize: true}, true},
 		{"empty variant", Options{}, true},
 		{"unknown variant", Options{Variant: "bogus"}, true},
 	}
@@ -92,6 +96,25 @@ func TestRulesetMinimums(t *testing.T) {
 				t.Fatalf("MinCardsToPlay(%v) = %d, want %d", tt.drawPileEmpty, got, tt.want)
 			}
 		})
+	}
+}
+
+// TestRulesetExtremeSameAsClassic: hand sizes and minimums are the same (rules.md §2).
+func TestRulesetExtremeSameAsClassic(t *testing.T) {
+	pairs := [][2]Options{
+		{DefaultOptions(), extreme},
+		{{Variant: VariantClassic, Pro: true}, extremePro},
+		{{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, extremeProReduced},
+	}
+	for _, p := range pairs {
+		c, x := mustRules(t, p[0]), mustRules(t, p[1])
+		if x.Variant != VariantExtreme {
+			t.Fatalf("variant %q", x.Variant)
+		}
+		x.Variant = VariantClassic
+		if !reflect.DeepEqual(c, x) {
+			t.Fatalf("extreme ruleset %+v differs from classic %+v", x, c)
+		}
 	}
 }
 

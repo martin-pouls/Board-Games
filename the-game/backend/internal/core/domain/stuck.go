@@ -2,7 +2,9 @@ package domain
 
 // ActivePlayerStuck reports whether the active player has no legal card play
 // and cannot end the turn: len(LegalMoves(activeID)) == 0 && CanEndTurn() != nil.
-// There is no lookahead for reaching the minimum (plan 11.1). It is false unless playing.
+// Both sides include the Extreme commands: LegalMoves applies every placement constraint
+// and CanEndTurn the Skull and 3! checks. There is no lookahead for reaching the minimum
+// or fulfilling a command (plan 11.1). It is false unless playing.
 func (g *Game) ActivePlayerStuck() bool {
 	if g.Phase != PhasePlaying {
 		return false

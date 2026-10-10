@@ -40,7 +40,7 @@ func TestNewGameErrors(t *testing.T) {
 		{"control char", "a\tb", DefaultOptions(), ErrInvalidName},
 		{"nul", "a\x00b", DefaultOptions(), ErrInvalidName},
 		{"invalid utf8", "a\xffb", DefaultOptions(), ErrInvalidName},
-		{"extreme", "Anna", Options{Variant: VariantExtreme}, ErrInvalidOptions},
+		{"extreme reduced without pro", "Anna", Options{Variant: VariantExtreme, ReducedHandSize: true}, ErrInvalidOptions},
 		{"empty variant", "Anna", Options{}, ErrInvalidOptions},
 		{"reduced without pro", "Anna", Options{Variant: VariantClassic, ReducedHandSize: true}, ErrInvalidOptions},
 	}
@@ -118,6 +118,61 @@ func TestSetOptions(t *testing.T) {
 	if g.Rules.MinCardsPerTurn != 2 || g.Rules.HandSize(2) != 7 {
 		t.Fatalf("rules not re-derived: %+v", g.Rules)
 	}
+	// Extreme is accepted, alone and combined with Pro and the reduced hand size (Q4).
+	for _, o := range []Options{extreme, extremePro, extremeProReduced} {
+		mustOK(t, g.SetOptions(pid(0), o))
+		if g.Options != o || g.Rules.Variant != VariantExtreme {
+			t.Fatalf("after SetOptions(%+v): %+v", o, g)
+		}
+	}
+	if g.Rules.MinCardsPerTurn != 3 || g.Rules.HandSize(2) != 6 {
+		t.Fatalf("extreme pro reduced rules: %+v", g.Rules)
+	}
+}
+
+func TestNewGameExtreme(t *testing.T) {
+	for _, o := range []Options{extreme, extremePro, extremeProReduced} {
+		g, err := NewGame("K7MQ2", "h", "Anna", o)
+		mustOK(t, err)
+		if g.Options != o || g.Rules.Variant != VariantExtreme || g.Phase != PhaseLobby {
+			t.Fatalf("NewGame(%+v) = %+v", o, g)
+		}
+	}
+}
+
+func TestStartExtremeDealsCommands(t *testing.T) {
+	g := lobbyWith(t, 1, extreme)
+	mustOK(t, g.Start(pid(0), noShuffle{}))
+	if g.Phase != PhasePlaying {
+		t.Fatalf("phase %s", g.Phase)
+	}
+	if got := values(g.Players[0].Hand); !reflect.DeepEqual(got, seq(92, 99)) {
+		t.Fatalf("hand %v", got)
+	}
+	for _, c := range g.Players[0].Hand {
+		want := CommandNone
+		switch c.Value {
+		case 92:
+			want = CommandNoCommunication
+		case 95:
+			want = CommandStop
+		}
+		if c.Command != want || c.Kind != CardKindNumber {
+			t.Errorf("card %+v, want command %q", c, want)
+		}
+	}
+	commands := 0
+	for _, c := range g.DrawPile {
+		if c.Command != CommandNone {
+			commands++
+		}
+	}
+	if commands != 26 || len(g.DrawPile) != 90 {
+		t.Fatalf("draw pile: %d cards, %d with commands", len(g.DrawPile), commands)
+	}
+	if top := g.DrawPile[len(g.DrawPile)-1]; top != NumberCard(91) {
+		t.Fatalf("draw top %+v", top)
+	}
 }
 
 func TestSetOptionsErrors(t *testing.T) {
@@ -134,7 +189,7 @@ func TestSetOptionsErrors(t *testing.T) {
 		{"not host", lobbyWith(t, 2, DefaultOptions()), pid(1), DefaultOptions(), ErrNotHost},
 		{"wrong phase", started, pid(0), DefaultOptions(), ErrWrongPhase},
 		{"invalid", lobbyWith(t, 2, DefaultOptions()), pid(0), Options{Variant: VariantClassic, ReducedHandSize: true}, ErrInvalidOptions},
-		{"extreme", lobbyWith(t, 2, DefaultOptions()), pid(0), Options{Variant: VariantExtreme}, ErrInvalidOptions},
+		{"extreme reduced without pro", lobbyWith(t, 2, DefaultOptions()), pid(0), Options{Variant: VariantExtreme, ReducedHandSize: true}, ErrInvalidOptions},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -148,6 +203,8 @@ func TestStartDeals(t *testing.T) {
 		DefaultOptions(),
 		{Variant: VariantClassic, Pro: true},
 		{Variant: VariantClassic, Pro: true, ReducedHandSize: true},
+		extreme,
+		extremeProReduced,
 	}
 	for _, o := range optsList {
 		for n := 1; n <= 5; n++ {
@@ -402,6 +459,69 @@ func TestRematchErrors(t *testing.T) {
 				}
 				return err
 			})
+		})
+	}
+}
+
+func TestEndGame(t *testing.T) {
+	playing := func() *Game {
+		return table{hands: [][]int{{10, 20}, {30}}, draw: []int{40, 50, 60}, seat: 1}.build(t)
+	}
+	choosing := func() *Game {
+		g := lobbyWith(t, 2, DefaultOptions())
+		mustOK(t, g.Start(pid(0), noShuffle{}))
+		g.PullEvents()
+		return g
+	}
+	tests := []struct {
+		name        string
+		g           *Game
+		hands, draw int
+	}{
+		{"playing", playing(), 3, 3},
+		{"choosing first player", choosing(), 14, 84},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := tt.g
+			rev := g.Revision
+			mustOK(t, g.EndGame(pid(0)))
+			score := tt.hands + tt.draw
+			want := &Result{Outcome: OutcomeAborted, Score: score, CardsLeftInHands: tt.hands, CardsLeftInDrawPile: tt.draw}
+			if g.Phase != PhaseFinished || !reflect.DeepEqual(g.Result, want) || g.Revision != rev+1 {
+				t.Fatalf("phase %s result %+v rev %d", g.Phase, g.Result, g.Revision)
+			}
+			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameFinished{Outcome: OutcomeAborted, Score: score}}) {
+				t.Fatalf("events = %#v", evs)
+			}
+			v, err := g.ViewFor(pid(1))
+			mustOK(t, err)
+			if v.Result == nil || v.Result.Outcome != OutcomeAborted || v.Players[0].RevealedHand == nil {
+				t.Fatalf("view after end: %+v", v)
+			}
+			if _, err := g.Rematch(pid(1), "NEXT2"); err != nil {
+				t.Fatalf("rematch after end: %v", err)
+			}
+		})
+	}
+}
+
+func TestEndGameErrors(t *testing.T) {
+	playing := func() *Game { return table{hands: [][]int{{10, 20}, {30}}, draw: []int{40}}.build(t) }
+	tests := []struct {
+		name string
+		g    *Game
+		by   PlayerID
+		want error
+	}{
+		{"unknown", playing(), "zz", ErrUnknownPlayer},
+		{"not host", playing(), pid(1), ErrNotHost},
+		{"lobby", lobbyWith(t, 2, DefaultOptions()), pid(0), ErrWrongPhase},
+		{"finished", finishedGame(t), pid(2), ErrWrongPhase},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectErr(t, tt.g, tt.want, func(g *Game) error { return g.EndGame(tt.by) })
 		})
 	}
 }

@@ -19,8 +19,9 @@ const (
 type Outcome string
 
 const (
-	OutcomeWon  Outcome = "won"  // score 0
-	OutcomeLost Outcome = "lost" // active player stuck; score > 0
+	OutcomeWon     Outcome = "won"     // score 0
+	OutcomeLost    Outcome = "lost"    // active player stuck; score ≥ 0 (0 only when the last card was an uncovered Skull)
+	OutcomeAborted Outcome = "aborted" // ended early by the host; score counts the cards left
 )
 
 // Player is a seated player.
@@ -62,7 +63,7 @@ type Result struct {
 	Score               int // CardsLeftInHands + CardsLeftInDrawPile
 	CardsLeftInHands    int
 	CardsLeftInDrawPile int
-	StuckPlayerID       PlayerID // "" when won
+	StuckPlayerID       PlayerID // "" unless lost
 }
 
 // Move is a legal (card value, pile index) pair.
@@ -148,10 +149,10 @@ func (g *Game) IsHost(id PlayerID) bool {
 	return id != "" && id == g.HostID
 }
 
-// CommunicationRestricted reports whether chat and hints must be disabled.
-// Phase 1: always false (Extreme hook: a visible "No communication" card).
+// CommunicationRestricted reports whether chat and hints must be disabled: while playing
+// and a "No communication" card is visible. It is false in every other phase (Q6).
 func (g *Game) CommunicationRestricted() bool {
-	return false
+	return g.Phase == PhasePlaying && g.commands().noCommunication
 }
 
 // Summary returns the public, pre-join summary of the game.

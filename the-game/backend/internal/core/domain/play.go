@@ -5,13 +5,17 @@ import (
 	"slices"
 )
 
-// EndTurnCheck is an end-of-turn hook (Phase 1: minimum check; Extreme adds Skull/3!).
+// EndTurnCheck is an end-of-turn hook: the minimum, plus the Skull and 3! commands.
 type EndTurnCheck interface{ Check(g *Game) error }
 
 // minimumCheck requires the active player to have played the required minimum this turn.
+// A STOP played this turn overrides the minimum (rules.md §2).
 type minimumCheck struct{}
 
 func (minimumCheck) Check(g *Game) error {
+	if g.commands().stopPlayed {
+		return nil
+	}
 	played, need := len(g.Turn.Plays), g.RequiredMinimum()
 	if played < need {
 		return fmt.Errorf("%w: played %d of %d cards", ErrMinimumNotReached, played, need)
@@ -19,16 +23,53 @@ func (minimumCheck) Check(g *Game) error {
 	return nil
 }
 
-// endTurnChecks returns the end-of-turn hooks. Phase 1: the minimum check only.
-func (g *Game) endTurnChecks() []EndTurnCheck {
-	return []EndTurnCheck{minimumCheck{}}
+// skullCheck forbids ending the turn while a skull played this turn is on top of a pile.
+type skullCheck struct{}
+
+func (skullCheck) Check(g *Game) error {
+	if piles := g.commands().skullPiles; len(piles) > 0 {
+		return fmt.Errorf("%w: skull on pile %d", ErrSkullUncovered, piles[0])
+	}
+	return nil
 }
 
-// drawCount is the draw policy at turn end. Phase 1 "refill": up to the hand size,
-// capped by the draw pile.
+// exactCountCheck requires exactly 3 cards once a 3! was played this turn.
+type exactCountCheck struct{}
+
+func (exactCountCheck) Check(g *Game) error {
+	cs := g.commands()
+	if played := len(g.Turn.Plays); cs.exactCount > 0 && played != cs.exactCount {
+		return fmt.Errorf("%w: played %d, need exactly %d", ErrExactCountRequired, played, cs.exactCount)
+	}
+	return nil
+}
+
+// endTurnChecks returns the end-of-turn hooks, most specific message first.
+func (g *Game) endTurnChecks() []EndTurnCheck {
+	return []EndTurnCheck{skullCheck{}, exactCountCheck{}, minimumCheck{}}
+}
+
+// runEndTurnChecks runs every end-turn check without the phase check
+// (used by CanEndTurn and on withPlay projections).
+func (g *Game) runEndTurnChecks() error {
+	for _, c := range g.endTurnChecks() {
+		if err := c.Check(g); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// drawCount is the draw policy at turn end: refill up to the hand size; only 1 card
+// while a Draw only one card is visible (evaluated at turn end, rules.md §2); capped
+// by the draw pile.
 func (g *Game) drawCount() int {
 	hand := len(g.Players[g.Turn.ActiveSeat].Hand)
-	return min(max(0, g.Rules.HandSize(len(g.Players))-hand), len(g.DrawPile))
+	n := max(0, g.Rules.HandSize(len(g.Players))-hand) // refill
+	if g.commands().drawOnlyOne {
+		n = min(n, drawOnlyOneCount)
+	}
+	return min(n, len(g.DrawPile))
 }
 
 // requireActive checks that by is seated, the game is playing and it is by's turn.
@@ -46,8 +87,11 @@ func (g *Game) requireActive(by PlayerID) (int, error) {
 	return seat, nil
 }
 
-// PlayCard plays a card from by's hand onto a pile.
-// Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrCardNotInHand, ErrInvalidPile, ErrIllegalPlacement.
+// PlayCard plays a card from by's hand onto a pile. A STOP ends the turn automatically,
+// as does an empty hand once the turn may end.
+// Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrCardNotInHand, ErrInvalidPile,
+// ErrIllegalPlacement, ErrBackwardsTrickBlocked, ErrSinglePileViolation, ErrExactCountExceeded,
+// ErrExactCountUnreachable, ErrStopTooEarly, ErrSkullUncovered, ErrSkullUncoverable.
 func (g *Game) PlayCard(by PlayerID, value int, pile int) error {
 	seat, err := g.requireActive(by)
 	if err != nil {
@@ -75,10 +119,11 @@ func (g *Game) PlayCard(by PlayerID, value int, pile int) error {
 		if g.CanEndTurn() == nil {
 			g.finish(OutcomeWon, "")
 		} else {
-			// Extreme hook: e.g. an uncovered Skull as the very last card.
+			// An uncovered Skull as the very last card: lost with score 0 (rules.md §2).
 			g.finish(OutcomeLost, by)
 		}
-	case len(g.Players[seat].Hand) == 0 && g.CanEndTurn() == nil:
+	case (card.Command == CommandStop || len(g.Players[seat].Hand) == 0) && g.CanEndTurn() == nil:
+		// STOP always lands here: stopRule pre-validated the after-state.
 		g.endTurn(true)
 	default:
 		g.checkStuck()
@@ -94,7 +139,8 @@ func (g *Game) noCardsLeft() bool {
 }
 
 // EndTurn ends the active player's turn, draws and advances.
-// Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrMinimumNotReached.
+// Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrSkullUncovered,
+// ErrExactCountRequired, ErrMinimumNotReached.
 func (g *Game) EndTurn(by PlayerID) error {
 	if _, err := g.requireActive(by); err != nil {
 		return err
@@ -173,28 +219,47 @@ func (g *Game) LegalMoves(by PlayerID) []Move {
 	if !ok || seat != g.Turn.ActiveSeat {
 		return nil
 	}
+	cons := g.placementConstraints()
 	var moves []Move
 	for _, c := range g.Players[seat].Hand {
-		for pi := range g.Piles {
-			if _, err := g.checkPlacement(c, pi); err == nil {
-				moves = append(moves, Move{Card: c.Value, Pile: pi})
-			}
+		piles, _ := g.cardLegality(cons, c)
+		for _, pi := range piles {
+			moves = append(moves, Move{Card: c.Value, Pile: pi})
 		}
 	}
 	return moves
 }
 
-// CanEndTurn returns nil if the active player may end the turn now (runs all end-turn checks).
+// cardLegality checks c against every pile with the given constraints: the legal piles
+// (nil if none), and, when there are none, the first command veto (in pile order) of a
+// placement the base rules allowed (nil otherwise). It does not check phase or turn.
+func (g *Game) cardLegality(cons []PlacementConstraint, c Card) (piles []int, blocked error) {
+	for pi := range g.Piles {
+		p, err := g.basePlacementAt(c, pi)
+		if err != nil {
+			continue
+		}
+		if err := g.checkConstraints(cons, p); err != nil {
+			if blocked == nil {
+				blocked = err
+			}
+			continue
+		}
+		piles = append(piles, pi)
+	}
+	if len(piles) > 0 {
+		return piles, nil
+	}
+	return nil, blocked
+}
+
+// CanEndTurn returns nil if the active player may end the turn now (phase check, then all
+// end-turn checks: skull, 3!, minimum).
 func (g *Game) CanEndTurn() error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: game is not being played", ErrWrongPhase)
 	}
-	for _, c := range g.endTurnChecks() {
-		if err := c.Check(g); err != nil {
-			return err
-		}
-	}
-	return nil
+	return g.runEndTurnChecks()
 }
 
 // RequiredMinimum returns Rules.MinCardsToPlay(len(DrawPile) == 0).
