@@ -65,6 +65,7 @@ Cooperative game for 1–5 players. The team wins together or loses together.
 ### Pro variant
 - The minimum per turn is **3** instead of 2. Optionally the hand size is also reduced by 1 (see table above).
 - *Interpretation:* once the draw pile is empty, the minimum is still 1.
+- *App decision:* the reduced hand size is only available together with Pro. Options with a reduced hand size but no Pro are rejected, and the UI disables that toggle.
 
 ---
 

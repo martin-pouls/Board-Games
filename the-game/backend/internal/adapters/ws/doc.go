@@ -2,5 +2,6 @@
 // EventPublisher driven port (broadcasting per-player game views to
 // connected clients) and accepts in-game commands as a driving adapter.
 //
-// Library: github.com/coder/websocket (added when this adapter is implemented).
+// Library: github.com/coder/websocket. Construct with NewHub and NewHandler;
+// the Hub is passed to the service as its EventPublisher.
 package ws

@@ -1,5 +1,10 @@
 package domain
 
+import (
+	"fmt"
+	"slices"
+)
+
 // PlayerView is the per-player projection of a game. It never contains other players' hands.
 type PlayerView struct {
 	GameID                  GameID
@@ -82,7 +87,101 @@ type GameSummary struct {
 	Joinable    bool // Phase == lobby && PlayerCount < MaxPlayers
 }
 
+// excellentScoreBelow: a score below this is "excellent" (rules.md, End of game).
+const excellentScoreBelow = 10
+
 // ViewFor builds the projection for player id. Errors: ErrUnknownPlayer.
 func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
-	panic("not implemented: WP3")
+	me, _, ok := g.PlayerByID(id)
+	if !ok {
+		return PlayerView{}, fmt.Errorf("%w: %s", ErrUnknownPlayer, id)
+	}
+	playing := g.Phase == PhasePlaying
+	finished := g.Phase == PhaseFinished
+
+	v := PlayerView{
+		GameID:   g.ID,
+		Revision: g.Revision,
+		Phase:    g.Phase,
+		You:      id,
+		HostID:   g.HostID,
+		Options:  g.Options,
+		Rules: RulesView{
+			MinCardsPerTurn:       g.Rules.MinCardsPerTurn,
+			MinCardsDrawPileEmpty: g.Rules.MinCardsDrawPileEmpty,
+			HandSize:              g.Rules.HandSize(len(g.Players)),
+			MinPlayers:            g.Rules.MinPlayers,
+			MaxPlayers:            g.Rules.MaxPlayers,
+		},
+		Players:                 make([]PlayerSummary, len(g.Players)),
+		Hand:                    make([]HandCard, 0, len(me.Hand)),
+		Piles:                   make([]PileView, len(g.Piles)),
+		DrawPileCount:           len(g.DrawPile),
+		CommunicationRestricted: g.CommunicationRestricted(),
+		NextGameID:              g.NextGameID,
+	}
+
+	for seat, p := range g.Players {
+		s := PlayerSummary{
+			ID:        p.ID,
+			Name:      p.Name,
+			Seat:      seat,
+			HandCount: len(p.Hand),
+			IsHost:    g.IsHost(p.ID),
+			IsYou:     p.ID == id,
+			IsActive:  playing && seat == g.Turn.ActiveSeat,
+		}
+		if finished {
+			s.RevealedHand = make([]Card, len(p.Hand))
+			copy(s.RevealedHand, p.Hand)
+			sortCards(s.RevealedHand)
+		}
+		v.Players[seat] = s
+	}
+
+	legal := map[int][]int{}
+	for _, m := range g.LegalMoves(id) { // nil unless id is the active player in playing
+		legal[m.Card] = append(legal[m.Card], m.Pile)
+	}
+	for _, c := range me.Hand {
+		v.Hand = append(v.Hand, HandCard{Card: c, LegalPiles: legal[c.Value]})
+	}
+
+	for i, p := range g.Piles {
+		pv := PileView{
+			Index:      i,
+			Direction:  p.Direction,
+			StartValue: p.StartValue,
+			TopValue:   p.TopValue(),
+			CardCount:  len(p.Cards),
+		}
+		if top, ok := p.TopCard(); ok {
+			pv.TopCard = &top
+		}
+		v.Piles[i] = pv
+	}
+
+	if playing || finished {
+		v.Turn = &TurnView{
+			Number:          g.Turn.Number,
+			ActivePlayerID:  g.Players[g.Turn.ActiveSeat].ID,
+			CardsPlayed:     len(g.Turn.Plays),
+			RequiredMinimum: g.RequiredMinimum(),
+			CanEndTurn:      g.CanEndTurn() == nil,
+			Plays:           slices.Clone(g.Turn.Plays),
+		}
+	}
+
+	if finished && g.Result != nil {
+		r := g.Result
+		v.Result = &ResultView{
+			Outcome:             r.Outcome,
+			Score:               r.Score,
+			Excellent:           r.Score < excellentScoreBelow,
+			CardsLeftInHands:    r.CardsLeftInHands,
+			CardsLeftInDrawPile: r.CardsLeftInDrawPile,
+			StuckPlayerID:       r.StuckPlayerID,
+		}
+	}
+	return v, nil
 }
