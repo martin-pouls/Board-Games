@@ -4,15 +4,19 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/martin-pouls/the-game/backend/internal/adapters/httpapi"
 	"github.com/martin-pouls/the-game/backend/internal/adapters/sqlite"
+	"github.com/martin-pouls/the-game/backend/internal/adapters/ws"
+	"github.com/martin-pouls/the-game/backend/internal/core/service"
 )
 
 func main() {
@@ -24,7 +28,10 @@ func main() {
 }
 
 func run(logger *slog.Logger) error {
-	cfg := loadConfig()
+	cfg, err := loadConfig()
+	if err != nil {
+		return err
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -35,12 +42,19 @@ func run(logger *slog.Logger) error {
 	}
 	defer db.Close()
 
+	repo := sqlite.NewGameRepository(db)
+	hub := ws.NewHub(logger)
+	svc := service.New(repo, hub, service.Config{Logger: logger})
+	go janitor(ctx, logger, svc, cfg.GameRetention, cfg.CleanupInterval)
+
 	srv := &http.Server{
 		Addr: cfg.Addr,
 		Handler: httpapi.NewRouter(httpapi.Deps{
 			Logger:    logger,
 			Health:    db.Ping,
 			StaticDir: cfg.StaticDir,
+			Games:     svc,
+			WS:        ws.NewHandler(hub, svc, ws.Options{OriginPatterns: cfg.WSOriginPatterns}),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -65,18 +79,69 @@ func run(logger *slog.Logger) error {
 	return nil
 }
 
-type config struct {
-	Addr      string
-	DBPath    string
-	StaticDir string
+// janitor purges abandoned games once at startup and then on every tick until ctx is cancelled.
+func janitor(ctx context.Context, logger *slog.Logger, svc *service.Service, retention, interval time.Duration) {
+	purge := func() {
+		if _, err := svc.PurgeInactive(ctx, retention); err != nil && ctx.Err() == nil {
+			logger.Error("purge inactive games", "err", err)
+		}
+	}
+	purge()
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			purge()
+		}
+	}
 }
 
-func loadConfig() config {
-	return config{
+type config struct {
+	Addr             string
+	DBPath           string
+	StaticDir        string
+	WSOriginPatterns []string
+	GameRetention    time.Duration
+	CleanupInterval  time.Duration
+}
+
+func loadConfig() (config, error) {
+	cfg := config{
 		Addr:      env("ADDR", ":8080"),
 		DBPath:    env("DB_PATH", "data/the-game.db"),
 		StaticDir: env("STATIC_DIR", ""),
 	}
+	for _, p := range strings.Split(env("WS_ORIGIN_PATTERNS", ""), ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			cfg.WSOriginPatterns = append(cfg.WSOriginPatterns, p)
+		}
+	}
+	var err error
+	if cfg.GameRetention, err = envDuration("GAME_RETENTION", 168*time.Hour); err != nil {
+		return config{}, err
+	}
+	if cfg.CleanupInterval, err = envDuration("CLEANUP_INTERVAL", time.Hour); err != nil {
+		return config{}, err
+	}
+	return cfg, nil
+}
+
+func envDuration(key string, fallback time.Duration) (time.Duration, error) {
+	v := env(key, "")
+	if v == "" {
+		return fallback, nil
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s %q: %w", key, v, err)
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("invalid %s %q: must be positive", key, v)
+	}
+	return d, nil
 }
 
 func env(key, fallback string) string {

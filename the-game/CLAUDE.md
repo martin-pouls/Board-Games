@@ -81,7 +81,7 @@ go test ./...
 go vet ./...
 go build -o bin/server.exe ./cmd/server
 ```
-Env vars: `ADDR` (default `:8080`), `DB_PATH` (default `data/the-game.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go).
+Env vars: `ADDR` (default `:8080`), `DB_PATH` (default `data/the-game.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional, comma-separated extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: games idle longer are deleted), `CLEANUP_INTERVAL` (default `1h`: how often the janitor runs).
 
 Frontend (run from `frontend/`):
 ```sh
