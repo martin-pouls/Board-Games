@@ -1,0 +1,19 @@
+# Start page on the server: one static container behind the shared Caddy proxy (deploy/caddy at
+# the repo root), reachable only over the external "web" network. Caddy maps /card-games/* to it.
+name: start-page
+
+services:
+  app:
+    build:
+      context: ..
+      args:
+        BASE_PATH: /card-games
+    image: start-page:latest
+    container_name: start-page
+    restart: unless-stopped
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

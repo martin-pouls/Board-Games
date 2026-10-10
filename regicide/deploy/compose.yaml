@@ -1,0 +1,24 @@
+# Regicide on the server: one container behind the shared Caddy proxy (deploy/caddy at the repo
+# root), reachable only over the external "web" network. Caddy maps /regicide/* to it.
+name: regicide
+
+services:
+  app:
+    build:
+      context: ..
+      args:
+        BASE_PATH: /regicide
+    image: regicide:latest
+    container_name: regicide
+    restart: unless-stopped
+    volumes:
+      - data:/data # SQLite DB: games survive redeploys
+    networks:
+      - web
+
+volumes:
+  data:
+
+networks:
+  web:
+    external: true

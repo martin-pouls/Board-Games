@@ -1,0 +1,6 @@
+# Start page site snippet imported by the shared Caddyfile (copied to /opt/caddy/conf/sites/ by deploy/deploy.sh).
+# The prefix is stripped, so the container serves the static build at its root.
+redir /card-games /card-games/
+handle_path /card-games/* {
+	reverse_proxy start-page:8080
+}

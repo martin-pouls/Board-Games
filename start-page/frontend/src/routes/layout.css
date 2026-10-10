@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/cinzel';
+
+/* Dark-only: a card table. Each game tile borrows the identity of its game. */
+@theme {
+	--font-sans: 'Inter Variable', system-ui, sans-serif;
+	--font-display: 'Cinzel Variable', 'Times New Roman', serif;
+	--color-felt: oklch(0.2 0.03 155);
+	--color-felt-deep: oklch(0.14 0.02 155);
+	--color-chalk: oklch(0.95 0.01 95);
+	--color-chalk-muted: oklch(0.76 0.02 140);
+	/* The Game */
+	--color-violet: oklch(0.54 0.25 293);
+	/* Regicide */
+	--color-castle: oklch(0.17 0.02 285);
+	--color-gold: oklch(0.78 0.13 85);
+	--color-parchment: oklch(0.94 0.03 85);
+}
+
+html {
+	background: var(--color-felt-deep);
+	color-scheme: dark;
+}
+
+body {
+	@apply min-h-svh font-sans text-chalk antialiased;
+	background:
+		radial-gradient(ellipse at 50% 0%, var(--color-felt) 0%, transparent 70%),
+		var(--color-felt-deep);
+}

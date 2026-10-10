@@ -1,0 +1,3 @@
+# LF everywhere, also in Windows checkouts: Prettier expects LF, and files that run or are parsed
+# on the Linux server (*.sh, Dockerfile, deploy/) must not get CRLF.
+* text=auto eol=lf

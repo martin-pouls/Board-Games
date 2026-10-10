@@ -1,0 +1,6 @@
+# Regicide site snippet imported by the shared Caddyfile (copied to /opt/caddy/conf/sites/ by deploy/deploy.sh).
+# The prefix is stripped, so the Go server serves /api, /ws and the SPA at its root.
+redir /regicide /regicide/
+handle_path /regicide/* {
+	reverse_proxy regicide:8080
+}
