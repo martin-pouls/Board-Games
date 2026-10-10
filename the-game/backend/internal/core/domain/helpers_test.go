@@ -60,6 +60,7 @@ type table struct {
 
 // Extreme option sets for tests.
 var (
+	classic           = Options{Variant: VariantClassic}
 	extreme           = Options{Variant: VariantExtreme}
 	extremePro        = Options{Variant: VariantExtreme, Pro: true}
 	extremeProReduced = Options{Variant: VariantExtreme, Pro: true, ReducedHandSize: true}
@@ -94,7 +95,7 @@ func xcard(v int) Card {
 func (tb table) build(t *testing.T) *Game {
 	t.Helper()
 	if tb.opts == (Options{}) {
-		tb.opts = DefaultOptions()
+		tb.opts = classic
 	}
 	r := mustRules(t, tb.opts)
 	deck, err := NewDeck(r)

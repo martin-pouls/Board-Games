@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/martin-pouls/the-game/backend/internal/core/domain"
 	"github.com/martin-pouls/the-game/backend/internal/core/ports"
@@ -67,8 +68,9 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{Card: domain.NumberCard(50), Blocked: errors.New("odd")},
 		},
 		Piles: []domain.PileView{
-			{Index: 0, Direction: domain.DirectionUp, StartValue: 1, TopValue: 42, TopCard: &top, CardCount: 3},
+			{Index: 0, Direction: domain.DirectionUp, StartValue: 1, TopValue: 42, TopCard: &top, CardCount: 3, Cards: []domain.Card{domain.NumberCard(5), domain.NumberCard(30), top}},
 			{Index: 2, Direction: domain.DirectionDown, StartValue: 100, TopValue: 59, TopCard: &nbt, CardCount: 4, CommandActive: true},
+			{Index: 3, Direction: domain.DirectionDown, StartValue: 100, TopValue: 100},
 		},
 		DrawPileCount: 60,
 		Turn: &domain.TurnView{
@@ -99,8 +101,9 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{Card: Card{Value: 50, Kind: "number"}, LegalPiles: []int{}},
 		},
 		Piles: []Pile{
-			{Index: 0, Direction: "up", StartValue: 1, TopValue: 42, TopCard: &wantTop, CardCount: 3},
-			{Index: 2, Direction: "down", StartValue: 100, TopValue: 59, TopCard: &wantNBT, CardCount: 4, CommandActive: true},
+			{Index: 0, Direction: "up", StartValue: 1, TopValue: 42, TopCard: &wantTop, CardCount: 3, Cards: []Card{{Value: 5, Kind: "number"}, {Value: 30, Kind: "number"}, wantTop}},
+			{Index: 2, Direction: "down", StartValue: 100, TopValue: 59, TopCard: &wantNBT, CardCount: 4, CommandActive: true, Cards: []Card{}},
+			{Index: 3, Direction: "down", StartValue: 100, TopValue: 100, Cards: []Card{}},
 		},
 		DrawPileCount: 60,
 		Turn: &Turn{
@@ -130,10 +133,29 @@ func TestFromViewMapsEveryField(t *testing.T) {
 }
 
 func TestFromSummary(t *testing.T) {
-	got := FromSummary(domain.GameSummary{GameID: "ABCDE", Phase: domain.PhaseLobby, HostName: "Anna", PlayerCount: 2, MaxPlayers: 5, Joinable: true})
-	want := GameSummary{GameID: "ABCDE", Phase: "lobby", HostName: "Anna", PlayerCount: 2, MaxPlayers: 5, Joinable: true}
-	if got != want {
-		t.Fatalf("FromSummary = %+v", got)
+	created := time.Date(2026, 10, 10, 12, 30, 5, 0, time.UTC)
+	tests := []struct {
+		name string
+		in   domain.GameSummary
+		want GameSummary
+	}{
+		{
+			"lobby",
+			domain.GameSummary{GameID: "ABCDE", Phase: domain.PhaseLobby, HostName: "Anna", PlayerCount: 2, MaxPlayers: 5, Joinable: true},
+			GameSummary{GameID: "ABCDE", Phase: "lobby", HostName: "Anna", PlayerCount: 2, MaxPlayers: 5, Joinable: true},
+		},
+		{
+			"created and finished",
+			domain.GameSummary{GameID: "ABCDE", Phase: domain.PhaseFinished, PlayerCount: 1, MaxPlayers: 5, CreatedAt: created.In(time.FixedZone("x", 3600)), Outcome: domain.OutcomeWon},
+			GameSummary{GameID: "ABCDE", Phase: "finished", PlayerCount: 1, MaxPlayers: 5, CreatedAt: "2026-10-10T12:30:05Z", Outcome: "won"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FromSummary(tt.in); got != tt.want {
+				t.Fatalf("FromSummary = %+v, want %+v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -142,7 +164,8 @@ func TestGameOptionsToDomain(t *testing.T) {
 		in   GameOptions
 		want domain.Options
 	}{
-		{GameOptions{}, domain.Options{Variant: domain.VariantClassic}},
+		{GameOptions{}, domain.Options{Variant: domain.VariantExtreme}},
+		{GameOptions{Pro: true}, domain.Options{Variant: domain.VariantExtreme, Pro: true}},
 		{GameOptions{Variant: "classic", Pro: true, ReducedHandSize: true}, domain.Options{Variant: domain.VariantClassic, Pro: true, ReducedHandSize: true}},
 		{GameOptions{Variant: "extreme"}, domain.Options{Variant: domain.VariantExtreme}},
 	}

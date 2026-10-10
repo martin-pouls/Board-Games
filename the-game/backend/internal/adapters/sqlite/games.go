@@ -86,9 +86,9 @@ func (r *GameRepository) Create(ctx context.Context, rec *ports.GameRecord) erro
 
 // Load implements ports.GameRepository.
 func (r *GameRepository) Load(ctx context.Context, id domain.GameID) (*ports.GameRecord, error) {
-	var state string
+	var state, createdAt string
 	var version int64
-	err := r.db.QueryRowContext(ctx, `SELECT state, version FROM games WHERE id = ?`, string(id)).Scan(&state, &version)
+	err := r.db.QueryRowContext(ctx, `SELECT state, version, created_at FROM games WHERE id = ?`, string(id)).Scan(&state, &version, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ports.ErrGameNotFound
 	}
@@ -102,6 +102,12 @@ func (r *GameRepository) Load(ctx context.Context, id domain.GameID) (*ports.Gam
 	g, err := fromDTO(d)
 	if err != nil {
 		return nil, fmt.Errorf("decode game %s: %w", id, err)
+	}
+	if g.CreatedAt.IsZero() {
+		// Snapshots written before the game tracked its creation time: use the row's timestamp.
+		if t, err := time.Parse("2006-01-02 15:04:05", createdAt); err == nil {
+			g.CreatedAt = t.UTC()
+		}
 	}
 
 	rows, err := r.db.QueryContext(ctx, `SELECT player_id, token_hash FROM player_tokens WHERE game_id = ?`, string(id))

@@ -4,6 +4,9 @@ const cards = (n: number) => `${n} ${n === 1 ? 'card' : 'cards'}`;
 
 /** Headline for the game-over screen. */
 export function resultHeadline(result: Result): string {
+	// Aborted with nothing left means it was ended in the lobby: no cards were ever dealt
+	// (a game where every card got played ends as won or lost, never aborted).
+	if (result.outcome === 'aborted' && result.score === 0) return 'Game ended before it started.';
 	if (result.outcome === 'aborted') return `Game ended early: ${cards(result.score)} left.`;
 	// Extreme: the last card was a Skull that could not be covered.
 	if (result.outcome === 'lost' && result.score === 0)

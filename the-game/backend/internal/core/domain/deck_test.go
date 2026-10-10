@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewDeckClassic(t *testing.T) {
-	r, err := NewRuleset(DefaultOptions())
+	r, err := NewRuleset(classic)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestNumberCard(t *testing.T) {
 }
 
 func TestNewPiles(t *testing.T) {
-	r, _ := NewRuleset(DefaultOptions())
+	r, _ := NewRuleset(classic)
 	piles := NewPiles(r)
 	want := []struct {
 		dir   Direction

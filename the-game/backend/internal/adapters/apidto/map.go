@@ -1,6 +1,10 @@
 package apidto
 
-import "github.com/martin-pouls/the-game/backend/internal/core/domain"
+import (
+	"time"
+
+	"github.com/martin-pouls/the-game/backend/internal/core/domain"
+)
 
 // FromCard maps a domain card.
 func FromCard(c domain.Card) Card {
@@ -12,11 +16,11 @@ func FromOptions(o domain.Options) GameOptions {
 	return GameOptions{Variant: string(o.Variant), Pro: o.Pro, ReducedHandSize: o.ReducedHandSize}
 }
 
-// ToDomain maps wire options to domain options. An empty variant means classic.
+// ToDomain maps wire options to domain options. An empty variant means the default variant.
 func (o GameOptions) ToDomain() domain.Options {
 	v := domain.Variant(o.Variant)
 	if v == "" {
-		v = domain.VariantClassic
+		v = domain.DefaultOptions().Variant
 	}
 	return domain.Options{Variant: v, Pro: o.Pro, ReducedHandSize: o.ReducedHandSize}
 }
@@ -78,7 +82,11 @@ func FromView(v domain.PlayerView) PlayerView {
 			StartValue:    p.StartValue,
 			TopValue:      p.TopValue,
 			CardCount:     p.CardCount,
+			Cards:         make([]Card, 0, len(p.Cards)),
 			CommandActive: p.CommandActive,
+		}
+		for _, c := range p.Cards {
+			pile.Cards = append(pile.Cards, FromCard(c))
 		}
 		if p.TopCard != nil {
 			c := FromCard(*p.TopCard)
@@ -116,6 +124,10 @@ func FromView(v domain.PlayerView) PlayerView {
 
 // FromSummary maps a game summary.
 func FromSummary(s domain.GameSummary) GameSummary {
+	var createdAt string
+	if !s.CreatedAt.IsZero() {
+		createdAt = s.CreatedAt.UTC().Format(time.RFC3339)
+	}
 	return GameSummary{
 		GameID:      string(s.GameID),
 		Phase:       string(s.Phase),
@@ -123,6 +135,8 @@ func FromSummary(s domain.GameSummary) GameSummary {
 		PlayerCount: s.PlayerCount,
 		MaxPlayers:  s.MaxPlayers,
 		Joinable:    s.Joinable,
+		CreatedAt:   createdAt,
+		Outcome:     string(s.Outcome),
 	}
 }
 

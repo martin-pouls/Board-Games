@@ -2,8 +2,10 @@
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import Crown from '@lucide/svelte/icons/crown';
+	import Flag from '@lucide/svelte/icons/flag';
 	import House from '@lucide/svelte/icons/house';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -19,6 +21,7 @@
 	let { client, view }: { client: GameClient; view: PlayerView } = $props();
 
 	let busy = $state(false);
+	let confirmEnd = $state(false);
 
 	const isHost = $derived(view.hostId === view.you);
 	const host = $derived(view.players.find((p) => p.id === view.hostId));
@@ -58,6 +61,18 @@
 			<House class="size-5" />
 		</a>
 		<h1 class="text-lg font-semibold">Lobby</h1>
+		{#if isHost}
+			<button
+				type="button"
+				class="-mr-1 ml-auto flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
+				disabled={!connected || busy}
+				title="End game"
+				onclick={() => (confirmEnd = true)}
+			>
+				<Flag class="size-4" />
+				End game
+			</button>
+		{/if}
 	</header>
 
 	<Card.Root>
@@ -151,3 +166,28 @@
 		{/if}
 	</div>
 </div>
+
+<AlertDialog.Root bind:open={confirmEnd}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>End this game for everyone?</AlertDialog.Title>
+			<AlertDialog.Description>
+				The game closes before it starts and moves to everyone's history.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={busy}>Keep lobby</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class="bg-destructive text-white hover:bg-destructive/90"
+				disabled={busy || !connected}
+				onclick={() =>
+					run(async () => {
+						await client.endGame();
+						confirmEnd = false;
+					})}
+			>
+				End game
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

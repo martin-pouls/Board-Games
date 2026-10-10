@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -28,15 +29,16 @@ func NewGame(id GameID, hostID PlayerID, hostName string, opts Options) (*Game, 
 // newLobby builds a fresh lobby game with the given seated players.
 func newLobby(id GameID, hostID PlayerID, opts Options, rules Ruleset, players []Player) *Game {
 	return &Game{
-		ID:       id,
-		Options:  opts,
-		Rules:    rules,
-		Phase:    PhaseLobby,
-		HostID:   hostID,
-		Players:  players,
-		DrawPile: []Card{},
-		Piles:    NewPiles(rules),
-		Revision: 1,
+		ID:        id,
+		Options:   opts,
+		Rules:     rules,
+		Phase:     PhaseLobby,
+		HostID:    hostID,
+		Players:   players,
+		DrawPile:  []Card{},
+		Piles:     NewPiles(rules),
+		Revision:  1,
+		CreatedAt: time.Now().UTC().Truncate(time.Second),
 	}
 }
 
@@ -196,16 +198,16 @@ func (g *Game) chooseFirst(seat int) {
 	g.beginTurn(seat)
 }
 
-// EndGame ends a running game early (host only), while choosing the first player or playing.
-// The game finishes with OutcomeAborted and the cards left at this moment as the score, so the
-// result screen and Rematch work as after a regular end.
+// EndGame ends a game early (host only): in the lobby, while choosing the first player or playing.
+// The game finishes with OutcomeAborted and the cards left at this moment as the score (0 in the
+// lobby, where nothing was dealt), so the result screen and Rematch work as after a regular end.
 // Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase. Emits GameFinished.
 func (g *Game) EndGame(by PlayerID) error {
 	if err := g.requireHost(by); err != nil {
 		return err
 	}
-	if g.Phase != PhaseChoosingFirstPlayer && g.Phase != PhasePlaying {
-		return fmt.Errorf("%w: only a running game can be ended", ErrWrongPhase)
+	if g.Phase == PhaseFinished {
+		return fmt.Errorf("%w: the game is already over", ErrWrongPhase)
 	}
 	g.finish(OutcomeAborted, "")
 	g.commit()

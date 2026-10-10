@@ -6,7 +6,7 @@ import (
 )
 
 func TestBasePlacement(t *testing.T) {
-	r := mustRules(t, DefaultOptions())
+	r := mustRules(t, classic)
 	up := func(played ...int) Pile { return Pile{Direction: DirectionUp, StartValue: 1, Cards: cards(played...)} }
 	down := func(played ...int) Pile {
 		return Pile{Direction: DirectionDown, StartValue: 100, Cards: cards(played...)}
@@ -54,7 +54,7 @@ func TestBasePlacement(t *testing.T) {
 
 func TestBackwardsTrickOnStartCardIsImpossible(t *testing.T) {
 	// With an untouched pile, every card in the deck is a normal move; none uses the trick.
-	r := mustRules(t, DefaultOptions())
+	r := mustRules(t, classic)
 	for _, p := range NewPiles(r) {
 		for v := r.LowestCard; v <= r.HighestCard; v++ {
 			kind, ok := basePlacement(r, p, NumberCard(v))

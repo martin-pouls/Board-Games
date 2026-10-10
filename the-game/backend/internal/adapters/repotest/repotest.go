@@ -22,14 +22,15 @@ func newGame(id string) *domain.Game {
 	}
 	return &domain.Game{
 		ID:      domain.GameID(id),
-		Options: domain.DefaultOptions(),
+		Options: domain.Options{Variant: domain.VariantClassic},
 		Rules:   rules,
 		Phase:   domain.PhaseLobby,
 		HostID:  "p1",
 		Players: []domain.Player{{ID: "p1", Name: "Ann", Hand: []domain.Card{}}},
 		Piles:   domain.NewPiles(rules),
 		// Revision starts at 1 like domain.NewGame.
-		Revision: 1,
+		Revision:  1,
+		CreatedAt: time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC),
 	}
 }
 

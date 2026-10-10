@@ -55,13 +55,14 @@ Cooperative game for 1–5 players. The team wins together or loses together.
 - The game ends **immediately** when the active player **cannot play the required minimum**: 2 cards while the draw pile has cards, 1 card once it is empty.
   - *Interpretation (decided by the project owner):* there is no lookahead. The game is lost only once the active player has **no legal card to play and cannot end the turn**. A player who can still play a card keeps playing, even if the minimum is out of reach. The score counts the cards left at that moment.
 - *App decisions:* the host picks the starting player after the cards are dealt (there is no random default; a solo game starts immediately). The turn ends automatically when the active player's hand becomes empty and the minimum is met. Once the game is over, every player's remaining hand is revealed.
-- *App decision:* the **host can end a running game early** (while choosing the first player or during play). The game finishes with outcome `aborted`; the score counts the cards left at that moment, hands are revealed, and a rematch can be started as usual.
+- *App decision:* the **host can end a game early**: in the lobby, while choosing the first player, or during play. The game finishes with outcome `aborted`; the score counts the cards left at that moment (0 when ended in the lobby, since nothing was dealt), hands are revealed, and a rematch can be started as usual.
 - **Score** = cards not played = all cards left in hands + cards left in the draw pile. Lower is better. Fewer than 10 is "excellent". **0 = won** (all 98 cards played).
 
 ### Communication
 - Players must **never reveal or ask for concrete numbers**, in any form.
 - Anything else is allowed, e.g. "please don't play on this pile" or "only a small jump here, please".
 - In this app, chat and in-game hints must not leak exact hand values.
+- *Interpretation (decided by the project owner):* played cards are public. Anyone may look through a pile's cards in the order they were played (the app shows this when a pile is tapped without a card selected).
 
 ### Pro variant
 - The minimum per turn is **3** instead of 2. Optionally the hand size is also reduced by 1 (see table above).

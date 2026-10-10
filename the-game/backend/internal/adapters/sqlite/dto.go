@@ -3,6 +3,7 @@ package sqlite
 import (
 	"fmt"
 	"maps"
+	"time"
 
 	"github.com/martin-pouls/the-game/backend/internal/core/domain"
 )
@@ -86,6 +87,7 @@ type gameDTO struct {
 	Result        *resultDTO  `json:"result"`
 	NextGameID    string      `json:"nextGameId"`
 	Revision      int64       `json:"revision"`
+	CreatedAt     time.Time   `json:"createdAt"` // absent in old snapshots: zero
 }
 
 func cardToDTO(c domain.Card) cardDTO {
@@ -138,6 +140,7 @@ func toDTO(g *domain.Game) gameDTO {
 		DrawPile:   cardsToDTO(g.DrawPile),
 		NextGameID: string(g.NextGameID),
 		Revision:   g.Revision,
+		CreatedAt:  g.CreatedAt,
 		Turn:       turnDTO{Number: g.Turn.Number, ActiveSeat: g.Turn.ActiveSeat, StartHandSize: g.Turn.StartHandSize},
 	}
 	if g.Players != nil {
@@ -190,6 +193,7 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 		DrawPile:   cardsFromDTO(d.DrawPile),
 		NextGameID: domain.GameID(d.NextGameID),
 		Revision:   d.Revision,
+		CreatedAt:  d.CreatedAt,
 		Turn:       domain.Turn{Number: d.Turn.Number, ActiveSeat: d.Turn.ActiveSeat, StartHandSize: d.Turn.StartHandSize},
 	}
 	if d.Players != nil {

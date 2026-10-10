@@ -3,6 +3,7 @@ package domain
 import (
 	"maps"
 	"slices"
+	"time"
 )
 
 // Phase is the lifecycle phase of a game.
@@ -81,10 +82,11 @@ type Game struct {
 	DrawPile   []Card   // last element = top
 	Piles      []Pile
 	Turn       Turn
-	Result     *Result // non-nil iff Phase == finished
-	NextGameID GameID  // set when a rematch was created; empty otherwise
-	Revision   int64   // starts at 1 in NewGame; +1 exactly once per successful mutating method
-	events     []Event // pending, not persisted
+	Result     *Result   // non-nil iff Phase == finished
+	NextGameID GameID    // set when a rematch was created; empty otherwise
+	Revision   int64     // starts at 1 in NewGame; +1 exactly once per successful mutating method
+	CreatedAt  time.Time // UTC, second precision; zero for games persisted before it was tracked
+	events     []Event   // pending, not persisted
 }
 
 // Clone returns a deep copy, including pending events. Nil and empty slices are preserved.
@@ -162,6 +164,10 @@ func (g *Game) Summary() GameSummary {
 		hostName = host.Name
 	}
 	n := len(g.Players)
+	var outcome Outcome
+	if g.Result != nil {
+		outcome = g.Result.Outcome
+	}
 	return GameSummary{
 		GameID:      g.ID,
 		Phase:       g.Phase,
@@ -169,6 +175,8 @@ func (g *Game) Summary() GameSummary {
 		PlayerCount: n,
 		MaxPlayers:  g.Rules.MaxPlayers,
 		Joinable:    g.Phase == PhaseLobby && n < g.Rules.MaxPlayers,
+		CreatedAt:   g.CreatedAt,
+		Outcome:     outcome,
 	}
 }
 

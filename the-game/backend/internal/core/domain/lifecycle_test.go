@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewGame(t *testing.T) {
@@ -23,6 +24,9 @@ func TestNewGame(t *testing.T) {
 	}
 	if evs := g.PullEvents(); len(evs) != 0 {
 		t.Fatalf("NewGame emitted %v", evs)
+	}
+	if g.CreatedAt.IsZero() || time.Since(g.CreatedAt) > time.Minute || g.CreatedAt.Location() != time.UTC {
+		t.Fatalf("CreatedAt = %v, want now (UTC)", g.CreatedAt)
 	}
 }
 
@@ -200,7 +204,7 @@ func TestSetOptionsErrors(t *testing.T) {
 
 func TestStartDeals(t *testing.T) {
 	optsList := []Options{
-		DefaultOptions(),
+		classic,
 		{Variant: VariantClassic, Pro: true},
 		{Variant: VariantClassic, Pro: true, ReducedHandSize: true},
 		extreme,
@@ -417,9 +421,13 @@ func TestRematch(t *testing.T) {
 					{ID: pid(1), Name: "Player 1", Hand: []Card{}},
 					{ID: pid(2), Name: "Player 2", Hand: []Card{}},
 				},
-				DrawPile: []Card{},
-				Piles:    NewPiles(r),
-				Revision: 1,
+				DrawPile:  []Card{},
+				Piles:     NewPiles(r),
+				Revision:  1,
+				CreatedAt: next.CreatedAt,
+			}
+			if next.CreatedAt.IsZero() || time.Since(next.CreatedAt) > time.Minute {
+				t.Fatalf("CreatedAt = %v, want about now", next.CreatedAt)
 			}
 			if !reflect.DeepEqual(next, want) {
 				t.Fatalf("new game:\n got %+v\nwant %+v", next, want)
@@ -480,6 +488,7 @@ func TestEndGame(t *testing.T) {
 	}{
 		{"playing", playing(), 3, 3},
 		{"choosing first player", choosing(), 14, 84},
+		{"lobby", lobbyWith(t, 2, DefaultOptions()), 0, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -516,12 +525,25 @@ func TestEndGameErrors(t *testing.T) {
 	}{
 		{"unknown", playing(), "zz", ErrUnknownPlayer},
 		{"not host", playing(), pid(1), ErrNotHost},
-		{"lobby", lobbyWith(t, 2, DefaultOptions()), pid(0), ErrWrongPhase},
 		{"finished", finishedGame(t), pid(2), ErrWrongPhase},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectErr(t, tt.g, tt.want, func(g *Game) error { return g.EndGame(tt.by) })
 		})
+	}
+}
+
+// TestRematchKeepsOptions: the new lobby inherits the variant, Pro and hand size of the old game.
+func TestRematchKeepsOptions(t *testing.T) {
+	for _, o := range []Options{classic, extreme, extremePro, extremeProReduced, {Variant: VariantClassic, Pro: true}} {
+		g := table{opts: o, hands: [][]int{{50}, {51}}, draw: []int{53}}.build(t)
+		g.Phase = PhaseFinished
+		g.Result = &Result{Outcome: OutcomeAborted}
+		next, err := g.Rematch(pid(0), "NEXT2")
+		mustOK(t, err)
+		if next.Options != o || next.Rules.Variant != o.Variant {
+			t.Errorf("rematch options = %+v / %s, want %+v", next.Options, next.Rules.Variant, o)
+		}
 	}
 }

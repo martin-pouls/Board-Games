@@ -36,8 +36,9 @@ func baseGame(id string) *domain.Game {
 		LowestCard: 2, HighestCard: 99, AscendingPiles: 2, DescendingPiles: 2,
 	}
 	return &domain.Game{
-		ID: domain.GameID(id), Options: domain.DefaultOptions(), Rules: rules,
-		Phase: domain.PhaseLobby, HostID: "p1", Revision: 1,
+		ID: domain.GameID(id), Options: domain.Options{Variant: domain.VariantClassic}, Rules: rules,
+		CreatedAt: time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC),
+		Phase:     domain.PhaseLobby, HostID: "p1", Revision: 1,
 		Players: []domain.Player{{ID: "p1", Name: "Ann", Hand: []domain.Card{}}, {ID: "p2", Name: "Bob", Hand: []domain.Card{}}},
 		Piles:   domain.NewPiles(rules),
 	}
@@ -260,5 +261,52 @@ func TestRoundTripExtreme(t *testing.T) {
 	}
 	if !reflect.DeepEqual(before.Piles, after.Piles) || after.Hand[0].Card.Command != domain.CommandStop {
 		t.Errorf("piles/hand differ after load: %+v", after)
+	}
+}
+
+func TestLoadSnapshotWithoutCreatedAt(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	repo := NewGameRepository(db)
+
+	g := baseGame("LEGAC")
+	g.CreatedAt = time.Time{}
+	if err := repo.Create(ctx, &ports.GameRecord{Game: g, TokenHashes: map[domain.PlayerID]string{"p1": "h"}}); err != nil {
+		t.Fatal(err)
+	}
+	// Strip the field to mimic a snapshot written before it existed, and backdate the row.
+	var raw map[string]any
+	var state string
+	if err := db.sql.QueryRow(`SELECT state FROM games WHERE id = 'LEGAC'`).Scan(&state); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(state), &raw); err != nil {
+		t.Fatal(err)
+	}
+	delete(raw, "createdAt")
+	stripped, _ := json.Marshal(raw)
+	if _, err := db.sql.Exec(`UPDATE games SET state = ?, created_at = '2026-05-04 03:02:01' WHERE id = 'LEGAC'`, string(stripped)); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := repo.Load(ctx, "LEGAC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := time.Date(2026, 5, 4, 3, 2, 1, 0, time.UTC); !got.Game.CreatedAt.Equal(want) {
+		t.Errorf("CreatedAt = %v, want fallback to row timestamp %v", got.Game.CreatedAt, want)
+	}
+
+	// A snapshot that carries the field wins over the row timestamp.
+	fresh := baseGame("FRESH")
+	if err := repo.Create(ctx, &ports.GameRecord{Game: fresh, TokenHashes: map[domain.PlayerID]string{"p1": "h"}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err = repo.Load(ctx, "FRESH")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Game.CreatedAt.Equal(fresh.CreatedAt) {
+		t.Errorf("CreatedAt = %v, want %v", got.Game.CreatedAt, fresh.CreatedAt)
 	}
 }

@@ -35,8 +35,8 @@ func TestViewForLobby(t *testing.T) {
 	if !reflect.DeepEqual(v.Players, want) {
 		t.Fatalf("players %+v", v.Players)
 	}
-	if len(v.Piles) != 4 || v.Piles[0] != (PileView{Index: 0, Direction: DirectionUp, StartValue: 1, TopValue: 1}) ||
-		v.Piles[3] != (PileView{Index: 3, Direction: DirectionDown, StartValue: 100, TopValue: 100}) {
+	if len(v.Piles) != 4 || !reflect.DeepEqual(v.Piles[0], PileView{Index: 0, Direction: DirectionUp, StartValue: 1, TopValue: 1}) ||
+		!reflect.DeepEqual(v.Piles[3], PileView{Index: 3, Direction: DirectionDown, StartValue: 100, TopValue: 100}) {
 		t.Fatalf("piles %+v", v.Piles)
 	}
 }
@@ -85,7 +85,7 @@ func TestViewForPlaying(t *testing.T) {
 		t.Fatalf("turn %+v", active.Turn)
 	}
 	top := NumberCard(45)
-	if active.Piles[2] != (PileView{Index: 2, Direction: DirectionDown, StartValue: 100, TopValue: 45, CardCount: 2, TopCard: active.Piles[2].TopCard}) ||
+	if !reflect.DeepEqual(active.Piles[2], PileView{Index: 2, Direction: DirectionDown, StartValue: 100, TopValue: 45, CardCount: 2, TopCard: active.Piles[2].TopCard, Cards: g.Piles[2].Cards}) ||
 		active.Piles[2].TopCard == nil || *active.Piles[2].TopCard != top || active.Piles[1].TopCard != nil {
 		t.Fatalf("piles %+v", active.Piles)
 	}

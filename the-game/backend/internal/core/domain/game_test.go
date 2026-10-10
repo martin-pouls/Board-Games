@@ -3,6 +3,7 @@ package domain
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func sampleGame(t *testing.T) *Game {
@@ -167,11 +168,25 @@ func TestSummary(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Game{ID: "K7MQ2", Phase: tt.phase, HostID: "a", Rules: r, Players: players(tt.n)}
-			want := GameSummary{GameID: "K7MQ2", Phase: tt.phase, HostName: "A", PlayerCount: tt.n, MaxPlayers: 5, Joinable: tt.joinable}
+			created := time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC)
+			g := &Game{ID: "K7MQ2", Phase: tt.phase, HostID: "a", Rules: r, Players: players(tt.n), CreatedAt: created}
+			want := GameSummary{GameID: "K7MQ2", Phase: tt.phase, HostName: "A", PlayerCount: tt.n, MaxPlayers: 5, Joinable: tt.joinable, CreatedAt: created}
 			if got := g.Summary(); got != want {
 				t.Fatalf("Summary() = %+v, want %+v", got, want)
 			}
 		})
+	}
+}
+
+func TestSummaryOutcome(t *testing.T) {
+	r, _ := NewRuleset(DefaultOptions())
+	for _, o := range []Outcome{OutcomeWon, OutcomeLost, OutcomeAborted} {
+		g := &Game{ID: "K7MQ2", Phase: PhaseFinished, Rules: r, Result: &Result{Outcome: o}}
+		if got := g.Summary().Outcome; got != o {
+			t.Errorf("Summary().Outcome = %q, want %q", got, o)
+		}
+	}
+	if got := (&Game{Phase: PhasePlaying, Rules: r}).Summary().Outcome; got != "" {
+		t.Errorf("running game Outcome = %q, want empty", got)
 	}
 }

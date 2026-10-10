@@ -102,8 +102,8 @@ func TestRequiredMinimum(t *testing.T) {
 		draw []int
 		want int
 	}{
-		{"classic", DefaultOptions(), []int{90}, 2},
-		{"classic, draw pile empty", DefaultOptions(), nil, 1},
+		{"classic", classic, []int{90}, 2},
+		{"classic, draw pile empty", classic, nil, 1},
 		{"pro", Options{Variant: VariantClassic, Pro: true}, []int{90}, 3},
 		{"pro, draw pile empty", Options{Variant: VariantClassic, Pro: true}, nil, 1},
 		{"pro reduced, draw pile empty", Options{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, []int{}, 1},
@@ -173,11 +173,11 @@ func TestDrawCount(t *testing.T) {
 		draw  []int
 		want  int
 	}{
-		{"refill solo", DefaultOptions(), [][]int{{10, 20}}, seq(30, 50), 6},
+		{"refill solo", classic, [][]int{{10, 20}}, seq(30, 50), 6},
 		{"refill pro reduced 2p", Options{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, [][]int{{10, 20}, {11}}, seq(30, 50), 4},
-		{"capped", DefaultOptions(), [][]int{{10, 20}}, []int{30, 31}, 2},
-		{"empty draw", DefaultOptions(), [][]int{{10}}, nil, 0},
-		{"hand already full", DefaultOptions(), [][]int{seq(10, 17)}, []int{30}, 0},
+		{"capped", classic, [][]int{{10, 20}}, []int{30, 31}, 2},
+		{"empty draw", classic, [][]int{{10}}, nil, 0},
+		{"hand already full", classic, [][]int{seq(10, 17)}, []int{30}, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -442,7 +442,7 @@ func TestLegalMovesAndCanEndTurnOutsideTurn(t *testing.T) {
 // TestRandomGames plays many random games end to end and checks invariants after every command.
 func TestRandomGames(t *testing.T) {
 	optsList := []Options{
-		DefaultOptions(),
+		classic,
 		{Variant: VariantClassic, Pro: true},
 		{Variant: VariantClassic, Pro: true, ReducedHandSize: true},
 		extreme,

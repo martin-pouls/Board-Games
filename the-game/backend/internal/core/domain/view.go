@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"slices"
+	"time"
 )
 
 // PlayerView is the per-player projection of a game. It never contains other players' hands.
@@ -60,6 +61,8 @@ type PileView struct {
 	TopValue   int
 	TopCard    *Card // nil when only the start card shows
 	CardCount  int   // played cards on the pile
+	// Cards are the played cards, bottom first (last = top). Played cards are public.
+	Cards []Card
 	// CommandActive says the top card's command is in effect: an Infinity top, or a
 	// lightning top played this turn.
 	CommandActive bool
@@ -103,7 +106,9 @@ type GameSummary struct {
 	HostName    string
 	PlayerCount int
 	MaxPlayers  int
-	Joinable    bool // Phase == lobby && PlayerCount < MaxPlayers
+	Joinable    bool      // Phase == lobby && PlayerCount < MaxPlayers
+	CreatedAt   time.Time // zero when unknown (old snapshot)
+	Outcome     Outcome   // empty unless finished
 }
 
 // excellentScoreBelow: a score below this is "excellent" (rules.md, End of game).
@@ -182,6 +187,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 			CardCount:  len(p.Cards),
 		}
 		if top, ok := p.TopCard(); ok {
+			pv.Cards = slices.Clone(p.Cards)
 			pv.TopCard = &top
 			pv.CommandActive = top.Command.IsInfinity() ||
 				(top.Command.IsLightning() && playedThisTurn(g.Turn.Plays, i))

@@ -49,6 +49,8 @@ export interface Pile {
 	topValue: number;
 	topCard: Card | null;
 	cardCount: number;
+	/** Played cards, bottom first (last = topCard). */
+	cards: Card[];
 	/** topCard.command is in effect now (Infinity top, or lightning top played this turn). */
 	commandActive: boolean;
 }
@@ -112,6 +114,10 @@ export interface GameSummary {
 	playerCount: number;
 	maxPlayers: number;
 	joinable: boolean;
+	/** RFC3339 UTC creation time; absent for very old games. */
+	createdAt?: string;
+	/** Result of a finished game; absent until then. */
+	outcome?: Outcome;
 }
 export interface SessionResponse {
 	gameId: string;

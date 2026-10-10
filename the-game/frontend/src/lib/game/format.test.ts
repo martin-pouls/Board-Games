@@ -29,6 +29,12 @@ it('says the game ended early when aborted', () => {
 	);
 });
 
+it('says the game never started when ended in the lobby', () => {
+	expect(resultHeadline({ ...result(0), outcome: 'aborted' })).toBe(
+		'Game ended before it started.'
+	);
+});
+
 it('checks the outcome before the score: lost with 0 cards left is not a win', () => {
 	expect(resultHeadline({ ...result(0), outcome: 'lost' })).toBe(
 		'So close! All cards played, but a skull stayed uncovered.'

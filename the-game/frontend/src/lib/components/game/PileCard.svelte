@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
-	import Target from '@lucide/svelte/icons/target';
+	import Layers from '@lucide/svelte/icons/layers';
 	import Skull from '@lucide/svelte/icons/skull';
 	import { scale } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
@@ -9,6 +9,7 @@
 	import { cn } from '#lib/utils.js';
 	import type { Pile } from '#lib/types.js';
 	import CommandChip from './CommandChip.svelte';
+	import CommandIcon from './CommandIcon.svelte';
 
 	let {
 		pile,
@@ -18,6 +19,7 @@
 		playsThisTurn = 0,
 		bound = false,
 		skull = false,
+		inspectable = false,
 		onclick
 	}: {
 		pile: Pile;
@@ -29,6 +31,8 @@
 		bound?: boolean;
 		/** A skull played this turn shows here and must be covered. */
 		skull?: boolean;
+		/** A tap opens the pile history instead of playing a card. */
+		inspectable?: boolean;
 		onclick?: () => void;
 	} = $props();
 
@@ -42,7 +46,8 @@
 				: '') +
 			(skull ? ', skull must be covered' : '') +
 			(bound ? ', all cards this turn go here' : '') +
-			(highlight ? ', tap to play here' : '')
+			(highlight ? ', tap to play here' : '') +
+			(inspectable ? ', tap to see all its cards' : '')
 	);
 </script>
 
@@ -80,14 +85,18 @@
 			{#if up}<ArrowUp class="size-4 shrink-0" />{:else}<ArrowDown class="size-4 shrink-0" />{/if}
 			<span class="truncate tabular-nums">{up ? '1 → 99' : '100 → 2'}</span>
 			{#if bound}
-				<Target
-					class="ml-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-					aria-hidden="true"
+				<CommandIcon
+					command="singlePile"
+					class="ml-0.5 size-4 text-emerald-600 dark:text-emerald-400"
 				/>
 			{/if}
 		</span>
-		<span class="shrink-0 tabular-nums opacity-70" title="Cards on this pile">{pile.cardCount}</span
+		<span
+			class="flex shrink-0 items-center gap-0.5 tabular-nums opacity-70"
+			title="Cards on this pile"
 		>
+			<Layers class="size-3.5" aria-hidden="true" />{pile.cardCount}
+		</span>
 	</span>
 
 	<span class="flex flex-1 items-center justify-center">
@@ -110,8 +119,8 @@
 		<span class="flex h-5 min-w-0 items-center justify-between gap-1 text-[0.7rem] font-medium">
 			<CommandChip {command} size="xs" muted={!pile.commandActive} class="min-w-0" />
 			{#if playsThisTurn > 0}
-				<span class="shrink-0 opacity-70"
-					>+{playsThisTurn}<span class="@max-[10.5rem]:hidden"> this turn</span></span
+				<span class="shrink-0 whitespace-nowrap tabular-nums opacity-70"
+					>+{playsThisTurn}<span class="@max-[10.5rem]:hidden">&nbsp;this turn</span></span
 				>
 			{/if}
 		</span>

@@ -54,6 +54,7 @@ type Pile struct {
 	TopValue      int    `json:"topValue"`
 	TopCard       *Card  `json:"topCard"` // null when only the start card shows
 	CardCount     int    `json:"cardCount"`
+	Cards         []Card `json:"cards"`         // played cards, bottom first (last = top); never null
 	CommandActive bool   `json:"commandActive"` // topCard.command is in effect now
 }
 
@@ -127,6 +128,8 @@ type GameSummary struct {
 	PlayerCount int    `json:"playerCount"`
 	MaxPlayers  int    `json:"maxPlayers"`
 	Joinable    bool   `json:"joinable"`
+	CreatedAt   string `json:"createdAt,omitempty"` // RFC3339 UTC; omitted when unknown
+	Outcome     string `json:"outcome,omitempty"`   // won/lost/aborted once finished
 }
 
 // Event type strings.

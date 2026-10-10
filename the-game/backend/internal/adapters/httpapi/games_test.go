@@ -249,11 +249,11 @@ func TestCreateGame(t *testing.T) {
 		t.Fatalf("hand should be [] in %s", w.Body.String())
 	}
 
-	w = do(t, h, "POST", "/api/games", "", `{"name":"Ann","options":{"variant":"","pro":true,"reducedHandSize":true}}`)
+	w = do(t, h, "POST", "/api/games", "", `{"name":"Ann","options":{"variant":"","pro":true,"reducedHandSize":true}}`) // empty variant = default (extreme)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("status = %d", w.Code)
 	}
-	want := domain.Options{Variant: domain.VariantClassic, Pro: true, ReducedHandSize: true}
+	want := domain.Options{Variant: domain.VariantExtreme, Pro: true, ReducedHandSize: true}
 	if svc.lastOpts != want {
 		t.Fatalf("opts = %+v, want %+v", svc.lastOpts, want)
 	}
@@ -371,7 +371,7 @@ func TestAuthedRouteArgs(t *testing.T) {
 	if w := do(t, h, "PUT", "/api/games/ABCDE/options", "tok-host", `{"pro":true}`); w.Code != http.StatusOK {
 		t.Fatalf("options: %d", w.Code)
 	}
-	if want := (domain.Options{Variant: domain.VariantClassic, Pro: true}); svc.lastOpts != want {
+	if want := (domain.Options{Variant: domain.VariantExtreme, Pro: true}); svc.lastOpts != want {
 		t.Fatalf("opts = %+v", svc.lastOpts)
 	}
 	do(t, h, "POST", "/api/games/ABCDE/first-player", "tok-host", `{"playerId":"p_guest"}`)

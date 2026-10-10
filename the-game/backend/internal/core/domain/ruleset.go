@@ -17,13 +17,13 @@ type Options struct {
 	ReducedHandSize bool // hand size -1; only allowed together with Pro
 }
 
-// DefaultOptions returns the classic, non-Pro options.
+// DefaultOptions returns the options new games start with: the Extreme variant, non-Pro.
 func DefaultOptions() Options {
-	return Options{Variant: VariantClassic}
+	return Options{Variant: VariantExtreme}
 }
 
 // Validate reports whether the options are allowed. Errors wrap ErrInvalidOptions.
-// An empty Variant is invalid; adapters map "empty on input" to classic.
+// An empty Variant is invalid; adapters map "empty on input" to the default variant.
 // Pro and the reduced hand size combine with either variant.
 func (o Options) Validate() error {
 	switch o.Variant {

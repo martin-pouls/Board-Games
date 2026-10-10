@@ -42,14 +42,14 @@ func TestOptionsValidate(t *testing.T) {
 	}
 }
 
-func TestDefaultOptions(t *testing.T) {
-	if got := DefaultOptions(); got != (Options{Variant: VariantClassic}) {
+func TestDefaultOptionsIsExtreme(t *testing.T) {
+	if got := DefaultOptions(); got != (Options{Variant: VariantExtreme}) {
 		t.Fatalf("DefaultOptions() = %+v", got)
 	}
 }
 
 func TestRulesetHandSizes(t *testing.T) {
-	classic := DefaultOptions()
+	classic := classic
 	pro := Options{Variant: VariantClassic, Pro: true}
 	proReduced := Options{Variant: VariantClassic, Pro: true, ReducedHandSize: true}
 	tests := []struct {
@@ -80,8 +80,8 @@ func TestRulesetMinimums(t *testing.T) {
 		drawPileEmpty bool
 		want          int
 	}{
-		{"classic", DefaultOptions(), false, 2},
-		{"classic empty draw pile", DefaultOptions(), true, 1},
+		{"classic", classic, false, 2},
+		{"classic empty draw pile", classic, true, 1},
 		{"pro", Options{Variant: VariantClassic, Pro: true}, false, 3},
 		{"pro empty draw pile", Options{Variant: VariantClassic, Pro: true}, true, 1},
 		{"pro reduced", Options{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, false, 3},
@@ -102,7 +102,7 @@ func TestRulesetMinimums(t *testing.T) {
 // TestRulesetExtremeSameAsClassic: hand sizes and minimums are the same (rules.md §2).
 func TestRulesetExtremeSameAsClassic(t *testing.T) {
 	pairs := [][2]Options{
-		{DefaultOptions(), extreme},
+		{classic, extreme},
 		{{Variant: VariantClassic, Pro: true}, extremePro},
 		{{Variant: VariantClassic, Pro: true, ReducedHandSize: true}, extremeProReduced},
 	}
@@ -119,7 +119,7 @@ func TestRulesetExtremeSameAsClassic(t *testing.T) {
 }
 
 func TestRulesetConstants(t *testing.T) {
-	r, err := NewRuleset(DefaultOptions())
+	r, err := NewRuleset(classic)
 	if err != nil {
 		t.Fatal(err)
 	}
