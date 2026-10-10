@@ -1,0 +1,27 @@
+# Shared Caddy reverse proxy (the only container with public ports). Runs from /opt/caddy.
+# App stacks join the "web" network created here and are proxied by container name.
+name: caddy
+
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./conf:/etc/caddy:ro
+      - data:/data # certificates
+      - config:/config
+    networks:
+      - web
+
+volumes:
+  data:
+  config:
+
+networks:
+  web:
+    name: web

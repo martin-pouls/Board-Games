@@ -5,6 +5,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 const backend = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
+// Sub-path the app is served under in production (e.g. BASE_PATH=/the-game behind Caddy);
+// empty in dev. Routes use resolve(); API and WS URLs read __BASE_PATH__.
+const base = (process.env.BASE_PATH ?? '') as '' | `/${string}`;
+
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -15,9 +19,11 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 			// SPA mode: unknown routes fall back to index.html (served by the Go backend in prod).
-			adapter: adapter({ fallback: 'index.html' })
+			adapter: adapter({ fallback: 'index.html' }),
+			paths: { base }
 		})
 	],
+	define: { __BASE_PATH__: JSON.stringify(base) },
 	server: {
 		proxy: {
 			'/api': backend,

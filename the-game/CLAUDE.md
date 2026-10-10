@@ -104,6 +104,22 @@ npm run build      # static SPA into frontend/build
 
 Production-like local run: `npm run build` in `frontend/`, then in `backend/` run `STATIC_DIR=../frontend/build go run ./cmd/server` and open http://localhost:8080.
 
+## Deployment
+
+Live at https://yoshi-und-kruemli.de/the-game/. The server is a Hetzner arm64 Ubuntu box (root via `~/.ssh/hetzner_ed25519`).
+
+- **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)).
+  - It is the only container with public ports, and it handles HTTPS automatically.
+  - Apps join the Docker network `web` and add a snippet to `/opt/caddy/conf/sites/`.
+- **The Game** is one image ([Dockerfile](Dockerfile): SPA + Go server) run by [deploy/compose.yaml](deploy/compose.yaml).
+  - The SQLite DB lives in the volume `the-game_data`.
+  - [deploy/the-game.caddy](deploy/the-game.caddy) strips `/the-game`, so the Go server stays path-agnostic.
+- **Base path:** the SPA is built with `BASE_PATH=/the-game` (`paths.base`). Routes use `resolve()`; API and WS URLs use `__BASE_PATH__`. Never hard-code `/api` or `/ws` without it.
+- **Deploying:** run `deploy/deploy.sh` from Git Bash.
+  - It ships the *committed* HEAD via `git archive` and builds on the server (native arm64).
+  - `deploy/setup-server.sh` is the one-time, idempotent bootstrap: Docker, ufw, Caddy.
+- **Git Bash gotcha:** it rewrites `/the-game` in env vars into a Windows path. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/the-game npm run build`.
+
 ## Conventions and gotchas
 
 - **SvelteKit 3 uses Node subpath imports (`#lib`), not `$lib`.** Imports need an explicit file, e.g. `#lib/api.js` (resolves to `api.ts`) or `#lib/components/ui/card/index.js`.

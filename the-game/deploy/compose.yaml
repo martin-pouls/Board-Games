@@ -1,0 +1,24 @@
+# The Game on the server: one container behind the shared Caddy proxy (deploy/caddy),
+# reachable only over the external "web" network. Caddy maps /the-game/* to it.
+name: the-game
+
+services:
+  app:
+    build:
+      context: ..
+      args:
+        BASE_PATH: /the-game
+    image: the-game:latest
+    container_name: the-game
+    restart: unless-stopped
+    volumes:
+      - data:/data # SQLite DB: games survive redeploys
+    networks:
+      - web
+
+volumes:
+  data:
+
+networks:
+  web:
+    external: true

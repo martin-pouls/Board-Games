@@ -1,0 +1,9 @@
+.git
+**/node_modules
+frontend/build
+frontend/.svelte-kit
+backend/data
+backend/bin
+**/*.db
+**/*.db-shm
+**/*.db-wal

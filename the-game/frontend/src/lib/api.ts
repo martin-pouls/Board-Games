@@ -1,4 +1,5 @@
 // Thin client for the Go REST API. In dev, Vite proxies /api and /ws to the backend.
+// Paths are prefixed with the build-time base path (BASE_PATH, e.g. /the-game in production).
 import type {
 	ApiErrorCode,
 	ErrorBody,
@@ -20,7 +21,7 @@ export class ApiError extends Error {
 }
 
 export async function getHealth(): Promise<{ status: string }> {
-	const res = await fetch('/api/health');
+	const res = await fetch(`${__BASE_PATH__}/api/health`);
 	if (!res.ok) throw new Error(`health check failed: ${res.status}`);
 	return res.json();
 }
@@ -39,7 +40,7 @@ async function request<T>(
 	}
 	let res: Response;
 	try {
-		res = await fetch(path, { method, headers, body });
+		res = await fetch(__BASE_PATH__ + path, { method, headers, body });
 	} catch {
 		throw new ApiError(0, 'network', 'network error');
 	}

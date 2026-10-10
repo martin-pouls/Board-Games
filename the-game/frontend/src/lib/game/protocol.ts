@@ -17,7 +17,7 @@ export function wsUrl(
 	token: string
 ): string {
 	const scheme = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-	return `${scheme}//${loc.host}/ws/games/${encodeURIComponent(code)}?token=${encodeURIComponent(token)}`;
+	return `${scheme}//${loc.host}${__BASE_PATH__}/ws/games/${encodeURIComponent(code)}?token=${encodeURIComponent(token)}`;
 }
 
 export function parseServerMessage(data: string): ServerMessage | null {
