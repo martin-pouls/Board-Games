@@ -126,4 +126,10 @@
 	html {
 		@apply font-sans;
 	}
+	/* No double-tap zoom delay on phones. */
+	button,
+	a,
+	[role='button'] {
+		touch-action: manipulation;
+	}
 }
