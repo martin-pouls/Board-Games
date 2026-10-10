@@ -176,6 +176,10 @@ func (f *fakeService) GiveUp(_ context.Context, id domain.GameID, p domain.Playe
 	return f.viewCall("GiveUp", id, p)
 }
 
+func (f *fakeService) EndGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.viewCall("EndGame", id, p)
+}
+
 func (f *fakeService) Rematch(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	v, err := f.viewCall("Rematch", id, p)
 	v.NextGameID = "NEXT2"
@@ -330,6 +334,7 @@ func TestAuthedRoutes(t *testing.T) {
 		{"POST", "/api/games/%s/solo-jester", "", "UseSoloJester"},
 		{"PUT", "/api/games/%s/signal", `{"signal":"goodPlay"}`, "SetJesterSignal"},
 		{"POST", "/api/games/%s/give-up", "", "GiveUp"},
+		{"POST", "/api/games/%s/end-game", "", "EndGame"},
 		{"POST", "/api/games/%s/rematch", "", "Rematch"},
 	}
 	for _, rt := range routes {

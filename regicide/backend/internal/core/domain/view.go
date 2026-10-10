@@ -167,7 +167,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		}
 		v.Enemy = ev
 	}
-	if g.Phase != PhaseLobby {
+	if g.Phase != PhaseLobby && g.Phase != PhaseEnded {
 		tv := &TurnView{
 			Number:         g.Turn.Number,
 			ActivePlayerID: g.Players[g.Turn.ActiveSeat].ID,

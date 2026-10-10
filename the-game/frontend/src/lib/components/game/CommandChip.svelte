@@ -11,6 +11,7 @@
 		command,
 		muted = false,
 		size = 'sm',
+		label,
 		class: className = '',
 		children
 	}: {
@@ -18,6 +19,8 @@
 		/** The command has no effect any more (lightning card from an earlier turn). */
 		muted?: boolean;
 		size?: 'sm' | 'xs';
+		/** Replaces the short chip text (e.g. the full label). */
+		label?: string;
 		class?: string;
 		/** Extra content after the label (e.g. the pile direction). */
 		children?: Snippet;
@@ -48,6 +51,6 @@
 		<!-- the 3! glyph would just repeat its label -->
 		<CommandIcon {command} class={icon} />
 	{/if}
-	<span class="truncate">{info.short}</span>
+	<span class="truncate">{label ?? info.short}</span>
 	{@render children?.()}
 </span>

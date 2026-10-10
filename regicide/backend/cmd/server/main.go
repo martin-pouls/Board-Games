@@ -110,7 +110,7 @@ type config struct {
 
 func loadConfig() (config, error) {
 	cfg := config{
-		Addr:      env("ADDR", ":8080"),
+		Addr:      env("ADDR", ":8081"), // :8080 is The Game's; the image sets ADDR=:8080
 		DBPath:    env("DB_PATH", "data/regicide.db"),
 		StaticDir: env("STATIC_DIR", ""),
 	}

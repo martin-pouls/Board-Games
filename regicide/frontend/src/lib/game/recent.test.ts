@@ -31,6 +31,7 @@ describe('isContinuable', () => {
 		['playing', true],
 		['won', false],
 		['lost', false],
+		['ended', false],
 		[null, true]
 	] as const)('%s -> %s', (phase, want) => {
 		expect(isContinuable({ phase })).toBe(want);
@@ -105,6 +106,7 @@ describe('statusLabel', () => {
 		[game('A', 'playing', 0), 'In progress'],
 		[game('A', 'won', 0), 'Won'],
 		[game('A', 'lost', 0), 'Lost'],
+		[game('A', 'ended', 0), 'Ended'],
 		[game('A', null, 0), '']
 	])('%o -> %s', (g, label) => {
 		expect(statusLabel(g)).toBe(label);

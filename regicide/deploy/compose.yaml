@@ -8,7 +8,8 @@ services:
       context: ..
       args:
         BASE_PATH: /regicide
-    image: regicide:latest
+    # Built by CI for each commit; on the server TAG comes from deploy/.env (see deploy/server/).
+    image: ghcr.io/martin-pouls/card-games/regicide:${TAG:-latest}
     container_name: regicide
     restart: unless-stopped
     volumes:

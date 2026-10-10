@@ -211,6 +211,22 @@ func (g *Game) GiveUp(by PlayerID) error {
 	return nil
 }
 
+// EndGame closes the lobby for everyone (host only), so it no longer waits to be continued; a
+// sole player cannot Leave, so this is how they get rid of it. A running game is given up instead.
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase (not in the lobby). Emits GameEnded.
+func (g *Game) EndGame(by PlayerID) error {
+	if err := g.requireHost(by); err != nil {
+		return err
+	}
+	if g.Phase != PhaseLobby {
+		return fmt.Errorf("%w: only a lobby can be ended", ErrWrongPhase)
+	}
+	g.Phase = PhaseEnded
+	g.emit(GameEnded{ByPlayerID: by})
+	g.commit()
+	return nil
+}
+
 // Rematch creates the lobby for a new game with the same players (same IDs, names, seat order)
 // and an empty table; by becomes host. Any player may call it once the game is over.
 // Errors: ErrUnknownPlayer, ErrWrongPhase (not won/lost), ErrRematchExists (NextGameID already set).

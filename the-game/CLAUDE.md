@@ -16,7 +16,7 @@ Keep every domain concept open for further card kinds (the mini-expansions Joker
 - Go module `github.com/martin-pouls/the-game/backend`. Default DB `data/the-game.db`.
 - `frontend/src/lib/game/commands.ts` holds the Extreme command metadata. Game screen components: Lobby, Board, GameOver, ...
 - **Per-player view:** own hand, piles, draw-pile count, other players' hand *counts*, whose turn, active commands, etc.
-- **UI:** shadcn base color `zinc`, Inter, light/dark theme toggle (mode-watcher).
+- **UI:** shadcn base color `zinc` tinted toward blue, Inter, light/dark theme toggle (mode-watcher). The accents are the blue and orange of The Game Extreme, which are also the ascending (sky) and descending (amber) pile colours: a blue primary and two soft page glows (`--glow-up`, `--glow-down` in `routes/layout.css`). Violet stays reserved for Infinity commands. The start page tile uses the same colours.
 - **Deployment:** container `the-game`, SQLite in the volume `the-game_data`, Caddy snippet [deploy/the-game.caddy](deploy/the-game.caddy).
 
 ## Extensibility for The Game Extreme

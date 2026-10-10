@@ -158,6 +158,8 @@ func (h *Handler) dispatch(ctx context.Context, c *conn, msg apidto.ClientMessag
 		_, err = h.svc.SetJesterSignal(ctx, id, p, apidto.SignalFromWire(*msg.Signal))
 	case apidto.CmdGiveUp:
 		_, err = h.svc.GiveUp(ctx, id, p)
+	case apidto.CmdEndGame:
+		_, err = h.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:
 		_, err = h.svc.Rematch(ctx, id, p)
 	default:

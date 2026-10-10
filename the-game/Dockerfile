@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-# Single image: Go server + built SPA. Built natively on the (arm64) server by deploy/compose.yaml.
+# Single image: Go server + built SPA. Built for arm64 by CI (.github/workflows/deploy.yml) from
+# deploy/compose.yaml, or on the server by the fallback deploy/deploy.sh.
 
 FROM node:24-alpine AS web
 WORKDIR /src/frontend
@@ -19,6 +20,8 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/serve
 	&& mkdir -p /out/data
 
 FROM gcr.io/distroless/static-debian12:nonroot
+# Links the image to the repo on ghcr.io; the server prunes old images by it.
+LABEL org.opencontainers.image.source=https://github.com/martin-pouls/Card-Games
 COPY --from=api /out/server /app/server
 COPY --from=web /src/frontend/build /app/static
 # Owned by nonroot so a fresh named volume mounted here is writable.

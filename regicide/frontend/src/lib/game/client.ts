@@ -22,5 +22,6 @@ export type GameClient = Pick<
 	| 'useSoloJester'
 	| 'setSignal'
 	| 'giveUp'
+	| 'endGame'
 	| 'rematch'
 >;

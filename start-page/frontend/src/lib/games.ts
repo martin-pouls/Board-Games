@@ -2,8 +2,10 @@
 export interface Game {
 	id: 'the-game' | 'regicide';
 	name: string;
-	/** Absolute path of the game's app on the same host (outside this app's base path). */
-	href: `/${string}/`;
+	/** Absolute path of the game's app on the same host in production (outside this app's base path). */
+	path: `/${string}/`;
+	/** Port of the game's Vite dev server (`server.port` in its vite.config.ts), linked to in dev. */
+	devPort: number;
 	players: string;
 	tagline: string;
 	features: string[];
@@ -13,7 +15,8 @@ export const games: Game[] = [
 	{
 		id: 'the-game',
 		name: 'The Game',
-		href: '/the-game/',
+		path: '/the-game/',
+		devPort: 5173,
 		players: '1–5 players',
 		tagline:
 			'Play all 98 cards onto two rising and two falling piles, without saying which numbers you hold.',
@@ -22,10 +25,24 @@ export const games: Game[] = [
 	{
 		id: 'regicide',
 		name: 'Regicide',
-		href: '/regicide/',
+		path: '/regicide/',
+		devPort: 5174,
 		players: '1–4 players',
 		tagline:
 			'Defeat twelve corrupted royals with a standard deck, using the powers of the four suits.',
 		features: ['Solo mode with Jesters', 'Gold, Silver and Bronze victories']
 	}
 ];
+
+/**
+ * Where a game's tile links to. In production every app sits on the same host behind Caddy, so
+ * it is the game's path. In dev each app runs its own Vite server, so it is the game's dev port on
+ * the hostname the start page was opened with (localhost, or a LAN IP when testing on a phone).
+ */
+export function gameHref(
+	game: Game,
+	url: Pick<URL, 'protocol' | 'hostname'>,
+	dev: boolean
+): string {
+	return dev ? `${url.protocol}//${url.hostname}:${game.devPort}/` : game.path;
+}

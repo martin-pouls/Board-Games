@@ -139,9 +139,9 @@ func (g *Game) Grade() Grade {
 	}
 }
 
-// EnemiesDefeated is the number of enemies defeated so far (0 in the lobby).
+// EnemiesDefeated is the number of enemies defeated so far (0 before the game started).
 func (g *Game) EnemiesDefeated() int {
-	if g.Phase == PhaseLobby {
+	if g.Phase == PhaseLobby || g.Phase == PhaseEnded {
 		return 0
 	}
 	n := CastleSize - len(g.Castle)

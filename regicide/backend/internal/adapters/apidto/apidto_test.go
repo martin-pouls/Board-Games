@@ -195,6 +195,7 @@ func TestFromEvents(t *testing.T) {
 		domain.SoloJesterUsed{PlayerID: "p1", Drawn: 8, Left: 0},
 		domain.GameWon{Grade: domain.GradeGold},
 		domain.GameLost{Reason: domain.LossCannotAct, PlayerID: "p2"},
+		domain.GameEnded{ByPlayerID: "p1"},
 		domain.RematchCreated{GameID: "NEXT1"},
 	}
 	want := []string{
@@ -215,6 +216,7 @@ func TestFromEvents(t *testing.T) {
 		`{"type":"soloJesterUsed","playerId":"p1","drawn":8,"left":0}`,
 		`{"type":"gameWon","grade":"gold"}`,
 		`{"type":"gameLost","playerId":"p2","reason":"cannotAct"}`,
+		`{"type":"gameEnded","byPlayerId":"p1"}`,
 		`{"type":"rematchCreated","gameId":"NEXT1"}`,
 	}
 	got := FromEvents(evs)

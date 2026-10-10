@@ -4,8 +4,10 @@
 	import { resolve } from '$app/paths';
 	import Crown from '@lucide/svelte/icons/crown';
 	import DoorOpen from '@lucide/svelte/icons/door-open';
+	import Flag from '@lucide/svelte/icons/flag';
 	import House from '@lucide/svelte/icons/house';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import X from '@lucide/svelte/icons/x';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
@@ -25,6 +27,7 @@
 
 	let busy = $state(false);
 	let confirmLeave = $state(false);
+	let confirmEnd = $state(false);
 	/** 'random' or a player id. */
 	let firstChoice = $state<string>('random');
 
@@ -50,6 +53,18 @@
 		}
 	}
 
+	const headerAction =
+		'flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50';
+
+	/** Closes the lobby for everyone (host only); it moves to everyone's history. */
+	function endGame() {
+		return run(async () => {
+			await client.endGame();
+			confirmEnd = false;
+			await goto(resolve('/'));
+		});
+	}
+
 	async function leave() {
 		if (busy) return;
 		busy = true;
@@ -73,16 +88,44 @@
 			<House class="size-5" />
 		</a>
 		<h1 class="text-lg font-semibold">Lobby</h1>
-		<button
-			type="button"
-			class="-mr-1 ml-auto flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
-			disabled={busy}
-			title="Leave"
-			onclick={() => (view.players.length >= 2 ? (confirmLeave = true) : leave())}
-		>
-			<DoorOpen class="size-4" />
-			Leave
-		</button>
+		<div class="-mr-1 ml-auto flex items-center gap-1">
+			{#if solo}
+				<!-- A sole player cannot leave; closing affects nobody else, so no confirmation. -->
+				<button
+					type="button"
+					class={headerAction}
+					disabled={!connected || busy}
+					title="Close lobby"
+					onclick={endGame}
+				>
+					<X class="size-4" />
+					Close lobby
+				</button>
+			{:else}
+				<button
+					type="button"
+					class={headerAction}
+					disabled={busy}
+					title="Leave"
+					onclick={() => (confirmLeave = true)}
+				>
+					<DoorOpen class="size-4" />
+					Leave
+				</button>
+				{#if isHost}
+					<button
+						type="button"
+						class={headerAction}
+						disabled={!connected || busy}
+						title="End game"
+						onclick={() => (confirmEnd = true)}
+					>
+						<Flag class="size-4" />
+						End game
+					</button>
+				{/if}
+			{/if}
+		</div>
 	</header>
 
 	<Card.Root>
@@ -195,6 +238,27 @@
 				onclick={leave}
 			>
 				Leave
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root bind:open={confirmEnd}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>End this game for everyone?</AlertDialog.Title>
+			<AlertDialog.Description>
+				The lobby closes before the game starts and moves to everyone's history.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={busy}>Keep lobby</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class="bg-destructive text-white hover:bg-destructive/90"
+				disabled={busy || !connected}
+				onclick={endGame}
+			>
+				End game
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

@@ -80,7 +80,7 @@ type Result struct {
 type PlayerView struct {
 	GameID          string          `json:"gameId"`
 	Revision        int64           `json:"revision"`
-	Phase           string          `json:"phase"` // "lobby" | "playing" | "won" | "lost"
+	Phase           string          `json:"phase"` // "lobby" | "playing" | "won" | "lost" | "ended"
 	You             string          `json:"you"`
 	HostID          string          `json:"hostId"`
 	Rules           Rules           `json:"rules"`
@@ -125,6 +125,7 @@ const (
 	EventSoloJesterUsed   = "soloJesterUsed"
 	EventGameWon          = "gameWon"
 	EventGameLost         = "gameLost"
+	EventGameEnded        = "gameEnded"
 	EventRematchCreated   = "rematchCreated"
 )
 

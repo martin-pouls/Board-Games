@@ -36,7 +36,7 @@
 
 	const MEDAL_COLOR: Record<Grade, string> = {
 		gold: 'text-gold',
-		silver: 'text-slate-300',
+		silver: 'text-slate-500 dark:text-slate-300',
 		bronze: 'text-amber-700'
 	};
 	const GRADE_NOTE: Record<Grade, string> = {

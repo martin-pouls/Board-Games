@@ -35,6 +35,7 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games/{code}/solo-jester", a.authed(a.soloJester))
 	mux.HandleFunc("PUT /api/games/{code}/signal", a.authed(a.setSignal))
 	mux.HandleFunc("POST /api/games/{code}/give-up", a.authed(a.giveUp))
+	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
 	mux.HandleFunc("POST /api/games/{code}/rematch", a.authed(a.rematch))
 }
 
@@ -230,6 +231,10 @@ func (a *gamesAPI) setSignal(w http.ResponseWriter, r *http.Request, id domain.G
 
 func (a *gamesAPI) giveUp(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return a.svc.GiveUp(r.Context(), id, p)
+}
+
+func (a *gamesAPI) endGame(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return a.svc.EndGame(r.Context(), id, p)
 }
 
 func (a *gamesAPI) rematch(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {

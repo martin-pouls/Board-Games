@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# CI deploy entry point on the server, installed to /usr/local/bin by deploy/setup-server.sh. It is
+# the forced command of the CI key in ~deploy/.ssh/authorized_keys, so that key can run this and
+# nothing else (no shell, no port forwarding). .github/workflows/deploy.yml calls it as
+#
+#   ssh deploy@<host> deploy <commit sha> <app>...
+#
+# stdin: one line "<user> <token>" that may pull from ghcr.io.
+#
+# The caller only chooses a commit and apps. The deploy files (compose.yaml, Caddy snippet) come
+# from the server's own clone of main ($ROOT/.repo, fetched from GitHub), never from the caller,
+# and the commit must be on main. The deploy user is root-equivalent (docker group), so this is
+# what keeps a stolen key from running a compose file of its choice: it can at most redeploy an
+# older commit of main.
+#
+# For each app it pulls the image CI built from that commit, installs <app>/deploy of that commit
+# as /opt/card-games/<app>/deploy with TAG=<sha> in its .env, restarts the container and installs
+# the Caddy snippet; then it reloads Caddy once. Every image is pulled before anything is changed,
+# so a failed pull leaves the running apps alone.
+set -euo pipefail
+
+ROOT=${CARD_GAMES_ROOT:-/opt/card-games}
+SITES=${CADDY_SITES:-/opt/caddy/conf/sites}
+REPO_URL=${CARD_GAMES_REPO:-https://github.com/martin-pouls/Card-Games.git}
+LABEL=org.opencontainers.image.source=https://github.com/martin-pouls/Card-Games
+
+die() {
+	echo "card-games-deploy: $*" >&2
+	exit 1
+}
+
+read -r -a args <<<"${SSH_ORIGINAL_COMMAND:-}"
+{ [ "${#args[@]}" -ge 3 ] && [ "${args[0]}" = deploy ]; } || die "usage: deploy <commit sha> <app>..."
+tag=${args[1]}
+apps=("${args[@]:2}")
+[[ $tag =~ ^[0-9a-f]{40}$ ]] || die "not a full commit sha: $tag"
+for app in "${apps[@]}"; do
+	[[ $app =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "bad app name: $app"
+done
+
+# One deploy at a time (CI serialises runs too; this also covers a manual run).
+exec 9>"$ROOT/.deploy.lock"
+flock 9
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+read -r user token || die "no registry credentials on stdin"
+
+# Only main is fetched, so commits from other branches or forks never get into this clone.
+repo=$ROOT/.repo
+[ -d "$repo" ] || git init --quiet --bare "$repo"
+git -C "$repo" fetch --quiet --no-tags "$REPO_URL" +refs/heads/main:refs/heads/main
+git -C "$repo" merge-base --is-ancestor "$tag" main 2>/dev/null || die "$tag is not a commit on main"
+dirs=()
+for app in "${apps[@]}"; do dirs+=("$app/deploy"); done
+git -C "$repo" archive --format=tar "$tag" "${dirs[@]}" | tar -x -C "$tmp"
+
+# Registry credentials only for this run: they live in $tmp and are deleted with it.
+registry() { DOCKER_CONFIG="$tmp/docker" docker "$@"; }
+if [ -n "$token" ]; then
+	printf "%s" "$token" | registry login ghcr.io -u "$user" --password-stdin >/dev/null
+fi
+
+for app in "${apps[@]}"; do
+	src=$tmp/$app/deploy
+	{ [ -f "$src/compose.yaml" ] && [ -f "$src/$app.caddy" ]; } ||
+		die "$app: missing deploy/compose.yaml or deploy/$app.caddy"
+	printf 'TAG=%s\n' "$tag" >"$src/.env"
+	images=$(docker compose -f "$src/compose.yaml" config --images)
+	[ -n "$images" ] || die "$app: compose.yaml names no image"
+	for image in $images; do
+		echo "==> $app: pulling $image"
+		registry pull --quiet "$image" >/dev/null
+	done
+done
+
+for app in "${apps[@]}"; do
+	dir=$ROOT/$app
+	mkdir -p "$dir"
+	rm -rf "$dir/deploy.new"
+	cp -R "$tmp/$app/deploy" "$dir/deploy.new"
+	rm -rf "$dir/deploy"
+	mv "$dir/deploy.new" "$dir/deploy"
+	echo "$tag" >"$dir/REVISION"
+	docker compose -f "$dir/deploy/compose.yaml" up -d --no-build
+	cp "$dir/deploy/$app.caddy" "$SITES/$app.caddy"
+	echo "==> $app: running $tag"
+done
+
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+# Old app images: they are in the registry, a rollback pulls them again.
+docker image prune -af --filter "label=$LABEL" >/dev/null
+docker image prune -f >/dev/null

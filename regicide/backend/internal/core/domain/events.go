@@ -72,6 +72,8 @@ type GameLost struct {
 	PlayerID PlayerID
 }
 
+type GameEnded struct{ ByPlayerID PlayerID }
+
 type RematchCreated struct{ GameID GameID }
 
 func (PlayerJoined) isEvent()     {}
@@ -90,4 +92,5 @@ func (JesterSignalSet) isEvent()  {}
 func (SoloJesterUsed) isEvent()   {}
 func (GameWon) isEvent()          {}
 func (GameLost) isEvent()         {}
+func (GameEnded) isEvent()        {}
 func (RematchCreated) isEvent()   {}

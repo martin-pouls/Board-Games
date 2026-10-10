@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
-const backend = process.env.BACKEND_URL ?? 'http://localhost:8080';
+const backend = process.env.BACKEND_URL ?? 'http://localhost:8081';
 
 // Sub-path the app is served under in production (e.g. BASE_PATH=/regicide behind Caddy);
 // empty in dev. Routes use resolve(); API and WS URLs read __BASE_PATH__.
@@ -24,7 +24,15 @@ export default defineConfig({
 		})
 	],
 	define: { __BASE_PATH__: JSON.stringify(base) },
+	// Dev only: scan every route for dependencies at startup. Otherwise Vite discovers them (bits-ui,
+	// lucide icons, ...) on first navigation, re-bundles and reloads the page mid-click.
+	optimizeDeps: { entries: ['src/routes/**/+*.svelte'] },
 	server: {
+		// Dev only: compile all components at startup, so the first visit to a page is not slow.
+		warmup: { clientFiles: ['./src/routes/**/*.svelte', './src/lib/**/*.{svelte,ts}'] },
+		// Fixed local port (The Game 5173, Regicide 5174, start page 5175): the start page links here in dev.
+		port: 5174,
+		strictPort: true,
 		proxy: {
 			'/api': backend,
 			'/ws': { target: backend, ws: true }

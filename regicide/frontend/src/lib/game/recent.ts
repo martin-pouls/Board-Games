@@ -16,10 +16,10 @@ export interface RecentGame {
 	createdAt: number;
 }
 
-/** Lobby and running games can be continued; finished ones (won, lost) cannot. */
+/** Lobby and running games can be continued; finished ones (won, lost, ended) cannot. */
 export function isContinuable(g: Pick<RecentGame, 'phase'>): boolean {
 	// An unknown phase (network error) stays continuable: the game page reports the problem.
-	return g.phase !== 'won' && g.phase !== 'lost';
+	return g.phase !== 'won' && g.phase !== 'lost' && g.phase !== 'ended';
 }
 
 /** Newest first; games without a date, then equal dates, fall back to the code for a stable order. */
@@ -66,6 +66,8 @@ export function statusLabel(g: RecentGame): string {
 			return 'Won';
 		case 'lost':
 			return 'Lost';
+		case 'ended':
+			return 'Ended';
 		default:
 			return '';
 	}

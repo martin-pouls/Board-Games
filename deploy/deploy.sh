@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Deploys apps of the committed HEAD to the server. For each app: upload its subtree, rebuild its
-# image there (native arm64), restart its container and install its Caddy snippet; then reload
-# Caddy once. Uncommitted changes are not deployed.
+# Fallback deploy, for when GitHub Actions (.github/workflows/deploy.yml, the normal way) is not
+# available. Deploys apps of the committed HEAD as root over your own key: for each app upload its
+# subtree, build its image on the server (native arm64, tagged local-<rev>), restart its container
+# and install its Caddy snippet; then reload Caddy once. Uncommitted changes are not deployed. The
+# next CI deploy replaces it again.
 #
 # Usage from Git Bash on your PC (first time: deploy/setup-server.sh):
 #   deploy/deploy.sh                       # every app
@@ -56,8 +58,10 @@ rm -rf \$dir/src
 mv \$dir/src.new \$dir/src
 echo $rev >\$dir/REVISION
 cd \$dir/src
-docker compose -f deploy/compose.yaml up -d --build
+TAG=local-$rev docker compose -f deploy/compose.yaml up -d --build
 cp deploy/$app.caddy /opt/caddy/conf/sites/$app.caddy
+# Keep everything writable for the CI deploy user (see setup-server.sh).
+if id deploy >/dev/null 2>&1; then chown -R deploy:deploy \$dir /opt/caddy/conf/sites; fi
 "
 done
 

@@ -131,6 +131,7 @@ Not allowed: Animal Companions inside a combo; a combo of Animal Companions alon
     - **App decision:** detected automatically at the start of Step 1. In solo, an unused Jester power counts as an available action, so the loss triggers only when no Jester power remains.
     - **App decision (solo):** although solo yielding is always allowed (§8), an empty hand at the start of Step 1 with no Jester power left is a loss. Otherwise a fully shielded enemy (effective attack 0) would let the player yield forever without progress.
 - **App decision:** any player may **give up**, which ends the game as a loss for everyone, after a confirmation.
+- **App decision:** the **host can end a game in the lobby** (phase `ended`: neither won nor lost). It moves to everyone's history as "Ended" and cannot be rematched. A sole player cannot leave, so this is how they close a lobby they no longer want; it needs no confirmation then, but does when others are in the lobby. A running game is given up instead.
 
 ## 10. Communication
 

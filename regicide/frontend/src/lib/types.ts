@@ -1,4 +1,4 @@
-export type Phase = 'lobby' | 'playing' | 'won' | 'lost';
+export type Phase = 'lobby' | 'playing' | 'won' | 'lost' | 'ended';
 export type Step = 'play' | 'discard' | 'chooseNext' | '';
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 export type JesterSignal = 'none' | 'goodPlay' | 'ratherNot';
@@ -126,6 +126,7 @@ export type GameEvent =
 	| { type: 'soloJesterUsed'; playerId: string; drawn: number; left: number }
 	| { type: 'gameWon'; grade?: Grade }
 	| { type: 'gameLost'; reason: LossReason; playerId: string }
+	| { type: 'gameEnded'; byPlayerId: string }
 	| { type: 'rematchCreated'; gameId: string };
 export type ApiErrorCode =
 	| 'bad_request'
@@ -172,5 +173,6 @@ export type ClientCommand =
 	| { type: 'useSoloJester' }
 	| { type: 'setSignal'; signal: JesterSignal }
 	| { type: 'giveUp' }
+	| { type: 'endGame' }
 	| { type: 'rematch' };
 // sent as ClientCommand & { requestId: string }

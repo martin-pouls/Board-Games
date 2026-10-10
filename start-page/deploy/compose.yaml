@@ -8,7 +8,8 @@ services:
       context: ..
       args:
         BASE_PATH: /card-games
-    image: start-page:latest
+    # Built by CI for each commit; on the server TAG comes from deploy/.env (see deploy/server/).
+    image: ghcr.io/martin-pouls/card-games/start-page:${TAG:-latest}
     container_name: start-page
     restart: unless-stopped
     networks:

@@ -20,6 +20,7 @@ const (
 	CmdUseSoloJester = "useSoloJester"
 	CmdSetSignal     = "setSignal" // signal: "none" | "goodPlay" | "ratherNot" (required)
 	CmdGiveUp        = "giveUp"
+	CmdEndGame       = "endGame"
 	CmdRematch       = "rematch"
 )
 

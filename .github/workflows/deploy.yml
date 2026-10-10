@@ -1,0 +1,188 @@
+# Continuous deployment to https://yoshi-und-kruemli.de. On every push to main: find the apps that
+# changed, test them, build their arm64 images and push them to ghcr.io tagged with the commit SHA,
+# then deploy them over SSH. The deploy key can only run deploy/server/card-games-deploy on the
+# server (forced command), which deploys only commits of main, from its own clone of the repo.
+# Setup and rollback: deploy/README.md.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Apps to deploy: "all" or space-separated names (e.g. "regicide start-page")'
+        required: true
+        default: all
+
+# One run at a time, in order. A newer push waits instead of cancelling a running deploy; a run
+# that is still queued may be replaced by a newer one, which then also deploys its changes (the
+# plan compares with the last successful deploy, not with the previous push).
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+env:
+  DEPLOY_HOST: yoshi-und-kruemli.de
+  SITE: https://yoshi-und-kruemli.de
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read # last successful run
+    outputs:
+      apps: ${{ steps.plan.outputs.apps }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find the last deployed commit
+        id: base
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --branch main \
+            --event push --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+      - name: Choose apps
+        id: plan
+        env:
+          BASE: ${{ steps.base.outputs.sha }}
+          REQUESTED: ${{ inputs.apps }}
+        run: bash .github/scripts/plan-deploy.sh
+
+  test:
+    needs: plan
+    if: needs.plan.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: hashFiles(format('{0}/backend/go.mod', matrix.app)) != ''
+        with:
+          go-version-file: ${{ matrix.app }}/backend/go.mod
+          cache-dependency-path: ${{ matrix.app }}/backend/go.sum
+      - name: Backend
+        if: hashFiles(format('{0}/backend/go.mod', matrix.app)) != ''
+        working-directory: ${{ matrix.app }}/backend
+        run: |
+          go vet ./...
+          go test ./...
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/frontend/package-lock.json
+      - name: Frontend
+        working-directory: ${{ matrix.app }}/frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run lint
+          npm test
+
+  build:
+    needs: [plan, test]
+    if: github.ref == 'refs/heads/main'
+    # Native arm64 like the server: no emulation (free for public repositories).
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io
+    strategy:
+      fail-fast: true
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # The app's compose.yaml is the build definition: context, BASE_PATH and image name.
+      - name: Build and push ${{ matrix.app }}
+        uses: docker/bake-action@018cb6412ab401ebaa809aa5f85966b74628600f # v7.4.0
+        env:
+          TAG: ${{ github.sha }}
+        with:
+          source: ./${{ matrix.app }}/deploy
+          files: compose.yaml
+          push: true
+          set: |
+            *.platform=linux/arm64
+            *.cache-from=type=gha,scope=${{ matrix.app }}
+            *.cache-to=type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    needs: [plan, build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Holds the SSH key. Restrict it to the main branch in the repository settings.
+    environment:
+      name: production
+      url: ${{ env.SITE }}/card-games/
+    permissions:
+      contents: read
+      packages: read # lent to the server for this one pull
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          [ -n "$SSH_KEY" ] && [ -n "$KNOWN_HOSTS" ] ||
+            { echo "::error::DEPLOY_SSH_KEY or DEPLOY_KNOWN_HOSTS missing (see deploy/README.md)"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" >~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" >~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+      # Only the commit, the apps and the pull token travel: the server reads <app>/deploy of that
+      # commit from its own clone of main.
+      - name: Deploy
+        env:
+          APPS: ${{ needs.plan.outputs.apps }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: |
+          read -r -a apps <<<"$(jq -r 'join(" ")' <<<"$APPS")"
+          printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" |
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              "deploy@$DEPLOY_HOST" deploy "$GITHUB_SHA" "${apps[@]}"
+      - name: Smoke test
+        env:
+          APPS: ${{ needs.plan.outputs.apps }}
+        run: |
+          for app in $(jq -r '.[]' <<<"$APPS"); do
+            path=$(sed -n 's#^handle_path \(/[^/]*\)/\*.*#\1#p' "$app/deploy/$app.caddy")
+            curl -fsS -o /dev/null --retry 10 --retry-delay 3 --retry-all-errors "$SITE$path/"
+            echo "$app is up at $SITE$path/"
+          done
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

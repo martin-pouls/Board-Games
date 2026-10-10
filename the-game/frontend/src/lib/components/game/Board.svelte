@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack, type Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import House from '@lucide/svelte/icons/house';
@@ -17,7 +17,7 @@
 	import PlayerStrip from './PlayerStrip.svelte';
 	import TurnBar from './TurnBar.svelte';
 	import ActiveCommands from './ActiveCommands.svelte';
-	import NoCommunicationBanner from './NoCommunicationBanner.svelte';
+	import NoCommunicationFrame from './NoCommunicationFrame.svelte';
 
 	let {
 		client,
@@ -90,32 +90,6 @@
 				// not supported
 			}
 		}
-	});
-
-	// Extreme: toasts for command cards that change the flow of play.
-	$effect(() => {
-		const events = client.lastEvents;
-		if (readonly) return;
-		untrack(() => {
-			for (const e of events) {
-				if (e.type !== 'cardPlayed' && e.type !== 'playUndone') continue;
-				const name = view.players.find((p) => p.id === e.playerId)?.name ?? 'Someone';
-				if (e.type === 'playUndone') {
-					if (e.playerId !== view.you) toast(`${name} took back ${e.card.value}.`, { id: 'undo' });
-					continue;
-				}
-				if (e.card.command === 'stop') {
-					toast(
-						e.playerId === view.you
-							? 'STOP: no more cards. End your turn.'
-							: `${name} played STOP.`,
-						{ id: 'stop' }
-					);
-				} else if (e.card.command === 'noCommunication') {
-					toast('No communication until the card is covered.', { id: 'no-comm' });
-				}
-			}
-		});
 	});
 
 	function fail(e: unknown) {
@@ -240,7 +214,7 @@
 	</header>
 
 	{#if view.communicationRestricted}
-		<NoCommunicationBanner />
+		<NoCommunicationFrame />
 	{/if}
 
 	<PlayerStrip players={view.players} online={client.online} showCounts={view.phase !== 'lobby'} />

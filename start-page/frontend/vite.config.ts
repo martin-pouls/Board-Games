@@ -4,7 +4,8 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
 // Sub-path the start page is served under in production (BASE_PATH=/card-games behind Caddy);
-// empty in dev. The games live next to it at /the-game and /regicide (see src/lib/games.ts).
+// empty in dev. The games live next to it at /the-game and /regicide; in dev the tiles link to
+// the games' own dev servers instead (see src/lib/games.ts).
 const base = (process.env.BASE_PATH ?? '') as '' | `/${string}`;
 
 export default defineConfig({
@@ -21,6 +22,8 @@ export default defineConfig({
 			paths: { base }
 		})
 	],
+	// Fixed local port (The Game 5173, Regicide 5174, start page 5175).
+	server: { port: 5175, strictPort: true },
 	test: {
 		expect: { requireAssertions: true },
 		passWithNoTests: true,

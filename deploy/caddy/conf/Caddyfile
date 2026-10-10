@@ -1,6 +1,7 @@
 # Shared reverse proxy for everything on yoshi-und-kruemli.de. Lives in /opt/caddy on the server
-# (installed by deploy/setup-server.sh). deploy/deploy.sh copies each <app>/deploy/<app>.caddy into
-# sites/ and reloads Caddy. HTTPS certificates are obtained and renewed automatically (Let's Encrypt).
+# (installed by deploy/setup-server.sh). Every deploy (CI or deploy/deploy.sh) copies each
+# <app>/deploy/<app>.caddy into sites/ and reloads Caddy. HTTPS certificates are obtained and
+# renewed automatically (Let's Encrypt).
 
 yoshi-und-kruemli.de {
 	encode zstd gzip

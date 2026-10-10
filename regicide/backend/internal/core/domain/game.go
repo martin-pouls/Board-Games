@@ -13,6 +13,7 @@ const (
 	PhasePlaying Phase = "playing"
 	PhaseWon     Phase = "won"
 	PhaseLost    Phase = "lost"
+	PhaseEnded   Phase = "ended" // closed by the host in the lobby, before it started
 )
 
 // Step is the step of the current turn while playing (rules §4).

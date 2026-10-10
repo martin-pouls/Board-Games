@@ -14,10 +14,13 @@ This file holds the rules common to all apps. Each game's own CLAUDE.md adds its
 
 ```
 CLAUDE.md, .mcp.json, .gitignore, .gitattributes    shared by all apps
-deploy/                       server-wide: shared Caddy proxy, server bootstrap, deploy script
+.github/                      CD: workflows/deploy.yml, scripts/plan-deploy.sh, dependabot.yml
+deploy/                       server-wide: shared Caddy proxy, server bootstrap, deploy scripts
+  README.md                   CD setup, security model, rollback
   caddy/                      compose file + Caddyfile for the shared proxy (/opt/caddy on the server)
-  setup-server.sh             idempotent server bootstrap (Docker, ufw, Caddy)
-  deploy.sh                   deploys one, several or all apps
+  server/card-games-deploy    runs on the server: the CI deploy key's forced command
+  setup-server.sh             idempotent server bootstrap (Docker, ufw, Caddy, deploy user)
+  deploy.sh                   fallback: builds and deploys from your PC without GitHub
 start-page/                   static start page (SvelteKit, prerendered, no JS)
   frontend/  Dockerfile  deploy/
 the-game/                     one self-contained app per game
@@ -75,7 +78,9 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 | UI | Tailwind CSS 4 + **shadcn-svelte** (bits-ui, lucide icons) | style `vega`; each game has its own theme |
 | Frontend tooling | Vite, Vitest, ESLint, Prettier, svelte-check | |
 
-The start page uses the same SvelteKit/Tailwind/tooling stack without shadcn. It is fully prerendered with `csr = false`, so it ships HTML and CSS only.
+The start page uses the same SvelteKit/Tailwind/shadcn-svelte/tooling stack. It is fully prerendered with `csr = false`, so it ships HTML and CSS only, plus the small inline theme script in `src/app.html` (shadcn components render as static markup there; bits-ui interactivity is not available).
+
+**Light and dark mode:** every app has both, with a toggle in the top-right corner. The games use mode-watcher; the start page has its own inline script. All use the same `localStorage` key (`mode-watcher-mode`), so on the shared production origin the choice carries over between apps.
 
 ## Architecture: hexagonal (ports and adapters)
 
@@ -99,18 +104,26 @@ The toolchain was installed via winget. Go is at `C:\Program Files\Go\bin` and N
 
 Backend (run from `<game>/backend/`):
 ```sh
-go run ./cmd/server              # API on :8080, DB at data/<game>.db
+go run ./cmd/server              # API on the game's port (table below), DB at data/<game>.db
 go test ./...
 go vet ./...
 go build -o bin/server.exe ./cmd/server
 ```
-Env vars: `ADDR` (default `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional, comma-separated extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: games idle longer are deleted), `CLEANUP_INTERVAL` (default `1h`: how often the janitor runs).
+Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional, comma-separated extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: games idle longer are deleted), `CLEANUP_INTERVAL` (default `1h`: how often the janitor runs).
 
-Both backends default to `:8080` and both frontends to Vite's `:5173`. To run both games at once, start one with e.g. `ADDR=:8081` and its frontend with `BACKEND_URL=http://localhost:8081 npm run dev -- --port 5174`.
+**Local ports** are fixed, so all apps run side by side with plain `go run` / `npm run dev`:
+
+| App | Frontend (Vite, `strictPort`) | Backend |
+|---|---|---|
+| The Game | `:5173` | `:8080` |
+| Regicide | `:5174` | `:8081` |
+| Start page | `:5175` | — |
+
+In dev the start page links each tile to the game's frontend port on the same hostname (`devPort` in `start-page/frontend/src/lib/games.ts`); production builds link to `/<game>/`. The other way round, each game's home screen has an *All games* link (`startPageHref` in `<game>/frontend/src/lib/startPage.ts`: port 5175 in dev, `/card-games/` in production). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and the games' `startPage.ts` together.
 
 Frontend (run from `<app>/frontend/`):
 ```sh
-npm run dev        # Vite on :5173; game frontends proxy /api and /ws to BACKEND_URL (default http://localhost:8080)
+npm run dev        # Vite on the app's port; game frontends proxy /api and /ws to BACKEND_URL (default: the game's backend port)
 npm run check      # svelte-check (types)
 npm run lint       # prettier --check + eslint
 npm run format
@@ -118,28 +131,31 @@ npm test           # vitest
 npm run build      # static build into frontend/build
 ```
 
-Production-like local run of a game: `npm run build` in `<game>/frontend/`, then in `<game>/backend/` run `STATIC_DIR=../frontend/build go run ./cmd/server` and open http://localhost:8080.
+Production-like local run of a game: `npm run build` in `<game>/frontend/`, then in `<game>/backend/` run `STATIC_DIR=../frontend/build go run ./cmd/server` and open the backend port (e.g. http://localhost:8080).
 
 ## Deployment
 
 Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root via `~/.ssh/hetzner_ed25519`).
 
-- **One container per app**, all on the external Docker network `web`, built natively on the server (arm64):
+- **One container per app**, all on the external Docker network `web`. CI builds the images on native arm64 runners and pushes them as `ghcr.io/martin-pouls/card-games/<app>:<commit sha>`:
   - `the-game` and `regicide`: one image each (SPA + Go server), SQLite in the volumes `the-game_data` and `regicide_data`.
   - `start-page`: the prerendered page served by `caddy file-server`.
 - **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. The Caddyfile redirects `/` to `/card-games/` and imports every `sites/*.caddy`.
 - **Each app ships a snippet** `<app>/deploy/<app>.caddy` that maps its path prefix to its container with `handle_path`. The prefix is stripped, so the servers stay path-agnostic.
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (`paths.base`), set as a build arg in `<app>/deploy/compose.yaml`. Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`. Never hard-code `/api` or `/ws` without it. Links between apps are plain absolute paths with `rel="external"`.
-- **Deploying:** from Git Bash at the repo root.
-  - `deploy/deploy.sh` deploys all apps; `deploy/deploy.sh regicide` (or several names) deploys only those.
-  - It ships each app's *committed* subtree (`git archive HEAD:<app>`) to `/opt/card-games/<app>/src`, runs `docker compose up -d --build` there, installs the snippet and reloads Caddy once. Uncommitted changes are not deployed.
-  - `deploy/setup-server.sh` is the idempotent bootstrap: Docker, ufw, Caddy. Re-run it after changing `deploy/caddy/`; the repo owns the Caddyfile.
-- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy`. `deploy.sh` picks it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`.
+- **Deploying:** push to `main`. [.github/workflows/deploy.yml](.github/workflows/deploy.yml) tests, builds and deploys the apps that changed since the last successful deploy. Manual runs (*Run workflow*) take `all` or app names. Setup, security model and rollback: [deploy/README.md](deploy/README.md).
+  - `<app>/deploy/compose.yaml` is the build definition (context, `BASE_PATH`, image name with `${TAG}`). CI builds it with `docker buildx bake`, and the server runs it with `TAG=<sha>` in `/opt/card-games/<app>/deploy/.env`.
+  - CI deploys as user `deploy`, whose key may only run [deploy/server/card-games-deploy](deploy/server/card-games-deploy) (forced command). `deploy` is root-equivalent (docker group), so that script takes only a commit SHA and app names from CI and reads `<app>/deploy/` from its own clone of `main`, refusing commits that are not on `main`. Keep it that way: never let it use files or config sent by the caller.
+  - `deploy/setup-server.sh` is the idempotent bootstrap: Docker, ufw, Caddy, the deploy user and script. Re-run it after changing `deploy/caddy/` or `deploy/server/`; the repo owns the Caddyfile.
+  - `deploy/deploy.sh [app...]` is the fallback from Git Bash: it ships the *committed* subtree and builds on the server as root (tag `local-<rev>`).
+- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy`. CI and `deploy.sh` pick it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`.
 - **Git Bash gotcha:** it rewrites `/regicide`-like values in env vars into Windows paths. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/regicide npm run build`.
 
 ## Conventions and gotchas
 
 - **SvelteKit 3 uses Node subpath imports (`#lib`), not `$lib`.** Imports need an explicit file, e.g. `#lib/api.js` (resolves to `api.ts`) or `#lib/components/ui/card/index.js`.
+- **Vite dev: deps are pre-scanned and pages warmed up** (`optimizeDeps.entries`, `server.warmup` in each game's `vite.config.ts`). Without that, Vite discovers dependencies on first navigation after a restart, re-bundles and reloads the page mid-click, which makes navigation feel slow. Keep it when adding routes outside `src/routes`.
+- **Never run a second Vite instance of an app with `--force`** while its dev server runs: they share `node_modules/.vite` and the running server starts answering 500 until it restarts.
 - **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `$effect`). No legacy `export let` or stores for new code. A TS module that uses runes must be named `*.svelte.ts`.
 - **Secure-context APIs** (`crypto.randomUUID`, `navigator.clipboard`, `navigator.share`) are missing when phones test over `http://192.168.x.x`: always feature-detect and fall back.
 - The player token travels in the WS query string: don't log full URLs at the reverse proxy.

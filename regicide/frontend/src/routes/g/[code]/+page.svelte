@@ -94,6 +94,21 @@
 		<Lobby client={conn} {view} onleave={leave} />
 	{:else if view.phase === 'playing'}
 		<Table client={conn} {view} />
+	{:else if view.phase === 'ended'}
+		{@const host = view.players.find((p) => p.id === view.hostId)}
+		<div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-2xl">Lobby closed</Card.Title>
+					<Card.Description>
+						{host?.isYou ? 'You' : (host?.name ?? 'The host')} closed this lobby before the game started.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<Button class="h-12 w-full text-base" href={resolve('/')}>Back to home</Button>
+				</Card.Content>
+			</Card.Root>
+		</div>
 	{:else}
 		<GameOver client={conn} {view} />
 	{/if}

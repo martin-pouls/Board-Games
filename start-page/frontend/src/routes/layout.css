@@ -1,31 +1,132 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/cinzel';
 
-/* Dark-only: a card table. Each game tile borrows the identity of its game. */
-@theme {
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * A card table: pale linen in light mode, green felt in dark mode (the theme is set before first
+ * paint by the script in app.html). Each game tile borrows the identity of its game, in the same
+ * mode: The Game is blue + orange, Regicide parchment/castle + gold.
+ */
+:root {
+	--background: oklch(0.965 0.012 120);
+	--foreground: oklch(0.2 0.03 155);
+	--card: oklch(0.995 0.004 120);
+	--card-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.42 0.08 155);
+	--primary-foreground: oklch(0.98 0.01 95);
+	--secondary: oklch(0.92 0.015 140);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.92 0.015 140);
+	--muted-foreground: oklch(0.48 0.03 150);
+	--accent: oklch(0.92 0.015 140);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.2 0.03 155 / 12%);
+	--input: oklch(0.2 0.03 155 / 15%);
+	--ring: oklch(0.42 0.08 155 / 60%);
+	--radius: 0.625rem;
+
+	--felt: oklch(0.9 0.04 150);
+	--table: var(--background);
+	--suit-red: oklch(0.55 0.2 25);
+	/* The Game */
+	--the-game-blue: oklch(0.55 0.17 250);
+	--the-game-orange: oklch(0.68 0.17 55);
+	--the-game-text: oklch(0.47 0.16 255);
+	--the-game-tile: oklch(0.995 0.003 245);
+	/* Regicide */
+	--castle: oklch(0.95 0.025 85);
+	--castle-banner: oklch(0.88 0.05 300);
+	--gold: oklch(0.55 0.12 75);
+	--castle-text: oklch(0.3 0.03 285);
+}
+
+.dark {
+	--background: oklch(0.14 0.02 155);
+	--foreground: oklch(0.95 0.01 95);
+	--card: oklch(0.2 0.03 155);
+	--card-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.78 0.08 150);
+	--primary-foreground: oklch(0.14 0.02 155);
+	--secondary: oklch(1 0 0 / 8%);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(1 0 0 / 8%);
+	--muted-foreground: oklch(0.76 0.02 140);
+	--accent: oklch(1 0 0 / 10%);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.78 0.08 150 / 60%);
+
+	--felt: oklch(0.2 0.03 155);
+	--suit-red: oklch(0.7 0.17 22);
+	--the-game-text: oklch(0.8 0.11 235);
+	--the-game-tile: oklch(0.205 0.024 262);
+	--castle: oklch(0.17 0.02 285);
+	--castle-banner: oklch(0.24 0.06 305);
+	--gold: oklch(0.78 0.13 85);
+	--castle-text: oklch(0.94 0.03 85 / 85%);
+}
+
+@theme inline {
 	--font-sans: 'Inter Variable', system-ui, sans-serif;
 	--font-display: 'Cinzel Variable', 'Times New Roman', serif;
-	--color-felt: oklch(0.2 0.03 155);
-	--color-felt-deep: oklch(0.14 0.02 155);
-	--color-chalk: oklch(0.95 0.01 95);
-	--color-chalk-muted: oklch(0.76 0.02 140);
-	/* The Game */
-	--color-violet: oklch(0.54 0.25 293);
-	/* Regicide */
-	--color-castle: oklch(0.17 0.02 285);
-	--color-gold: oklch(0.78 0.13 85);
-	--color-parchment: oklch(0.94 0.03 85);
+	--color-felt: var(--felt);
+	--color-suit-red: var(--suit-red);
+	--color-the-game-blue: var(--the-game-blue);
+	--color-the-game-orange: var(--the-game-orange);
+	--color-the-game-text: var(--the-game-text);
+	--color-the-game-tile: var(--the-game-tile);
+	--color-castle: var(--castle);
+	--color-castle-banner: var(--castle-banner);
+	--color-castle-text: var(--castle-text);
+	--color-gold: var(--gold);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
 }
 
-html {
-	background: var(--color-felt-deep);
-	color-scheme: dark;
-}
-
-body {
-	@apply min-h-svh font-sans text-chalk antialiased;
-	background:
-		radial-gradient(ellipse at 50% 0%, var(--color-felt) 0%, transparent 70%),
-		var(--color-felt-deep);
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		@apply bg-background;
+	}
+	body {
+		@apply min-h-svh font-sans text-foreground antialiased;
+		background:
+			radial-gradient(ellipse at 50% 0%, var(--felt) 0%, transparent 70%), var(--background);
+	}
 }

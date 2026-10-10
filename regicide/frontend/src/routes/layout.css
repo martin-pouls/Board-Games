@@ -6,8 +6,58 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Dark-only theme: <html class="dark"> is static, so every token is defined once here. */
+/*
+ * Castle theme in two lights: parchment and ink by day, a dark hall by night. The theme is set
+ * before first paint by the script in app.html and kept by mode-watcher afterwards.
+ */
 :root {
+	--background: oklch(0.93 0.025 82);
+	--foreground: oklch(0.25 0.035 290);
+	--card: oklch(0.97 0.018 85);
+	--card-foreground: var(--foreground);
+	--popover: oklch(0.97 0.018 85);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.55 0.12 72);
+	--primary-foreground: oklch(0.99 0.01 85);
+	--secondary: oklch(0.89 0.03 80);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.9 0.025 82);
+	--muted-foreground: oklch(0.46 0.035 70);
+	--accent: oklch(0.88 0.045 305);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.54 0.21 25);
+	--border: oklch(0.55 0.12 72 / 28%);
+	--input: oklch(0.25 0.035 290 / 18%);
+	--ring: oklch(0.55 0.12 72 / 60%);
+	--radius: 0.5rem;
+	--chart-1: oklch(0.87 0 0);
+	--chart-2: oklch(0.556 0 0);
+	--chart-3: oklch(0.439 0 0);
+	--chart-4: oklch(0.371 0 0);
+	--chart-5: oklch(0.269 0 0);
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.141 0.005 285.823);
+	--sidebar-primary: oklch(0.21 0.006 285.885);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.967 0.001 286.375);
+	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+	--sidebar-border: oklch(0.92 0.004 286.32);
+	--sidebar-ring: oklch(0.705 0.015 286.067);
+
+	/* Game tokens */
+	--parchment: oklch(0.985 0.012 85);
+	--ink: oklch(0.22 0.02 60);
+	--suit-red: oklch(0.52 0.2 25);
+	--suit-black: oklch(0.22 0.02 260);
+	--gold: var(--primary);
+	--health: oklch(0.55 0.2 25);
+	--shield: oklch(0.52 0.12 235);
+	--jester: oklch(0.55 0.2 330);
+	/* Tint of the glow at the top of the page. */
+	--glow: oklch(0.85 0.06 300 / 55%);
+}
+
+.dark {
 	--background: oklch(0.17 0.02 285);
 	--foreground: oklch(0.93 0.03 85);
 	--card: oklch(0.22 0.025 285);
@@ -50,6 +100,7 @@
 	--health: oklch(0.58 0.2 25);
 	--shield: oklch(0.68 0.11 235);
 	--jester: oklch(0.66 0.2 330);
+	--glow: oklch(0.25 0.05 300 / 60%);
 }
 
 @theme inline {
@@ -110,7 +161,7 @@
 	body {
 		@apply bg-background text-foreground;
 		background:
-			radial-gradient(ellipse at top, oklch(0.25 0.05 300 / 60%), transparent 60%) fixed,
+			radial-gradient(ellipse at top, var(--glow), transparent 60%) fixed,
 			var(--background);
 	}
 	html {

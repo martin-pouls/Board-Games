@@ -268,6 +268,49 @@ func TestGiveUp(t *testing.T) {
 	expectErr(t, started(t, 2), ErrUnknownPlayer, func(g *Game) error { return g.GiveUp("zz") })
 }
 
+func TestEndGame(t *testing.T) {
+	for _, n := range []int{1, 3} { // a sole player as well as a full lobby
+		g := lobbyWith(t, n)
+		rev := g.Revision
+		mustOK(t, g.EndGame(pid(0)))
+		if g.Phase != PhaseEnded || g.Result != nil || g.Revision != rev+1 || len(g.Players) != n {
+			t.Fatalf("%d players: %+v", n, g)
+		}
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameEnded{ByPlayerID: pid(0)}}) {
+			t.Fatalf("events = %#v", evs)
+		}
+		if s := g.Summary(); s.Phase != PhaseEnded || s.Joinable {
+			t.Fatalf("summary %+v", s)
+		}
+		v, err := g.ViewFor(pid(0))
+		mustOK(t, err)
+		if v.Phase != PhaseEnded || v.Turn != nil || v.Result != nil || g.EnemiesDefeated() != 0 {
+			t.Fatalf("view %+v", v)
+		}
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.EndGame(pid(0)) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.Leave(pid(0)) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.AddPlayer("new", "New") })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.Start(pid(0), "", reverseShuffle{}) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { _, err := g.Rematch(pid(0), "NEXT2"); return err })
+	}
+	tests := []struct {
+		name string
+		g    *Game
+		by   PlayerID
+		want error
+	}{
+		{"unknown", lobbyWith(t, 2), "zz", ErrUnknownPlayer},
+		{"not host", lobbyWith(t, 2), pid(1), ErrNotHost},
+		{"running game", started(t, 2), pid(0), ErrWrongPhase},
+		{"finished game", finishedGame(t), pid(0), ErrWrongPhase},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectErr(t, tt.g, tt.want, func(g *Game) error { return g.EndGame(tt.by) })
+		})
+	}
+}
+
 // finishedGame is a lost 3-player game at Revision 2.
 func finishedGame(t *testing.T) *Game {
 	t.Helper()

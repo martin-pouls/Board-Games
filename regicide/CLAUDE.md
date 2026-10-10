@@ -18,13 +18,13 @@ The shared stack, architecture, conventions, commands and deployment are in the 
 
 - **Cards are structs** (`Card{Suit, Rank}`), with Jester as its own rank/kind. Values are derived by functions (attack value in hand, discard value, enemy attack/health), never stored redundantly.
 - **The RNG is injected** (seedable), so shuffles are deterministic in tests.
-- **Phases are explicit:** `lobby → playing{step: play | discard | chooseNext} → won | lost`. Every action checks the phase and the active player first.
+- **Phases are explicit:** `lobby → playing{step: play | discard | chooseNext} → won | lost`, plus `lobby → ended` when the host closes the lobby. Every action checks the phase and the active player first.
 - **Derived values are computed, not cached:** shield, effective attack, immunity cancellation and damage are derived from the cards played against the current enemy plus a "Jester played against this enemy" flag, so the snapshot stays minimal and consistent.
 - **The game is lost only by the rules in docs/rules.md §9** (or by give-up).
 - Player count 1–4; ruleset values (hand size, Jester count) come from a table keyed by player count, not scattered constants.
 
 ## Look and feel
 
-Same stack and component library as The Game, but a distinct identity: a dark-only, medieval "castle" theme (deep colours, gold accents, Cinzel as the serif display font for headings and card ranks, EB Garamond for text), rendered cards with suit glyphs (♥ ♦ ♣ ♠; hearts/diamonds red), and a prominent **enemy card** showing health bar, accumulated damage, attack, shield and immunity. The hand supports multi-select so combos, Animal Companion pairs and discard sets can be composed, with a live preview of attack value and which suit powers will trigger.
+Same stack and component library as The Game, but a distinct identity: a medieval "castle" theme in light (parchment and ink) and dark (deep colours), both with gold accents; Cinzel as the serif display font for headings and card ranks, EB Garamond for text; rendered cards with suit glyphs (♥ ♦ ♣ ♠; hearts/diamonds red), and a prominent **enemy card** showing health bar, accumulated damage, attack, shield and immunity. The hand supports multi-select so combos, Animal Companion pairs and discard sets can be composed, with a live preview of attack value and which suit powers will trigger. Light/dark toggle via mode-watcher, as in The Game; theme tokens live in `src/routes/layout.css` (`:root` light, `.dark` dark), so components use tokens, not raw colours.
 
 The bits-ui `AlertDialog.Action` gotcha (root CLAUDE.md) bites the solo "Use Jester" confirm: without closing it explicitly, the overlay blocks the hand.

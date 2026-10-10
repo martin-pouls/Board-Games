@@ -106,6 +106,9 @@ export class GameConnection {
 	setSignal(signal: JesterSignal): Promise<void> {
 		return this.send({ type: 'setSignal', signal });
 	}
+	endGame(): Promise<void> {
+		return this.send({ type: 'endGame' });
+	}
 	giveUp(): Promise<void> {
 		return this.send({ type: 'giveUp' });
 	}

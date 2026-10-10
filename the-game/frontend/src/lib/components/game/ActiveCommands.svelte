@@ -9,6 +9,13 @@
 	/** The visible Infinity commands; tap one for its explanation. */
 	let { commands, piles }: { commands: ActiveCommand[]; piles: Pile[] } = $props();
 
+	// No communication restricts the players, not the cards: it leads the row, in full.
+	const sorted = $derived(
+		[...commands].sort(
+			(a, b) => Number(b.command === 'noCommunication') - Number(a.command === 'noCommunication')
+		)
+	);
+
 	function explain(c: ActiveCommand) {
 		const info = commandInfo(c.command);
 		toast(info.label, { id: `command-${c.command}`, description: info.description });
@@ -17,9 +24,10 @@
 
 {#if commands.length > 0}
 	<ul class="flex flex-wrap gap-1" aria-label="Active commands">
-		{#each commands as c (c.pile)}
+		{#each sorted as c (c.pile)}
 			{@const info = commandInfo(c.command)}
 			{@const up = piles.find((p) => p.index === c.pile)?.direction === 'up'}
+			{@const loud = c.command === 'noCommunication'}
 			<li class="min-w-0">
 				<button
 					type="button"
@@ -27,7 +35,11 @@
 					aria-label={`${info.label} on a ${up ? 'ascending' : 'descending'} pile: ${info.description}`}
 					onclick={() => explain(c)}
 				>
-					<CommandChip command={c.command}>
+					<CommandChip
+						command={c.command}
+						label={loud ? info.label : undefined}
+						class={loud ? 'bg-violet-600 text-white dark:bg-violet-500 dark:text-white' : ''}
+					>
 						{#if up}
 							<ArrowUp class="size-3 shrink-0 opacity-70" aria-hidden="true" />
 						{:else}

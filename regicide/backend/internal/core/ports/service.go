@@ -33,6 +33,8 @@ type GameService interface {
 	UseSoloJester(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	SetJesterSignal(ctx context.Context, id domain.GameID, player domain.PlayerID, s domain.JesterSignal) (domain.PlayerView, error)
 	GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
+	// EndGame lets the host close the lobby for everyone (phase "ended").
+	EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	// Rematch returns the actor's view of the old game, which now carries NextGameID.
 	Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 }

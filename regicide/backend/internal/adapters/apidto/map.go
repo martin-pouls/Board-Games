@@ -230,6 +230,8 @@ func FromEvent(e domain.Event) (Event, bool) {
 		return Event{Type: EventGameWon, Grade: string(e.Grade)}, true
 	case domain.GameLost:
 		return Event{Type: EventGameLost, Reason: string(e.Reason), PlayerID: string(e.PlayerID)}, true
+	case domain.GameEnded:
+		return Event{Type: EventGameEnded, ByPlayerID: string(e.ByPlayerID)}, true
 	case domain.RematchCreated:
 		return Event{Type: EventRematchCreated, GameID: string(e.GameID)}, true
 	default:

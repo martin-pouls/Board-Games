@@ -162,6 +162,9 @@ func (f *fakeService) SetJesterSignal(ctx context.Context, id domain.GameID, p d
 func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "GiveUp", id, p, domain.GameLost{Reason: domain.LossGaveUp, PlayerID: p})
 }
+func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.mutate(ctx, "EndGame", id, p, domain.GameEnded{ByPlayerID: p})
+}
 func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
 	return f.mutate(ctx, "Rematch", id, p, domain.RematchCreated{GameID: "NEXT2"})
 }
@@ -382,6 +385,7 @@ func TestAllCommands(t *testing.T) {
 		{`{"type":"setSignal","requestId":"1","signal":"goodPlay"}`, "SetJesterSignal"},
 		{`{"type":"setSignal","requestId":"1","signal":"none"}`, "SetJesterSignal"},
 		{`{"type":"giveUp","requestId":"1"}`, "GiveUp"},
+		{`{"type":"endGame","requestId":"1"}`, "EndGame"},
 		{`{"type":"rematch","requestId":"1"}`, "Rematch"},
 	}
 	for _, tt := range tests {
