@@ -41,7 +41,7 @@
 			? 'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100'
 			: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100',
 		highlight &&
-			'scale-[1.02] border-emerald-500 shadow-lg ring-4 ring-emerald-500/60 dark:border-emerald-400 dark:ring-emerald-400/60',
+			'border-emerald-500 shadow-lg ring-[3px] ring-emerald-500/60 dark:border-emerald-400 dark:ring-emerald-400/60',
 		dimmed && 'opacity-35 saturate-50',
 		disabled && !dimmed && 'cursor-default'
 	)}

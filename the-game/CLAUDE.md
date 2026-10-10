@@ -33,14 +33,22 @@ backend/                      Go module github.com/martin-pouls/the-game/backend
     ports/                    interfaces: driving (use cases) + driven (repo, publisher)
     service/                  use-case implementations of driving ports
   internal/adapters/          everything that talks to the outside world
+    apidto/                   JSON wire contract (DTOs, mappers, error codes) shared by httpapi + ws
     httpapi/                  REST handlers (+ serves built SPA when STATIC_DIR set)
     ws/                       WebSocket hub: live game events/commands
     sqlite/                   repository implementations + migrations
+    memory/                   in-memory repository (tests)
+    repotest/                 shared repository contract test suite
+  internal/e2e/               end-to-end test: sqlite + service + REST + WS over httptest
 frontend/                     SvelteKit SPA
   src/lib/api.ts              REST client
+  src/lib/types.ts            TS mirror of the Go DTOs in apidto
+  src/lib/game/               WS protocol + GameConnection (runes), formatting helpers
+  src/lib/components/game/    game screen components (Lobby, Board, GameOver, ...)
   src/lib/components/ui/      shadcn-svelte components (generated — don't hand-edit heavily)
   src/routes/                 pages
 docs/rules.md                 rules reference (authoritative)
+docs/plan.md                  Phase 1 implementation plan / wire contract
 ```
 
 ## Architecture: hexagonal (ports and adapters)

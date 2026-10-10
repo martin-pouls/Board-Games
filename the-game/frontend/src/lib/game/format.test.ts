@@ -25,12 +25,12 @@ describe('resultHeadline', () => {
 
 describe('stuckLine', () => {
 	it('names the stuck player', () => {
-		expect(stuckLine(finishedLost)).toBe("Ben couldn't play the minimum.");
+		expect(stuckLine(finishedLost)).toBe('Ben had no playable card.');
 	});
 	it('says "You" when the viewer got stuck', () => {
 		const v = structuredClone(finishedLost);
 		v.result!.stuckPlayerId = v.you;
-		expect(stuckLine(v)).toBe("You couldn't play the minimum.");
+		expect(stuckLine(v)).toBe('You had no playable card.');
 	});
 	it('is null without a stuck player', () => {
 		expect(stuckLine(finishedWon)).toBeNull();

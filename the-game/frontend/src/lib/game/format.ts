@@ -9,16 +9,16 @@ export function resultHeadline(result: Result): string {
 	return `Game over: ${cards(result.score)} left.`;
 }
 
-/** "{name} couldn't play the minimum." or null when nobody got stuck. */
+/** "{name} had no playable card." or null when nobody got stuck. */
 export function stuckLine(view: PlayerView): string | null {
 	const id = view.result?.stuckPlayerId;
 	if (!id) return null;
 	const p = view.players.find((x) => x.id === id);
 	if (!p) return null;
-	return p.isYou ? "You couldn't play the minimum." : `${p.name} couldn't play the minimum.`;
+	return p.isYou ? 'You had no playable card.' : `${p.name} had no playable card.`;
 }
 
-/** Short pile label, e.g. "↑ 1" or "↓ 100". */
+/** Short pile range label: "1 → 99" or "100 → 2". */
 export function pileLabel(direction: Direction): string {
 	return direction === 'up' ? '1 → 99' : '100 → 2';
 }

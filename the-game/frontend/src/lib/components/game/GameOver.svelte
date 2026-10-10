@@ -63,7 +63,7 @@
 <Board {client} {view} readonly>
 	{#snippet controls()}
 		<div class="flex min-h-14 items-center gap-3 rounded-xl bg-muted/60 px-3 py-1.5">
-			<p class="min-w-0 flex-1 truncate font-semibold">
+			<p class="min-w-0 flex-1 leading-snug font-semibold">
 				{result ? resultHeadline(result) : 'Game over'}
 			</p>
 			<Button size="lg" class="h-12 px-4 text-base" onclick={() => (hidden = false)}>
@@ -108,8 +108,8 @@
 
 					<ul class="flex flex-col gap-2" aria-label="Cards left in each hand">
 						{#each players as p (p.id)}
-							<li class="flex items-center gap-2">
-								<span class="w-20 shrink-0 truncate text-sm font-medium">
+							<li class="flex flex-col gap-1">
+								<span class="truncate text-sm font-medium">
 									{p.isYou ? 'You' : p.name}
 								</span>
 								<span class="flex flex-wrap gap-1">

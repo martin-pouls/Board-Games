@@ -1,5 +1,7 @@
 # Phase 1 Implementation Plan: The Game (base and Pro), online multiplayer
 
+> **Status (2026-10-10): Phase 1 is implemented** (WP1–WP9, including the §11 amendments). Kept as the reference for the wire contract and design decisions.
+
 > Audience: the implementation sub-agents. This document is the contract. If a contract here conflicts with what you find in the code, the code from an earlier wave wins only if it was written to this document. Otherwise follow this document and report the mismatch in your handback.
 > Read `CLAUDE.md` and `docs/rules.md` first. Both are authoritative for conventions and rules.
 
@@ -892,7 +894,7 @@ The share link is `${location.origin}/join/${code}`. The Go SPA fallback already
   - score 0: "You won! All 98 cards played."
   - score < 10: "Excellent! Only N cards left."
   - otherwise: "Game over: N cards left."
-  - Also `stuckLine(view)`: "{name} couldn't play the minimum."
+  - Also `stuckLine(view)`: "{name} had no playable card." (§11.1)
 
 ### 8.3 Components (`src/lib/components/game/`)
 - `ShareInvite.svelte`:
