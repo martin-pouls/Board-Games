@@ -1,3 +1,10 @@
+import type {
+	ClientErrorCode,
+	CommonErrorCode,
+	ErrorBody as SharedErrorBody,
+	ServerMessage as SharedServerMessage
+} from '@board-games/shared/wire.js';
+
 export type Phase = 'lobby' | 'choosingFirstPlayer' | 'playing' | 'finished';
 export type Direction = 'up' | 'down';
 export type Outcome = 'won' | 'lost' | 'aborted';
@@ -145,17 +152,13 @@ export type GameEvent =
 	| { type: 'turnEnded'; playerId: string; cardsDrawn: number }
 	| { type: 'playerSkipped'; playerId: string }
 	| { type: 'gameFinished'; outcome: Outcome; score: number; stuckPlayerId?: string };
-export type ApiErrorCode =
-	| 'bad_request'
-	| 'unauthorized'
+/** The Game's own error codes, next to the ones every game shares (shared/frontend wire.ts). */
+export type GameErrorCode =
 	| 'not_host'
-	| 'game_not_found'
-	| 'not_found'
 	| 'wrong_phase'
 	| 'game_full'
 	| 'name_taken'
 	| 'not_your_turn'
-	| 'conflict'
 	| 'invalid_name'
 	| 'invalid_options'
 	| 'unknown_player'
@@ -174,21 +177,10 @@ export type ApiErrorCode =
 	| 'exact_count_required'
 	| 'stop_too_early'
 	| 'skull_uncovered'
-	| 'skull_uncoverable'
-	| 'rate_limited'
-	| 'internal'
-	| 'network'
-	| 'disconnected'
-	| 'timeout'; // last three are client-side only
-export interface ErrorBody {
-	code: ApiErrorCode;
-	message: string;
-}
-export type ServerMessage =
-	| { type: 'view'; view: PlayerView; events: GameEvent[] }
-	| { type: 'presence'; online: string[] }
-	| { type: 'ack'; requestId: string }
-	| { type: 'error'; requestId?: string; error: ErrorBody };
+	| 'skull_uncoverable';
+export type ApiErrorCode = CommonErrorCode | ClientErrorCode | GameErrorCode;
+export type ErrorBody = SharedErrorBody<ApiErrorCode>;
+export type ServerMessage = SharedServerMessage<PlayerView, GameEvent, ApiErrorCode>;
 export type ClientCommand =
 	| { type: 'setOptions'; options: GameOptions }
 	| { type: 'startGame' }

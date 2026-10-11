@@ -121,7 +121,7 @@ func TestRoundTripEachPhase(t *testing.T) {
 				t.Errorf("dto mismatch\nwant %s\nhave %s", want, have)
 			}
 			var status string
-			if err := db.sql.QueryRow(`SELECT status FROM games WHERE id = ?`, string(tt.g.ID)).Scan(&status); err != nil {
+			if err := db.SQL().QueryRow(`SELECT status FROM games WHERE id = ?`, string(tt.g.ID)).Scan(&status); err != nil {
 				t.Fatal(err)
 			}
 			if status != tt.status {
@@ -153,7 +153,7 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := db.sql.Exec(`UPDATE games SET updated_at = '2000-01-01 00:00:00' WHERE id = 'OLD01'`); err != nil {
+	if _, err := db.SQL().Exec(`UPDATE games SET updated_at = '2000-01-01 00:00:00' WHERE id = 'OLD01'`); err != nil {
 		t.Fatal(err)
 	}
 	n, err := repo.DeleteInactive(ctx, time.Now().Add(-24*time.Hour))
@@ -161,10 +161,10 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 		t.Fatalf("n=%d err=%v, want 1", n, err)
 	}
 	var tokens int
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'OLD01'`).Scan(&tokens); err != nil || tokens != 0 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'OLD01'`).Scan(&tokens); err != nil || tokens != 0 {
 		t.Errorf("tokens of deleted game = %d (err %v), want 0", tokens, err)
 	}
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'NEW01'`).Scan(&tokens); err != nil || tokens != 1 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'NEW01'`).Scan(&tokens); err != nil || tokens != 1 {
 		t.Errorf("tokens of kept game = %d (err %v), want 1", tokens, err)
 	}
 }
@@ -172,7 +172,7 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 func TestMigrationsCreateTokensTableAndIndex(t *testing.T) {
 	db := openTestDB(t)
 	var n int
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name IN ('player_tokens','games_updated_at')`).Scan(&n); err != nil || n != 2 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name IN ('player_tokens','games_updated_at')`).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("n=%d err=%v, want 2", n, err)
 	}
 }

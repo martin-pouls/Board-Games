@@ -12,6 +12,8 @@ import (
 	"maps"
 	"time"
 
+	"github.com/martin-pouls/shared/backend/lockmap"
+
 	"github.com/martin-pouls/the-game/backend/internal/core/domain"
 	"github.com/martin-pouls/the-game/backend/internal/core/ports"
 )
@@ -35,7 +37,7 @@ type Service struct {
 	repo  ports.GameRepository
 	pub   ports.EventPublisher
 	cfg   Config
-	locks *keyedMutex
+	locks *lockmap.Map[domain.GameID]
 }
 
 var _ ports.GameService = (*Service)(nil)
@@ -60,14 +62,14 @@ func New(repo ports.GameRepository, pub ports.EventPublisher, cfg Config) *Servi
 	if pub == nil {
 		pub = ports.NopPublisher{}
 	}
-	return &Service{repo: repo, pub: pub, cfg: cfg, locks: newKeyedMutex()}
+	return &Service{repo: repo, pub: pub, cfg: cfg, locks: lockmap.New[domain.GameID]()}
 }
 
 // mutate runs fn on a freshly loaded record under the per-game lock, saves it with
 // OCC retry and publishes the resulting events while still holding the lock.
 func (s *Service) mutate(ctx context.Context, id domain.GameID, fn func(*ports.GameRecord) error) (*ports.GameRecord, error) {
-	s.locks.lock(id)
-	defer s.locks.unlock(id)
+	s.locks.Lock(id)
+	defer s.locks.Unlock(id)
 	for range maxOCCAttempts {
 		rec, err := s.repo.Load(ctx, id)
 		if err != nil {
@@ -227,8 +229,8 @@ func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.P
 // has a NextGameID, the actor's view of the old game is returned unchanged.
 func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
 	id = normalizeID(id)
-	s.locks.lock(id)
-	defer s.locks.unlock(id)
+	s.locks.Lock(id)
+	defer s.locks.Unlock(id)
 	for range maxOCCAttempts {
 		rec, err := s.repo.Load(ctx, id)
 		if err != nil {

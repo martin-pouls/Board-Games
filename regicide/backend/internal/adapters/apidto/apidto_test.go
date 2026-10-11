@@ -239,10 +239,7 @@ func TestServerMessageJSON(t *testing.T) {
 		{"view nil events", ServerMessage{Type: MsgView, View: &PlayerView{}}, `"events":[]`},
 		{"view helper", ViewMessage(PlayerView{}, nil), `"events":[]`},
 		{"view with events", ViewMessage(PlayerView{}, []Event{{Type: EventGameStarted}}), `"events":[{"type":"gameStarted"}]`},
-		{"presence empty", PresenceMessage(nil), `{"type":"presence","online":[]}`},
-		{"presence", PresenceMessage([]string{"p1"}), `{"type":"presence","online":["p1"]}`},
-		{"ack", AckMessage("7"), `{"type":"ack","requestId":"7"}`},
-		{"error no request", ErrorMessage("", ErrorBody{Code: "bad_request", Message: "x"}), `{"type":"error","error":{"code":"bad_request","message":"x"}}`},
+		// presence, ack and error messages are tested in shared/backend/wire.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

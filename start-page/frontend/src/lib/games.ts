@@ -1,6 +1,6 @@
 /** A game listed on the start page. Each game is its own app, served by Caddy next to this one. */
 export interface Game {
-	id: 'the-game' | 'regicide';
+	id: 'the-game' | 'regicide' | 'fox-duet';
 	name: string;
 	/** Absolute path of the game's app on the same host in production (outside this app's base path). */
 	path: `/${string}/`;
@@ -31,6 +31,16 @@ export const games: Game[] = [
 		tagline:
 			'Defeat twelve corrupted royals with a standard deck, using the powers of the four suits.',
 		features: ['Solo mode with Jesters', 'Gold, Silver and Bronze victories']
+	},
+	{
+		id: 'fox-duet',
+		name: 'Fox Duet',
+		path: '/fox-duet/',
+		devPort: 5176,
+		players: '2 players',
+		tagline:
+			'The Fox in the Forest: Duet. Cooperative trick-taking: work together to win the right tricks.',
+		features: ['3 difficulty levels']
 	}
 ];
 

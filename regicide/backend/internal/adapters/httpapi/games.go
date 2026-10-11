@@ -1,20 +1,16 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
-	"strings"
+
+	"github.com/martin-pouls/shared/backend/httpkit"
 
 	"github.com/martin-pouls/regicide/backend/internal/adapters/apidto"
 	"github.com/martin-pouls/regicide/backend/internal/core/domain"
 	"github.com/martin-pouls/regicide/backend/internal/core/ports"
 )
-
-// maxBodyBytes caps every request body.
-const maxBodyBytes = 4 << 10
 
 type gamesAPI struct {
 	svc    ports.GameService
@@ -41,35 +37,20 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 
 // gameCode returns the {code} path value, normalised to upper case.
 func gameCode(r *http.Request) domain.GameID {
-	return domain.GameID(strings.ToUpper(strings.TrimSpace(r.PathValue("code"))))
+	return domain.GameID(httpkit.GameCode(r))
 }
 
 // errEmptyBody is returned by decodeBody for a body with no content.
-var errEmptyBody = apidto.BadRequest("empty request body")
+var errEmptyBody = httpkit.ErrEmptyBody
 
-// decodeBody decodes a JSON body capped at maxBodyBytes. Every failure maps to bad_request.
+// decodeBody decodes a JSON body capped at httpkit.MaxBodyBytes. Every failure maps to bad_request.
 func decodeBody(w http.ResponseWriter, r *http.Request, v any) error {
-	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
-			return apidto.BadRequest("request body exceeds %d bytes", maxBodyBytes)
-		}
-		if errors.Is(err, io.EOF) {
-			return errEmptyBody
-		}
-		return apidto.BadRequest("malformed JSON: %v", err)
-	}
-	return nil
+	return httpkit.DecodeBody(w, r, v)
 }
 
 // writeError maps err to a status and error body; unmapped errors are logged.
 func (a *gamesAPI) writeError(w http.ResponseWriter, r *http.Request, err error) {
-	status, body := apidto.ErrorFor(err)
-	if status >= http.StatusInternalServerError {
-		a.logger.Error("request failed", "method", r.Method, "path", r.URL.Path, "err", err)
-	}
-	writeJSON(w, status, apidto.ErrorResponse{Error: body})
+	apidto.Errors.WriteError(w, r, a.logger, err)
 }
 
 func (a *gamesAPI) writeView(w http.ResponseWriter, r *http.Request, v domain.PlayerView, err error) {

@@ -2,7 +2,7 @@
 
 A web implementation of the cooperative card game **Regicide** (Badgers From Mars), played live by 1–4 players in the browser. Includes solo mode with Jester powers and Gold/Silver/Bronze victories. Served at `/regicide/`.
 
-The shared stack, architecture, conventions, commands and deployment are in the [root CLAUDE.md](../CLAUDE.md). This file covers what is specific to Regicide. Its lobby, session, WebSocket and persistence plumbing was ported from [the-game/](../the-game/); when in doubt about a convention, look at how The Game does it.
+The shared stack, architecture, conventions, commands and deployment are in the [root CLAUDE.md](../CLAUDE.md). This file covers what is specific to Regicide. Its lobby, session, WebSocket and persistence plumbing comes from [shared/](../shared/README.md), like The Game's; when in doubt about a convention, look at how [the-game/](../the-game/) does it.
 
 **Rules:** [docs/rules.md](docs/rules.md) is the source of truth. It contains the English rules summary and the interpretations we chose for ambiguities (marked **App decision**). Read it before touching game logic. Do not re-read the PDF. If a rule question is not answered there, ask, then record the answer in that file.
 

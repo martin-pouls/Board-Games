@@ -1,25 +1,20 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { operator as controller, siteName } from '#lib/site.js';
 
-	const controller = {
-		name: 'Martin Pouls',
-		street: 'Gerwigstraße 17',
-		city: '76131 Karlsruhe',
-		email: 'martin.pouls91@gmail.com'
-	};
 	const authority =
 		'Landesbeauftragter für den Datenschutz und die Informationsfreiheit Baden-Württemberg, Lautenschlagerstraße 20, 70173 Stuttgart';
 </script>
 
 <svelte:head>
-	<title>Datenschutz · Card Games</title>
+	<title>Datenschutz · {siteName}</title>
 </svelte:head>
 
 <a
 	href={resolve('/')}
 	class="-ml-1 self-start rounded px-1 text-sm text-muted-foreground hover:text-foreground"
 >
-	← Card Games
+	← {siteName}
 </a>
 
 <article lang="de" class="legal mt-4">
@@ -30,8 +25,8 @@
 		Diese Website ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Spiele lassen sich ohne
 		Konto spielen. Es gibt keine Cookies, keine Werbung, kein Tracking und keine Analyse-Tools. Hier
 		steht, welche Daten trotzdem anfallen. Die Erklärung gilt für alle Seiten unter
-		yoshi-und-kruemli.de: die Übersicht unter /card-games/ und die Spiele „The Game“ (/the-game/)
-		und „Regicide“ (/regicide/).
+		yoshi-und-kruemli.de: die Übersicht unter /board-games/ und die Spiele „The Game“ (/the-game/),
+		„Regicide“ (/regicide/) und „Fox Duet“ (/fox-duet/).
 	</p>
 
 	<h2>1. Verantwortlicher</h2>
@@ -160,27 +155,3 @@
 		nicht statt.
 	</p>
 </article>
-
-<style>
-	.legal {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		line-height: 1.65;
-	}
-	.legal h2 {
-		margin-top: 1.25rem;
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
-	.legal address {
-		font-style: normal;
-	}
-	.legal ul {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		padding-left: 1.25rem;
-		list-style: disc;
-	}
-</style>

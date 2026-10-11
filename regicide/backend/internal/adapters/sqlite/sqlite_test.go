@@ -16,7 +16,7 @@ func TestOpenAppliesMigrationsIdempotently(t *testing.T) {
 			t.Fatalf("open #%d: %v", i, err)
 		}
 		var n int
-		if err := db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM games`).Scan(&n); err != nil {
+		if err := db.SQL().QueryRowContext(ctx, `SELECT COUNT(*) FROM games`).Scan(&n); err != nil {
 			t.Fatalf("query games table: %v", err)
 		}
 		db.Close()

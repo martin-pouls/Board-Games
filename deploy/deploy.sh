@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Fallback deploy, for when GitHub Actions (.github/workflows/deploy.yml, the normal way) is not
 # available. Deploys apps of the committed HEAD as root over your own key: for each app upload its
-# subtree, build its image on the server (native arm64, tagged local-<rev>), restart its container
-# and install its Caddy snippet; then reload Caddy once. Uncommitted changes are not deployed. The
-# next CI deploy replaces it again.
+# subtree and shared/, build its image on the server (native arm64, tagged local-<rev>), restart
+# its container and install its Caddy snippet; then reload Caddy once. Uncommitted changes are not
+# deployed. The next CI deploy replaces it again.
 #
 # Usage from Git Bash on your PC (first time: deploy/setup-server.sh):
 #   deploy/deploy.sh                       # every app
@@ -11,7 +11,8 @@
 #   deploy/deploy.sh the-game start-page   # several
 #
 # An app is a top-level directory with <app>/Dockerfile, <app>/deploy/compose.yaml and
-# <app>/deploy/<app>.caddy. Its source lands in /opt/card-games/<app>/src on the server.
+# <app>/deploy/<app>.caddy. Its source lands in /opt/board-games/<app>/src/<app> on the server,
+# next to src/shared.
 set -euo pipefail
 
 HOST=${DEPLOY_HOST:-root@yoshi-und-kruemli.de}
@@ -48,9 +49,11 @@ ssh -i "$KEY" "$HOST" '[ -d /opt/caddy/conf/sites ] && docker network inspect we
 
 for app in "${apps[@]}"; do
 	echo "==> $app"
-	[ -z "$(git status --porcelain -- "$app")" ] || echo "warning: uncommitted changes in $app/ are not deployed" >&2
-	git -c core.autocrlf=false archive --format=tar "HEAD:$app" | ssh -i "$KEY" "$HOST" "set -eu
-dir=/opt/card-games/$app
+	[ -z "$(git status --porcelain -- "$app" shared)" ] ||
+		echo "warning: uncommitted changes in $app/ or shared/ are not deployed" >&2
+	# The repo layout is kept (src/<app>, src/shared): apps that use shared/ build from src.
+	git -c core.autocrlf=false archive --format=tar HEAD "$app" shared | ssh -i "$KEY" "$HOST" "set -eu
+dir=/opt/board-games/$app
 rm -rf \$dir/src.new
 mkdir -p \$dir/src.new
 tar -x -C \$dir/src.new
@@ -58,8 +61,8 @@ rm -rf \$dir/src
 mv \$dir/src.new \$dir/src
 echo $rev >\$dir/REVISION
 cd \$dir/src
-TAG=local-$rev docker compose -f deploy/compose.yaml up -d --build
-cp deploy/$app.caddy /opt/caddy/conf/sites/$app.caddy
+TAG=local-$rev docker compose -f $app/deploy/compose.yaml up -d --build
+cp $app/deploy/$app.caddy /opt/caddy/conf/sites/$app.caddy
 # Keep everything writable for the CI deploy user (see setup-server.sh).
 if id deploy >/dev/null 2>&1; then chown -R deploy:deploy \$dir /opt/caddy/conf/sites; fi
 "
@@ -70,6 +73,7 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 docker image prune -f >/dev/null
 '
 for app in "${apps[@]}"; do
-	path=$(git show "HEAD:$app/deploy/$app.caddy" | sed -n 's#^handle_path \(/[^/]*\)/\*.*#\1#p')
+	# The first handle_path is the app's own (later ones may redirect old paths).
+	path=$(git show "HEAD:$app/deploy/$app.caddy" | sed -n 's#^handle_path \(/[^/]*\)/\*.*#\1#p;T;q')
 	echo "deployed $app $rev to $SITE$path/"
 done

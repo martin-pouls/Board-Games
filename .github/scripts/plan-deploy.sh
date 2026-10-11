@@ -8,12 +8,16 @@
 #              app when BASE is empty or not an ancestor of HEAD (first run, rewritten history).
 #
 # An app is a top-level directory with deploy/compose.yaml (the same rule as deploy/deploy.sh).
+# An app uses shared/ when its Dockerfile copies it; a change in shared/ counts for each of them.
 set -euo pipefail
 
 all=()
+users=() # apps built with shared/
 for d in */; do
 	d=${d%/}
-	[ -f "$d/deploy/compose.yaml" ] && all+=("$d")
+	[ -f "$d/deploy/compose.yaml" ] || continue
+	all+=("$d")
+	grep -q '^COPY shared/' "$d/Dockerfile" 2>/dev/null && users+=("$d")
 done
 
 is_app() {
@@ -35,7 +39,13 @@ if [ -n "${REQUESTED:-}" ]; then
 elif [ -n "${BASE:-}" ] && git merge-base --is-ancestor "$BASE" HEAD 2>/dev/null; then
 	echo "changes since $BASE:"
 	while read -r d; do
-		is_app "$d" && apps+=("$d")
+		if [ "$d" = shared ]; then
+			for u in "${users[@]}"; do
+				[[ " ${apps[*]} " == *" $u "* ]] || apps+=("$u")
+			done
+		elif is_app "$d" && [[ " ${apps[*]} " != *" $d "* ]]; then
+			apps+=("$d")
+		fi
 	done < <(git diff --name-only "$BASE" HEAD | cut -d/ -f1 | sort -u)
 else
 	echo "no previous deploy to compare with: every app"

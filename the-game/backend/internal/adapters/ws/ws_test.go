@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/martin-pouls/shared/backend/wskit"
 
 	"github.com/martin-pouls/the-game/backend/internal/adapters/apidto"
 	"github.com/martin-pouls/the-game/backend/internal/core/domain"
@@ -448,138 +449,76 @@ func TestReadLimitClosesConnection(t *testing.T) {
 	waitFor(t, func() bool { return len(e.hub.Online(testGame)) == 0 })
 }
 
-// --- hub unit tests (no network) ---
-
-// fakeConn registers a conn without a socket or writer goroutine.
-func fakeConn(h *Hub, p domain.PlayerID) *conn {
-	c := newConn(nil, testGame, p, h.logger)
-	h.register(c)
-	return c
-}
-
-func drain(c *conn) []apidto.ServerMessage {
-	var out []apidto.ServerMessage
-	for {
-		select {
-		case b := <-c.send:
-			var m apidto.ServerMessage
-			_ = json.Unmarshal(b, &m)
-			out = append(out, m)
-		default:
-			return out
-		}
-	}
-}
+// --- Publish (the transport itself is tested in shared/backend/wskit) ---
 
 func TestPublishBuildsOneViewPerPlayer(t *testing.T) {
-	h := NewHub(nil)
+	e := newEnv(t)
 	var calls atomic.Int32
-	h.viewFor = func(g *domain.Game, p domain.PlayerID) (domain.PlayerView, error) {
+	e.hub.viewFor = func(g *domain.Game, p domain.PlayerID) (domain.PlayerView, error) {
 		calls.Add(1)
 		return stubView(g, p)
 	}
-	host1, host2, guest := fakeConn(h, "p_host"), fakeConn(h, "p_host"), fakeConn(h, "p_guest")
-	other := newConn(nil, "OTHER", "p_host", h.logger)
-	h.register(other)
+	host1 := e.connect(t, "tok-host", "p_host")
+	host2 := e.connect(t, "tok-host", "p_host")
+	wantPresence(t, read(t, host1), "p_host")
+	guest := e.connect(t, "tok-guest", "p_guest", "p_host")
+	wantPresence(t, read(t, host1), "p_guest", "p_host")
+	wantPresence(t, read(t, host2), "p_guest", "p_host")
 
-	h.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame, Revision: 5}, Events: []domain.Event{domain.GameStarted{}}})
+	calls.Store(0)
+	e.hub.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame, Revision: 5}, Events: []domain.Event{domain.GameStarted{}}})
 
+	for _, tc := range []struct {
+		c    *websocket.Conn
+		hand int
+	}{{host1, 11}, {host2, 11}, {guest, 22}} {
+		m := read(t, tc.c)
+		wantType(t, m, apidto.MsgView)
+		if m.View.Hand[0].Value != tc.hand || m.View.Revision != 5 {
+			t.Fatalf("view = %s", m.raw)
+		}
+		if len(m.Events) != 1 || m.Events[0].Type != apidto.EventGameStarted {
+			t.Fatalf("events = %s", m.raw)
+		}
+	}
 	if n := calls.Load(); n != 2 {
 		t.Fatalf("viewFor called %d times, want 2", n)
 	}
-	for _, tc := range []struct {
-		c    *conn
-		hand int
-	}{{host1, 11}, {host2, 11}, {guest, 22}} {
-		ms := drain(tc.c)
-		if len(ms) != 1 || ms[0].Type != apidto.MsgView || ms[0].View.Hand[0].Value != tc.hand || ms[0].View.Revision != 5 {
-			t.Fatalf("conn %s got %+v", tc.c.playerID, ms)
-		}
-		if len(ms[0].Events) != 1 || ms[0].Events[0].Type != apidto.EventGameStarted {
-			t.Fatalf("events = %+v", ms[0].Events)
-		}
-	}
-	if ms := drain(other); len(ms) != 0 {
-		t.Fatalf("other room got %d messages", len(ms))
-	}
 }
 
-func TestPublishSkipsUnknownPlayerAndEmptyRoom(t *testing.T) {
-	h := NewHub(nil)
-	var calls atomic.Int32
-	h.viewFor = func(g *domain.Game, p domain.PlayerID) (domain.PlayerView, error) {
-		calls.Add(1)
-		return stubView(g, p)
-	}
-	h.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame}})
-	h.Publish(context.Background(), ports.GameUpdate{})
-	if calls.Load() != 0 {
-		t.Fatal("viewFor called for empty room")
-	}
-	stranger, host := fakeConn(h, "p_stranger"), fakeConn(h, "p_host")
-	h.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame}})
-	if ms := drain(stranger); len(ms) != 0 {
-		t.Fatalf("stranger got %+v", ms)
-	}
-	if ms := drain(host); len(ms) != 1 {
-		t.Fatalf("host got %d messages", len(ms))
-	}
-}
-
-func TestSlowConsumerDoesNotBlockPublish(t *testing.T) {
-	h := NewHub(nil)
-	h.viewFor = stubView
-	slow := fakeConn(h, "p_guest") // no writer: its buffer never drains
-	fast := fakeConn(h, "p_host")
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		for i := range sendBuffer + 10 {
-			h.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame, Revision: int64(i)}})
-			drain(fast)
-		}
-	}()
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		t.Fatal("Publish blocked on a slow consumer")
-	}
-	select {
-	case <-slow.closing:
-	default:
-		t.Fatal("slow consumer was not kicked")
-	}
-	if slow.closeCode != websocket.StatusPolicyViolation || slow.closeReason != "slow consumer" {
-		t.Fatalf("close = %d %q", slow.closeCode, slow.closeReason)
-	}
-	select {
-	case <-fast.closing:
-		t.Fatal("fast consumer was kicked")
-	default:
-	}
-}
-
-func TestSlowConsumerClosedOverNetwork(t *testing.T) {
+func TestPublishWithoutGameIsIgnored(t *testing.T) {
 	e := newEnv(t)
 	c := e.connect(t, "tok-host", "p_host")
-	// Find the server-side conn and fill its buffer so the next enqueue kicks it.
-	conns := e.hub.snapshot(testGame)
-	if len(conns) != 1 {
-		t.Fatalf("conns = %d", len(conns))
+	e.hub.Publish(context.Background(), ports.GameUpdate{})
+	e.hub.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame, Revision: 1}})
+	m := read(t, c)
+	wantType(t, m, apidto.MsgView)
+	if m.View.Revision != 1 {
+		t.Fatalf("first message after publishes = %s", m.raw)
 	}
-	sc := conns[0]
-	sc.kick(websocket.StatusPolicyViolation, "slow consumer")
+}
+
+func TestPublishKicksPlayerWhoLeft(t *testing.T) {
+	e := newEnv(t)
+	host := e.connect(t, "tok-host", "p_host")
+	guest := e.connect(t, "tok-guest", "p_guest", "p_host")
+	wantPresence(t, read(t, host), "p_guest", "p_host")
+
+	// The guest is no longer seated: their view fails with ErrUnknownPlayer.
+	e.hub.viewFor = func(g *domain.Game, p domain.PlayerID) (domain.PlayerView, error) {
+		if p == "p_guest" {
+			return domain.PlayerView{}, domain.ErrUnknownPlayer
+		}
+		return stubView(g, p)
+	}
+	e.hub.Publish(context.Background(), ports.GameUpdate{Game: &domain.Game{ID: testGame, Revision: 2}})
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	for {
-		_, _, err := c.Read(ctx)
-		if err != nil {
-			if got := websocket.CloseStatus(err); got != websocket.StatusPolicyViolation {
-				t.Fatalf("close status = %d (err %v), want 1008", got, err)
-			}
-			break
-		}
+	_, _, err := guest.Read(ctx)
+	if got := websocket.CloseStatus(err); got != wskit.CloseUnauthorized {
+		t.Fatalf("guest close status = %d (err %v), want 4401", got, err)
 	}
-	waitFor(t, func() bool { return len(e.hub.Online(testGame)) == 0 })
+	wantType(t, read(t, host), apidto.MsgView)
+	wantPresence(t, read(t, host), "p_host")
 }

@@ -8,7 +8,7 @@ yoshi-und-kruemli.de {
 	import /etc/caddy/sites/*.caddy
 
 	# The start page links to every game.
-	redir / /card-games/
+	redir / /board-games/
 	handle {
 		respond "Not found" 404
 	}

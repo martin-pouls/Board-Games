@@ -5,11 +5,13 @@ name: regicide
 services:
   app:
     build:
-      context: ..
+      # The repository root: the app builds with shared/ (see ../Dockerfile).
+      context: ../..
+      dockerfile: regicide/Dockerfile
       args:
         BASE_PATH: /regicide
     # Built by CI for each commit; on the server TAG comes from deploy/.env (see deploy/server/).
-    image: ghcr.io/martin-pouls/card-games/regicide:${TAG:-latest}
+    image: ghcr.io/martin-pouls/board-games/regicide:${TAG:-latest}
     container_name: regicide
     restart: unless-stopped
     volumes:

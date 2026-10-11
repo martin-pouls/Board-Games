@@ -9,7 +9,7 @@
 /*
  * A card table: pale linen in light mode, green felt in dark mode (the theme is set before first
  * paint by the script in app.html). Each game tile borrows the identity of its game, in the same
- * mode: The Game is blue + orange, Regicide parchment/castle + gold.
+ * mode: The Game is blue + orange, Regicide parchment/castle + gold, Fox Duet moss green + fox orange on parchment.
  */
 :root {
 	--background: oklch(0.965 0.012 120);
@@ -34,7 +34,7 @@
 
 	--felt: oklch(0.9 0.04 150);
 	--table: var(--background);
-	--suit-red: oklch(0.55 0.2 25);
+	--accent-piece: oklch(0.55 0.2 25);
 	/* The Game */
 	--the-game-blue: oklch(0.55 0.17 250);
 	--the-game-orange: oklch(0.68 0.17 55);
@@ -45,6 +45,11 @@
 	--castle-banner: oklch(0.88 0.05 300);
 	--gold: oklch(0.55 0.12 75);
 	--castle-text: oklch(0.3 0.03 285);
+	/* Fox Duet */
+	--fox-tile: oklch(0.96 0.03 90);
+	--fox-moss: oklch(0.45 0.09 140);
+	--fox-orange: oklch(0.64 0.16 50);
+	--fox-text: oklch(0.52 0.15 50);
 }
 
 .dark {
@@ -68,20 +73,24 @@
 	--ring: oklch(0.78 0.08 150 / 60%);
 
 	--felt: oklch(0.2 0.03 155);
-	--suit-red: oklch(0.7 0.17 22);
+	--accent-piece: oklch(0.7 0.17 22);
 	--the-game-text: oklch(0.8 0.11 235);
 	--the-game-tile: oklch(0.205 0.024 262);
 	--castle: oklch(0.17 0.02 285);
 	--castle-banner: oklch(0.24 0.06 305);
 	--gold: oklch(0.78 0.13 85);
 	--castle-text: oklch(0.94 0.03 85 / 85%);
+	--fox-tile: oklch(0.2 0.03 140);
+	--fox-moss: oklch(0.3 0.07 145);
+	--fox-orange: oklch(0.72 0.16 55);
+	--fox-text: oklch(0.78 0.14 60);
 }
 
 @theme inline {
 	--font-sans: 'Inter Variable', system-ui, sans-serif;
 	--font-display: 'Cinzel Variable', 'Times New Roman', serif;
 	--color-felt: var(--felt);
-	--color-suit-red: var(--suit-red);
+	--color-accent-piece: var(--accent-piece);
 	--color-the-game-blue: var(--the-game-blue);
 	--color-the-game-orange: var(--the-game-orange);
 	--color-the-game-text: var(--the-game-text);
@@ -90,6 +99,10 @@
 	--color-castle-banner: var(--castle-banner);
 	--color-castle-text: var(--castle-text);
 	--color-gold: var(--gold);
+	--color-fox-tile: var(--fox-tile);
+	--color-fox-moss: var(--fox-moss);
+	--color-fox-orange: var(--fox-orange);
+	--color-fox-text: var(--fox-text);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
@@ -128,5 +141,30 @@
 		@apply min-h-svh font-sans text-foreground antialiased;
 		background:
 			radial-gradient(ellipse at 50% 0%, var(--felt) 0%, transparent 70%), var(--background);
+	}
+}
+
+/* The legal pages (Impressum, Datenschutz): running text. */
+@layer components {
+	.legal {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		line-height: 1.65;
+	}
+	.legal h2 {
+		margin-top: 1.25rem;
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+	.legal address {
+		font-style: normal;
+	}
+	.legal ul {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding-left: 1.25rem;
+		list-style: disc;
 	}
 }

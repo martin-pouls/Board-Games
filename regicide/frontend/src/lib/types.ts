@@ -1,3 +1,10 @@
+import type {
+	ClientErrorCode,
+	CommonErrorCode,
+	ErrorBody as SharedErrorBody,
+	ServerMessage as SharedServerMessage
+} from '@board-games/shared/wire.js';
+
 export type Phase = 'lobby' | 'playing' | 'won' | 'lost' | 'ended';
 export type Step = 'play' | 'discard' | 'chooseNext' | '';
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
@@ -128,19 +135,15 @@ export type GameEvent =
 	| { type: 'gameLost'; reason: LossReason; playerId: string }
 	| { type: 'gameEnded'; byPlayerId: string }
 	| { type: 'rematchCreated'; gameId: string };
-export type ApiErrorCode =
-	| 'bad_request'
-	| 'unauthorized'
+/** Regicide's own error codes, next to the ones every game shares (shared/frontend wire.ts). */
+export type GameErrorCode =
 	| 'not_host'
-	| 'game_not_found'
-	| 'not_found'
 	| 'wrong_phase'
 	| 'wrong_step'
 	| 'game_full'
 	| 'name_taken'
 	| 'not_your_turn'
 	| 'cannot_leave'
-	| 'conflict'
 	| 'invalid_name'
 	| 'unknown_player'
 	| 'card_not_in_hand'
@@ -150,21 +153,10 @@ export type ApiErrorCode =
 	| 'not_solo'
 	| 'no_solo_jester'
 	| 'illegal_signal'
-	| 'rematch_exists'
-	| 'rate_limited'
-	| 'internal'
-	| 'network'
-	| 'disconnected'
-	| 'timeout'; // last three are client-side only
-export interface ErrorBody {
-	code: ApiErrorCode;
-	message: string;
-}
-export type ServerMessage =
-	| { type: 'view'; view: PlayerView; events: GameEvent[] }
-	| { type: 'presence'; online: string[] }
-	| { type: 'ack'; requestId: string }
-	| { type: 'error'; requestId?: string; error: ErrorBody };
+	| 'rematch_exists';
+export type ApiErrorCode = CommonErrorCode | ClientErrorCode | GameErrorCode;
+export type ErrorBody = SharedErrorBody<ApiErrorCode>;
+export type ServerMessage = SharedServerMessage<PlayerView, GameEvent, ApiErrorCode>;
 export type ClientCommand =
 	| { type: 'startGame'; firstPlayerId?: string }
 	| { type: 'play'; cards: Card[] }

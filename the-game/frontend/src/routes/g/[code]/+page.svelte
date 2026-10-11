@@ -7,7 +7,7 @@
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 	import Board from '#lib/components/game/Board.svelte';
 	import ChooseFirstPlayer from '#lib/components/game/ChooseFirstPlayer.svelte';
-	import ConnectionBanner from '#lib/components/game/ConnectionBanner.svelte';
+	import ConnectionBanner from '@board-games/shared/ConnectionBanner.svelte';
 	import GameOver from '#lib/components/game/GameOver.svelte';
 	import Lobby from '#lib/components/game/Lobby.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';

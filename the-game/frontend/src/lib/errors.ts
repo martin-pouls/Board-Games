@@ -1,16 +1,13 @@
+import { commonErrorMessages } from '@board-games/shared/errors.js';
 import type { ApiErrorCode } from '#lib/types.js';
 
 const messages: Record<ApiErrorCode, string> = {
-	bad_request: 'That request was not valid.',
-	unauthorized: 'Your session has expired. Please rejoin the game.',
+	...commonErrorMessages,
 	not_host: 'Only the host can do that.',
-	game_not_found: 'No game found with that code.',
-	not_found: 'That could not be found.',
 	wrong_phase: 'That action is not possible right now.',
 	game_full: 'This game is full.',
 	name_taken: 'That name is already taken in this game.',
 	not_your_turn: "It's not your turn.",
-	conflict: 'Something changed at the same time. Please try again.',
 	invalid_name: 'Please enter a valid name.',
 	invalid_options: 'Those game options are not valid.',
 	unknown_player: 'That player is not in this game.',
@@ -29,12 +26,7 @@ const messages: Record<ApiErrorCode, string> = {
 	exact_count_required: '3!: play exactly 3 cards before ending your turn.',
 	stop_too_early: 'After 3!, STOP can only be your third card.',
 	skull_uncovered: "Cover the skull first: it can't stay on top when your turn ends.",
-	skull_uncoverable: 'After 3! no 4th card is allowed, so the skull could never be covered.',
-	rate_limited: 'Too many requests. Please wait a moment and try again.',
-	internal: 'Something went wrong on the server.',
-	network: "Can't reach the server.",
-	disconnected: 'Connection lost. Reconnecting…',
-	timeout: "The server didn't respond in time."
+	skull_uncoverable: 'After 3! no 4th card is allowed, so the skull could never be covered.'
 };
 
 export function errorText(code: ApiErrorCode): string {

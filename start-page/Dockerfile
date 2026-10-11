@@ -14,7 +14,7 @@ RUN BASE_PATH="$BASE_PATH" npm run build
 
 FROM caddy:2-alpine
 # Links the image to the repo on ghcr.io; the server prunes old images by it.
-LABEL org.opencontainers.image.source=https://github.com/martin-pouls/Card-Games
+LABEL org.opencontainers.image.source=https://github.com/martin-pouls/Board-Games
 COPY --from=web /src/frontend/build /srv
 EXPOSE 8080
 CMD ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]

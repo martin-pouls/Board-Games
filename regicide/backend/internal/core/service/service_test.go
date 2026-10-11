@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/martin-pouls/shared/backend/idgen"
+
 	"github.com/martin-pouls/regicide/backend/internal/adapters/memory"
 	"github.com/martin-pouls/regicide/backend/internal/core/domain"
 	"github.com/martin-pouls/regicide/backend/internal/core/ports"
@@ -275,7 +277,7 @@ func TestDefaultGenerators(t *testing.T) {
 			t.Fatalf("bad id %q", id)
 		}
 		for _, c := range string(id) {
-			if !containsRune(gameIDAlphabet, c) {
+			if !containsRune(idgen.CodeAlphabet, c) {
 				t.Fatalf("bad char %q in %q", c, id)
 			}
 		}
@@ -408,8 +410,8 @@ func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 	if recAfter.Version != recBefore.Version || recAfter.Game.Revision != recBefore.Game.Revision {
 		t.Errorf("state saved on error")
 	}
-	if f.svc.locks.size() != 0 {
-		t.Errorf("lock entries leaked: %d", f.svc.locks.size())
+	if f.svc.locks.Len() != 0 {
+		t.Errorf("lock entries leaked: %d", f.svc.locks.Len())
 	}
 }
 
@@ -442,7 +444,7 @@ func TestConcurrentYieldSerialised(t *testing.T) {
 	if got := len(f.rec.all()) - base; got != 1 {
 		t.Fatalf("expected one publish, got %d", got)
 	}
-	if f.svc.locks.size() != 0 {
+	if f.svc.locks.Len() != 0 {
 		t.Errorf("lock entries leaked")
 	}
 }

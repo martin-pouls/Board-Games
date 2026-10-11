@@ -5,7 +5,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
-	import ConnectionBanner from '#lib/components/game/ConnectionBanner.svelte';
+	import ConnectionBanner from '@board-games/shared/ConnectionBanner.svelte';
 	import GameOver from '#lib/components/game/GameOver.svelte';
 	import Lobby from '#lib/components/game/Lobby.svelte';
 	import Table from '#lib/components/game/Table.svelte';

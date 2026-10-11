@@ -1,12 +1,13 @@
-# Card Games — monorepo
+# Board Games — monorepo
 
-Web implementations of cooperative card games, played live in the browser, plus a start page that links to them. Live at https://yoshi-und-kruemli.de/card-games/.
+Web implementations of cooperative board and card games, played live in the browser, plus a start page that links to them. Live at https://yoshi-und-kruemli.de/board-games/.
 
 | App | Directory | URL path | What |
 |---|---|---|---|
-| Start page | [start-page/](start-page/) | `/card-games/` | Static page linking to every game. Frontend only. |
+| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game. Frontend only. |
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
+| Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
 
 This file holds the rules common to all apps. Each game's own CLAUDE.md adds its rules, domain model and look. **Read the game's CLAUDE.md before working on it.**
 
@@ -18,18 +19,27 @@ CLAUDE.md, .mcp.json, .gitignore, .gitattributes    shared by all apps
 deploy/                       server-wide: shared Caddy proxy, server bootstrap, deploy scripts
   README.md                   CD setup, security model, rollback
   caddy/                      compose file + Caddyfile for the shared proxy (/opt/caddy on the server)
-  server/card-games-deploy    runs on the server: the CI deploy key's forced command
+  server/board-games-deploy    runs on the server: the CI deploy key's forced command
   setup-server.sh             idempotent server bootstrap (Docker, ufw, Caddy, deploy user)
   deploy.sh                   fallback: builds and deploys from your PC without GitHub
+shared/                       plumbing every game uses (see shared/README.md)
+  backend/                    Go module github.com/martin-pouls/shared/backend
+  frontend/                   Svelte/TS source, imported as @board-games/shared
 start-page/                   static start page (SvelteKit, prerendered, no JS)
   frontend/  Dockerfile  deploy/
-the-game/                     one self-contained app per game
-  backend/  frontend/  docs/rules.md  Dockerfile  deploy/  CLAUDE.md
+the-game/                     one app per game
+  backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 regicide/
-  backend/  frontend/  docs/rules.md  Dockerfile  deploy/  CLAUDE.md
+  backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
+fox-duet/
+  backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 ```
 
-**Apps are independent.** Each game has its own Go module, its own npm project (own `package.json`, lockfile, `node_modules`) and its own image, database and deploy. Nothing imports across app directories. Regicide's lobby, session, WebSocket and persistence plumbing was ported from The Game, so the two are deliberately parallel. When in doubt about a convention in one game, look at how the other does it, and keep them aligned when changing shared plumbing.
+**Apps are independent, except for `shared/`.** Each game has its own Go module, its own npm project (own `package.json`, lockfile, `node_modules`) and its own image, database and deploy. No app imports from another app. The lobby, session, WebSocket, persistence and ID plumbing that every game needs lives in [shared/](shared/README.md):
+
+- **Backend:** each game's `go.mod` has `replace github.com/martin-pouls/shared/backend => ../../shared/backend`.
+- **Frontend:** the shared code is compiled as source by each app via the alias `@board-games/shared` (Vite `resolve.alias` + tsconfig `paths`).
+- **What may go there:** only what is the same in every game. Game rules, domain types and game-specific DTOs stay in the game. A change in `shared/` needs the checks in `shared/` and in every app that uses it.
 
 Every game app has the same shape:
 
@@ -64,7 +74,7 @@ Every game app has the same shape:
 
 The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS mirror).
 
-## Tech stack (both games)
+## Tech stack (all games)
 
 | Area | Choice | Notes |
 |---|---|---|
@@ -85,6 +95,7 @@ The start page uses the same SvelteKit/Tailwind/shadcn-svelte/tooling stack. It 
 ## Architecture: hexagonal (ports and adapters)
 
 - **Dependency direction points inward:** `adapters → core/service → core/ports → core/domain`. The domain imports nothing from its module.
+- **Shared code:** adapters and `cmd/server` build on `shared/backend` (wire, httpkit, wskit, sqlitedb, serverkit). `core/service` may use only its `idgen` and `lockmap`. `core/domain` and `core/ports` stay stdlib-only.
 - **All game rules live in `core/domain`.** Services orchestrate: load aggregate → call domain method → save → publish events. Adapters translate only and contain no rules.
 - **The server is authoritative.** Clients send *intents*. The domain validates them and returns typed errors for illegal moves. Never trust client-side validation; the client may pre-validate only for UX.
 - **Per-player views:** never send other players' hands (or hidden deck order) to a client. Build a projection per player.
@@ -117,9 +128,10 @@ Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`
 |---|---|---|
 | The Game | `:5173` | `:8080` |
 | Regicide | `:5174` | `:8081` |
+| Fox Duet | `:5176` | `:8082` |
 | Start page | `:5175` | — |
 
-In dev the start page links each tile to the game's frontend port on the same hostname (`devPort` in `start-page/frontend/src/lib/games.ts`); production builds link to `/<game>/`. The other way round, each game's home screen has an *All games* link (`startPageHref` in `<game>/frontend/src/lib/startPage.ts`: port 5175 in dev, `/card-games/` in production). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and the games' `startPage.ts` together.
+In dev the start page links each tile to the game's frontend port on the same hostname (`devPort` in `start-page/frontend/src/lib/games.ts`); production builds link to `/<game>/`. The other way round, each game's home screen has an *All games* link (`startPageHref` in `shared/frontend/src/startPage.ts`: port 5175 in dev, `/board-games/` in production). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and `shared/frontend/src/startPage.ts` together.
 
 Frontend (run from `<app>/frontend/`):
 ```sh
@@ -137,18 +149,19 @@ Production-like local run of a game: `npm run build` in `<game>/frontend/`, then
 
 Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root via `~/.ssh/hetzner_ed25519`).
 
-- **One container per app**, all on the external Docker network `web`. CI builds the images on native arm64 runners and pushes them as `ghcr.io/martin-pouls/card-games/<app>:<commit sha>`:
-  - `the-game` and `regicide`: one image each (SPA + Go server), SQLite in the volumes `the-game_data` and `regicide_data`.
+- **One container per app**, all on the external Docker network `web`. CI builds the images on native arm64 runners and pushes them as `ghcr.io/martin-pouls/board-games/<app>:<commit sha>`:
+  - `the-game`, `regicide` and `fox-duet`: one image each (SPA + Go server), SQLite in the volumes `the-game_data`, `regicide_data` and `fox-duet_data`.
   - `start-page`: the prerendered page served by `caddy file-server`.
-- **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. The Caddyfile redirects `/` to `/card-games/` and imports every `sites/*.caddy`.
+- **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. The Caddyfile redirects `/` to `/board-games/` and imports every `sites/*.caddy`.
 - **Each app ships a snippet** `<app>/deploy/<app>.caddy` that maps its path prefix to its container with `handle_path`. The prefix is stripped, so the servers stay path-agnostic.
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (`paths.base`), set as a build arg in `<app>/deploy/compose.yaml`. Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`. Never hard-code `/api` or `/ws` without it. Links between apps are plain absolute paths with `rel="external"`.
 - **Deploying:** push to `main`. [.github/workflows/deploy.yml](.github/workflows/deploy.yml) tests, builds and deploys the apps that changed since the last successful deploy. Manual runs (*Run workflow*) take `all` or app names. Setup, security model and rollback: [deploy/README.md](deploy/README.md).
-  - `<app>/deploy/compose.yaml` is the build definition (context, `BASE_PATH`, image name with `${TAG}`). CI builds it with `docker buildx bake`, and the server runs it with `TAG=<sha>` in `/opt/card-games/<app>/deploy/.env`.
-  - CI deploys as user `deploy`, whose key may only run [deploy/server/card-games-deploy](deploy/server/card-games-deploy) (forced command). `deploy` is root-equivalent (docker group), so that script takes only a commit SHA and app names from CI and reads `<app>/deploy/` from its own clone of `main`, refusing commits that are not on `main`. Keep it that way: never let it use files or config sent by the caller.
+  - `<app>/deploy/compose.yaml` is the build definition (context, `BASE_PATH`, image name with `${TAG}`). CI builds it with `docker buildx bake`, and the server runs it with `TAG=<sha>` in `/opt/board-games/<app>/deploy/.env`.
+  - Games use `shared/`, so they build with the repo root as context (`context: ../..`, `dockerfile: <app>/Dockerfile`, plus `<app>/Dockerfile.dockerignore`). A change in `shared/` deploys every app whose Dockerfile has `COPY shared/...`.
+  - CI deploys as user `deploy`, whose key may only run [deploy/server/board-games-deploy](deploy/server/board-games-deploy) (forced command). `deploy` is root-equivalent (docker group), so that script takes only a commit SHA and app names from CI and reads `<app>/deploy/` from its own clone of `main`, refusing commits that are not on `main`. Keep it that way: never let it use files or config sent by the caller.
   - `deploy/setup-server.sh` is the idempotent bootstrap: Docker, ufw, Caddy, the deploy user and script. Re-run it after changing `deploy/caddy/` or `deploy/server/`; the repo owns the Caddyfile.
   - `deploy/deploy.sh [app...]` is the fallback from Git Bash: it ships the *committed* subtree and builds on the server as root (tag `local-<rev>`).
-- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy`. CI and `deploy.sh` pick it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`.
+- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy`. CI and `deploy.sh` pick it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`. For a game, copy Regicide's `Dockerfile`, `Dockerfile.dockerignore` and `compose.yaml` (root context, `shared/`) and its shared wiring (`go.mod` replace; `vite.config.ts`, `tsconfig.json`, `layout.css`, see [shared/README.md](shared/README.md)).
 - **Git Bash gotcha:** it rewrites `/regicide`-like values in env vars into Windows paths. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/regicide npm run build`.
 
 ## Conventions and gotchas
@@ -159,8 +172,9 @@ Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root vi
 - **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `$effect`). No legacy `export let` or stores for new code. A TS module that uses runes must be named `*.svelte.ts`.
 - **Secure-context APIs** (`crypto.randomUUID`, `navigator.clipboard`, `navigator.share`) are missing when phones test over `http://192.168.x.x`: always feature-detect and fall back.
 - The player token travels in the WS query string: don't log full URLs at the reverse proxy.
-- **Abuse limits** (`internal/adapters/httpapi/ratelimit.go`, identical in both games) cap game creation, 404 game lookups (code guessing) and WebSocket connections per client IP, answering 429 `rate_limited`. The client IP is the last `X-Forwarded-For` entry (set by Caddy). Loopback clients are exempt, so local dev is never limited. New routes under `/api/games/` or `/ws/` are covered automatically.
+- **Abuse limits** (`shared/backend/httpkit/ratelimit.go`, used by every game's router) cap game creation, 404 game lookups (code guessing) and WebSocket connections per client IP, answering 429 `rate_limited`. The client IP is the last `X-Forwarded-For` entry (set by Caddy). Loopback clients are exempt, so local dev is never limited. New routes under `/api/games/` or `/ws/` are covered automatically.
 - **Privacy policy:** [start-page/frontend/src/routes/datenschutz/+page.svelte](start-page/frontend/src/routes/datenschutz/+page.svelte) (German, linked from the footer of every app) describes exactly what data the apps process. Update it whenever that changes: new stored fields, browser storage, logging of IPs, cookies, or any third-party service or external resource.
+- **Imprint:** [start-page/frontend/src/routes/impressum/+page.svelte](start-page/frontend/src/routes/impressum/+page.svelte) (German, linked from the footer of every app next to the privacy policy). The operator's name, address and e-mail for both pages live in `start-page/frontend/src/lib/site.ts`.
 - **Adding shadcn components** (from `<game>/frontend/`): `npx shadcn-svelte@latest add <name> -y`.
   - If it fails with `File '$app/tsconfig' not found`, run `npx svelte-kit sync` first; an npm install can wipe the generated `node_modules/$app`.
   - The generated components live in `src/lib/components/ui/` and are lint-exempt from `svelte/no-navigation-without-resolve`.

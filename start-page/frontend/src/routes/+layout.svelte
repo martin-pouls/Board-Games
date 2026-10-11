@@ -12,8 +12,9 @@
 		<ThemeToggle />
 	</div>
 	{@render children()}
-	<footer class="mt-auto pt-12 text-center text-xs text-muted-foreground">
-		<!-- Trailing slash: the page is datenschutz/index.html (see datenschutz/+page.ts). -->
+	<footer class="mt-auto flex justify-center gap-4 pt-12 text-center text-xs text-muted-foreground">
+		<!-- Trailing slashes: the pages are <name>/index.html (see datenschutz/+page.ts). -->
+		<a href="{resolve('/impressum')}/" class="underline-offset-4 hover:underline">Impressum</a>
 		<a href="{resolve('/datenschutz')}/" class="underline-offset-4 hover:underline">Datenschutz</a>
 	</footer>
 </main>

@@ -118,12 +118,12 @@ func TestRoundTripEachPhase(t *testing.T) {
 			if string(want) != string(have) {
 				t.Errorf("round trip mismatch\nwant %s\nhave %s", want, have)
 			}
-			var status, variant string
-			if err := db.sql.QueryRow(`SELECT status, variant FROM games WHERE id = ?`, string(tt.g.ID)).Scan(&status, &variant); err != nil {
+			var status string
+			if err := db.SQL().QueryRow(`SELECT status FROM games WHERE id = ?`, string(tt.g.ID)).Scan(&status); err != nil {
 				t.Fatal(err)
 			}
-			if status != tt.status || variant != "classic" {
-				t.Errorf("status/variant = %s/%s, want %s/classic", status, variant, tt.status)
+			if status != tt.status {
+				t.Errorf("status = %s, want %s", status, tt.status)
 			}
 		})
 	}
@@ -151,7 +151,7 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := db.sql.Exec(`UPDATE games SET updated_at = '2000-01-01 00:00:00' WHERE id = 'OLD01'`); err != nil {
+	if _, err := db.SQL().Exec(`UPDATE games SET updated_at = '2000-01-01 00:00:00' WHERE id = 'OLD01'`); err != nil {
 		t.Fatal(err)
 	}
 	n, err := repo.DeleteInactive(ctx, time.Now().Add(-24*time.Hour))
@@ -159,10 +159,10 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 		t.Fatalf("n=%d err=%v, want 1", n, err)
 	}
 	var tokens int
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'OLD01'`).Scan(&tokens); err != nil || tokens != 0 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'OLD01'`).Scan(&tokens); err != nil || tokens != 0 {
 		t.Errorf("tokens of deleted game = %d (err %v), want 0", tokens, err)
 	}
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'NEW01'`).Scan(&tokens); err != nil || tokens != 1 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM player_tokens WHERE game_id = 'NEW01'`).Scan(&tokens); err != nil || tokens != 1 {
 		t.Errorf("tokens of kept game = %d (err %v), want 1", tokens, err)
 	}
 }
@@ -170,7 +170,7 @@ func TestDeleteInactiveBackdatedAndCascade(t *testing.T) {
 func TestMigrationsCreateTokensTableAndIndex(t *testing.T) {
 	db := openTestDB(t)
 	var n int
-	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name IN ('player_tokens','games_updated_at')`).Scan(&n); err != nil || n != 2 {
+	if err := db.SQL().QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name IN ('player_tokens','games_updated_at')`).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("n=%d err=%v, want 2", n, err)
 	}
 }
@@ -242,12 +242,12 @@ func TestRoundTripExtreme(t *testing.T) {
 	if string(want) != string(have) {
 		t.Errorf("round trip mismatch\nwant %s\nhave %s", want, have)
 	}
-	var status, variant string
-	if err := db.sql.QueryRow(`SELECT status, variant FROM games WHERE id = ?`, string(g.ID)).Scan(&status, &variant); err != nil {
+	var status string
+	if err := db.SQL().QueryRow(`SELECT status FROM games WHERE id = ?`, string(g.ID)).Scan(&status); err != nil {
 		t.Fatal(err)
 	}
-	if status != "running" || variant != "extreme" {
-		t.Errorf("status/variant = %s/%s, want running/extreme", status, variant)
+	if status != "running" {
+		t.Errorf("status = %s, want running", status)
 	}
 	after, err := got.Game.ViewFor("p1")
 	if err != nil {
@@ -277,7 +277,7 @@ func TestLoadSnapshotWithoutCreatedAt(t *testing.T) {
 	// Strip the field to mimic a snapshot written before it existed, and backdate the row.
 	var raw map[string]any
 	var state string
-	if err := db.sql.QueryRow(`SELECT state FROM games WHERE id = 'LEGAC'`).Scan(&state); err != nil {
+	if err := db.SQL().QueryRow(`SELECT state FROM games WHERE id = 'LEGAC'`).Scan(&state); err != nil {
 		t.Fatal(err)
 	}
 	if err := json.Unmarshal([]byte(state), &raw); err != nil {
@@ -285,7 +285,7 @@ func TestLoadSnapshotWithoutCreatedAt(t *testing.T) {
 	}
 	delete(raw, "createdAt")
 	stripped, _ := json.Marshal(raw)
-	if _, err := db.sql.Exec(`UPDATE games SET state = ?, created_at = '2026-05-04 03:02:01' WHERE id = 'LEGAC'`, string(stripped)); err != nil {
+	if _, err := db.SQL().Exec(`UPDATE games SET state = ?, created_at = '2026-05-04 03:02:01' WHERE id = 'LEGAC'`, string(stripped)); err != nil {
 		t.Fatal(err)
 	}
 

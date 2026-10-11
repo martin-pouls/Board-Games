@@ -16,7 +16,7 @@ describe('gameHref', () => {
 	const game = games.find((g) => g.id === 'regicide')!;
 
 	it('uses the path on the same host in production', () => {
-		expect(gameHref(game, new URL('https://yoshi-und-kruemli.de/card-games/'), false)).toBe(
+		expect(gameHref(game, new URL('https://yoshi-und-kruemli.de/board-games/'), false)).toBe(
 			'/regicide/'
 		);
 	});

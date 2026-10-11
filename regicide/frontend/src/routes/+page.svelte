@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 	import { ApiError, createGame, getSummary, joinGame } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
-	import { normalizeCode, CODE_LENGTH } from '#lib/game/protocol.js';
+	import { normalizeCode, CODE_LENGTH } from '@board-games/shared/protocol.js';
 	import {
 		loadRecentGames,
 		partitionGames,

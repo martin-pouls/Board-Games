@@ -1,78 +1,26 @@
 // Thin client for the Go REST API. In dev, Vite proxies /api and /ws to the backend.
 // Paths are prefixed with the build-time base path (BASE_PATH, e.g. /the-game in production).
+import { createRequest, gamePath as game, lobbyApi } from '@board-games/shared/api.js';
 import type {
 	ApiErrorCode,
-	ErrorBody,
 	GameOptions,
 	GameSummary,
 	PlayerView,
 	SessionResponse
 } from '#lib/types.js';
 
-export class ApiError extends Error {
-	status: number;
-	code: ApiErrorCode;
-	constructor(status: number, code: ApiErrorCode, message: string) {
-		super(message);
-		this.name = 'ApiError';
-		this.status = status;
-		this.code = code;
-	}
-}
+export { ApiError } from '@board-games/shared/api.js';
 
-export async function getHealth(): Promise<{ status: string }> {
-	const res = await fetch(`${__BASE_PATH__}/api/health`);
-	if (!res.ok) throw new Error(`health check failed: ${res.status}`);
-	return res.json();
-}
+const request = createRequest<ApiErrorCode>(__BASE_PATH__);
 
-async function request<T>(
-	method: string,
-	path: string,
-	opts: { token?: string; body?: unknown } = {}
-): Promise<T> {
-	const headers: Record<string, string> = {};
-	if (opts.token) headers['Authorization'] = `Bearer ${opts.token}`;
-	let body: string | undefined;
-	if (opts.body !== undefined) {
-		headers['Content-Type'] = 'application/json';
-		body = JSON.stringify(opts.body);
-	}
-	let res: Response;
-	try {
-		res = await fetch(__BASE_PATH__ + path, { method, headers, body });
-	} catch {
-		throw new ApiError(0, 'network', 'network error');
-	}
-	if (!res.ok) {
-		let err: Partial<ErrorBody> = {};
-		try {
-			err = (await res.json()).error ?? {};
-		} catch {
-			// non-JSON error body
-		}
-		throw new ApiError(res.status, err.code ?? 'internal', err.message ?? res.statusText);
-	}
-	try {
-		return (await res.json()) as T;
-	} catch {
-		throw new ApiError(res.status, 'internal', 'invalid response');
-	}
-}
-
-const game = (code: string) => `/api/games/${encodeURIComponent(code.trim().toUpperCase())}`;
+export const { getHealth, joinGame, getSummary, getView, giveUp, rematch } = lobbyApi<
+	SessionResponse,
+	GameSummary,
+	PlayerView
+>(request);
 
 export function createGame(name: string, options?: GameOptions): Promise<SessionResponse> {
 	return request('POST', '/api/games', { body: { name, options } });
-}
-export function joinGame(code: string, name: string): Promise<SessionResponse> {
-	return request('POST', `${game(code)}/players`, { body: { name } });
-}
-export function getSummary(code: string): Promise<GameSummary> {
-	return request('GET', game(code));
-}
-export function getView(code: string, token: string): Promise<PlayerView> {
-	return request('GET', `${game(code)}/view`, { token });
 }
 export function setOptions(code: string, token: string, options: GameOptions): Promise<PlayerView> {
 	return request('PUT', `${game(code)}/options`, { token, body: options });
@@ -101,13 +49,6 @@ export function undoPlay(code: string, token: string): Promise<PlayerView> {
 export function endTurn(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/end-turn`, { token });
 }
-export function giveUp(code: string, token: string): Promise<PlayerView> {
-	return request('POST', `${game(code)}/give-up`, { token });
-}
 export function endGame(code: string, token: string): Promise<PlayerView> {
 	return request('POST', `${game(code)}/end-game`, { token });
-}
-
-export function rematch(code: string, token: string): Promise<PlayerView> {
-	return request('POST', `${game(code)}/rematch`, { token });
 }

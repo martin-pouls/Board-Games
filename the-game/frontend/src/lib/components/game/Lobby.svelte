@@ -16,7 +16,7 @@
 	import { plural } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { GameOptions, PlayerView } from '#lib/types.js';
-	import ShareInvite from './ShareInvite.svelte';
+	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
 
 	let { client, view }: { client: GameClient; view: PlayerView } = $props();
 
@@ -77,7 +77,11 @@
 
 	<Card.Root>
 		<Card.Content>
-			<ShareInvite code={view.gameId} />
+			<ShareInvite
+				code={view.gameId}
+				link={`${globalThis.location?.origin ?? ''}${resolve('/join/[code]', { code: view.gameId })}`}
+				title="The Game"
+			/>
 		</Card.Content>
 	</Card.Root>
 

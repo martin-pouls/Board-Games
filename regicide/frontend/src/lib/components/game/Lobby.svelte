@@ -17,7 +17,7 @@
 	import type { GameClient } from '#lib/game/client.js';
 	import { cn } from '#lib/utils.js';
 	import type { PlayerView } from '#lib/types.js';
-	import ShareInvite from './ShareInvite.svelte';
+	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
 
 	let {
 		client,
@@ -130,7 +130,11 @@
 
 	<Card.Root>
 		<Card.Content>
-			<ShareInvite code={view.gameId} />
+			<ShareInvite
+				code={view.gameId}
+				link={`${globalThis.location?.origin ?? ''}${resolve('/join/[code]', { code: view.gameId })}`}
+				title="Regicide"
+			/>
 		</Card.Content>
 	</Card.Root>
 

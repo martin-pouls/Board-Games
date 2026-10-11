@@ -4,7 +4,7 @@
 # Git Bash on your PC (as root over your own key). Setup of the CI deploy: deploy/README.md.
 #
 #   deploy/setup-server.sh                                    # keeps the deploy user's key as is
-#   CI_PUBKEY=~/.ssh/card-games-ci.pub deploy/setup-server.sh # installs (or rotates) the CI key
+#   CI_PUBKEY=~/.ssh/board-games-ci.pub deploy/setup-server.sh # installs (or rotates) the CI key
 #
 # Re-run it after changing deploy/caddy/ or deploy/server/ (it ships the committed HEAD): the repo
 # owns the Caddyfile, and a server copy that differs is kept as Caddyfile.bak before it is replaced.
@@ -56,22 +56,37 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 # account sshd still accepts its key.
 id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
 usermod -p '*' -aG docker deploy
-install -m 755 "$tmp/server/card-games-deploy" /usr/local/bin/card-games-deploy
-install -d -o deploy -g deploy /opt/card-games
-chown -R deploy:deploy /opt/card-games /opt/caddy/conf/sites
+# The repo used to be Card-Games: move its deploy root (compose project names stay, so the running
+# containers and their volumes carry over) and drop the old script.
+if [ -d /opt/card-games ] && [ ! -e /opt/board-games ]; then
+	mv /opt/card-games /opt/board-games
+	echo "moved /opt/card-games to /opt/board-games"
+fi
+rm -f /usr/local/bin/card-games-deploy
+install -m 755 "$tmp/server/board-games-deploy" /usr/local/bin/board-games-deploy
+install -d -o deploy -g deploy /opt/board-games
+chown -R deploy:deploy /opt/board-games /opt/caddy/conf/sites
 
 # The deploy key lives in a root-owned file, not in ~deploy/.ssh, so the account cannot change its
 # own keys. Password logins are off for everyone (root already allowed keys only).
 install -d -m 755 /etc/ssh/authorized_keys
+keyfile=/etc/ssh/authorized_keys/deploy
 if [ -n "$CI_PUBKEY_B64" ]; then
-	printf 'restrict,command="/usr/local/bin/card-games-deploy" %s\n' "$(echo "$CI_PUBKEY_B64" | base64 -d)" \
-		>/etc/ssh/authorized_keys/deploy
-	chmod 644 /etc/ssh/authorized_keys/deploy
+	ci_key=$(echo "$CI_PUBKEY_B64" | base64 -d)
 	echo "installed the CI deploy key for user deploy"
+elif [ -f "$keyfile" ]; then
+	# Keep the key, but (re)pin it to the current script: the forced command may name an old one.
+	ci_key=$(grep -oE 'ssh-(ed25519|rsa) .*' "$keyfile" | head -n1)
+else
+	ci_key=
 fi
-dropin=/etc/ssh/sshd_config.d/10-card-games.conf
+if [ -n "$ci_key" ]; then
+	printf 'restrict,command="/usr/local/bin/board-games-deploy" %s\n' "$ci_key" >"$keyfile"
+	chmod 644 "$keyfile"
+fi
+dropin=/etc/ssh/sshd_config.d/10-board-games.conf
 cat >"$dropin" <<'SSHD'
-# Installed by deploy/setup-server.sh (Card-Games repo).
+# Installed by deploy/setup-server.sh (Board-Games repo).
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 Match User deploy
@@ -83,6 +98,7 @@ if ! sshd -t; then
 	echo "sshd rejected $dropin; removed it again" >&2
 	exit 1
 fi
+rm -f /etc/ssh/sshd_config.d/10-card-games.conf # its name before the rename, same content
 systemctl try-reload-or-restart ssh
 rm -rf "$tmp"
 EOF

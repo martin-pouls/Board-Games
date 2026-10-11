@@ -4,6 +4,8 @@
 // Keep in sync with frontend/src/lib/types.ts.
 package apidto
 
+import "github.com/martin-pouls/shared/backend/wire"
+
 // Card is a playable card.
 type Card struct {
 	Value   int    `json:"value"`
@@ -201,13 +203,8 @@ type SessionResponse struct {
 	View     PlayerView `json:"view"`
 }
 
-// ErrorBody is the error payload used on REST and WS.
-type ErrorBody struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
+// ErrorBody is the error payload used on REST and WS (shared envelope).
+type ErrorBody = wire.ErrorBody
 
-// ErrorResponse is the body of every non-2xx REST response.
-type ErrorResponse struct {
-	Error ErrorBody `json:"error"`
-}
+// ErrorResponse is the body of every non-2xx REST response (shared envelope).
+type ErrorResponse = wire.ErrorResponse
