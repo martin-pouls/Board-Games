@@ -1,5 +1,4 @@
 # Technical
-- Gate rollout on the server (works in the local stack): write a passwords file outside the repo (e.g. `~/gate-passwords`), commit, run `GATE_PASSWORDS=~/gate-passwords deploy/setup-server.sh` (new Caddyfile + passwords), then push to `main` (CI deploys the gate and the protected apps). See [deploy/README.md](deploy/README.md#password-gate).
 - GHCR Cleanup Action
 
 ## WebSocket review
