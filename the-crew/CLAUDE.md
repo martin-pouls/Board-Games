@@ -1,0 +1,30 @@
+# The Crew — online multiplayer
+
+A web implementation of the cooperative trick-taking game **The Crew: The Quest for Planet Nine** (Kosmos), played live by 2–5 players in the browser, with all 50 missions. With 2 players the dummy crew member JARVIS joins. Served at `/the-crew/`.
+
+The shared stack, architecture, conventions, commands and deployment are in the [root CLAUDE.md](../CLAUDE.md). This file covers what is specific to The Crew. Its lobby, session, WebSocket and persistence plumbing comes from [shared/](../shared/README.md). Everything that isn't game logic follows [fox-duet/](../fox-duet/); when in doubt about a convention, look there.
+
+**Rules:** [docs/rules.md](docs/rules.md) is the source of truth: the English rules summary, the mission table (§14) and the interpretations we chose (marked **App decision**). Read it before touching game logic. Do not re-read the rulebook PDFs. If a rule question is not answered there, ask, then record the answer in that file. [docs/implementation-plan.md](docs/implementation-plan.md) explains the design and the outlook for *Mission Deep Sea* (§11).
+
+## App specifics
+
+- Go module `github.com/martin-pouls/the-crew/backend`. Default DB `data/the-crew.db`. Local ports: Vite `:5177`, backend `:8084`.
+- **Session model:** a game (lobby code) is one sitting of a crew. The host picks a mission in the lobby, the crew plays attempts until it is won, then goes on to the next mission or back to the lobby. The logbook (attempts, distress signal, completed) lives in the game.
+- **Intents:** select mission, start mission, adjust/skip tokens (23, 40), answer poll, pick seats (commander), pick task (draft), send/skip distress, choose pass card, hand over a task (5 players), communicate, play card, give up, next attempt, next mission, back to lobby, end game. The commander acts for JARVIS and makes every "decide together" call.
+- **Per-player view:** the viewer's own hand and playable cards (the dummy's on its turn, for the commander), every member's card count, tricks won and communication, JARVIS's face-up cards and whether a hidden card lies under each, the tasks (face-down ones without their card), the objectives with their status, the poll answers, the viewer's own pass choice and own side of the last pass or draw, the current and the last completed trick, the actions allowed now, and in the debrief the result and all hands. Never other humans' hands, JARVIS's hidden cards, other players' pass choices or the deck. Events are public and card-free for private moves.
+- **Deployment:** container `the-crew`, SQLite in the volume `the-crew_data`, Caddy snippet [deploy/the-crew.caddy](deploy/the-crew.caddy).
+
+## Domain modelling rules
+
+- **Missions are data:** `missions_planet9.go` mirrors rules.md §14 row by row (`MissionDef`: tasks, tokens, distribution, communication rule, golden frame, setup actions, poll kind, objective specs). A test compares it against an independently written table.
+- **Tasks and special objectives are one concept:** an `Objective` (kind + owner + parameters), evaluated as a **pure function of the completed tricks** (`Objective.Status(History)`). Statuses are never stored. Fail early, fulfil only once the objective can no longer fail; every open objective fails after the last trick. The token order check (`orderViolation`) uses the trick in which each task was fulfilled (rules §7).
+- **The trick rules are edition-agnostic** (`trick.go`: legal cards, winner) and know nothing about seats, the dummy or missions. Only `Member.Playable` and `actorFor` know about the dummy.
+- **One `Attempt` per deal:** a new attempt replaces it. Members are seats; with 2 players seat 2 is the dummy. On the wire members are referenced by seat index.
+- **The setup is derived:** only `Step` and the open `Poll` are stored; `nextItem` derives the pending setup item (token swap/move, silenced member, roles, chosen member, draft, commander's decision, commander's distribution) from the `MissionDef` and the attempt. `Actors()` is derived per step and never empty while playing.
+- **The RNG is injected** (`Shuffle`, `IntN`): the deal, the 3-player extra card, the task deck and mission 12's draw.
+- **Validate fully before mutating;** the tests assert unchanged state on every error (`mustFail`). `sim_test.go` plays random legal actions through every mission × 2–5 players and checks card conservation, actors and the hiding rules after every action.
+- **Edition seams for Deep Sea:** `Game.Edition`, the mission table per edition, the open `ObjectiveKind` set. No Planet Nine names in `trick.go`, `objective.go` or `seat.go`: the domain says trump, dummy, commander; the UI says rocket, JARVIS, commander.
+
+## Look and feel
+
+A space theme, distinct from the other games: pale "mission paper" with deep indigo ink and a coral accent in light mode, midnight navy with a subtle starfield and a cyan accent in dark mode. Cards are drawn by us: the value large, each colour with its own glyph (colour-blind support), rockets dark with a rocket glyph. The game table is mobile-first, top to bottom: top bar (mission, attempt, commander, communication badges), crew strip (one chip per other member, JARVIS expands into its 7 stacks), mission panel (tasks with token, owner and status; objectives), trick area, decision panel (per step), own tasks with the Communicate button, and the hand fan with illegal cards dimmed. Card motion uses the headless card-motion layer in `shared/frontend`. Light/dark toggle via mode-watcher; theme tokens live in `src/routes/layout.css` (`:root` light, `.dark` dark), so components use tokens, not raw colours.
