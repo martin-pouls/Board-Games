@@ -122,10 +122,13 @@ systemctl try-reload-or-restart ssh
 # The gate's secret and passwords, readable only by the gate container's user (distroless nonroot)
 # and root. A new secret would log everyone out, so it is made once and kept.
 gate=/etc/board-games/gate
-install -d -m 700 -o 65532 -g 65532 "$gate"
+# Owners via chown: the server's install (uutils) rejects numeric ids that have no user.
+install -d -m 700 "$gate"
+chown 65532:65532 "$gate"
 [ -s "$gate/secret" ] || { openssl rand -hex 32 >"$gate/secret"; echo "generated the gate secret"; }
 if [ -f "$tmp/gate-passwords" ]; then
-	install -m 600 -o 65532 -g 65532 "$tmp/gate-passwords" "$gate/passwords"
+	install -m 600 "$tmp/gate-passwords" "$gate/passwords"
+	chown 65532:65532 "$gate/passwords"
 	echo "installed the gate passwords"
 	if docker container inspect gate >/dev/null 2>&1; then docker restart gate >/dev/null; fi
 elif [ ! -s "$gate/passwords" ]; then
