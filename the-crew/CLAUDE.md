@@ -12,7 +12,7 @@ The shared stack, architecture, conventions, commands and deployment are in the 
 - **Session model:** a game (lobby code) is one sitting of a crew. The host picks a mission in the lobby, the crew plays attempts until it is won, then goes on to the next mission or back to the lobby. The logbook (attempts, distress signal, completed) lives in the game.
 - **Intents:** select mission, start mission, adjust/skip tokens (23, 40), answer poll, pick seats (commander), pick task (draft), send/skip distress, choose pass card, hand over a task (5 players), communicate, play card, give up, next attempt, next mission, back to lobby, end game. The commander acts for JARVIS and makes every "decide together" call.
 - **Per-player view:** the viewer's own hand and playable cards (the dummy's on its turn, for the commander), every member's card count, tricks won and communication, JARVIS's face-up cards and whether a hidden card lies under each, the tasks (face-down ones without their card), the objectives with their status, the poll answers, the viewer's own pass choice and own side of the last pass or draw, the current and the last completed trick, the actions allowed now, and in the debrief the result and all hands. Never other humans' hands, JARVIS's hidden cards, other players' pass choices or the deck. Events are public and card-free for private moves.
-- **Deployment:** container `the-crew`, SQLite in the volume `the-crew_data`, Caddy snippet [deploy/the-crew.caddy](deploy/the-crew.caddy).
+- **Deployment:** container `the-crew`, SQLite in the volume `the-crew_data`, `GAME_RETENTION=720h` (30 days instead of 7, for the logbook; the privacy policy says so), Caddy snippet [deploy/the-crew.caddy](deploy/the-crew.caddy).
 
 ## Domain modelling rules
 

@@ -142,7 +142,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>End the game?</AlertDialog.Title>
 			<AlertDialog.Description>
-				The session closes for everyone. The logbook of this game is not kept.
+				The session closes for everyone and can no longer be played. Its logbook stays viewable
+				until the game is deleted after 30 days.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>

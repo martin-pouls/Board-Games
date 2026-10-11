@@ -119,8 +119,8 @@
 		kennen. Ein echter Name ist nicht nötig, ein Spitzname genügt.
 	</p>
 	<p>
-		Spiele, in denen sieben Tage lang nichts passiert ist, werden automatisch mit allen zugehörigen
-		Daten gelöscht.
+		Spiele, in denen sieben Tage lang nichts passiert ist (bei The Crew 30 Tage, damit das Logbuch
+		einer Kampagne erhalten bleibt), werden automatisch mit allen zugehörigen Daten gelöscht.
 	</p>
 	<p>
 		Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO: Die Daten sind nötig, um Ihnen das gewünschte
