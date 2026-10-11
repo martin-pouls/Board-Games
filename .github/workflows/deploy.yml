@@ -209,10 +209,11 @@ jobs:
         run: |
           for app in $(jq -r '.[]' <<<"$APPS"); do
             # The first handle_path is the app's own (later ones may redirect old paths). Protected
-            # apps answer with the gate's redirect to the login (curl doesn't follow it): that
-            # proves Caddy and the gate are up, not the app behind them.
+            # apps answer page loads (Accept: text/html; API calls get 401) with the gate's redirect
+            # to the login (curl doesn't follow it): that proves Caddy and the gate are up, not the
+            # app behind them.
             path=$(sed -n 's#^handle_path \(/[^/]*\)/\*.*#\1#p;T;q' "$app/deploy/$app.caddy")
-            curl -fsS -o /dev/null --retry 10 --retry-delay 3 --retry-all-errors "$SITE$path/"
+            curl -fsS -o /dev/null -H "Accept: text/html" --retry 10 --retry-delay 3 --retry-all-errors "$SITE$path/"
             echo "$app is up at $SITE$path/"
           done
       - name: Remove SSH key
