@@ -7,6 +7,7 @@
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 	import ConnectionBanner from '@board-games/shared/ConnectionBanner.svelte';
 	import Lobby from '#lib/components/game/Lobby.svelte';
+	import Table from '#lib/components/game/Table.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';
 	import { leaveGame } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
@@ -105,19 +106,8 @@
 				</Card.Content>
 			</Card.Root>
 		</div>
-	{:else}
-		<!-- playing and debrief: the table arrives with the game screens (implementation plan WP10). -->
-		<div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title class="text-2xl">Mission in progress</Card.Title>
-					<Card.Description>The game table is not available yet.</Card.Description>
-				</Card.Header>
-				<Card.Content>
-					<Button class="h-12 w-full text-base" href={resolve('/')}>Back to home</Button>
-				</Card.Content>
-			</Card.Root>
-		</div>
+	{:else if view.attempt}
+		<Table client={conn} {view} attempt={view.attempt} />
 	{/if}
 {:else}
 	<div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3" aria-busy="true">

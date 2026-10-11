@@ -52,3 +52,15 @@ export function tokenMeaning(t: Token): string {
 	const ord = ['first', 'second', 'third', 'fourth', 'fifth'][Number(t) - 1];
 	return `must be the ${ord} task fulfilled`;
 }
+
+export type CardSize = 'xs' | 'task' | 'stack' | 'sm' | 'md';
+/** xs: inline chips; task: task cards; stack: JARVIS's stacks; sm: the hand; md: the trick. */
+export const CARD_SIZE: Record<CardSize, string> = {
+	xs: 'h-9 w-6.5 rounded-[0.3rem] p-px',
+	task: 'h-14 w-10 rounded-md p-0.5',
+	stack: 'h-[3.6rem] w-[2.6rem] rounded-md p-0.5',
+	sm: 'h-[4.75rem] w-[3.25rem] rounded-lg p-1',
+	md: 'h-[5.25rem] w-[3.6rem] rounded-lg p-1'
+};
+/** Sizes that show the rank and glyph stacked in the middle instead of in the corner. */
+export const COMPACT: ReadonlySet<CardSize> = new Set(['xs', 'task', 'stack']);

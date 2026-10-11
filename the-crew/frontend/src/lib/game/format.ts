@@ -6,12 +6,14 @@ import {
 	OWNER_UNASSIGNED,
 	type AttemptResult,
 	type Card,
+	type GameEvent,
 	type MissionDef,
 	type Member,
 	type Objective,
 	type ObjectiveSpec,
 	type OwnerRule,
 	type PickKind,
+	type Position,
 	type Step
 } from '#lib/types.js';
 
@@ -220,4 +222,73 @@ export function resultText(
 				? `A special objective failed in trick ${r.trick}.`
 				: 'A special objective failed.';
 	}
+}
+
+/** The statement of a communicated card. */
+export function positionText(p: Position): string {
+	switch (p) {
+		case 'highest':
+			return 'my highest of this colour';
+		case 'only':
+			return 'my only card of this colour';
+		case 'lowest':
+			return 'my lowest of this colour';
+		case '':
+			return 'position not told (dead zone)';
+	}
+}
+
+function subject(members: Member[], seat: number, you: number): string {
+	return seatName(members, seat, you);
+}
+
+/** One line about the latest events, for the chronicle under the trick ("" when nothing fits). */
+export function describeEvents(events: GameEvent[], members: Member[], you: number): string {
+	const parts: string[] = [];
+	for (const e of events) {
+		switch (e.type) {
+			case 'cardPlayed':
+				parts.push(`${subject(members, e.seat, you)} played ${cardLabel(e.card)}.`);
+				break;
+			case 'trickWon':
+				parts.push(
+					e.seat === you
+						? `You won trick ${e.number}.`
+						: `${subject(members, e.seat, you)} won trick ${e.number}.`
+				);
+				break;
+			case 'communicated':
+				parts.push(
+					`${subject(members, e.seat, you)} communicated ${cardLabel(e.card)}${
+						e.position ? ` (${e.position})` : ''
+					}.`
+				);
+				break;
+			case 'taskPicked':
+				parts.push(
+					e.seat === you ? 'You took a task.' : `${subject(members, e.seat, you)} took a task.`
+				);
+				break;
+			case 'distressSignal':
+				parts.push(
+					e.skipped ? 'No distress signal.' : `Distress signal: pass a card to the ${e.direction}.`
+				);
+				break;
+			case 'cardsPassed':
+				parts.push('The cards were passed.');
+				break;
+			case 'cardsDrawn':
+				parts.push('Everyone drew a card from their right neighbour.');
+				break;
+			case 'taskHandedOver':
+				parts.push(
+					`A task went from ${subject(members, e.from, you)} to ${subject(members, e.to, you)}.`
+				);
+				break;
+			case 'tokensAdjusted':
+				parts.push(e.from < 0 ? 'The tokens stay as they are.' : 'The tokens were adjusted.');
+				break;
+		}
+	}
+	return parts.slice(-2).join(' ');
 }

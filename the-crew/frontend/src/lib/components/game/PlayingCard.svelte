@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cardLabel, SUIT_TEXT } from '#lib/game/cards.js';
+	import { CARD_SIZE, cardLabel, COMPACT, SUIT_TEXT, type CardSize } from '#lib/game/cards.js';
 	import { cn } from '#lib/utils.js';
 	import type { Card } from '#lib/types.js';
 	import SuitGlyph from './SuitGlyph.svelte';
@@ -10,16 +10,10 @@
 		class: className = ''
 	}: {
 		card: Card;
-		/** xs: chips and lists; sm: hand and JARVIS; md: the trick. */
-		size?: 'xs' | 'sm' | 'md';
+		size?: CardSize;
 		class?: string;
 	} = $props();
 
-	const SIZE = {
-		xs: 'h-9 w-6.5 rounded-[0.3rem] p-px',
-		sm: 'h-[4.75rem] w-[3.25rem] rounded-lg p-1',
-		md: 'h-[5.25rem] w-[3.6rem] rounded-lg p-1'
-	} as const;
 	const rocket = $derived(card.suit === 'trump');
 	const label = $derived(cardLabel(card));
 </script>
@@ -29,16 +23,21 @@
 		'relative flex shrink-0 flex-col shadow-sm select-none',
 		rocket ? 'border border-rocket-ink/30 bg-rocket' : 'border border-ink/15 bg-paper',
 		SUIT_TEXT[card.suit],
-		SIZE[size],
+		CARD_SIZE[size],
 		className
 	)}
 	role="img"
 	aria-label={label}
 	title={label}
 >
-	{#if size === 'xs'}
-		<span class="text-center font-display text-sm leading-tight font-bold">{card.rank}</span>
-		<SuitGlyph suit={card.suit} class="mx-auto size-3" />
+	{#if COMPACT.has(size)}
+		<span
+			class={cn(
+				'text-center font-display leading-tight font-bold',
+				size === 'xs' ? 'text-sm' : 'text-lg'
+			)}>{card.rank}</span
+		>
+		<SuitGlyph suit={card.suit} class={cn('mx-auto', size === 'xs' ? 'size-3' : 'size-4.5')} />
 	{:else}
 		<!-- Left strip: stays visible where cards overlap in the hand. -->
 		<div class="flex w-fit flex-col items-center leading-none">

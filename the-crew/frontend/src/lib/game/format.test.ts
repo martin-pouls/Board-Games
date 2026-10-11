@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
 	briefing,
+	describeEvents,
+	positionText,
 	listText,
 	objectiveText,
 	ownerText,
@@ -215,5 +217,28 @@ describe('resultText', () => {
 		expect(resultText(r({ reason: 'gaveUp' }), members, 0, tasks)).toBe(
 			'The crew gave up this attempt.'
 		);
+	});
+});
+
+describe('describeEvents', () => {
+	it('tells the last two events', () => {
+		expect(
+			describeEvents(
+				[
+					{ type: 'cardPlayed', seat: 0, card: card('pink', 7) },
+					{ type: 'cardPlayed', seat: 2, card: card('trump', 1) },
+					{ type: 'trickWon', number: 3, seat: 2 }
+				],
+				members,
+				0
+			)
+		).toBe('JARVIS played rocket 1. JARVIS won trick 3.');
+		expect(describeEvents([{ type: 'trickWon', number: 1, seat: 0 }], members, 0)).toBe(
+			'You won trick 1.'
+		);
+		expect(describeEvents([{ type: 'pollAnswered', seat: 1, yes: true }], members, 0)).toBe('');
+	});
+	it('names the dead zone', () => {
+		expect(positionText('')).toBe('position not told (dead zone)');
 	});
 });
