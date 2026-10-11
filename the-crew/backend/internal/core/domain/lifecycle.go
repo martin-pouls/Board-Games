@@ -11,26 +11,24 @@ import (
 // maxNameRunes is the maximum length of a player name in runes.
 const maxNameRunes = 20
 
-// NewGame creates a game in the lobby with the host in seat 0.
+// NewGame creates a game in the lobby with the host in seat 0 and mission 1 selected.
 // Errors: ErrInvalidName. Revision = 1; no events.
 func NewGame(id GameID, hostID PlayerID, hostName string) (*Game, error) {
 	name, err := normalizeName(hostName)
 	if err != nil {
 		return nil, err
 	}
-	return newLobby(id, hostID, []Player{{ID: hostID, Name: name}}), nil
-}
-
-// newLobby builds a fresh lobby game with the given seated players.
-func newLobby(id GameID, hostID PlayerID, players []Player) *Game {
 	return &Game{
 		ID:        id,
 		Phase:     PhaseLobby,
 		HostID:    hostID,
-		Players:   players,
+		Players:   []Player{{ID: hostID, Name: name}},
+		Edition:   EditionPlanetNine,
+		Mission:   1,
+		Logbook:   map[int]LogEntry{},
 		Revision:  1,
 		CreatedAt: time.Now().UTC().Truncate(time.Second),
-	}
+	}, nil
 }
 
 // normalizeName trims name and validates it: 1..20 runes, valid UTF-8, no control characters.
@@ -98,7 +96,18 @@ func (g *Game) requireHost(by PlayerID) error {
 	return nil
 }
 
-// Leave removes a player from the lobby. If the host leaves, the player now in seat 0 becomes host.
+// requireHostIn checks that by is the host and the game is in phase p.
+func (g *Game) requireHostIn(by PlayerID, p Phase) error {
+	if err := g.requireHost(by); err != nil {
+		return err
+	}
+	if g.Phase != p {
+		return fmt.Errorf("%w: needs phase %s", ErrWrongPhase, p)
+	}
+	return nil
+}
+
+// Leave removes a player from the lobby. If the host leaves, the new seat 0 becomes host.
 // Errors: ErrUnknownPlayer, ErrWrongPhase (not in the lobby), ErrCannotLeave (sole player).
 // Emits PlayerLeft.
 func (g *Game) Leave(by PlayerID) error {
@@ -123,15 +132,120 @@ func (g *Game) Leave(by PlayerID) error {
 	return nil
 }
 
-// EndGame closes the lobby for everyone (host only), so it no longer waits to be continued; a
-// sole player cannot Leave, so this is how they get rid of it.
-// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase (not in the lobby). Emits GameEnded.
+// SelectMission picks the mission to play next (host, lobby).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidMission. Emits MissionSelected.
+func (g *Game) SelectMission(by PlayerID, n int) error {
+	if err := g.requireHostIn(by, PhaseLobby); err != nil {
+		return err
+	}
+	if _, ok := MissionFor(g.Edition, n); !ok {
+		return fmt.Errorf("%w: %d", ErrInvalidMission, n)
+	}
+	g.Mission = n
+	g.emit(MissionSelected{Mission: n})
+	g.commit()
+	return nil
+}
+
+// StartMission deals the first attempt of the selected mission (host, lobby, 2–5 players).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrNotEnoughPlayers.
+// Emits AttemptStarted (and whatever the setup emits).
+func (g *Game) StartMission(by PlayerID, rng RNG) error {
+	if err := g.requireHostIn(by, PhaseLobby); err != nil {
+		return err
+	}
+	if len(g.Players) < MinPlayers {
+		return fmt.Errorf("%w: a mission needs %d to %d players", ErrNotEnoughPlayers, MinPlayers, MaxPlayers)
+	}
+	g.startAttempt(g.firstAttemptNumber(), rng)
+	g.commit()
+	return nil
+}
+
+// firstAttemptNumber is the number of the next attempt of the selected mission when it is started
+// from the lobby or as the next mission: the logbook continues an unfinished mission, a replay of
+// a completed one counts from 1.
+func (g *Game) firstAttemptNumber() int {
+	e := g.Logbook[g.Mission]
+	if e.Completed {
+		return 1
+	}
+	return e.Attempts + 1
+}
+
+// NextAttempt deals a new attempt of the same mission after a lost attempt (host, debrief).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (the attempt was won).
+func (g *Game) NextAttempt(by PlayerID, rng RNG) error {
+	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
+		return err
+	}
+	if g.Attempt.Result.Success {
+		return fmt.Errorf("%w: the mission is completed", ErrInvalidResultChoice)
+	}
+	g.startAttempt(g.Attempt.Number+1, rng)
+	g.commit()
+	return nil
+}
+
+// NextMission starts the next mission after a won attempt (host, debrief).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (the attempt was
+// lost), ErrInvalidMission (this was the last mission).
+func (g *Game) NextMission(by PlayerID, rng RNG) error {
+	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
+		return err
+	}
+	if !g.Attempt.Result.Success {
+		return fmt.Errorf("%w: the mission is not completed", ErrInvalidResultChoice)
+	}
+	if _, ok := MissionFor(g.Edition, g.Mission+1); !ok {
+		return fmt.Errorf("%w: mission %d is the last one", ErrInvalidMission, g.Mission)
+	}
+	g.Mission++
+	g.startAttempt(g.firstAttemptNumber(), rng)
+	g.commit()
+	return nil
+}
+
+// BackToLobby returns the crew to the lobby (host, debrief). After a completed mission, the next
+// unfinished mission is selected. Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase.
+// Emits BackInLobby.
+func (g *Game) BackToLobby(by PlayerID) error {
+	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
+		return err
+	}
+	if g.Logbook[g.Mission].Completed {
+		g.Mission = g.nextUnfinished()
+	}
+	g.Phase = PhaseLobby
+	g.Attempt = nil
+	g.emit(BackInLobby{})
+	g.commit()
+	return nil
+}
+
+// GiveUp loses the current attempt (any player, playing).
+// Errors: ErrUnknownPlayer, ErrWrongPhase. Emits AttemptEnded.
+func (g *Game) GiveUp(by PlayerID) error {
+	seat, err := g.requireSeated(by)
+	if err != nil {
+		return err
+	}
+	if g.Phase != PhasePlaying {
+		return fmt.Errorf("%w: only a running attempt can be given up", ErrWrongPhase)
+	}
+	g.endAttempt(&AttemptResult{Reason: ReasonGaveUp, Task: -1, Objective: -1, Trick: len(g.Attempt.Tricks), Seat: seat})
+	g.commit()
+	return nil
+}
+
+// EndGame closes the session for everyone (host, lobby or debrief); a running attempt must be
+// given up first. Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase. Emits GameEnded.
 func (g *Game) EndGame(by PlayerID) error {
 	if err := g.requireHost(by); err != nil {
 		return err
 	}
-	if g.Phase != PhaseLobby {
-		return fmt.Errorf("%w: only a lobby can be ended", ErrWrongPhase)
+	if g.Phase != PhaseLobby && g.Phase != PhaseDebrief {
+		return fmt.Errorf("%w: only a lobby or a debrief can be ended", ErrWrongPhase)
 	}
 	g.Phase = PhaseEnded
 	g.emit(GameEnded{ByPlayerID: by})
