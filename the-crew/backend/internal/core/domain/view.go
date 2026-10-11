@@ -52,7 +52,7 @@ type AttemptView struct {
 	Exchange    *ExchangeView // the viewer's side of the last pass or draw
 	Trick       []Play        // the trick in progress, in play order
 	TrickLeader int
-	LastTrick   *TrickRecord // the last completed trick, until the next trick's first card is played
+	LastTrick   *TrickRecord // the last completed trick (public: everyone saw it played)
 	Distress    bool         // the distress signal was used for this mission (logbook)
 	Actions     Actions      // what the viewer may do now besides the step's action
 	Result      *AttemptResult
@@ -205,7 +205,7 @@ func (g *Game) attemptView(seat int) *AttemptView {
 	case StepDraft:
 		v.Turn = a.DraftTurn()
 	}
-	if n := len(a.Tricks); n > 0 && (len(a.Trick.Plays) == 0 || over) {
+	if n := len(a.Tricks); n > 0 {
 		last := a.Tricks[n-1]
 		last.Plays = slices.Clone(last.Plays)
 		v.LastTrick = &last

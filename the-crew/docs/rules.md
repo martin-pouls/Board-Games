@@ -255,6 +255,7 @@ Reading notes for the sheet:
   - Each player sees the card they gave and the card they got. The others see only that cards were exchanged.
 - **After an attempt** (won or lost): the game shows the reason and **reveals all hands**, including JARVIS's hidden cards and the unplayed card. Then the host chooses **next attempt** (after a loss), **next mission** (after a win), or **back to the lobby**. Back in the lobby after a win, the next unfinished mission is selected; after a loss the mission stays selected.
 - **Replaying a completed mission:** allowed from the lobby. Its attempts count from 1 again for the display, but they do not change its logbook line. An unfinished mission continues its attempt count, also across a return to the lobby.
+- **Last trick:** the last completed trick can always be looked at, also while the next one is played. Played cards are public.
 - **Give up:** any player may give up the current attempt. It counts as a lost attempt.
 - **Ending:** the host may end the session from the lobby or after an attempt (phase `ended`).
 - **Not implemented:** the *Challenge for three* variant from the rulebook (no green cards, no rocket 1). It may come later as a lobby option.

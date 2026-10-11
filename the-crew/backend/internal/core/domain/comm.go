@@ -33,7 +33,7 @@ func StatementFor(hand []Card, c Card) (pos Position, ok bool) {
 
 // CanCommunicate reports why seat may not communicate now, or nil. Communication is open to a
 // human who has not communicated in this attempt and is not silenced, during StepPlay before any
-// card of the current trick is played, from the mission's first allowed trick on (rules Â§8).
+// card of the current trick is played, from the mission's first allowed trick on (rules §8).
 func (g *Game) CanCommunicate(seat int) error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: no attempt is running", ErrWrongPhase)
@@ -56,7 +56,7 @@ func (g *Game) CanCommunicate(seat int) error {
 	return nil
 }
 
-// Communicate puts card face up with the statement pos (rules Â§8). In a dead zone pos is ignored,
+// Communicate puts card face up with the statement pos (rules §8). In a dead zone pos is ignored,
 // the card must still qualify and is shown without a position.
 // Errors: ErrUnknownPlayer, ErrWrongPhase, ErrWrongStep, ErrAlreadyCommunicated,
 // ErrCannotCommunicate (timing, silenced, trump), ErrCardNotInHand, ErrInvalidPosition.
@@ -103,7 +103,7 @@ func (a *Attempt) CommunicatedCard(seat int) *Communication {
 }
 
 // CanSendDistress reports why the commander (seat) may not send or skip the distress signal now,
-// or nil: before the first trick, before anyone has communicated, once per attempt (rules Â§9).
+// or nil: before the first trick, before anyone has communicated, once per attempt (rules §9).
 func (g *Game) CanSendDistress(seat int) error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: no attempt is running", ErrWrongPhase)
@@ -224,7 +224,7 @@ func (a *Attempt) applyExchange(ex *Exchange) {
 	a.Exchange = ex
 }
 
-// draw is mission 12's draw after the first trick (rules Â§16): each human takes a random card
+// draw is mission 12's draw after the first trick (rules §16): each human takes a random card
 // from the right neighbour (the previous human seat), never a communicated card on the table. All
 // draws are decided first, then the cards move at once.
 func (a *Attempt) draw(rng RNG) {
@@ -247,7 +247,7 @@ func (a *Attempt) draw(rng RNG) {
 }
 
 // CanHandover reports why the commander (seat) may not hand over a task now, or nil: 5 players, a
-// mission with a golden frame, before the first trick, once per attempt (rules Â§11).
+// mission with a golden frame, before the first trick, once per attempt (rules §11).
 func (g *Game) CanHandover(seat int) error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: no attempt is running", ErrWrongPhase)
@@ -267,7 +267,7 @@ func (g *Game) CanHandover(seat int) error {
 	return nil
 }
 
-// Handover gives task taskID, with its token, to seat to (commander, rules Â§11).
+// Handover gives task taskID, with its token, to seat to (commander, rules §11).
 // Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotCommander, ErrNotAllowed, ErrInvalidTask,
 // ErrInvalidSeat. Emits TaskHandedOver.
 func (g *Game) Handover(by PlayerID, taskID, to int) error {

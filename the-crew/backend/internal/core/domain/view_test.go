@@ -138,8 +138,8 @@ func TestViewLastTrick(t *testing.T) {
 	}
 	playAll(t, g, "b2")
 	v, _ = g.ViewFor(alice)
-	if v.Attempt.LastTrick != nil || len(v.Attempt.Trick) != 1 {
-		t.Fatal("the last trick is hidden once the next trick starts")
+	if v.Attempt.LastTrick == nil || v.Attempt.LastTrick.Winner != 1 || len(v.Attempt.Trick) != 1 {
+		t.Fatal("the last trick stays visible while the next trick is played")
 	}
 }
 

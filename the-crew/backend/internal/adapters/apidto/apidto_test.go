@@ -169,8 +169,8 @@ func TestFromViewMidAttemptWithDummy(t *testing.T) {
 		if at == nil || at.Step != "play" || at.Seat != seat || len(at.Members) != 3 {
 			t.Fatalf("attempt = %+v", at)
 		}
-		if at.TotalTricks != 13 || at.TrickNumber != len(a.Tricks)+1 || len(at.Trick) != 1 || at.LastTrick != nil {
-			// the last trick is shown only until the next trick's first card is played
+		if at.TotalTricks != 13 || at.TrickNumber != len(a.Tricks)+1 || len(at.Trick) != 1 || at.LastTrick == nil {
+			// the last trick stays visible while the next one is played
 			t.Fatalf("tricks: %+v", at)
 		}
 		d := at.Members[2]
