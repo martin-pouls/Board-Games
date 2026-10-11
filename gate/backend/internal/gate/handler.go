@@ -3,8 +3,8 @@ package gate
 import (
 	"crypto/sha256"
 	"crypto/subtle"
-	_ "embed"
 	"html/template"
+	"io/fs"
 	"log/slog"
 	"math"
 	"net/http"
@@ -16,14 +16,18 @@ import (
 	"github.com/martin-pouls/shared/backend/httpkit"
 )
 
-//go:embed login.html
-var loginSource string
-
-var loginTemplate = template.Must(template.New("login").Parse(loginSource))
+// The login page (see ui.go).
+var loginTemplate, uiAssets = func() (*template.Template, fs.FS) {
+	t, assets, err := loadUI(uiFiles)
+	if err != nil {
+		panic("gate: login page: " + err.Error())
+	}
+	return t, assets
+}()
 
 const (
 	maxBodyBytes = 4 << 10
-	csp          = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+	csp          = "default-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
 
 	msgWrongPassword = "Wrong password."
 	msgTooMany       = "Too many attempts. Try again in a minute."
@@ -63,6 +67,10 @@ func NewHandler(cfg Config, logger *slog.Logger, now func() time.Time) *Handler 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, h.cfg.BasePath+"/login", http.StatusFound)
 	})
+	// The login page's CSS, fonts and favicon.
+	assets := serveAssets(uiAssets)
+	mux.Handle("GET /_app/", assets)
+	mux.Handle("GET /favicon.svg", assets)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = w.Write([]byte("ok"))

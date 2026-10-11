@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { sharedAlias, sharedDedupe, sharedRoot, sharedSrc } from '../../shared/frontend/vite.js';
 
 // Sub-path the start page is served under in production (BASE_PATH=/board-games behind Caddy);
 // empty in dev. The games live next to it at /the-game, /regicide, /fox-duet and /the-crew; in dev the tiles link to
@@ -22,8 +23,15 @@ export default defineConfig({
 			paths: { base }
 		})
 	],
-	// Fixed local port (The Game 5173, Regicide 5174, start page 5175, Fox Duet 5176, The Crew 5177).
-	server: { port: 5175, strictPort: true },
+	// Shared frontend code (the page frame), compiled as source; the packages it imports resolve
+	// from this app. shared/frontend/vite.ts explains the setup.
+	resolve: { alias: { [sharedAlias]: sharedSrc }, dedupe: sharedDedupe },
+	server: {
+		fs: { allow: [sharedRoot] },
+		// Fixed local port (The Game 5173, Regicide 5174, start page 5175, Fox Duet 5176, The Crew 5177).
+		port: 5175,
+		strictPort: true
+	},
 	test: {
 		expect: { requireAssertions: true },
 		passWithNoTests: true,

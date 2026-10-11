@@ -14,7 +14,7 @@
 	/>
 </svelte:head>
 
-<header class="mb-10 text-center sm:mb-14">
+<header class="mt-3 mb-10 text-center sm:mt-5 sm:mb-14">
 	<!-- A die, a meeple and a card: board and card games in general. -->
 	<div class="mb-4 flex items-end justify-center gap-4 text-muted-foreground" aria-hidden="true">
 		<svg viewBox="0 0 24 24" class="size-7 -rotate-12">

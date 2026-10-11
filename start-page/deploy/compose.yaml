@@ -5,7 +5,9 @@ name: start-page
 services:
   app:
     build:
-      context: ..
+      # The repository root: the page builds with shared/ (see ../Dockerfile).
+      context: ../..
+      dockerfile: start-page/Dockerfile
       args:
         BASE_PATH: /board-games
     # Built by CI for each commit; on the server TAG comes from deploy/.env (see deploy/server/).

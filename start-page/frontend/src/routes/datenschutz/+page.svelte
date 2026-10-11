@@ -1,9 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { operator as controller, siteName } from '#lib/site.js';
-
-	const authority =
-		'Landesbeauftragter für den Datenschutz und die Informationsfreiheit Baden-Württemberg, Lautenschlagerstraße 20, 70173 Stuttgart';
 </script>
 
 <svelte:head>
@@ -22,167 +19,67 @@
 	<p class="text-sm text-muted-foreground">Stand: Oktober 2026</p>
 
 	<p>
-		Diese Website ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Seiten sind durch ein
-		gemeinsames Passwort geschützt; ein Konto ist nicht nötig. Es gibt nur ein einziges, technisch
-		erforderliches Cookie (zum Login), keine Werbung, kein Tracking und keine Analyse-Tools. Hier
-		steht, welche Daten anfallen. Die Erklärung gilt für alle Seiten unter yoshi-und-kruemli.de und
-		martin-pouls.de (derselbe Server, derselbe Betreiber): die Übersicht unter /board-games/ und die
-		Spiele „The Game“ (/the-game/), „Regicide“ (/regicide/), „Fox Duet“ (/fox-duet/) und „The Crew“
-		(/the-crew/).
+		Diese Website (yoshi-und-kruemli.de und martin-pouls.de) ist ein privates, nicht-kommerzielles
+		Hobbyprojekt. Es gibt keine Konten, keine Werbung, kein Tracking und keine Dienste Dritter; alle
+		Inhalte einschließlich der Schriftarten kommen vom eigenen Server.
 	</p>
 
-	<h2>1. Verantwortlicher</h2>
-	<p>Verantwortlich im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
+	<h2>Verantwortlicher</h2>
 	<address>
 		{controller.name}<br />
 		{controller.street}<br />
 		{controller.city}<br />
 		E-Mail: {controller.email}
 	</address>
-	<p>Für Fragen zum Datenschutz und zur Ausübung Ihrer Rechte genügt eine formlose E-Mail.</p>
 
-	<h2>2. Hosting</h2>
+	<h2>Hosting</h2>
 	<p>
-		Die Website läuft auf einem Server der Hetzner Online GmbH, Industriestr. 25, 91710
-		Gunzenhausen, in einem Rechenzentrum in Nürnberg. Hetzner verarbeitet die Daten nur im Auftrag
-		des Verantwortlichen; mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28
-		DSGVO.
-	</p>
-
-	<h2>3. Aufruf der Website</h2>
-	<p>
-		Beim Aufruf jeder Seite überträgt Ihr Browser technisch notwendige Daten an den Server: Ihre
-		IP-Adresse, Datum und Uhrzeit, die aufgerufene Adresse sowie Angaben zu Browser und
-		Betriebssystem. Sie werden nur verarbeitet, um die Seite auszuliefern und den Betrieb sicher zu
-		halten.
-	</p>
-	<p>
-		Zugriffe werden nicht protokolliert: Es gibt keine Zugriffs-Logdateien. Nur wenn auf dem Server
-		ein technischer Fehler auftritt, kann die Fehlermeldung die IP-Adresse enthalten.
-		Fehlermeldungen werden nur zur Fehlerbehebung verwendet und automatisch überschrieben, sobald
-		das Protokoll eine feste Größe erreicht.
-	</p>
-	<p>
-		Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse besteht darin, die
-		Website auszuliefern und sicher zu betreiben.
+		Der Server steht bei der Hetzner Online GmbH (Industriestr. 25, 91710 Gunzenhausen) in einem
+		Rechenzentrum in Nürnberg. Hetzner verarbeitet die Daten nur in unserem Auftrag (Vertrag nach
+		Art. 28 DSGVO). Darüber hinaus werden keine Daten weitergegeben, auch nicht in Länder außerhalb
+		der EU.
 	</p>
 
-	<h2>4. Schutz vor Missbrauch</h2>
+	<h2>Aufruf der Website</h2>
 	<p>
-		Um die Spiele vor automatisierten Anfragen zu schützen, etwa dem massenhaften Anlegen von
-		Spielen oder dem Durchprobieren von Spielcodes, zählt der Server, wie viele Anfragen von einer
-		IP-Adresse kommen (bei IPv6 von ihrem /64-Adressbereich). Die Adresse wird dafür nur im
-		Arbeitsspeicher gehalten, nicht gespeichert und verworfen, sobald sie dafür nicht mehr gebraucht
-		wird, in der Regel nach wenigen Minuten. Wird eine Grenze überschritten, lehnt der Server
-		weitere Anfragen kurzzeitig ab, ohne die IP-Adresse zu protokollieren.
-	</p>
-	<p>
-		Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse besteht darin,
-		Missbrauch zu verhindern und die Spiele für alle verfügbar zu halten.
-	</p>
-	<p>
-		Auf dieselbe Weise begrenzt der Server die Zahl der Anmeldeversuche pro IP-Adresse, damit das
-		Passwort nicht durch Ausprobieren erraten werden kann (Abschnitt 5). Auch das geschieht nur im
-		Arbeitsspeicher, ohne die IP-Adresse zu speichern oder zu protokollieren.
+		Beim Aufruf überträgt Ihr Browser technisch notwendige Daten, etwa Ihre IP-Adresse. Zugriffe
+		werden nicht protokolliert. Damit niemand massenhaft Spiele anlegt, Spielcodes oder das Passwort
+		durchprobiert, zählt der Server Anfragen pro IP-Adresse, nur im Arbeitsspeicher und für wenige
+		Minuten. Fehlermeldungen des Servers können eine IP-Adresse enthalten; sie werden nach
+		spätestens 24 Stunden gelöscht. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (sicherer Betrieb
+		der Website).
 	</p>
 
-	<h2>5. Passwortschutz und Login</h2>
+	<h2>Login</h2>
 	<p>
-		Die Übersicht und die Spiele sind passwortgeschützt. Das Passwort geben Sie in einem
-		Anmeldeformular unter /gate/login ein. Der Server vergleicht es mit den hinterlegten Passwörtern
-		und speichert oder protokolliert das eingegebene Passwort nicht. Im Server-Protokoll stehen nur
-		ein erfolgreicher oder fehlgeschlagener Login, der Zeitpunkt und die Bezeichnung der
-		Passwortgruppe (zum Beispiel „Familie“), aber weder das Passwort noch Ihre IP-Adresse.
-	</p>
-	<p>
-		Nach erfolgreichem Login setzt der Server ein Cookie namens <code>bg_gate</code>. Es ist
-		technisch erforderlich, um Ihren Login zu merken, damit Sie das Passwort nicht bei jedem Aufruf
-		neu eingeben müssen. Es enthält die Bezeichnung der Passwortgruppe, den Zeitpunkt des Logins und
-		eine Signatur, die Fälschungen verhindert. Es dient nicht dem Tracking. Das Cookie gilt ein
-		Jahr, ist als HttpOnly gesetzt (für Skripte auf der Seite nicht lesbar) und wird nur an diese
-		Website gesendet. Wenn Sie das Cookie in Ihrem Browser löschen, sind Sie abgemeldet.
-	</p>
-	<p>
-		Rechtsgrundlage für das Cookie ist § 25 Abs. 2 Nr. 2 TDDDG: Es ist unbedingt erforderlich, um
-		den von Ihnen gewünschten Dienst bereitzustellen, eine Einwilligung ist daher nicht nötig. Für
-		die damit verbundene Verarbeitung ist die Rechtsgrundlage Art. 6 Abs. 1 lit. f DSGVO. Das
-		berechtigte Interesse besteht darin, die Seiten nur dem gewünschten Personenkreis zugänglich zu
-		machen.
+		Die Seiten sind durch ein gemeinsames Passwort geschützt. Nach dem Login setzt der Server das
+		Cookie <code>bg_gate</code>, das ein Jahr lang gilt. Es enthält nur die Passwortgruppe (zum
+		Beispiel „Familie“), den Zeitpunkt des Logins und eine Signatur. Das eingegebene Passwort wird
+		weder gespeichert noch protokolliert. Rechtsgrundlage ist § 25 Abs. 2 Nr. 2 TDDDG (unbedingt
+		erforderlich, keine Einwilligung nötig) und Art. 6 Abs. 1 lit. f DSGVO (Zugang nur für den
+		gewünschten Personenkreis).
 	</p>
 
-	<h2>6. Spielen</h2>
+	<h2>Spielen</h2>
 	<p>
-		Wenn Sie ein Spiel erstellen oder einem Spiel beitreten, speichert der Server den von Ihnen
-		gewählten Spielernamen, den Spielverlauf und den Spielstand sowie die Zeitpunkte der Erstellung
-		und der letzten Aktivität. Ein zufälliger Zugangsschlüssel ordnet Ihren Browser Ihrem Platz im
-		Spiel zu. Ihr Spielername ist für Ihre Mitspieler sichtbar und für alle, die den Spielcode
-		kennen. Ein echter Name ist nicht nötig, ein Spitzname genügt.
+		Für ein Spiel speichert der Server Ihren Spielernamen (ein Spitzname genügt), den Spielverlauf
+		und einen zufälligen Zugangsschlüssel. Der Name ist für alle sichtbar, die den Spielcode kennen.
+		Spiele werden sieben Tage nach der letzten Aktivität automatisch gelöscht, bei The Crew nach 30
+		Tagen (damit das Logbuch einer Kampagne erhalten bleibt). Rechtsgrundlage ist Art. 6 Abs. 1 lit.
+		b DSGVO (Bereitstellung des Spiels).
 	</p>
 	<p>
-		Spiele, in denen sieben Tage lang nichts passiert ist (bei The Crew 30 Tage, damit das Logbuch
-		einer Kampagne erhalten bleibt), werden automatisch mit allen zugehörigen Daten gelöscht.
-	</p>
-	<p>
-		Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO: Die Daten sind nötig, um Ihnen das gewünschte
-		Spiel bereitzustellen.
+		Im lokalen Speicher Ihres Browsers liegen Ihre Spielsitzungen, der zuletzt verwendete Name und
+		die Wahl zwischen hellem und dunklem Design. Diese Daten bleiben auf Ihrem Gerät, bis Sie sie
+		löschen (§ 25 Abs. 2 Nr. 2 TDDDG).
 	</p>
 
-	<h2>7. Speicherung in Ihrem Browser</h2>
+	<h2>Ihre Rechte</h2>
 	<p>
-		Neben dem Login-Cookie (Abschnitt 5) nutzt die Website den lokalen Speicher Ihres Browsers
-		(Local Storage), und zwar nur für:
-	</p>
-	<ul>
-		<li>
-			Ihre Spielsitzungen (Spielcode, Spielername, Zugangsschlüssel), damit Sie nach dem Neuladen
-			weiterspielen können und Ihre letzten Spiele angezeigt werden,
-		</li>
-		<li>den zuletzt verwendeten Spielernamen, damit Sie ihn nicht erneut eingeben müssen,</li>
-		<li>Ihre Wahl zwischen hellem und dunklem Design.</li>
-	</ul>
-	<p>
-		Diese Daten bleiben auf Ihrem Gerät. An den Server geht davon nur, was zum Spielen nötig ist
-		(Spielcode und Zugangsschlüssel). Sie können die Daten jederzeit in Ihren Browsereinstellungen
-		löschen. Rechtsgrundlage ist § 25 Abs. 2 Nr. 2 TDDDG: Die Speicherung ist unbedingt
-		erforderlich, um die von Ihnen gewünschten Funktionen bereitzustellen.
-	</p>
-
-	<h2>8. Keine Weitergabe, keine externen Dienste</h2>
-	<p>
-		Daten werden an niemanden weitergegeben außer an den Hoster (Abschnitt 2). Alle Inhalte,
-		einschließlich der Schriftarten, kommen vom eigenen Server; Dienste Dritter sind nicht
-		eingebunden. Eine Übermittlung in Länder außerhalb der Europäischen Union findet nicht statt.
-		Die Verbindung ist per HTTPS verschlüsselt.
-	</p>
-
-	<h2>9. Ihre Rechte</h2>
-	<p>Sie haben das Recht auf</p>
-	<ul>
-		<li>Auskunft über die zu Ihnen gespeicherten Daten (Art. 15 DSGVO),</li>
-		<li>Berichtigung unrichtiger Daten (Art. 16 DSGVO),</li>
-		<li>Löschung (Art. 17 DSGVO),</li>
-		<li>Einschränkung der Verarbeitung (Art. 18 DSGVO),</li>
-		<li>Datenübertragbarkeit (Art. 20 DSGVO),</li>
-		<li>
-			Widerspruch gegen Verarbeitungen nach Art. 6 Abs. 1 lit. f DSGVO aus Gründen, die sich aus
-			Ihrer besonderen Situation ergeben (Art. 21 DSGVO).
-		</li>
-	</ul>
-	<p>
-		Da es keine Konten gibt, lassen sich Daten Ihnen nur zuordnen, wenn Sie den Spielcode und Ihren
-		Spielernamen nennen.
-	</p>
-	<p>
-		Sie haben außerdem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77
-		DSGVO), etwa bei der Behörde Ihres Wohnorts oder bei der für den Verantwortlichen zuständigen
-		Behörde: {authority}.
-	</p>
-
-	<h2>10. Pflicht zur Bereitstellung, automatisierte Entscheidungen</h2>
-	<p>
-		Sie sind nicht verpflichtet, Daten bereitzustellen. Ohne die technisch notwendigen
-		Verbindungsdaten kann die Website jedoch nicht angezeigt werden, und ohne Spielernamen ist kein
-		Mitspielen möglich. Eine automatisierte Entscheidungsfindung einschließlich Profiling findet
-		nicht statt.
+		Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+		Datenübertragbarkeit und Widerspruch (Art. 15–18, 20, 21 DSGVO); eine formlose E-Mail genügt. Da
+		es keine Konten gibt, brauchen wir dafür den Spielcode und Ihren Spielernamen. Außerdem können
+		Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO), zum Beispiel beim
+		Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg.
 	</p>
 </article>

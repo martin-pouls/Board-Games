@@ -4,6 +4,9 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/cinzel';
 
+/* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
+@source '../../../../shared/frontend/src';
+
 @custom-variant dark (&:is(.dark *));
 
 /*

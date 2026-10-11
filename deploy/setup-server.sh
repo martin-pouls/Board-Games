@@ -42,18 +42,41 @@ trap 'rm -rf "$tmp"' EXIT # it may hold the gate passwords
 tar -x -i -C "$tmp" # stdin first: nothing below may consume it (-i: the passwords are a second archive)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git ufw unattended-upgrades >/dev/null
+apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git ufw unattended-upgrades cron >/dev/null
 
-# Rotating container logs (the default json-file driver grows without limit).
-if [ ! -f /etc/docker/daemon.json ]; then
-	echo "{ \"log-driver\": \"local\" }" >/etc/docker/daemon.json
+# Logs are kept for 24 hours at most (the privacy policy says so). Caddy writes no access log and
+# the apps log no IP addresses, but error output may contain one. The containers log to journald,
+# which keeps entries 22 hours; an hourly job closes the current journal file and deletes the old
+# ones, so nothing is older than 24 hours. Nothing is forwarded to syslog (/var/log/syslog would keep
+# it for weeks), and ufw logs no blocked packets.
+mkdir -p /etc/systemd/journald.conf.d
+cat >/etc/systemd/journald.conf.d/10-board-games.conf <<'JOURNALD'
+# Installed by deploy/setup-server.sh (Board-Games repo): logs for 24 hours at most.
+[Journal]
+MaxRetentionSec=22h
+ForwardToSyslog=no
+JOURNALD
+systemctl restart systemd-journald
+cat >/etc/cron.hourly/board-games-logs <<'CRON'
+#!/bin/sh
+# Installed by deploy/setup-server.sh (Board-Games repo): no log entry older than 24 hours.
+journalctl --quiet --rotate --vacuum-time=22h
+CRON
+chmod 755 /etc/cron.hourly/board-games-logs
+
+# Existing containers keep the log driver they were created with: recreate them after a change.
+recreate=
+if [ "$(cat /etc/docker/daemon.json 2>/dev/null)" != '{ "log-driver": "journald" }' ]; then
+	echo '{ "log-driver": "journald" }' >/etc/docker/daemon.json
 	systemctl restart docker
+	recreate=1
 fi
 systemctl enable --now docker >/dev/null
 
 ufw allow OpenSSH >/dev/null
 ufw allow 80/tcp >/dev/null
 ufw allow 443 >/dev/null # TCP + UDP (HTTP/3)
+ufw logging off >/dev/null
 ufw --force enable >/dev/null
 
 mkdir -p /opt/caddy/conf/sites
@@ -65,8 +88,14 @@ for f in Caddyfile common.caddy; do
 	fi
 	cp "$tmp/caddy/conf/$f" "/opt/caddy/conf/$f"
 done
-docker compose -f /opt/caddy/compose.yaml up -d
+docker compose -f /opt/caddy/compose.yaml up -d ${recreate:+--force-recreate}
 docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+if [ -n "$recreate" ]; then
+	for f in /opt/board-games/*/deploy/compose.yaml; do
+		if [ -f "$f" ]; then docker compose -f "$f" up -d --no-build --force-recreate; fi
+	done
+	echo "recreated the containers: they log to journald now"
+fi
 
 # The CI deploy user. Being in the docker group makes it root-equivalent, so its key is pinned to
 # the deploy script (forced command, "restrict": no shell, no forwarding, no pty), and that script

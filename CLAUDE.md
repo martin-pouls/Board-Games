@@ -4,12 +4,12 @@ Web implementations of cooperative board and card games, played live in the brow
 
 | App | Directory | URL path | What |
 |---|---|---|---|
-| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game. Frontend only. |
+| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game, plus imprint and privacy policy. Frontend only. |
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
 | The Crew | [the-crew/](the-crew/) | `/the-crew/` | "The Crew: The Quest for Planet Nine" (Kosmos), 2–5 players (2 with JARVIS), 50 missions. See [the-crew/CLAUDE.md](the-crew/CLAUDE.md). |
-| Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). Backend only. See [gate/CLAUDE.md](gate/CLAUDE.md). |
+| Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). Go server with a prerendered login page. See [gate/CLAUDE.md](gate/CLAUDE.md). |
 
 This file holds the rules common to all apps. Each game's own CLAUDE.md adds its rules, domain model and look. **Read the game's CLAUDE.md before working on it.**
 
@@ -31,7 +31,7 @@ shared/                       plumbing every game uses (see shared/README.md)
   backend/                    Go module github.com/martin-pouls/shared/backend
   frontend/                   Svelte/TS source, imported as @board-games/shared
 start-page/                   static start page (SvelteKit, prerendered, no JS)
-  frontend/  Dockerfile  deploy/
+  frontend/  Dockerfile  Dockerfile.dockerignore  deploy/
 the-game/                     one app per game
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 regicide/
@@ -40,8 +40,8 @@ fox-duet/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 the-crew/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
-gate/                         password gate (Go only, no frontend)
-  backend/  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
+gate/                         password gate: Go server + login page (SvelteKit, prerendered, no JS)
+  backend/  frontend/  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 ```
 
 **Apps are independent, except for `shared/`.** Each game has its own Go module, its own npm project (own `package.json`, lockfile, `node_modules`) and its own image, database and deploy. No app imports from another app. The lobby, session, WebSocket, persistence and ID plumbing that every game needs lives in [shared/](shared/README.md):
@@ -99,7 +99,9 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 
 The start page uses the same SvelteKit/Tailwind/shadcn-svelte/tooling stack. It is fully prerendered with `csr = false`, so it ships HTML and CSS only, plus the small inline theme script in `src/app.html` (shadcn components render as static markup there; bits-ui interactivity is not available).
 
-**Light and dark mode:** every app has both, with a toggle in the top-right corner. The games use mode-watcher; the start page has its own inline script. All use the same `localStorage` key (`mode-watcher-mode`), so on the shared production origin the choice carries over between apps.
+**One frame for every page:** the games, the start page and the gate's login page all render `PageFrame` from `shared/frontend` (games through `AppFrame`): the same top bar (`TopBar`: optional *All games* link, light/dark toggle top right), a `max-w-3xl` column (`wide` gives `max-w-6xl` for future games that need the room) and the imprint/privacy footer. Change the frame there, not per app.
+
+**Light and dark mode:** every app has both, with the toggle in the top bar. The games use mode-watcher; the start page and the gate's login page ship no JS except an inline theme script in their `app.html` that handles clicks on `[data-theme-toggle]`. All use the same `localStorage` key (`mode-watcher-mode`), so on the shared production origin the choice carries over between apps.
 
 ## Architecture: hexagonal (ports and adapters)
 
@@ -140,7 +142,7 @@ Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`
 | Fox Duet | `:5176` | `:8082` |
 | The Crew | `:5177` | `:8084` |
 | Start page | `:5175` | — |
-| Gate | — | `:8083` |
+| Gate | `:5178` (login page only) | `:8083` |
 
 In dev the start page links each tile to the game's frontend port on the same hostname (`devPort` in `start-page/frontend/src/lib/games.ts`); production builds link to `/<game>/`. The other way round, each game's home screen has an *All games* link (`startPageHref` in `shared/frontend/src/startPage.ts`: port 5175 in dev, `/board-games/` in production). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and `shared/frontend/src/startPage.ts` together.
 
@@ -170,7 +172,7 @@ Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root vi
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (`paths.base`), set as a build arg in `<app>/deploy/compose.yaml`. Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`. Never hard-code `/api` or `/ws` without it. Links between apps are plain absolute paths with `rel="external"`.
 - **Deploying:** push to `main`. [.github/workflows/deploy.yml](.github/workflows/deploy.yml) tests, builds and deploys the apps that changed since the last successful deploy. Manual runs (*Run workflow*) take `all` or app names. Setup, security model and rollback: [deploy/README.md](deploy/README.md).
   - `<app>/deploy/compose.yaml` is the build definition (context, `BASE_PATH`, image name with `${TAG}`). CI builds it with `docker buildx bake`, and the server runs it with `TAG=<sha>` in `/opt/board-games/<app>/deploy/.env`.
-  - Games use `shared/`, so they build with the repo root as context (`context: ../..`, `dockerfile: <app>/Dockerfile`, plus `<app>/Dockerfile.dockerignore`). A change in `shared/` deploys every app whose Dockerfile has `COPY shared/...`.
+  - Every app uses `shared/` (the start page and the gate for the page frame), so they build with the repo root as context (`context: ../..`, `dockerfile: <app>/Dockerfile`, plus `<app>/Dockerfile.dockerignore`). A change in `shared/` deploys every app whose Dockerfile has `COPY shared/...`.
   - CI deploys as user `deploy`, whose key may only run [deploy/server/board-games-deploy](deploy/server/board-games-deploy) (forced command). `deploy` is root-equivalent (docker group), so that script takes only a commit SHA and app names from CI and reads `<app>/deploy/` from its own clone of `main`, refusing commits that are not on `main`. Keep it that way: never let it use files or config sent by the caller.
   - `deploy/setup-server.sh` is the idempotent bootstrap: Docker, ufw, Caddy, the deploy user and script. Re-run it after changing `deploy/caddy/` or `deploy/server/`; the repo owns the Caddyfile.
   - `deploy/local.sh [app...|down]` runs the same images and Caddy config locally in WSL2 + Docker at http://localhost:8000 (gate password `local`). Setup: [deploy/README.md](deploy/README.md#local-stack).

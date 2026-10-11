@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="color-scheme" content="light dark" />
+		<meta name="theme-color" content="#f3f5ef" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<script>
+			// The page ships no framework JS (csr = false), so the theme lives here: set before first
+			// paint, toggled by any [data-theme-toggle] button. Same storage key and values as
+			// mode-watcher in the games, which share this origin in production.
+			(function () {
+				var KEY = 'mode-watcher-mode';
+				var root = document.documentElement;
+				function apply(dark) {
+					root.classList.toggle('dark', dark);
+					root.style.colorScheme = dark ? 'dark' : 'light';
+					var meta = document.querySelector('meta[name="theme-color"]');
+					if (meta) meta.setAttribute('content', dark ? '#0b140f' : '#f3f5ef');
+				}
+				var mode = 'system';
+				try {
+					mode = localStorage.getItem(KEY) || 'system';
+				} catch (e) {}
+				var media = matchMedia('(prefers-color-scheme: dark)');
+				apply(mode === 'dark' || (mode === 'system' && media.matches));
+				media.addEventListener('change', function (e) {
+					if (mode === 'system') apply(e.matches);
+				});
+				document.addEventListener('click', function (e) {
+					if (!(e.target instanceof Element) || !e.target.closest('[data-theme-toggle]')) return;
+					mode = root.classList.contains('dark') ? 'light' : 'dark';
+					apply(mode === 'dark');
+					try {
+						localStorage.setItem(KEY, mode);
+					} catch (e) {}
+				});
+			})();
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

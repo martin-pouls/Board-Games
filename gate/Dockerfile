@@ -3,8 +3,20 @@
 # (.github/workflows/deploy.yml) from deploy/compose.yaml, or on the server by deploy/deploy.sh.
 #
 # The build context is the repository root (the app uses shared/), so paths below are from the
-# root. The image keeps the repo layout (/src/gate, /src/shared): go.mod finds shared/ at
-# ../../shared as it does in a checkout. Dockerfile.dockerignore next to this file applies.
+# root. The image keeps the repo layout (/src/gate, /src/shared): go.mod and the frontend find
+# shared/ at ../../shared as they do in a checkout. Dockerfile.dockerignore next to this file applies.
+
+FROM node:24-alpine AS web
+WORKDIR /src/gate/frontend
+COPY gate/frontend/package.json gate/frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+# Compiled as source with the app; its imports resolve from the app's node_modules.
+COPY shared/frontend/ /src/shared/frontend/
+COPY gate/frontend/ ./
+# Sub-path the login page and its assets are served under (see vite.config.ts).
+ARG BASE_PATH=""
+# Writes the page into ../backend/internal/gate/ui/build, where the Go build embeds it.
+RUN BASE_PATH="$BASE_PATH" npm run build
 
 FROM golang:1.27-alpine AS api
 WORKDIR /src/gate/backend
@@ -13,7 +25,10 @@ COPY shared/backend/ /src/shared/backend/
 COPY gate/backend/go.mod ./
 RUN go mod download
 COPY gate/backend/ ./
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
+COPY --from=web /src/gate/backend/internal/gate/ui/build ./internal/gate/ui/build
+# The tests check the built login page too (TestBuiltLoginPage, skipped without a build).
+RUN go test ./... \
+	&& CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
 FROM gcr.io/distroless/static-debian12:nonroot
 # Links the image to the repo on ghcr.io; the server prunes old images by it.

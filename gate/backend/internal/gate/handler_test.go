@@ -130,23 +130,28 @@ func TestLoginPage(t *testing.T) {
 		t.Fatalf("status = %d", w.Code)
 	}
 	body := w.Body.String()
+	// The template's contract, which the built page and the fallback both keep.
 	for _, want := range []string{
-		`<form method="post" action="/gate/login">`,
+		`method="post"`,
+		`action="/gate/login"`,
 		`name="password"`,
-		`type="text" autocomplete="off"`, // no password-manager prompt
+		`autocomplete="off"`,
 		`name="next" value="/regicide/?code=ABCD"`,
-		`/board-games/impressum/`,
-		`/board-games/datenschutz/`,
 		`<title>Board Games</title>`,
 		`name="robots" content="noindex"`,
-		`mode-watcher-mode`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("page lacks %q", want)
 		}
 	}
+	if strings.Contains(body, `type="password"`) {
+		t.Error("password field: browsers would offer to save the shared password")
+	}
 	if strings.Contains(body, `role="alert"`) {
 		t.Error("error shown on a fresh page")
+	}
+	if strings.Contains(body, "{{") {
+		t.Error("unfilled template action")
 	}
 	for k, want := range map[string]string{
 		"Cache-Control":           "no-store",

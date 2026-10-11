@@ -1,6 +1,15 @@
 # Gate
 
-Shared-password access gate for the board-game apps (root [CLAUDE.md](../CLAUDE.md) holds the common rules). No accounts: several passwords, each with a label (e.g. `family`, `friends`). A login cookie lasts about a year. Go only, no frontend, no database; the login page is `backend/internal/gate/login.html` (embedded, inline CSS); its password field is a text field masked with `-webkit-text-security`, so browsers don't offer to save the shared password. Light and dark mode with a toggle in the top-right corner (inline script, same `mode-watcher-mode` storage key as the other apps).
+Shared-password access gate for the board-game apps (root [CLAUDE.md](../CLAUDE.md) holds the common rules). No accounts: several passwords, each with a label (e.g. `family`, `friends`). A login cookie lasts about a year. No database.
+
+## Login page
+
+`frontend/` is a small SvelteKit app (same stack and look as the start page: shadcn `Card`/`Input`/`Button`, the shared `PageFrame` with top bar and footer). It is prerendered with `csr = false`: one HTML page, its CSS and fonts, no JS except the theme script in `src/app.html` (same `mode-watcher-mode` key as the other apps).
+
+- `npm run build` writes straight into `backend/internal/gate/ui/build/` (gitignored), which the Go binary embeds (`ui.go`). The built `index.html` is parsed as an `html/template`: `src/routes/+page.svelte` puts `{{.Action}}`, `{{.Next}}` and `{{if .Message}}…{{end}}` into the markup as text. In `npm run dev` (port 5178) it shows plain values instead.
+- The gate serves the page's files at `/_app/...` (immutable caching) and `/favicon.svg`. The build's `BASE_PATH` (`/gate`, set in `deploy/compose.yaml`) must match `GATE_BASE_PATH`.
+- Without a build (`go test` in CI, `go run` in a fresh checkout) the gate serves a bare fallback form with the same fields. `TestBuiltLoginPage` checks the real page and is skipped without it; the Dockerfile runs the tests after the frontend build, so every image checks it.
+- The password field is a text field masked with `-webkit-text-security`, so browsers don't offer to save the shared password.
 
 Caddy asks the gate before serving a protected app (`forward_auth gate:8080 { uri /verify ... }`) and proxies `/gate/*` to it with the prefix stripped (`deploy/gate.caddy`).
 
@@ -31,4 +40,4 @@ mkdir data; openssl rand -hex 32 > data/secret; printf 'family=change-me\n' > da
 go run ./cmd/server
 ```
 
-The cookie is `Secure`, so test on http://localhost only (browsers accept Secure cookies there). Checks: `go vet ./... && go test ./...`.
+Run `npm run build` in `gate/frontend` first for the real login page at http://localhost:8083/login. Without Caddy the form posts to `/gate/login` (404); the whole login flow runs in the local stack (`deploy/local.sh gate`). The cookie is `Secure`, so test on http://localhost only (browsers accept Secure cookies there). Checks: `go vet ./... && go test ./...` in `backend/`, `npm run check && npm run lint` in `frontend/`.
