@@ -64,7 +64,7 @@ Every attempt of a mission starts fresh:
 
 - **Drawing:** the mission says how many task cards to draw (the number in the blue box on the mission sheet). They are drawn from the shuffled 36 and laid out face up from left to right.
 - **Open distribution (default):** the commander takes one task card first. Then, clockwise, each crew member takes one, round after round, until all are taken. Members may end up with different numbers of tasks. Passing is not allowed.
-- **Fulfilling:** a task is fulfilled when its owner wins a trick containing the task's card. One trick can fulfil several tasks, even of different members.
+- **Fulfilling:** a task is fulfilled when its owner wins a trick containing the task's card. One trick can fulfil several tasks of its winner. If it also holds another member's task card, that task fails (see below).
 - **Failing:** if anyone else wins a trick containing a task's card, the attempt is lost immediately. If the last trick has been played and a task is still open, the attempt is lost. This includes a task card that stays unplayed (§4).
 - Missions with a task count and no other distribution symbol use open distribution. Other distribution modes are in §10.
 
