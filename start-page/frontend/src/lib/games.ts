@@ -1,6 +1,6 @@
 /** A game listed on the start page. Each game is its own app, served by Caddy next to this one. */
 export interface Game {
-	id: 'the-game' | 'regicide' | 'fox-duet';
+	id: 'the-game' | 'regicide' | 'fox-duet' | 'the-crew';
 	name: string;
 	/** Absolute path of the game's app on the same host in production (outside this app's base path). */
 	path: `/${string}/`;
@@ -41,6 +41,15 @@ export const games: Game[] = [
 		tagline:
 			'The Fox in the Forest: Duet. Cooperative trick-taking: work together to win the right tricks.',
 		features: ['3 difficulty levels']
+	},
+	{
+		id: 'the-crew',
+		name: 'The Crew',
+		path: '/the-crew/',
+		devPort: 5177,
+		players: '2–5 players',
+		tagline: 'Cooperative trick-taking through 50 missions. No talking about your cards.',
+		features: ['50 missions', '2 players with JARVIS']
 	}
 ];
 

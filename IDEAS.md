@@ -52,6 +52,8 @@ Cheap wins first: the four trick-taking games (The Crew ×2, Sail, LOTR ×2) can
 
 ## The Crew: The Quest for Planet Nine
 
+**Implemented as `the-crew/`.**
+
 - **What:** Cooperative trick-taking. 40 cards: four colours 1–9 plus rockets 1–4 as permanent trump. Each mission deals task cards ("you must win this card in a trick"), and the team wins only if every task is fulfilled.
 - **Hook:** Players may not talk about their hands. They have one limited signal (a card played face up in front of them, saying it's their highest, lowest or only card of that colour), usable once per mission.
 - **Scale:** 50 missions, escalating (task order, "must win last trick", communication changes). Best at 4 players, 2-player variant exists with a virtual third player.
@@ -69,7 +71,7 @@ Cheap wins first: the four trick-taking games (The Crew ×2, Sail, LOTR ×2) can
 - **Differences:** Task deck grows from 36 to 96 cards, and each card carries a difficulty value for 3, 4 or 5 players. A mission sets a total difficulty; tasks are drawn and revealed until it is reached. Some tasks are general rules ("win exactly X tricks") instead of a specific card. Players can pass on tasks if enough remain for the others. Some missions change the communication rules or put all goals on one player.
 - **Scale:** About 32 missions (from memory, verify). Plays well at 3, 4 and 5.
 - **Credits:** Thomas Sing, Kosmos (2021).
-- **Build notes:** Build as a second "ruleset" over the Planet Nine engine in the same app or a sibling app. The task-draw-until-difficulty step and the new task types are the real new work. Decide early whether both Crew games live in one app (`the-crew/` with a mode choice) or two.
+- **Build notes:** Build as a second "ruleset" over the Planet Nine engine in the same app or a sibling app. The task-draw-until-difficulty step and the new task types are the real new work. Decide early whether both Crew games live in one app (`the-crew/` with a mode choice) or two. The plan for building it in the same app is §11 ("Deep Sea outlook") of `the-crew/docs/implementation-plan.md`.
 
 ## Sail
 

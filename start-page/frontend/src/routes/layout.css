@@ -9,7 +9,8 @@
 /*
  * A card table: pale linen in light mode, green felt in dark mode (the theme is set before first
  * paint by the script in app.html). Each game tile borrows the identity of its game, in the same
- * mode: The Game is blue + orange, Regicide parchment/castle + gold, Fox Duet moss green + fox orange on parchment.
+ * mode: The Game is blue + orange, Regicide parchment/castle + gold, Fox Duet moss green + fox orange on parchment,
+ * The Crew indigo ink + coral on mission paper (midnight navy + cyan in dark mode).
  */
 :root {
 	--background: oklch(0.965 0.012 120);
@@ -50,6 +51,11 @@
 	--fox-moss: oklch(0.45 0.09 140);
 	--fox-orange: oklch(0.64 0.16 50);
 	--fox-text: oklch(0.52 0.15 50);
+	/* The Crew */
+	--crew-tile: oklch(0.96 0.015 270);
+	--crew-ink: oklch(0.32 0.11 275);
+	--crew-accent: oklch(0.7 0.17 40);
+	--crew-text: oklch(0.52 0.17 35);
 }
 
 .dark {
@@ -84,6 +90,10 @@
 	--fox-moss: oklch(0.3 0.07 145);
 	--fox-orange: oklch(0.72 0.16 55);
 	--fox-text: oklch(0.78 0.14 60);
+	--crew-tile: oklch(0.2 0.05 265);
+	--crew-ink: oklch(0.26 0.08 268);
+	--crew-accent: oklch(0.82 0.12 210);
+	--crew-text: oklch(0.84 0.11 210);
 }
 
 @theme inline {
@@ -103,6 +113,10 @@
 	--color-fox-moss: var(--fox-moss);
 	--color-fox-orange: var(--fox-orange);
 	--color-fox-text: var(--fox-text);
+	--color-crew-tile: var(--crew-tile);
+	--color-crew-ink: var(--crew-ink);
+	--color-crew-accent: var(--crew-accent);
+	--color-crew-text: var(--crew-text);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

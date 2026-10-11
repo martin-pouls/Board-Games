@@ -27,7 +27,8 @@
 		erforderliches Cookie (zum Login), keine Werbung, kein Tracking und keine Analyse-Tools. Hier
 		steht, welche Daten anfallen. Die Erklärung gilt für alle Seiten unter yoshi-und-kruemli.de und
 		martin-pouls.de (derselbe Server, derselbe Betreiber): die Übersicht unter /board-games/ und die
-		Spiele „The Game“ (/the-game/), „Regicide“ (/regicide/) und „Fox Duet“ (/fox-duet/).
+		Spiele „The Game“ (/the-game/), „Regicide“ (/regicide/), „Fox Duet“ (/fox-duet/) und „The Crew“
+		(/the-crew/).
 	</p>
 
 	<h2>1. Verantwortlicher</h2>

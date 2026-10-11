@@ -8,6 +8,7 @@ Web implementations of cooperative board and card games, played live in the brow
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
+| The Crew | [the-crew/](the-crew/) | `/the-crew/` | "The Crew: The Quest for Planet Nine" (Kosmos), 2–5 players (2 with JARVIS), 50 missions. See [the-crew/CLAUDE.md](the-crew/CLAUDE.md). |
 | Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). Backend only. See [gate/CLAUDE.md](gate/CLAUDE.md). |
 
 This file holds the rules common to all apps. Each game's own CLAUDE.md adds its rules, domain model and look. **Read the game's CLAUDE.md before working on it.**
@@ -36,6 +37,8 @@ the-game/                     one app per game
 regicide/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 fox-duet/
+  backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
+the-crew/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 gate/                         password gate (Go only, no frontend)
   backend/  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
@@ -135,6 +138,7 @@ Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`
 | The Game | `:5173` | `:8080` |
 | Regicide | `:5174` | `:8081` |
 | Fox Duet | `:5176` | `:8082` |
+| The Crew | `:5177` | `:8084` |
 | Start page | `:5175` | — |
 | Gate | — | `:8083` |
 
@@ -157,7 +161,7 @@ Production-like local run of a game: `npm run build` in `<game>/frontend/`, then
 Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root via `~/.ssh/hetzner_ed25519`).
 
 - **One container per app**, all on the external Docker network `web`. CI builds the images on native arm64 runners and pushes them as `ghcr.io/martin-pouls/board-games/<app>:<commit sha>`:
-  - `the-game`, `regicide` and `fox-duet`: one image each (SPA + Go server), SQLite in the volumes `the-game_data`, `regicide_data` and `fox-duet_data`.
+  - `the-game`, `regicide`, `fox-duet` and `the-crew`: one image each (SPA + Go server), SQLite in the volumes `the-game_data`, `regicide_data`, `fox-duet_data` and `the-crew_data`.
   - `start-page`: the prerendered page served by `caddy file-server`.
   - `gate`: the password check, with its secret and passwords in `/etc/board-games/gate/` (bind mount, written by `setup-server.sh`).
 - **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. One site block serves both `yoshi-und-kruemli.de` and `martin-pouls.de` (the `www.` names redirect). `common.caddy` (shared with the local stack) redirects `/` to `/board-games/` and imports every `sites/*.caddy`.
