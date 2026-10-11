@@ -5,8 +5,9 @@ handle_path /board-games/* {
 	reverse_proxy start-page:8080
 }
 
-# The start page used to be /card-games/: keep old bookmarks working ({uri} is the rest after the prefix).
+# The start page used to be /card-games/: keep old bookmarks working ({uri} is the rest after the prefix;
+# the "*" is needed, a first argument starting with "/" would be read as a path matcher).
 redir /card-games /board-games/ permanent
 handle_path /card-games/* {
-	redir /board-games{uri} permanent
+	redir * /board-games{uri} permanent
 }
