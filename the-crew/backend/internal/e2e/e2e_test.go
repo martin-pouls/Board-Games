@@ -138,6 +138,7 @@ type client struct {
 	view  apidto.PlayerView
 	last  wireMsg // most recent view message
 	reqID int
+	log   []wireMsg // every view message received, in order (leak checks)
 }
 
 // wireMsg decodes any server message; View is kept raw too for leak checks.
@@ -169,6 +170,23 @@ func (a *app) dial(t *testing.T, name, code, token string) *client {
 	return cl
 }
 
+// try sends a command and returns nil when it was acked, else the error body.
+func (cl *client) try(cmd apidto.ClientMessage) *apidto.ErrorBody {
+	cl.t.Helper()
+	cl.reqID++
+	cmd.RequestID = strconv.Itoa(cl.reqID)
+	b, _ := json.Marshal(cmd)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := cl.c.Write(ctx, websocket.MessageText, b); err != nil {
+		cl.t.Fatalf("%s: write: %v", cl.name, err)
+	}
+	m := cl.until("reply to "+cmd.RequestID, func(m wireMsg) bool {
+		return (m.Type == apidto.MsgError || m.Type == apidto.MsgAck) && m.RequestID == cmd.RequestID
+	})
+	return m.Error
+}
+
 func (cl *client) read() wireMsg {
 	cl.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -188,6 +206,7 @@ func (cl *client) read() wireMsg {
 		}
 		cl.view = *m.View
 		cl.last = m
+		cl.log = append(cl.log, m)
 	}
 	return m
 }
@@ -355,8 +374,8 @@ func TestEndGameOverWebSocket(t *testing.T) {
 	if e := ps[1].ws.sendErr(apidto.ClientMessage{Type: apidto.CmdEndGame}); e.Code != "not_host" {
 		t.Fatalf("guest ends the game: %+v", e)
 	}
-	if e := ps[0].ws.sendErr(apidto.ClientMessage{Type: "startGame"}); e.Code != "bad_request" {
-		t.Fatalf("startGame is not available yet: %+v", e)
+	if e := ps[0].ws.sendErr(apidto.ClientMessage{Type: "startGame"}); e.Code != "bad_request" { // the command is called startMission
+		t.Fatalf("unknown command: %+v", e)
 	}
 	ps[0].ws.send(apidto.ClientMessage{Type: apidto.CmdEndGame})
 	m := ps[1].ws.untilView("ended", func(m wireMsg) bool { return m.View.Phase == "ended" })

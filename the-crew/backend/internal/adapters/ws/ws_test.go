@@ -126,6 +126,71 @@ func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.Pl
 	return f.mutate(ctx, "EndGame", id, p, domain.GameEnded{ByPlayerID: p})
 }
 
+// The gameplay commands record the call with its arguments, e.g. "AdjustTokens(1,2)".
+func (f *fakeService) rec(ctx context.Context, id domain.GameID, p domain.PlayerID, name string, args ...any) (domain.PlayerView, error) {
+	call := name
+	if len(args) > 0 {
+		parts := make([]string, len(args))
+		for i, a := range args {
+			parts[i] = fmt.Sprint(a)
+		}
+		call += "(" + strings.Join(parts, ",") + ")"
+	}
+	return f.mutate(ctx, call, id, p)
+}
+
+func (f *fakeService) SelectMission(ctx context.Context, id domain.GameID, p domain.PlayerID, m int) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "SelectMission", m)
+}
+func (f *fakeService) StartMission(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "StartMission")
+}
+func (f *fakeService) AdjustTokens(ctx context.Context, id domain.GameID, p domain.PlayerID, from, to int) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "AdjustTokens", from, to)
+}
+func (f *fakeService) SkipTokens(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "SkipTokens")
+}
+func (f *fakeService) AnswerPoll(ctx context.Context, id domain.GameID, p domain.PlayerID, yes bool) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "AnswerPoll", yes)
+}
+func (f *fakeService) PickSeats(ctx context.Context, id domain.GameID, p domain.PlayerID, seats []int) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "PickSeats", seats)
+}
+func (f *fakeService) PickTask(ctx context.Context, id domain.GameID, p domain.PlayerID, task int) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "PickTask", task)
+}
+func (f *fakeService) SendDistress(ctx context.Context, id domain.GameID, p domain.PlayerID, d domain.Direction) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "SendDistress", d)
+}
+func (f *fakeService) SkipDistress(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "SkipDistress")
+}
+func (f *fakeService) ChoosePassCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "ChoosePassCard", c)
+}
+func (f *fakeService) Handover(ctx context.Context, id domain.GameID, p domain.PlayerID, task, seat int) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "Handover", task, seat)
+}
+func (f *fakeService) Communicate(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card, pos domain.Position) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "Communicate", c, "["+string(pos)+"]")
+}
+func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "PlayCard", c)
+}
+func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "GiveUp")
+}
+func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "NextAttempt")
+}
+func (f *fakeService) NextMission(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "NextMission")
+}
+func (f *fakeService) BackToLobby(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "BackToLobby")
+}
+
 // --- helpers ---
 
 type env struct {
@@ -325,6 +390,27 @@ func TestAllCommands(t *testing.T) {
 	tests := []struct {
 		msg, call string
 	}{
+		{`{"type":"selectMission","requestId":"1","mission":7}`, "SelectMission(7)"},
+		{`{"type":"selectMission","requestId":"1","mission":0}`, "SelectMission(0)"}, // 0 is present, the domain judges it
+		{`{"type":"startMission","requestId":"1"}`, "StartMission"},
+		{`{"type":"adjustTokens","requestId":"1","from":0,"to":2}`, "AdjustTokens(0,2)"},
+		{`{"type":"skipTokens","requestId":"1"}`, "SkipTokens"},
+		{`{"type":"answerPoll","requestId":"1","yes":false}`, "AnswerPoll(false)"},
+		{`{"type":"answerPoll","requestId":"1","yes":true}`, "AnswerPoll(true)"},
+		{`{"type":"pick","requestId":"1","seats":[2]}`, "PickSeats([2])"},
+		{`{"type":"pick","requestId":"1","seats":[0,2]}`, "PickSeats([0 2])"},
+		{`{"type":"pickTask","requestId":"1","taskId":0}`, "PickTask(0)"},
+		{`{"type":"sendDistress","requestId":"1","direction":"left"}`, "SendDistress(left)"},
+		{`{"type":"skipDistress","requestId":"1"}`, "SkipDistress"},
+		{`{"type":"choosePassCard","requestId":"1","card":{"suit":"blue","rank":3}}`, "ChoosePassCard(blue 3)"},
+		{`{"type":"handover","requestId":"1","taskId":1,"seat":0}`, "Handover(1,0)"},
+		{`{"type":"communicate","requestId":"1","card":{"suit":"pink","rank":9},"position":"highest"}`, "Communicate(pink 9,[highest])"},
+		{`{"type":"communicate","requestId":"1","card":{"suit":"pink","rank":9}}`, "Communicate(pink 9,[])"}, // dead zone
+		{`{"type":"playCard","requestId":"1","card":{"suit":"trump","rank":4}}`, "PlayCard(trump 4)"},
+		{`{"type":"giveUp","requestId":"1"}`, "GiveUp"},
+		{`{"type":"nextAttempt","requestId":"1"}`, "NextAttempt"},
+		{`{"type":"nextMission","requestId":"1"}`, "NextMission"},
+		{`{"type":"backToLobby","requestId":"1"}`, "BackToLobby"},
 		{`{"type":"endGame","requestId":"1"}`, "EndGame"},
 	}
 	for _, tt := range tests {
@@ -354,8 +440,34 @@ func TestCommandErrors(t *testing.T) {
 		{"wrong phase", `{"type":"endGame","requestId":"9"}`, "9", apidto.CodeWrongPhase, fmt.Errorf("%w: only a lobby can be ended", domain.ErrWrongPhase)},
 		{"internal", `{"type":"endGame","requestId":"8"}`, "8", apidto.CodeInternal, errors.New("boom")},
 		{"unknown type", `{"type":"dance","requestId":"3"}`, "3", apidto.CodeBadRequest, nil},
-		{"removed command", `{"type":"playCard","requestId":"3","card":{"suit":"doves","rank":5}}`, "3", apidto.CodeBadRequest, nil},
+		{"removed command", `{"type":"rematch","requestId":"3"}`, "3", apidto.CodeBadRequest, nil},
 		{"malformed", `{"type":`, "", apidto.CodeBadRequest, nil},
+		{"invalid card", `{"type":"playCard","requestId":"3","card":{"suit":"doves","rank":5}}`, "3", apidto.CodeBadRequest, nil},
+		{"rank out of range", `{"type":"playCard","requestId":"3","card":{"suit":"trump","rank":5}}`, "3", apidto.CodeBadRequest, nil},
+		{"wrong field type", `{"type":"selectMission","requestId":"3","mission":"7"}`, "3", apidto.CodeBadRequest, nil},
+		{"must follow suit", `{"type":"playCard","requestId":"3","card":{"suit":"pink","rank":5}}`, "3", apidto.CodeMustFollowSuit, domain.ErrMustFollowSuit},
+		{"not commander", `{"type":"skipTokens","requestId":"3"}`, "3", apidto.CodeNotCommander, domain.ErrNotCommander},
+	}
+	// A command without its required fields is bad_request and never reaches the service.
+	for _, msg := range []string{
+		`{"type":"selectMission","requestId":"3"}`,
+		`{"type":"adjustTokens","requestId":"3","from":1}`,
+		`{"type":"adjustTokens","requestId":"3","to":1}`,
+		`{"type":"answerPoll","requestId":"3"}`,
+		`{"type":"pick","requestId":"3"}`,
+		`{"type":"pick","requestId":"3","seats":[]}`,
+		`{"type":"pickTask","requestId":"3"}`,
+		`{"type":"sendDistress","requestId":"3"}`,
+		`{"type":"choosePassCard","requestId":"3"}`,
+		`{"type":"handover","requestId":"3","taskId":1}`,
+		`{"type":"handover","requestId":"3","seat":1}`,
+		`{"type":"communicate","requestId":"3","position":"only"}`,
+		`{"type":"playCard","requestId":"3"}`,
+	} {
+		tests = append(tests, struct {
+			name, msg, reqID, code string
+			svcErr                 error
+		}{"missing field " + msg, msg, "3", apidto.CodeBadRequest, nil})
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

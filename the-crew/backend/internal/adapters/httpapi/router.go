@@ -35,10 +35,12 @@ func NewRouter(d Deps) http.Handler {
 	if d.Logger == nil {
 		d.Logger = slog.New(slog.DiscardHandler)
 	}
-	var api func(*http.ServeMux)
-	if d.Games != nil {
-		a := &gamesAPI{svc: d.Games, logger: d.Logger}
-		api = func(mux *http.ServeMux) { registerGameRoutes(mux, a) }
+	missions := newMissionsHandler()
+	api := func(mux *http.ServeMux) {
+		mux.Handle("GET /api/missions", missions)
+		if d.Games != nil {
+			registerGameRoutes(mux, &gamesAPI{svc: d.Games, logger: d.Logger})
+		}
 	}
 	return httpkit.NewRouter(httpkit.RouterDeps{
 		Logger:    d.Logger,

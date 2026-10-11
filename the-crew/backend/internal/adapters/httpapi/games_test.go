@@ -24,6 +24,8 @@ import (
 // "tok-host" is p_host and "tok-guest" is p_guest. err, when set, is
 // returned by every call except Authenticate.
 type fakeService struct {
+	ports.GameService // the gameplay commands run over the WebSocket; REST never calls them
+
 	mu    sync.Mutex
 	err   error
 	calls []string
@@ -340,7 +342,10 @@ func TestErrorTable(t *testing.T) {
 		{ports.ErrVersionConflict, 409, apidto.CodeConflict},
 		{domain.ErrInvalidName, 422, apidto.CodeInvalidName},
 		{domain.ErrUnknownPlayer, 422, apidto.CodeUnknownPlayer},
-		{domain.ErrDuplicatePlayer, 500, apidto.CodeInternal},
+		{domain.ErrDuplicatePlayer, 409, apidto.CodeDuplicatePlayer},
+		{domain.ErrNotCommander, 403, apidto.CodeNotCommander},
+		{domain.ErrNotAllowed, 409, apidto.CodeNotAllowed},
+		{domain.ErrMustFollowSuit, 422, apidto.CodeMustFollowSuit},
 		{errors.New("disk on fire"), 500, apidto.CodeInternal},
 	}
 	for _, tt := range tests {
@@ -364,6 +369,34 @@ func TestErrorTable(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestMissionCatalogue(t *testing.T) {
+	// Registered with and without the Games service; needs no token.
+	for _, svc := range []ports.GameService{&fakeService{}, nil} {
+		h := NewRouter(Deps{Health: func(context.Context) error { return nil }, Games: svc})
+		w := do(t, h, "GET", "/api/missions", "", "")
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d %s", w.Code, w.Body.String())
+		}
+		if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "max-age") {
+			t.Errorf("Cache-Control = %q", cc)
+		}
+		c := decode[apidto.MissionCatalogue](t, w)
+		if c.Edition != "planetNine" || len(c.Missions) != 50 {
+			t.Fatalf("catalogue: edition %q, %d missions", c.Edition, len(c.Missions))
+		}
+		for i, m := range c.Missions {
+			if m.Number != i+1 || m.Tokens == nil || m.Setup == nil || m.Objectives == nil {
+				t.Fatalf("mission %d: %+v", i+1, m)
+			}
+		}
+	}
+	// Only GET.
+	h := newTestRouter(t, &fakeService{})
+	if w := do(t, h, "POST", "/api/missions", "", `{}`); w.Code == http.StatusOK {
+		t.Fatalf("POST /api/missions = %d", w.Code)
 	}
 }
 

@@ -54,10 +54,82 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 	id, p := domain.GameID(gameID), domain.PlayerID(playerID)
 	var err error
 	switch msg.Type {
+	case apidto.CmdSelectMission:
+		if msg.Mission == nil {
+			return apidto.BadRequest("missing mission")
+		}
+		_, err = b.svc.SelectMission(ctx, id, p, *msg.Mission)
+	case apidto.CmdStartMission:
+		_, err = b.svc.StartMission(ctx, id, p)
+	case apidto.CmdAdjustTokens:
+		if msg.From == nil || msg.To == nil {
+			return apidto.BadRequest("missing from or to")
+		}
+		_, err = b.svc.AdjustTokens(ctx, id, p, *msg.From, *msg.To)
+	case apidto.CmdSkipTokens:
+		_, err = b.svc.SkipTokens(ctx, id, p)
+	case apidto.CmdAnswerPoll:
+		if msg.Yes == nil {
+			return apidto.BadRequest("missing yes")
+		}
+		_, err = b.svc.AnswerPoll(ctx, id, p, *msg.Yes)
+	case apidto.CmdPick:
+		if len(msg.Seats) == 0 {
+			return apidto.BadRequest("missing seats")
+		}
+		_, err = b.svc.PickSeats(ctx, id, p, msg.Seats)
+	case apidto.CmdPickTask:
+		if msg.TaskID == nil {
+			return apidto.BadRequest("missing taskId")
+		}
+		_, err = b.svc.PickTask(ctx, id, p, *msg.TaskID)
+	case apidto.CmdSendDistress:
+		if msg.Direction == "" {
+			return apidto.BadRequest("missing direction")
+		}
+		_, err = b.svc.SendDistress(ctx, id, p, domain.Direction(msg.Direction))
+	case apidto.CmdSkipDistress:
+		_, err = b.svc.SkipDistress(ctx, id, p)
+	case apidto.CmdChoosePassCard:
+		var c domain.Card
+		if c, err = cardOf(msg); err == nil {
+			_, err = b.svc.ChoosePassCard(ctx, id, p, c)
+		}
+	case apidto.CmdHandover:
+		if msg.TaskID == nil || msg.Seat == nil {
+			return apidto.BadRequest("missing taskId or seat")
+		}
+		_, err = b.svc.Handover(ctx, id, p, *msg.TaskID, *msg.Seat)
+	case apidto.CmdCommunicate:
+		var c domain.Card
+		if c, err = cardOf(msg); err == nil {
+			_, err = b.svc.Communicate(ctx, id, p, c, domain.Position(msg.Position))
+		}
+	case apidto.CmdPlayCard:
+		var c domain.Card
+		if c, err = cardOf(msg); err == nil {
+			_, err = b.svc.PlayCard(ctx, id, p, c)
+		}
+	case apidto.CmdGiveUp:
+		_, err = b.svc.GiveUp(ctx, id, p)
+	case apidto.CmdNextAttempt:
+		_, err = b.svc.NextAttempt(ctx, id, p)
+	case apidto.CmdNextMission:
+		_, err = b.svc.NextMission(ctx, id, p)
+	case apidto.CmdBackToLobby:
+		_, err = b.svc.BackToLobby(ctx, id, p)
 	case apidto.CmdEndGame:
 		_, err = b.svc.EndGame(ctx, id, p)
 	default:
 		return apidto.BadRequest("unknown message type %q", msg.Type)
 	}
 	return err
+}
+
+// cardOf maps the card of a message; a missing card is bad_request.
+func cardOf(msg apidto.ClientMessage) (domain.Card, error) {
+	if msg.Card == nil {
+		return domain.Card{}, apidto.BadRequest("card is required")
+	}
+	return msg.Card.ToDomain()
 }

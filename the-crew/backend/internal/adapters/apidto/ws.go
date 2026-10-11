@@ -11,8 +11,26 @@ const (
 )
 
 // Client -> server message types. Gameplay runs over the WebSocket only; REST covers the lobby.
+// The comments list the required fields of each command.
 const (
-	CmdEndGame = "endGame"
+	CmdSelectMission  = "selectMission"  // mission
+	CmdStartMission   = "startMission"   //
+	CmdAdjustTokens   = "adjustTokens"   // from, to
+	CmdSkipTokens     = "skipTokens"     //
+	CmdAnswerPoll     = "answerPoll"     // yes
+	CmdPick           = "pick"           // seats (one seat, two for the roles of mission 50)
+	CmdPickTask       = "pickTask"       // taskId
+	CmdSendDistress   = "sendDistress"   // direction: "left" | "right"
+	CmdSkipDistress   = "skipDistress"   //
+	CmdChoosePassCard = "choosePassCard" // card
+	CmdHandover       = "handover"       // taskId, seat
+	CmdCommunicate    = "communicate"    // card, position (may be empty in a dead zone)
+	CmdPlayCard       = "playCard"       // card
+	CmdGiveUp         = "giveUp"         //
+	CmdNextAttempt    = "nextAttempt"    //
+	CmdNextMission    = "nextMission"    //
+	CmdBackToLobby    = "backToLobby"    //
+	CmdEndGame        = "endGame"        //
 )
 
 // ServerMessage is a server -> client WebSocket message: the shared envelope around
@@ -24,9 +42,19 @@ func ViewMessage(v PlayerView, events []Event) ServerMessage {
 	return wire.ViewMessage(v, events)
 }
 
-// ClientMessage is a client -> server WebSocket message. Commands added later (mission, card,
-// seats, ...) extend it with their fields.
+// ClientMessage is a client -> server WebSocket message. Pointer fields tell "absent" from 0 and
+// false; a missing required field is bad_request.
 type ClientMessage struct {
 	Type      string `json:"type"`
 	RequestID string `json:"requestId"`
+	Mission   *int   `json:"mission,omitempty"`
+	Seats     []int  `json:"seats,omitempty"`
+	TaskID    *int   `json:"taskId,omitempty"`
+	Card      *Card  `json:"card,omitempty"`
+	Position  string `json:"position,omitempty"`
+	Direction string `json:"direction,omitempty"`
+	Yes       *bool  `json:"yes,omitempty"`
+	From      *int   `json:"from,omitempty"`
+	To        *int   `json:"to,omitempty"`
+	Seat      *int   `json:"seat,omitempty"`
 }

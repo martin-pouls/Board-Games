@@ -193,6 +193,91 @@ func (s *Service) LeaveGame(ctx context.Context, id domain.GameID, player domain
 	return err
 }
 
+// SelectMission implements ports.GameService.
+func (s *Service) SelectMission(ctx context.Context, id domain.GameID, player domain.PlayerID, mission int) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SelectMission(player, mission) })
+}
+
+// StartMission implements ports.GameService.
+func (s *Service) StartMission(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.StartMission(player, s.cfg.NewRNG()) })
+}
+
+// AdjustTokens implements ports.GameService.
+func (s *Service) AdjustTokens(ctx context.Context, id domain.GameID, player domain.PlayerID, from, to int) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.AdjustTokens(player, from, to) })
+}
+
+// SkipTokens implements ports.GameService.
+func (s *Service) SkipTokens(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SkipTokens(player) })
+}
+
+// AnswerPoll implements ports.GameService.
+func (s *Service) AnswerPoll(ctx context.Context, id domain.GameID, player domain.PlayerID, yes bool) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.AnswerPoll(player, yes) })
+}
+
+// PickSeats implements ports.GameService.
+func (s *Service) PickSeats(ctx context.Context, id domain.GameID, player domain.PlayerID, seats []int) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PickSeats(player, seats) })
+}
+
+// PickTask implements ports.GameService.
+func (s *Service) PickTask(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID int) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PickTask(player, taskID) })
+}
+
+// SendDistress implements ports.GameService.
+func (s *Service) SendDistress(ctx context.Context, id domain.GameID, player domain.PlayerID, dir domain.Direction) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SendDistress(player, dir) })
+}
+
+// SkipDistress implements ports.GameService.
+func (s *Service) SkipDistress(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SkipDistress(player) })
+}
+
+// ChoosePassCard implements ports.GameService.
+func (s *Service) ChoosePassCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.ChoosePassCard(player, card) })
+}
+
+// Handover implements ports.GameService.
+func (s *Service) Handover(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID, toSeat int) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.Handover(player, taskID, toSeat) })
+}
+
+// Communicate implements ports.GameService.
+func (s *Service) Communicate(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card, pos domain.Position) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.Communicate(player, card, pos) })
+}
+
+// PlayCard implements ports.GameService.
+func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PlayCard(player, card, s.cfg.NewRNG()) })
+}
+
+// GiveUp implements ports.GameService.
+func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.GiveUp(player) })
+}
+
+// NextAttempt implements ports.GameService.
+func (s *Service) NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.NextAttempt(player, s.cfg.NewRNG()) })
+}
+
+// NextMission implements ports.GameService.
+func (s *Service) NextMission(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.NextMission(player, s.cfg.NewRNG()) })
+}
+
+// BackToLobby implements ports.GameService.
+func (s *Service) BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.BackToLobby(player) })
+}
+
 // EndGame implements ports.GameService.
 func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
 	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndGame(player) })
