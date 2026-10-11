@@ -10,8 +10,8 @@ func TestLegalCards(t *testing.T) {
 	for _, tc := range []struct {
 		hand, lead, want string
 	}{
-		{"p1 p5 b3 t2", "", "p1 p5 b3 t2"},  // leading: anything
-		{"p1 p5 b3 t2", "p9", "p1 p5"},      // follow the colour
+		{"p1 p5 b3 t2", "", "p1 p5 b3 t2"},   // leading: anything
+		{"p1 p5 b3 t2", "p9", "p1 p5"},       // follow the colour
 		{"p1 p5 b3 t2", "g4", "p1 p5 b3 t2"}, // cannot follow: anything, trump too
 		{"p1 p5 b3 t2", "t4", "t2"},          // trump is a suit too
 		{"p1 p5 b3", "t1", "p1 p5 b3"},       // no trump to follow
