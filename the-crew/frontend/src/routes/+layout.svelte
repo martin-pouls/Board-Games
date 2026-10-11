@@ -15,7 +15,7 @@
 	<title>The Crew</title>
 </svelte:head>
 
-<ModeWatcher themeColors={{ light: '#f3eedd', dark: '#0f1d17' }} />
+<ModeWatcher themeColors={{ light: '#f2f0ea', dark: '#0b1022' }} />
 <Toaster />
 <AppFrame url={page.url} isHome={page.route.id === '/'} dev={import.meta.env.DEV}>
 	{@render children()}

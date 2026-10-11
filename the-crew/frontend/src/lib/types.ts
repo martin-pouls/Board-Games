@@ -8,6 +8,17 @@ import type {
 
 export type Phase = 'lobby' | 'playing' | 'debrief' | 'ended';
 
+/** The four colours and trump ("rockets" in the UI). */
+export type Suit = 'pink' | 'blue' | 'green' | 'yellow' | 'trump';
+/** A playing card: colours 1–9, trump 1–4. */
+export interface Card {
+	suit: Suit;
+	rank: number;
+}
+/** Task tokens: 1–5 (fixed position), omega (last), arrow1–arrow4 (relative order). */
+export type Token =
+	'' | '1' | '2' | '3' | '4' | '5' | 'omega' | 'arrow1' | 'arrow2' | 'arrow3' | 'arrow4';
+
 export interface PlayerSummary {
 	id: string;
 	name: string;
