@@ -252,18 +252,16 @@ func (o Objective) winOnlyTricks(h History) Status {
 // winTricks (mission 34). Fulfilled: the owner won every listed trick. Fails: someone else wins a
 // listed trick.
 func (o Objective) winTricks(h History) Status {
+	s := StatusFulfilled
 	for _, n := range o.Tricks {
-		n = h.trickNumber(n)
-		if n > len(h.Tricks) {
-			return StatusOpen
-		}
-	}
-	for _, n := range o.Tricks {
-		if h.Tricks[h.trickNumber(n)-1].Winner != o.Owner {
+		switch n = h.trickNumber(n); {
+		case n > len(h.Tricks):
+			s = StatusOpen
+		case h.Tricks[n-1].Winner != o.Owner:
 			return StatusFailed
 		}
 	}
-	return StatusFulfilled
+	return s
 }
 
 // lists reports whether the 1-based trick n is one of o.Tricks.
