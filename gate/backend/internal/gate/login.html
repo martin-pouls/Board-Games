@@ -6,11 +6,22 @@
 <meta name="robots" content="noindex">
 <title>Board Games</title>
 <script>
-try {
-  var m = localStorage.getItem('mode-watcher-mode');
-  if (m === 'light' || m === 'dark') document.documentElement.setAttribute('data-theme', m);
-  else document.documentElement.removeAttribute('data-theme');
-} catch (e) {}
+// Same storage key and values as mode-watcher in the games and the start page's theme script, which
+// share this origin: set before first paint, toggled by the button in the top-right corner.
+(function () {
+  var KEY = 'mode-watcher-mode', root = document.documentElement, mode = 'system';
+  try { mode = localStorage.getItem(KEY) || 'system'; } catch (e) {}
+  var media = matchMedia('(prefers-color-scheme: dark)');
+  function apply(dark) { root.setAttribute('data-theme', dark ? 'dark' : 'light'); }
+  apply(mode === 'dark' || (mode !== 'light' && media.matches));
+  media.addEventListener('change', function (e) { if (mode !== 'light' && mode !== 'dark') apply(e.matches); });
+  document.addEventListener('click', function (e) {
+    if (!(e.target instanceof Element) || !e.target.closest('#theme-toggle')) return;
+    mode = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    apply(mode === 'dark');
+    try { localStorage.setItem(KEY, mode); } catch (e) {}
+  });
+})();
 </script>
 <style>
 :root {
@@ -19,7 +30,7 @@ try {
   --border: #d6d3d1; --accent: #1c1917; --accent-fg: #fafaf9; --ring: #2563eb; --error: #b91c1c;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #0c0a09; --card: #1c1917; --fg: #fafaf9; --muted: #a8a29e;
     --border: #44403c; --accent: #fafaf9; --accent-fg: #1c1917; --ring: #60a5fa; --error: #f87171;
   }
@@ -61,9 +72,23 @@ input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid 
 p.error { margin: .75rem 0 0; color: var(--error); font-size: .875rem; }
 footer { display: flex; gap: 1rem; font-size: .875rem; }
 footer a { color: var(--muted); }
+#theme-toggle {
+  position: fixed; top: .75rem; right: .75rem; width: 2.25rem; height: 2.25rem; margin: 0; padding: 0;
+  display: none; align-items: center; justify-content: center;
+  color: var(--fg); background: transparent; border-radius: .5rem;
+}
+#theme-toggle:hover { background: var(--border); }
+[data-theme] #theme-toggle { display: flex; }
+#theme-toggle svg { width: 1rem; height: 1rem; }
+[data-theme="dark"] #theme-toggle .moon, [data-theme="light"] #theme-toggle .sun { display: none; }
 </style>
 </head>
 <body>
+<!-- Hidden until the theme script has run (it sets data-theme). -->
+<button id="theme-toggle" type="button" aria-label="Toggle light or dark mode">
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+</button>
 <main>
   <h1>Board Games</h1>
   <p>Enter the password to play.</p>

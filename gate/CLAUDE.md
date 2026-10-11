@@ -1,6 +1,6 @@
 # Gate
 
-Shared-password access gate for the board-game apps (root [CLAUDE.md](../CLAUDE.md) holds the common rules). No accounts: several passwords, each with a label (e.g. `family`, `friends`). A login cookie lasts about a year. Go only, no frontend, no database; the login page is `backend/internal/gate/login.html` (embedded, inline CSS); its password field is a text field masked with `-webkit-text-security`, so browsers don't offer to save the shared password.
+Shared-password access gate for the board-game apps (root [CLAUDE.md](../CLAUDE.md) holds the common rules). No accounts: several passwords, each with a label (e.g. `family`, `friends`). A login cookie lasts about a year. Go only, no frontend, no database; the login page is `backend/internal/gate/login.html` (embedded, inline CSS); its password field is a text field masked with `-webkit-text-security`, so browsers don't offer to save the shared password. Light and dark mode with a toggle in the top-right corner (inline script, same `mode-watcher-mode` storage key as the other apps).
 
 Caddy asks the gate before serving a protected app (`forward_auth gate:8080 { uri /verify ... }`) and proxies `/gate/*` to it with the prefix stripped (`deploy/gate.caddy`).
 

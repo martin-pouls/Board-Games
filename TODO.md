@@ -1,7 +1,4 @@
-# Technical
-- GHCR Cleanup Action
-
-## WebSocket review
+# WebSocket review
 - Half-dead sockets on phones (medium): `reconnectNow` in `shared/frontend/src/connection.svelte.ts` does nothing while `this.ws` is set, so after sleep or a network switch the socket looks open and the next action fails with `timeout` after 10s. Fix: on `visibilitychange` to visible after being hidden for a while, close and reopen the socket.
 - No per-socket command rate limit (low): every command takes the game lock and loads from SQLite, rejected ones too. Bounded by the 4 KB read limit and the per-IP socket cap. Add a small token bucket per connection in `wskit`.
 - Compression (low, unverified): `CompressionMode` is never set. Check the coder/websocket 1.8.15 default and consider enabling it, snapshots are repetitive JSON.

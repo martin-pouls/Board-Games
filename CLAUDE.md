@@ -16,7 +16,8 @@ This file holds the rules common to all apps. Each game's own CLAUDE.md adds its
 
 ```
 CLAUDE.md, .mcp.json, .gitignore, .gitattributes    shared by all apps
-.github/                      CD: workflows/deploy.yml, scripts/plan-deploy.sh, dependabot.yml
+.github/                      CD: workflows/deploy.yml, scripts/plan-deploy.sh, dependabot.yml;
+                              workflows/cleanup-images.yml (weekly: old images on ghcr.io)
 deploy/                       server-wide: shared Caddy proxy, server bootstrap, deploy scripts
   README.md                   CD setup, security model, rollback
   caddy/                      compose file + Caddyfile for the shared proxy (/opt/caddy on the server);

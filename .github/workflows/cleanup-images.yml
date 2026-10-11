@@ -1,0 +1,51 @@
+# Weekly cleanup of old images on ghcr.io. Every deploy pushes a new image per changed app
+# (ghcr.io/martin-pouls/board-games/<app>:<commit sha>, plus untagged attestation manifests), and
+# nothing removes them. This deletes everything older than a week, except the newest tagged image
+# of each app: that is the one running on the server, also when the app hasn't changed in months.
+# Re-running an older deploy (roll back, deploy/README.md) rebuilds a deleted image from the cache.
+name: Clean up images
+
+on:
+  schedule:
+    - cron: '17 4 * * 1' # Mondays, 04:17 UTC
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Only log what would be deleted
+        type: boolean
+        default: true
+
+# Not in the deploy group (a queued cleanup could replace a queued deploy there). The two can't
+# collide: a deploy only pushes and pulls images younger than a week.
+concurrency:
+  group: cleanup-images
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write # delete package versions (the packages grant this repository admin access)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Every app CI deploys (a top-level directory with deploy/compose.yaml) has a package.
+      - name: List packages
+        id: packages
+        run: |
+          packages=$(for f in */deploy/compose.yaml; do printf 'board-games/%s,' "${f%%/*}"; done)
+          echo "packages=${packages%,}" >>"$GITHUB_OUTPUT"
+      # older-than is applied first: keep-n-tagged then keeps the newest of the older tagged images,
+      # so each app keeps all images of the last week plus the newest one before that.
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          packages: ${{ steps.packages.outputs.packages }}
+          older-than: 7 days
+          keep-n-tagged: 1
+          delete-untagged: true
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}

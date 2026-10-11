@@ -62,6 +62,7 @@ After the first push the images show up under the repository's *Packages*. They 
 - **Deploy by hand / redeploy:** *Actions → Deploy → Run workflow*, with `all` or e.g. `regicide start-page`.
 - **Roll back:** preferably `git revert` the bad commit and push, so that `main` matches the server. For a quick roll back, open the run of the good commit and click *Re-run all jobs*: it deploys every app at that commit (cached build, same image tags). The next push then deploys only the apps it changes, so run the workflow by hand with `all` to bring the rest forward again. Don't re-run runs from before the rename to Board-Games (October 2026): their start page lives at `/card-games/`, which the current Caddy config redirects away.
 - **Server or Caddyfile changes** (`deploy/caddy/`, `deploy/server/`): commit, then re-run `deploy/setup-server.sh` (without `CI_PUBKEY` the deploy key stays as it is, pinned to the current deploy script; without `GATE_PASSWORDS` the gate passwords stay).
+- **Old images:** [cleanup-images.yml](../.github/workflows/cleanup-images.yml) runs every Monday and deletes images on ghcr.io older than a week, keeping each app's newest one (the running one). A manual run is a dry run unless unchecked. Re-running a deploy whose images were deleted rebuilds them.
 - **Fallback without GitHub:** `deploy/deploy.sh [app...]` uploads the committed `<app>/` and `shared/` and builds on the server as root, tagging the image `local-<rev>`. The next CI deploy replaces it.
 
 ## Local stack
