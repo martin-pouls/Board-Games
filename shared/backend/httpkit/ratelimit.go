@@ -264,3 +264,26 @@ func (b *buckets) fill(key string) *bucket {
 	k.tokens, k.at = refill(k), now
 	return k
 }
+
+// Limiter is one per-client token bucket for servers outside NewRouter (the gate's login form).
+// Clients are counted like the router's limits: by IP (or IPv6 /64), loopback never limited.
+type Limiter struct{ b *buckets }
+
+// NewLimiter returns a limiter for rate; a zero rate never limits. now is the clock (nil:
+// time.Now).
+func NewLimiter(rate Rate, now func() time.Time) *Limiter {
+	if now == nil {
+		now = time.Now
+	}
+	return &Limiter{b: newBuckets(rate, now)}
+}
+
+// Take uses one token of r's client. When none is left it uses nothing and returns how long until
+// one is back; 0 means the request may go ahead.
+func (l *Limiter) Take(r *http.Request) time.Duration {
+	key, limited := clientKey(r)
+	if !limited {
+		return 0
+	}
+	return l.b.take(key)
+}

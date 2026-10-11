@@ -1,5 +1,6 @@
 // REST plumbing every game shares: the request helper with bearer auth and wire errors, and the
 // lobby endpoints (same routes in every game). Games add their own endpoints on top of request.
+import { LOGIN_REQUIRED, reloadForLogin } from './login.js';
 import type { ClientErrorCode, CommonErrorCode, ErrorBody } from './wire.js';
 
 export class ApiError<C extends string = string> extends Error {
@@ -50,6 +51,7 @@ export function createRequest<C extends string>(
 			} catch {
 				// non-JSON error body
 			}
+			if (res.status === 401 && err.code === LOGIN_REQUIRED) reloadForLogin();
 			throw new ApiError<C | CommonErrorCode>(
 				res.status,
 				err.code ?? 'internal',

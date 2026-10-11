@@ -2,5 +2,7 @@
 # The prefix is stripped, so the Go server serves /api, /ws and the SPA at its root.
 redir /regicide /regicide/
 handle_path /regicide/* {
+	# Password protected: the gate snippet in deploy/caddy/conf/common.caddy.
+	import gate
 	reverse_proxy regicide:8080
 }

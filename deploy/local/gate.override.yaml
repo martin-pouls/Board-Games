@@ -1,0 +1,7 @@
+# The local stack (deploy/local.sh) gives the gate its own secret and passwords (deploy/local/.gate/,
+# made by the script) instead of the server's /etc/board-games/gate. Same container path, so this
+# mount replaces the server one.
+services:
+  app:
+    volumes:
+      - ${LOCAL_GATE_DIR:?set by deploy/local.sh}:/secrets:ro

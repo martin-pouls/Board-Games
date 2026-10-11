@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { checkLogin } from './login.js';
 import { nextBackoff, parseServerMessage, shouldAcceptView, wsUrl } from './protocol.js';
 import { CLOSE_GAME_NOT_FOUND, CLOSE_UNAUTHORIZED, type BaseView } from './wire.js';
 
@@ -128,8 +129,10 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 			return;
 		}
 		this.ws = ws;
+		let opened = false;
 		ws.onopen = () => {
 			if (this.ws !== ws) return;
+			opened = true;
 			this.attempt = 0;
 			this.status = 'open';
 		};
@@ -143,6 +146,8 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 			this.rejectAll('disconnected' as C);
 			if (ev.code === CLOSE_UNAUTHORIZED) return this.fail('unauthorized');
 			if (ev.code === CLOSE_GAME_NOT_FOUND) return this.fail('game_not_found');
+			// A failed upgrade hides its HTTP status: probe whether the login expired.
+			if (!opened) void checkLogin(this.basePath);
 			this.scheduleReconnect();
 		};
 	}

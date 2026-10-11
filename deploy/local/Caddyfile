@@ -1,0 +1,9 @@
+# The local stack's proxy (deploy/local.sh): the server's site (../caddy/conf/common.caddy, the
+# same gate and snippets) on http://localhost:8000, without certificates. Browsers accept the
+# gate's Secure cookie on localhost over plain http.
+
+import /etc/caddy/common.caddy
+
+http://:8000 {
+	import site
+}

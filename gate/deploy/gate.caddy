@@ -1,0 +1,7 @@
+# Gate site snippet imported by the shared Caddyfile (copied to /opt/caddy/conf/sites/ by every deploy).
+# The login page; the check itself is the (gate) snippet in deploy/caddy/conf/common.caddy, which the
+# protected apps import. The prefix is stripped, so the server serves /login at its root.
+redir /gate /gate/login
+handle_path /gate/* {
+	reverse_proxy gate:8080
+}

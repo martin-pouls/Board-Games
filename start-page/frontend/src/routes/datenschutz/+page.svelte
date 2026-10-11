@@ -22,11 +22,12 @@
 	<p class="text-sm text-muted-foreground">Stand: Oktober 2026</p>
 
 	<p>
-		Diese Website ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Spiele lassen sich ohne
-		Konto spielen. Es gibt keine Cookies, keine Werbung, kein Tracking und keine Analyse-Tools. Hier
-		steht, welche Daten trotzdem anfallen. Die Erklärung gilt für alle Seiten unter
-		yoshi-und-kruemli.de: die Übersicht unter /board-games/ und die Spiele „The Game“ (/the-game/),
-		„Regicide“ (/regicide/) und „Fox Duet“ (/fox-duet/).
+		Diese Website ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Seiten sind durch ein
+		gemeinsames Passwort geschützt; ein Konto ist nicht nötig. Es gibt nur ein einziges, technisch
+		erforderliches Cookie (zum Login), keine Werbung, kein Tracking und keine Analyse-Tools. Hier
+		steht, welche Daten anfallen. Die Erklärung gilt für alle Seiten unter yoshi-und-kruemli.de und
+		martin-pouls.de (derselbe Server, derselbe Betreiber): die Übersicht unter /board-games/ und die
+		Spiele „The Game“ (/the-game/), „Regicide“ (/regicide/) und „Fox Duet“ (/fox-duet/).
 	</p>
 
 	<h2>1. Verantwortlicher</h2>
@@ -78,8 +79,37 @@
 		Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse besteht darin,
 		Missbrauch zu verhindern und die Spiele für alle verfügbar zu halten.
 	</p>
+	<p>
+		Auf dieselbe Weise begrenzt der Server die Zahl der Anmeldeversuche pro IP-Adresse, damit das
+		Passwort nicht durch Ausprobieren erraten werden kann (Abschnitt 5). Auch das geschieht nur im
+		Arbeitsspeicher, ohne die IP-Adresse zu speichern oder zu protokollieren.
+	</p>
 
-	<h2>5. Spielen</h2>
+	<h2>5. Passwortschutz und Login</h2>
+	<p>
+		Die Übersicht und die Spiele sind passwortgeschützt. Das Passwort geben Sie in einem
+		Anmeldeformular unter /gate/login ein. Der Server vergleicht es mit den hinterlegten Passwörtern
+		und speichert oder protokolliert das eingegebene Passwort nicht. Im Server-Protokoll stehen nur
+		ein erfolgreicher oder fehlgeschlagener Login, der Zeitpunkt und die Bezeichnung der
+		Passwortgruppe (zum Beispiel „Familie“), aber weder das Passwort noch Ihre IP-Adresse.
+	</p>
+	<p>
+		Nach erfolgreichem Login setzt der Server ein Cookie namens <code>bg_gate</code>. Es ist
+		technisch erforderlich, um Ihren Login zu merken, damit Sie das Passwort nicht bei jedem Aufruf
+		neu eingeben müssen. Es enthält die Bezeichnung der Passwortgruppe, den Zeitpunkt des Logins und
+		eine Signatur, die Fälschungen verhindert. Es dient nicht dem Tracking. Das Cookie gilt ein
+		Jahr, ist als HttpOnly gesetzt (für Skripte auf der Seite nicht lesbar) und wird nur an diese
+		Website gesendet. Wenn Sie das Cookie in Ihrem Browser löschen, sind Sie abgemeldet.
+	</p>
+	<p>
+		Rechtsgrundlage für das Cookie ist § 25 Abs. 2 Nr. 2 TDDDG: Es ist unbedingt erforderlich, um
+		den von Ihnen gewünschten Dienst bereitzustellen, eine Einwilligung ist daher nicht nötig. Für
+		die damit verbundene Verarbeitung ist die Rechtsgrundlage Art. 6 Abs. 1 lit. f DSGVO. Das
+		berechtigte Interesse besteht darin, die Seiten nur dem gewünschten Personenkreis zugänglich zu
+		machen.
+	</p>
+
+	<h2>6. Spielen</h2>
 	<p>
 		Wenn Sie ein Spiel erstellen oder einem Spiel beitreten, speichert der Server den von Ihnen
 		gewählten Spielernamen, den Spielverlauf und den Spielstand sowie die Zeitpunkte der Erstellung
@@ -96,10 +126,10 @@
 		Spiel bereitzustellen.
 	</p>
 
-	<h2>6. Speicherung in Ihrem Browser</h2>
+	<h2>7. Speicherung in Ihrem Browser</h2>
 	<p>
-		Die Website setzt keine Cookies. Sie nutzt den lokalen Speicher Ihres Browsers (Local Storage)
-		und zwar nur für:
+		Neben dem Login-Cookie (Abschnitt 5) nutzt die Website den lokalen Speicher Ihres Browsers
+		(Local Storage), und zwar nur für:
 	</p>
 	<ul>
 		<li>
@@ -116,7 +146,7 @@
 		erforderlich, um die von Ihnen gewünschten Funktionen bereitzustellen.
 	</p>
 
-	<h2>7. Keine Weitergabe, keine externen Dienste</h2>
+	<h2>8. Keine Weitergabe, keine externen Dienste</h2>
 	<p>
 		Daten werden an niemanden weitergegeben außer an den Hoster (Abschnitt 2). Alle Inhalte,
 		einschließlich der Schriftarten, kommen vom eigenen Server; Dienste Dritter sind nicht
@@ -124,7 +154,7 @@
 		Die Verbindung ist per HTTPS verschlüsselt.
 	</p>
 
-	<h2>8. Ihre Rechte</h2>
+	<h2>9. Ihre Rechte</h2>
 	<p>Sie haben das Recht auf</p>
 	<ul>
 		<li>Auskunft über die zu Ihnen gespeicherten Daten (Art. 15 DSGVO),</li>
@@ -147,7 +177,7 @@
 		Behörde: {authority}.
 	</p>
 
-	<h2>9. Pflicht zur Bereitstellung, automatisierte Entscheidungen</h2>
+	<h2>10. Pflicht zur Bereitstellung, automatisierte Entscheidungen</h2>
 	<p>
 		Sie sind nicht verpflichtet, Daten bereitzustellen. Ohne die technisch notwendigen
 		Verbindungsdaten kann die Website jedoch nicht angezeigt werden, und ohne Spielernamen ist kein

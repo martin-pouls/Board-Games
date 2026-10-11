@@ -1,6 +1,6 @@
 # Board Games — monorepo
 
-Web implementations of cooperative board and card games, played live in the browser, plus a start page that links to them. Live at https://yoshi-und-kruemli.de/board-games/.
+Web implementations of cooperative board and card games, played live in the browser, plus a start page that links to them. Live at https://yoshi-und-kruemli.de/board-games/ (also https://martin-pouls.de/board-games/, same site). The start page and the games are behind a shared password (the gate).
 
 | App | Directory | URL path | What |
 |---|---|---|---|
@@ -8,6 +8,7 @@ Web implementations of cooperative board and card games, played live in the brow
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
+| Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). Backend only. See [gate/CLAUDE.md](gate/CLAUDE.md). |
 
 This file holds the rules common to all apps. Each game's own CLAUDE.md adds its rules, domain model and look. **Read the game's CLAUDE.md before working on it.**
 
@@ -18,7 +19,9 @@ CLAUDE.md, .mcp.json, .gitignore, .gitattributes    shared by all apps
 .github/                      CD: workflows/deploy.yml, scripts/plan-deploy.sh, dependabot.yml
 deploy/                       server-wide: shared Caddy proxy, server bootstrap, deploy scripts
   README.md                   CD setup, security model, rollback
-  caddy/                      compose file + Caddyfile for the shared proxy (/opt/caddy on the server)
+  caddy/                      compose file + Caddyfile for the shared proxy (/opt/caddy on the server);
+                              conf/common.caddy is the site itself (gate, snippets), shared with local/
+  local/, local.sh            local prod-like stack in WSL2 + Docker (http://localhost:8000)
   server/board-games-deploy    runs on the server: the CI deploy key's forced command
   setup-server.sh             idempotent server bootstrap (Docker, ufw, Caddy, deploy user)
   deploy.sh                   fallback: builds and deploys from your PC without GitHub
@@ -33,6 +36,8 @@ regicide/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 fox-duet/
   backend/  frontend/  docs/rules.md  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
+gate/                         password gate (Go only, no frontend)
+  backend/  Dockerfile  Dockerfile.dockerignore  deploy/  CLAUDE.md
 ```
 
 **Apps are independent, except for `shared/`.** Each game has its own Go module, its own npm project (own `package.json`, lockfile, `node_modules`) and its own image, database and deploy. No app imports from another app. The lobby, session, WebSocket, persistence and ID plumbing that every game needs lives in [shared/](shared/README.md):
@@ -130,6 +135,7 @@ Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`
 | Regicide | `:5174` | `:8081` |
 | Fox Duet | `:5176` | `:8082` |
 | Start page | `:5175` | — |
+| Gate | — | `:8083` |
 
 In dev the start page links each tile to the game's frontend port on the same hostname (`devPort` in `start-page/frontend/src/lib/games.ts`); production builds link to `/<game>/`. The other way round, each game's home screen has an *All games* link (`startPageHref` in `shared/frontend/src/startPage.ts`: port 5175 in dev, `/board-games/` in production). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and `shared/frontend/src/startPage.ts` together.
 
@@ -152,7 +158,9 @@ Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root vi
 - **One container per app**, all on the external Docker network `web`. CI builds the images on native arm64 runners and pushes them as `ghcr.io/martin-pouls/board-games/<app>:<commit sha>`:
   - `the-game`, `regicide` and `fox-duet`: one image each (SPA + Go server), SQLite in the volumes `the-game_data`, `regicide_data` and `fox-duet_data`.
   - `start-page`: the prerendered page served by `caddy file-server`.
-- **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. The Caddyfile redirects `/` to `/board-games/` and imports every `sites/*.caddy`.
+  - `gate`: the password check, with its secret and passwords in `/etc/board-games/gate/` (bind mount, written by `setup-server.sh`).
+- **Shared Caddy proxy** in `/opt/caddy` ([deploy/caddy/](deploy/caddy/)). It is the only container with public ports and handles HTTPS. One site block serves both `yoshi-und-kruemli.de` and `martin-pouls.de` (the `www.` names redirect). `common.caddy` (shared with the local stack) redirects `/` to `/board-games/` and imports every `sites/*.caddy`.
+- **Password gate:** an app is protected when its snippet has `import gate` inside its `handle_path` (the `(gate)` snippet in `deploy/caddy/conf/common.caddy`, `forward_auth` to the gate). The start page keeps `/impressum`, `/datenschutz` and their assets public. Paths that don't import it (the site root, later a personal page) stay public. Without the login cookie, page loads redirect to `/gate/login` and API/WS requests get `401` with code `login_required`; the shared frontend then reloads the page (`shared/frontend/src/login.ts`). Passwords: [deploy/README.md](deploy/README.md#password-gate).
 - **Each app ships a snippet** `<app>/deploy/<app>.caddy` that maps its path prefix to its container with `handle_path`. The prefix is stripped, so the servers stay path-agnostic.
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (`paths.base`), set as a build arg in `<app>/deploy/compose.yaml`. Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`. Never hard-code `/api` or `/ws` without it. Links between apps are plain absolute paths with `rel="external"`.
 - **Deploying:** push to `main`. [.github/workflows/deploy.yml](.github/workflows/deploy.yml) tests, builds and deploys the apps that changed since the last successful deploy. Manual runs (*Run workflow*) take `all` or app names. Setup, security model and rollback: [deploy/README.md](deploy/README.md).
@@ -160,8 +168,9 @@ Target: a Hetzner arm64 Ubuntu box serving https://yoshi-und-kruemli.de (root vi
   - Games use `shared/`, so they build with the repo root as context (`context: ../..`, `dockerfile: <app>/Dockerfile`, plus `<app>/Dockerfile.dockerignore`). A change in `shared/` deploys every app whose Dockerfile has `COPY shared/...`.
   - CI deploys as user `deploy`, whose key may only run [deploy/server/board-games-deploy](deploy/server/board-games-deploy) (forced command). `deploy` is root-equivalent (docker group), so that script takes only a commit SHA and app names from CI and reads `<app>/deploy/` from its own clone of `main`, refusing commits that are not on `main`. Keep it that way: never let it use files or config sent by the caller.
   - `deploy/setup-server.sh` is the idempotent bootstrap: Docker, ufw, Caddy, the deploy user and script. Re-run it after changing `deploy/caddy/` or `deploy/server/`; the repo owns the Caddyfile.
+  - `deploy/local.sh [app...|down]` runs the same images and Caddy config locally in WSL2 + Docker at http://localhost:8000 (gate password `local`). Setup: [deploy/README.md](deploy/README.md#local-stack).
   - `deploy/deploy.sh [app...]` is the fallback from Git Bash: it ships the *committed* subtree and builds on the server as root (tag `local-<rev>`).
-- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy`. CI and `deploy.sh` pick it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`. For a game, copy Regicide's `Dockerfile`, `Dockerfile.dockerignore` and `compose.yaml` (root context, `shared/`) and its shared wiring (`go.mod` replace; `vite.config.ts`, `tsconfig.json`, `layout.css`, see [shared/README.md](shared/README.md)).
+- **Adding an app:** a top-level directory with `Dockerfile`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`) and `deploy/<dir-name>.caddy` (with `import gate` for a game). CI and `deploy.sh` pick it up automatically. Add a tile in `start-page/frontend/src/lib/games.ts`. For a game, copy Regicide's `Dockerfile`, `Dockerfile.dockerignore` and `compose.yaml` (root context, `shared/`) and its shared wiring (`go.mod` replace; `vite.config.ts`, `tsconfig.json`, `layout.css`, see [shared/README.md](shared/README.md)).
 - **Git Bash gotcha:** it rewrites `/regicide`-like values in env vars into Windows paths. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/regicide npm run build`.
 
 ## Conventions and gotchas

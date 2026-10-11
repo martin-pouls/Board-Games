@@ -9,6 +9,8 @@ export type CommonErrorCode =
 	| 'not_found'
 	| 'conflict'
 	| 'rate_limited'
+	// sent by the access gate in front of the apps, not by the game server
+	| 'login_required'
 	| 'internal';
 
 /** Error codes the client produces itself (never sent by the server). */

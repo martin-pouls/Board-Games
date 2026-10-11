@@ -256,3 +256,33 @@ func TestSocketLimits(t *testing.T) {
 	wg.Wait()
 	assertRateLimited(t, connect()) // sockets closed, but 3 upgrades used the burst
 }
+
+func TestLimiter(t *testing.T) {
+	clock := &fakeClock{t: time.Unix(1_000_000, 0)}
+	l := NewLimiter(Rate{Burst: 2, Every: time.Minute}, clock.now)
+	req := func(ip string) *http.Request {
+		r := httptest.NewRequest(http.MethodPost, "/login", nil)
+		r.Header.Set("X-Forwarded-For", ip)
+		return r
+	}
+	for i := range 2 {
+		if wait := l.Take(req("203.0.113.7")); wait != 0 {
+			t.Fatalf("take %d: wait %v, want 0", i, wait)
+		}
+	}
+	if wait := l.Take(req("203.0.113.7")); wait != time.Minute {
+		t.Fatalf("third take: wait %v, want 1m", wait)
+	}
+	if wait := l.Take(req("203.0.113.8")); wait != 0 {
+		t.Fatalf("other client: wait %v, want 0", wait)
+	}
+	for range 5 {
+		if wait := l.Take(req("127.0.0.1")); wait != 0 {
+			t.Fatalf("loopback limited: wait %v", wait)
+		}
+	}
+	clock.advance(time.Minute)
+	if wait := l.Take(req("203.0.113.7")); wait != 0 {
+		t.Fatalf("after refill: wait %v, want 0", wait)
+	}
+}

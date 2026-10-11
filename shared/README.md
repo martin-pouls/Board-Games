@@ -17,7 +17,7 @@ Adapters and `cmd/server` may use any package. `core/service` may use `idgen` an
 
 ## frontend (`@board-games/shared`)
 
-Svelte/TS source compiled by each app as part of its own build, not a built package: wire and protocol helpers, `GameSocket` (WS connection with reconnect), the lobby REST client, the session store, `AppFrame` (All games link, theme toggle, imprint and privacy footer), `ShareInvite`, `ConnectionBanner`, `cardMotion` (headless card flights between hand, table and off-screen, presentation only), and copies of the shadcn `button`/`input` it needs.
+Svelte/TS source compiled by each app as part of its own build, not a built package: wire and protocol helpers, `GameSocket` (WS connection with reconnect), the lobby REST client, `login.ts` (reloads the page when the access gate answers 401 `login_required`, so the browser hits the login redirect), the session store, `AppFrame` (All games link, theme toggle, imprint and privacy footer), `ShareInvite`, `ConnectionBanner`, `cardMotion` (headless card flights between hand, table and off-screen, presentation only), and copies of the shadcn `button`/`input` it needs.
 
 An app wires it up in four places (see `regicide/frontend`):
 

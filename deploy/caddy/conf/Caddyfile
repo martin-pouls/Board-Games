@@ -1,19 +1,19 @@
-# Shared reverse proxy for everything on yoshi-und-kruemli.de. Lives in /opt/caddy on the server
-# (installed by deploy/setup-server.sh). Every deploy (CI or deploy/deploy.sh) copies each
-# <app>/deploy/<app>.caddy into sites/ and reloads Caddy. HTTPS certificates are obtained and
-# renewed automatically (Let's Encrypt).
+# Shared reverse proxy for everything on yoshi-und-kruemli.de and martin-pouls.de (same site on
+# both). Lives in /opt/caddy on the server (installed by deploy/setup-server.sh). Every deploy (CI
+# or deploy/deploy.sh) copies each <app>/deploy/<app>.caddy into sites/ and reloads Caddy. HTTPS
+# certificates are obtained and renewed automatically (Let's Encrypt). The site itself (the gate,
+# the snippets, the root) is in common.caddy, which the local stack (deploy/local/) uses too.
 
-yoshi-und-kruemli.de {
-	encode zstd gzip
-	import /etc/caddy/sites/*.caddy
+import common.caddy
 
-	# The start page links to every game.
-	redir / /board-games/
-	handle {
-		respond "Not found" 404
-	}
+yoshi-und-kruemli.de, martin-pouls.de {
+	import site
 }
 
 www.yoshi-und-kruemli.de {
 	redir https://yoshi-und-kruemli.de{uri} permanent
+}
+
+www.martin-pouls.de {
+	redir https://martin-pouls.de{uri} permanent
 }

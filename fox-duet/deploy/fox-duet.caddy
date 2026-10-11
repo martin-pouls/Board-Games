@@ -2,5 +2,7 @@
 # The prefix is stripped, so the Go server serves /api, /ws and the SPA at its root.
 redir /fox-duet /fox-duet/
 handle_path /fox-duet/* {
+	# Password protected: the gate snippet in deploy/caddy/conf/common.caddy.
+	import gate
 	reverse_proxy fox-duet:8080
 }

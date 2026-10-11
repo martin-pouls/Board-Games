@@ -1,8 +1,20 @@
 # Start page site snippet imported by the shared Caddyfile (copied to /opt/caddy/conf/sites/ by every deploy).
 # The prefix is stripped, so the container serves the static build at its root.
 redir /board-games /board-games/
+# The file server would add the trailing slash itself, but without the stripped prefix.
+redir /board-games/impressum /board-games/impressum/
+redir /board-games/datenschutz /board-games/datenschutz/
 handle_path /board-games/* {
-	reverse_proxy start-page:8080
+	# The legal pages stay public (the login page links to them), with their assets.
+	@public path /impressum* /datenschutz* /_app/* /favicon.svg /robots.txt
+	handle @public {
+		reverse_proxy start-page:8080
+	}
+	# Everything else is password protected: the gate snippet in deploy/caddy/conf/common.caddy.
+	handle {
+		import gate
+		reverse_proxy start-page:8080
+	}
 }
 
 # The start page used to be /card-games/: keep old bookmarks working ({uri} is the rest after the prefix;

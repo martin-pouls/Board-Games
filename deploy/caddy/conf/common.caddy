@@ -1,0 +1,25 @@
+# Everything the site does, shared by the server's Caddyfile (next to this file) and the local
+# stack's (deploy/local/Caddyfile): they differ only in the site addresses.
+
+# The password check (gate/): a protected app's snippet puts "import gate" in its handle_path.
+# Without a valid login cookie the gate answers page loads with a redirect to /gate/login and
+# everything else with 401. Inside handle_path the URI is already stripped, so the gate gets the
+# original one for the redirect back after the login. Paths that don't import it stay public.
+(gate) {
+	forward_auth gate:8080 {
+		uri /verify
+		header_up X-Forwarded-Uri {http.request.orig_uri}
+	}
+}
+
+# The site: every app's snippet (copied to sites/ by each deploy), then the root.
+(site) {
+	encode zstd gzip
+	import /etc/caddy/sites/*.caddy
+
+	# The start page links to every game.
+	redir / /board-games/
+	handle {
+		respond "Not found" 404
+	}
+}

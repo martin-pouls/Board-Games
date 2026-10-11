@@ -1,5 +1,6 @@
 # Technical
-- Access layer: shared password, plan in [ACCESS-LAYER.md](ACCESS-LAYER.md).
+- Gate rollout on the server (works in the local stack): write a passwords file outside the repo (e.g. `~/gate-passwords`), commit, run `GATE_PASSWORDS=~/gate-passwords deploy/setup-server.sh` (new Caddyfile + passwords), then push to `main` (CI deploys the gate and the protected apps). See [deploy/README.md](deploy/README.md#password-gate).
+- GHCR Cleanup Action
 
 ## WebSocket review
 - Half-dead sockets on phones (medium): `reconnectNow` in `shared/frontend/src/connection.svelte.ts` does nothing while `this.ws` is set, so after sleep or a network switch the socket looks open and the next action fails with `timeout` after 10s. Fix: on `visibilitychange` to visible after being hidden for a while, close and reopen the socket.

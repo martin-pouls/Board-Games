@@ -29,3 +29,7 @@ data/
 
 # Playwright MCP screenshots and snapshots
 .playwright-mcp/
+
+# Local stack state (deploy/local.sh): Caddy snippets, gate secret and passwords
+deploy/local/.sites/
+deploy/local/.gate/

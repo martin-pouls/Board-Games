@@ -1,0 +1,21 @@
+# The local stack's Caddy (deploy/local.sh), like deploy/caddy/compose.yaml on the server but on
+# port 8000 with plain http. deploy/local.sh copies the app snippets into .sites/.
+name: caddy-local
+
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy-local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../caddy/conf/common.caddy:/etc/caddy/common.caddy:ro
+      - ./.sites:/etc/caddy/sites:ro
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
