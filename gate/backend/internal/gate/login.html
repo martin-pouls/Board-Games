@@ -72,11 +72,14 @@ input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid 
 p.error { margin: .75rem 0 0; color: var(--error); font-size: .875rem; }
 footer { display: flex; gap: 1rem; font-size: .875rem; }
 footer a { color: var(--muted); }
+/* Where the start page has it: top right of its centred 48rem column (1rem padding, nudged .25rem out). */
 #theme-toggle {
-  position: fixed; top: .75rem; right: .75rem; width: 2.25rem; height: 2.25rem; margin: 0; padding: 0;
+  position: absolute; top: .75rem; right: max(.75rem, calc(50% - 24rem + .75rem));
+  width: 2rem; height: 2rem; margin: 0; padding: 0;
   display: none; align-items: center; justify-content: center;
   color: var(--fg); background: transparent; border-radius: .5rem;
 }
+@media (min-width: 40rem) { #theme-toggle { top: 1.5rem; } }
 #theme-toggle:hover { background: var(--border); }
 [data-theme] #theme-toggle { display: flex; }
 #theme-toggle svg { width: 1rem; height: 1rem; }
