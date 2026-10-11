@@ -1,0 +1,13 @@
+# Applies to <app>/Dockerfile (BuildKit reads <Dockerfile>.dockerignore). The build context is
+# the repository root, so paths are from the root: only this app and shared/ are sent.
+*
+!the-crew
+!shared
+**/node_modules
+**/build
+**/.svelte-kit
+**/backend/data
+**/backend/bin
+**/*.db
+**/*.db-shm
+**/*.db-wal
