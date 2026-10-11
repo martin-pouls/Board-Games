@@ -206,14 +206,14 @@ func (g *Game) NextMission(by PlayerID, rng RNG) error {
 	return nil
 }
 
-// BackToLobby returns the crew to the lobby (host, debrief). After a completed mission, the next
-// unfinished mission is selected. Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase.
+// BackToLobby returns the crew to the lobby (host, debrief). After a won attempt, the next
+// unfinished mission is selected; after a loss the mission stays selected (rules §16). Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase.
 // Emits BackInLobby.
 func (g *Game) BackToLobby(by PlayerID) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if g.Logbook[g.Mission].Completed {
+	if r := g.Attempt.Result; r != nil && r.Success {
 		g.Mission = g.nextUnfinished()
 	}
 	g.Phase = PhaseLobby

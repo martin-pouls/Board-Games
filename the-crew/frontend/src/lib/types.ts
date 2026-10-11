@@ -225,6 +225,8 @@ export interface Attempt {
 	objectives: ObjectiveView[];
 	/** Mission 11: the silenced seat, else -1. */
 	silenced: number;
+	/** Step pick, for the commander: the seats they may pick. */
+	pickable: number[];
 	poll: Poll | null;
 	pass: Pass | null;
 	exchange: Exchange | null;

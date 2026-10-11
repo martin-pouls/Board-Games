@@ -159,9 +159,8 @@ describe('fixtures', () => {
 			// Turn is -1 outside play and draft.
 			if (a.step !== 'play' && a.step !== 'draft') expect(a.turn).toBe(-1);
 			else expect(a.turn).toBeGreaterThanOrEqual(0);
-			// The last trick is shown only while the next trick has no card yet (or after the end).
-			if (a.lastTrick) expect(a.trick.length === 0 || over).toBe(true);
-			if (a.trick.length > 0) expect(a.lastTrick).toBeNull();
+			// The last completed trick stays visible during the next one (rules §16).
+			expect(a.lastTrick !== null).toBe(a.trickNumber > 1);
 			// Communication is not offered mid-trick, over, or outside play.
 			if (a.trick.length > 0 || over || a.step !== 'play') {
 				expect(a.actions).toEqual({ communicate: [], sendDistress: false, handover: false });

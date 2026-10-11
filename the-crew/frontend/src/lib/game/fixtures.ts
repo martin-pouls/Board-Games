@@ -544,6 +544,7 @@ interface AttemptOpts {
 	draftTurn?: number;
 	actors?: number[];
 	silenced?: number;
+	pickable?: number[];
 	/** Communications made, by seat. */
 	comms?: Record<number, Communication>;
 	result?: AttemptResult | null;
@@ -612,10 +613,8 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 		actions.handover = commander && prePlay && t.seats === 5 && m.golden;
 	}
 
-	const lastTrick =
-		t.tricks.length > 0 && (t.trick.length === 0 || over)
-			? { ...t.tricks[t.tricks.length - 1] }
-			: null;
+	// The last completed trick stays visible during the next one (rules §16).
+	const lastTrick = t.tricks.length > 0 ? { ...t.tricks[t.tricks.length - 1] } : null;
 
 	return {
 		number: o.number ?? 3,
@@ -636,6 +635,7 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 		tasks: o.tasks ?? [],
 		objectives: o.objectives ?? [],
 		silenced: o.silenced ?? -1,
+		pickable: o.pickable ?? [],
 		poll: o.poll ?? null,
 		pass: o.pass ?? null,
 		exchange: o.exchange ?? null,
@@ -716,6 +716,7 @@ export function pickView2(): PlayerView {
 		mission: 5,
 		step: 'pick',
 		pick: 'objective',
+		pickable: [1, 2],
 		objectives: [objectiveView(objective('winNoTricks', { owner: OWNER_UNASSIGNED }))],
 		poll: { kind: 'wellIll', answers: [null, true, null], objective: 0, task: -1 }
 	});

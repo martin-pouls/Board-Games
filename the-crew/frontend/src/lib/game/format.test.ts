@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	briefing,
 	describeEvents,
-	evenReachable,
 	positionText,
 	listText,
 	objectiveText,
@@ -210,7 +209,7 @@ describe('resultText', () => {
 			resultText(r({ reason: 'taskFailed', task: 0, seat: 0, trick: 2 }), members, 0, tasks)
 		).toBe('Task pink 7 failed: you won it in trick 2.');
 		expect(resultText(r({ reason: 'tokenOrder', task: 0, trick: 3 }), members, 0, tasks)).toBe(
-			'Task pink 7 was fulfilled out of token order in trick 3.'
+			'Token order broken in trick 3: task pink 7 can no longer come in its turn.'
 		);
 		expect(
 			resultText(r({ reason: 'objectiveFailed', objective: 0, trick: 5 }), members, 0, tasks, [
@@ -220,6 +219,9 @@ describe('resultText', () => {
 		expect(
 			resultText(r({ reason: 'objectiveFailed', objective: 0, trick: 5 }), members, 0, tasks)
 		).toBe('Failed in trick 5: a special objective.');
+		expect(
+			resultText(r({ reason: 'taskFailed', task: 0, seat: -1, trick: 13 }), members, 0, tasks)
+		).toBe('Task pink 7 failed: nobody won it.');
 		expect(resultText(r({ reason: 'gaveUp' }), members, 0, tasks)).toBe(
 			'The crew gave up this attempt.'
 		);
@@ -246,25 +248,5 @@ describe('describeEvents', () => {
 	});
 	it('names the dead zone', () => {
 		expect(positionText('')).toBe('position not told (dead zone)');
-	});
-});
-
-describe('evenReachable', () => {
-	const tasks = (...owners: number[]) => owners.map((owner) => ({ owner }));
-	it('allows any seat while the split stays reachable', () => {
-		// 6 tasks, 3 members, none given yet
-		expect([0, 1, 2].map((s) => evenReachable(tasks(-2, -2, -2, -2, -2, -2), 3, s))).toEqual([
-			true,
-			true,
-			true
-		]);
-	});
-	it('rejects a seat that makes an even split impossible', () => {
-		// seat 0 has 2, seats 1 and 2 none, 2 tasks left (this one and one more)
-		expect(evenReachable(tasks(0, 0, -2, -2), 3, 0)).toBe(false);
-		expect(evenReachable(tasks(0, 0, -2, -2), 3, 1)).toBe(true);
-		// the last task must go to the member with fewest
-		expect(evenReachable(tasks(0, 1, -2), 3, 0)).toBe(false);
-		expect(evenReachable(tasks(0, 1, -2), 3, 2)).toBe(true);
 	});
 });

@@ -93,6 +93,9 @@ func TestSilenceMission11(t *testing.T) {
 	if a.Step != StepPick || g.Pick() != PickSilence {
 		t.Fatalf("step %s pick %s", a.Step, g.Pick())
 	}
+	if !slices.Equal(g.Pickable(), []int{0, 1}) {
+		t.Fatalf("pickable %v: the humans", g.Pickable())
+	}
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(bob, []int{2}) }) // the dummy
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(bob, []int{0, 1}) })
 	mustFail(t, g, ErrNotCommander, func(g *Game) error { return g.PickSeats(alice, []int{0}) })
@@ -110,6 +113,9 @@ func TestRolesMission50(t *testing.T) {
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(bob, []int{1}) })
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(bob, []int{2, 2}) })
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(bob, []int{0, 3}) })
+	if !slices.Equal(g.Pickable(), []int{0, 1, 2}) {
+		t.Fatalf("pickable %v", g.Pickable())
+	}
 	must(t, g.PickSeats(bob, []int{2, 1})) // the dummy and the commander are allowed
 	a := g.Attempt
 	if a.Objectives[0].Owner != 2 || a.Objectives[1].Owner != 1 || a.Step != StepPlay {
@@ -139,6 +145,16 @@ func TestChosenMemberPollMission5(t *testing.T) {
 	must(t, g.AnswerPoll(carol, true))
 	if a.Step != StepPick || g.Pick() != PickObjective || !slices.Equal(g.Actors(), []int{3}) {
 		t.Fatalf("step %s pick %s", a.Step, g.Pick())
+	}
+	if !slices.Equal(g.Pickable(), []int{0, 1, 2}) {
+		t.Fatalf("pickable %v: not the commander", g.Pickable())
+	}
+	// Only the commander's view lists the pickable seats.
+	if v, _ := g.ViewFor(dave); !slices.Equal(v.Attempt.Pickable, []int{0, 1, 2}) {
+		t.Fatalf("commander's pickable %v", v.Attempt.Pickable)
+	}
+	if v, _ := g.ViewFor(alice); len(v.Attempt.Pickable) != 0 {
+		t.Fatalf("others see pickable %v", v.Attempt.Pickable)
 	}
 	mustFail(t, g, ErrInvalidSeat, func(g *Game) error { return g.PickSeats(dave, []int{3}) }) // not themselves
 	must(t, g.PickSeats(dave, []int{1}))
@@ -204,6 +220,9 @@ func TestCommanderDistributionMission24(t *testing.T) {
 	for _, id := range []PlayerID{alice, bob, carol} {
 		must(t, g.AnswerPoll(id, true))
 	}
+	if !slices.Equal(g.Pickable(), []int{0, 1, 2}) {
+		t.Fatalf("pickable %v: not the commander again", g.Pickable())
+	}
 	mustFail(t, g, ErrUnevenDistribution, func(g *Game) error { return g.PickSeats(dave, []int{3}) })
 	must(t, g.PickSeats(dave, []int{0}))
 	give(1)
@@ -213,8 +232,14 @@ func TestCommanderDistributionMission24(t *testing.T) {
 	for _, id := range []PlayerID{alice, bob, carol} {
 		must(t, g.AnswerPoll(id, true))
 	}
+	if !slices.Equal(g.Pickable(), []int{2}) {
+		t.Fatalf("pickable %v: only carol", g.Pickable())
+	}
 	mustFail(t, g, ErrUnevenDistribution, func(g *Game) error { return g.PickSeats(dave, []int{1}) })
 	must(t, g.PickSeats(dave, []int{2}))
+	if len(g.Pickable()) != 0 {
+		t.Fatal("nothing to pick while playing")
+	}
 	if a.Step != StepPlay {
 		t.Fatalf("step %s", a.Step)
 	}

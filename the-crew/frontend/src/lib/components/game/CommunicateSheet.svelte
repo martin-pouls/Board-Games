@@ -19,7 +19,8 @@
 		options: CommOption[];
 		deadZone: boolean;
 		disabled: boolean;
-		oncommunicate: (o: CommOption) => Promise<void>;
+		/** Resolves to false when the server refused; the sheet then stays open. */
+		oncommunicate: (o: CommOption) => Promise<boolean>;
 	} = $props();
 
 	let chosen = $state<CommOption | null>(null);
@@ -29,8 +30,7 @@
 
 	async function confirm() {
 		if (!chosen) return;
-		await oncommunicate(chosen);
-		open = false;
+		if (await oncommunicate(chosen)) open = false;
 	}
 </script>
 
@@ -39,7 +39,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Communicate a card</Dialog.Title>
 			<Dialog.Description>
-				Once per mission. The card goes face up in front of you until you play it.
+				Once per attempt. The card goes face up in front of you until you play it.
 				{deadZone
 					? 'Dead zone: nobody learns whether it is your highest, only or lowest card of its colour.'
 					: 'Everyone sees whether it is your highest, only or lowest card of its colour.'}

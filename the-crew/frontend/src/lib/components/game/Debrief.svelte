@@ -3,6 +3,7 @@
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import Rocket from '@lucide/svelte/icons/rocket';
 	import House from '@lucide/svelte/icons/house';
+	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardKey } from '#lib/game/cards.js';
@@ -24,8 +25,13 @@
 		attempt: Attempt;
 		busy: boolean;
 		connected: boolean;
-		run: (action: () => Promise<void>) => Promise<void>;
+		run: (action: () => Promise<void>) => Promise<boolean>;
 	} = $props();
+
+	let confirmEnd = $state(false);
+	async function endGame() {
+		if (await run(() => client.endGame())) confirmEnd = false;
+	}
 
 	const result = $derived(attempt.result);
 	const won = $derived(!!result?.success);
@@ -116,9 +122,38 @@
 				<House />Lobby
 			</Button>
 		</div>
+		<button
+			type="button"
+			class="self-center text-xs text-muted-foreground underline-offset-2 hover:text-destructive hover:underline disabled:opacity-50"
+			{disabled}
+			onclick={() => (confirmEnd = true)}
+		>
+			End the game for everyone
+		</button>
 	{:else}
 		<p class="text-center text-sm text-muted-foreground">
 			Waiting for {host?.name ?? 'the host'} to continue.
 		</p>
 	{/if}
 </section>
+
+<AlertDialog.Root bind:open={confirmEnd}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>End the game?</AlertDialog.Title>
+			<AlertDialog.Description>
+				The session closes for everyone. The logbook of this game is not kept.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel disabled={busy}>Keep playing</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class="bg-destructive text-white hover:bg-destructive/90"
+				{disabled}
+				onclick={endGame}
+			>
+				End game
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

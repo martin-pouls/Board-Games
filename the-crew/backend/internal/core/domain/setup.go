@@ -252,22 +252,12 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 		}
 	}
 	s := seats[0]
-	switch it.kind {
-	case itemSilence:
-		if a.Members[s].Dummy {
-			return fmt.Errorf("%w: only a human can be silenced", ErrInvalidSeat)
-		}
-	case itemRoles:
-		if seats[0] == seats[1] {
-			return fmt.Errorf("%w: the roles need two different members", ErrInvalidSeat)
-		}
-	case itemChosen, itemDecision:
-		if s == a.Commander {
-			return fmt.Errorf("%w: the commander must choose another member", ErrInvalidSeat)
-		}
-	case itemDistribute:
-		if !a.evenReachable(s) {
-			return fmt.Errorf("%w: an even split would no longer be possible", ErrUnevenDistribution)
+	if it.kind == itemRoles && seats[0] == seats[1] {
+		return fmt.Errorf("%w: the roles need two different members", ErrInvalidSeat)
+	}
+	for _, s := range seats {
+		if err := a.pickError(it, s); err != nil {
+			return err
 		}
 	}
 
@@ -300,6 +290,42 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 	g.advanceSetup()
 	g.commit()
 	return nil
+}
+
+// pickError reports why seat s may not be picked for the pending item, or nil.
+func (a *Attempt) pickError(it setupItem, s int) error {
+	switch it.kind {
+	case itemSilence:
+		if a.Members[s].Dummy {
+			return fmt.Errorf("%w: only a human can be silenced", ErrInvalidSeat)
+		}
+	case itemChosen, itemDecision:
+		if s == a.Commander {
+			return fmt.Errorf("%w: the commander must choose another member", ErrInvalidSeat)
+		}
+	case itemDistribute:
+		if !a.evenReachable(s) {
+			return fmt.Errorf("%w: an even split would no longer be possible", ErrUnevenDistribution)
+		}
+	}
+	return nil
+}
+
+// Pickable returns the seats the commander may pick now in StepPick (for the roles of mission
+// 50, each seat that may take a role); empty in any other step. Never nil.
+func (g *Game) Pickable() []int {
+	out := []int{}
+	a := g.Attempt
+	if g.Phase != PhasePlaying || a.Step != StepPick {
+		return out
+	}
+	it := g.pendingItem()
+	for s := range a.Members {
+		if a.pickError(it, s) == nil {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // evenReachable reports whether, after giving the next task to seat s, the commander's

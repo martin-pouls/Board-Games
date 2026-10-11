@@ -114,13 +114,16 @@
 			: [...selectedTasks, t.id].slice(-2);
 	}
 
-	async function run(action: () => Promise<void>) {
-		if (busy) return;
+	/** Runs an action; false when it failed (the error is shown as a toast). */
+	async function run(action: () => Promise<void>): Promise<boolean> {
+		if (busy) return false;
 		busy = true;
 		try {
 			await action();
+			return true;
 		} catch (e) {
 			toast.error(errorText(e instanceof ActionError ? e.code : 'internal'));
+			return false;
 		} finally {
 			busy = false;
 		}

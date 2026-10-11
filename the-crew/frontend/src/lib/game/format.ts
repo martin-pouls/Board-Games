@@ -206,17 +206,14 @@ export function resultText(
 		case 'taskFailed': {
 			const t = tasks[r.task];
 			const card = t?.card ? cardLabel(t.card) : 'a task';
-			const who = r.seat >= 0 ? seatName(members, r.seat, you) : 'the wrong member';
-			return r.trick > 0
-				? `Task ${card} failed: ${who === 'You' ? 'you' : who} won it in trick ${r.trick}.`
-				: `Task ${card} failed.`;
+			if (r.seat < 0) return `Task ${card} failed: nobody won it.`;
+			const who = seatName(members, r.seat, you);
+			return `Task ${card} failed: ${who === 'You' ? 'you' : who} won it in trick ${r.trick}.`;
 		}
 		case 'tokenOrder': {
 			const t = tasks[r.task];
 			const card = t?.card ? cardLabel(t.card) : 'a task';
-			return r.trick > 0
-				? `Task ${card} was fulfilled out of token order in trick ${r.trick}.`
-				: `Task ${card} was fulfilled out of token order.`;
+			return `Token order broken in trick ${r.trick}: task ${card} can no longer come in its turn.`;
 		}
 		case 'objectiveFailed': {
 			const o = objectives[r.objective];
@@ -295,21 +292,4 @@ export function describeEvents(events: GameEvent[], members: Member[], you: numb
 		}
 	}
 	return parts.slice(-2).join(' ');
-}
-
-/**
- * Commander's distribution: whether giving the task being distributed to seat s still allows an
- * even split (nobody with two tasks more than another). Mirrors the server's check.
- */
-export function evenReachable(tasks: { owner: number }[], members: number, s: number): boolean {
-	const counts = new Array<number>(members).fill(0);
-	let left = -1; // the task being given
-	for (const t of tasks) {
-		if (t.owner >= 0) counts[t.owner]++;
-		else left++;
-	}
-	counts[s]++;
-	const top = Math.max(...counts);
-	const need = counts.reduce((sum, c) => sum + Math.max(0, top - 1 - c), 0);
-	return need <= left;
 }

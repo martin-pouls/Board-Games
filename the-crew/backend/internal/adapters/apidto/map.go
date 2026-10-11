@@ -121,6 +121,7 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 		Tasks:       make([]Task, 0, len(a.Tasks)),
 		Objectives:  make([]ObjectiveView, 0, len(a.Objectives)),
 		Silenced:    a.Silenced,
+		Pickable:    ints(a.Pickable),
 		Trick:       fromPlays(a.Trick),
 		TrickLeader: a.TrickLeader,
 		Distress:    a.Distress,

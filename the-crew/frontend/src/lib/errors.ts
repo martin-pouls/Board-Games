@@ -19,7 +19,7 @@ const messages: Record<ApiErrorCode, string> = {
 	card_not_in_hand: "That card isn't in the hand.",
 	must_follow_suit: 'You must follow the colour that was led.',
 	cannot_communicate: "You can't communicate right now.",
-	already_communicated: 'You have already communicated this mission.',
+	already_communicated: 'You have already communicated in this attempt.',
 	invalid_position: "That statement isn't true for this card.",
 	invalid_seat: "That crew member can't be chosen.",
 	invalid_task: "That task can't be chosen.",

@@ -195,6 +195,7 @@ type Attempt struct {
 	Tasks       []Task          `json:"tasks"`
 	Objectives  []ObjectiveView `json:"objectives"`
 	Silenced    int             `json:"silenced"` // mission 11: the silenced seat, else -1
+	Pickable    []int           `json:"pickable"` // step pick, for the commander: the seats they may pick; never null
 	Poll        *Poll           `json:"poll"`
 	Pass        *Pass           `json:"pass"`
 	Exchange    *Exchange       `json:"exchange"`

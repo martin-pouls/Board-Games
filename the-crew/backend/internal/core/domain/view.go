@@ -46,14 +46,15 @@ type AttemptView struct {
 	Playable    []Card // the cards the viewer may play now: their own, or the dummy's when they act for it
 	Tasks       []TaskView
 	Objectives  []ObjectiveView
-	Silenced    int // mission 11: the silenced seat, else -1
+	Silenced    int   // mission 11: the silenced seat, else -1
+	Pickable    []int // StepPick, for the commander: the seats they may pick
 	Poll        *PollView
 	Pass        *PassView
 	Exchange    *ExchangeView // the viewer's side of the last pass or draw
 	Trick       []Play        // the trick in progress, in play order
 	TrickLeader int
 	LastTrick   *TrickRecord // the last completed trick (public: everyone saw it played)
-	Distress    bool         // the distress signal was used for this mission (logbook)
+	Distress    bool         // the distress signal is active: used for this unfinished mission (rules §9)
 	Actions     Actions      // what the viewer may do now besides the step's action
 	Result      *AttemptResult
 }
@@ -188,13 +189,17 @@ func (g *Game) attemptView(seat int) *AttemptView {
 		Hand:        cloneCards(a.Members[seat].Hand),
 		Playable:    []Card{},
 		Silenced:    a.Silenced,
+		Pickable:    []int{},
 		Trick:       slices.Clone(a.Trick.Plays),
 		TrickLeader: a.Trick.Leader,
-		Distress:    g.Logbook[g.Mission].Distress,
+		Distress:    g.distressActive(),
 		Result:      cloneResult(a.Result),
 	}
 	if v.Trick == nil {
 		v.Trick = []Play{}
+	}
+	if seat == a.Commander {
+		v.Pickable = g.Pickable()
 	}
 	switch a.Step {
 	case StepPlay:

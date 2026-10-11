@@ -37,7 +37,7 @@ type LogEntry struct {
 
 // Total is the logbook count: the attempts, plus one with the distress signal.
 func (e LogEntry) Total() int {
-	if e.Distress {
+	if e.Distress && e.Completed {
 		return e.Attempts + 1
 	}
 	return e.Attempts
@@ -105,6 +105,13 @@ func (g *Game) MissionDef() MissionDef {
 
 // nextUnfinished returns the lowest mission number that is not completed (the last mission if
 // all are).
+// distressActive reports whether the distress signal is active for the selected mission: it was
+// used and the mission is not completed yet (rules §9).
+func (g *Game) distressActive() bool {
+	e := g.Logbook[g.Mission]
+	return e.Distress && !e.Completed
+}
+
 func (g *Game) nextUnfinished() int {
 	n := Missions(g.Edition)
 	for i := 1; i <= n; i++ {

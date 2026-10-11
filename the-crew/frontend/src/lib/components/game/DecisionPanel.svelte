@@ -6,7 +6,7 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardLabel } from '#lib/game/cards.js';
-	import { evenReachable, listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
+	import { listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
 	import TaskCard from './TaskCard.svelte';
@@ -30,7 +30,8 @@
 		selectedTasks: number[];
 		busy: boolean;
 		connected: boolean;
-		run: (action: () => Promise<void>) => Promise<void>;
+		/** Runs an action; false when it failed (the error is shown already). */
+		run: (action: () => Promise<void>) => Promise<boolean>;
 	} = $props();
 
 	const me = $derived(attempt.seat);
@@ -107,28 +108,14 @@
 	);
 
 	let roles = $state<number[]>([]);
+	// A derived string changes only with the pick itself, not with every new view object.
+	const pickKey = $derived(`${attempt.step}|${attempt.pick}`);
 	$effect(() => {
-		void attempt.step;
+		void pickKey;
 		roles = [];
 	});
-	/** The seats the commander may pick now. */
-	const pickable = $derived(
-		attempt.members
-			.filter((m) => {
-				switch (attempt.pick) {
-					case 'silence':
-						return !m.dummy;
-					case 'objective':
-					case 'decision':
-						return m.seat !== attempt.commander;
-					case 'distribute':
-						return evenReachable(attempt.tasks, attempt.members.length, m.seat);
-					default:
-						return true;
-				}
-			})
-			.map((m) => m.seat)
-	);
+	/** The seats the commander may pick now (the server applies the rules, e.g. the even split). */
+	const pickable = $derived(attempt.pickable);
 	function pickSeat(s: number) {
 		if (attempt.pick !== 'roles') {
 			void run(() => client.pick([s]));
@@ -150,9 +137,10 @@
 	async function handover(to: number) {
 		const t = handoverTask;
 		if (!t) return;
-		await run(() => client.handover(t.id, to));
-		handoverOpen = false;
-		handoverTask = null;
+		if (await run(() => client.handover(t.id, to))) {
+			handoverOpen = false;
+			handoverTask = null;
+		}
 	}
 </script>
 

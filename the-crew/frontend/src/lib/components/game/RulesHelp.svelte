@@ -54,7 +54,7 @@
 				<h3 class="mb-1 font-semibold">Communication</h3>
 				<ul class="list-disc pl-5">
 					<li>
-						Once per mission, before a trick starts, you may show one card: your highest (▲), only
+						Once per attempt, before a trick starts, you may show one card: your highest (▲), only
 						(●) or lowest (▼) card of its colour. Never a rocket.
 					</li>
 					<li>In a dead zone (?) the position stays secret.</li>

@@ -146,7 +146,7 @@ func TestLogbookSortedByMission(t *testing.T) {
 	want := []LogEntry{
 		{Mission: 2, Attempts: 1, Distress: true, Completed: true, Total: 2},
 		{Mission: 12, Attempts: 3, Completed: true, Total: 3},
-		{Mission: 40, Attempts: 2, Distress: true, Total: 3},
+		{Mission: 40, Attempts: 2, Distress: true, Total: 2}, // the +1 counts only on completion,
 	}
 	if got := FromView(v).Logbook; !reflect.DeepEqual(got, want) {
 		t.Fatalf("logbook = %+v, want %+v", got, want)
@@ -470,7 +470,7 @@ func TestPassAndExchange(t *testing.T) {
 	if g.Logbook[1].Distress != true {
 		t.Error("logbook should note the signal")
 	}
-	if l := viewOf(t, g, 0).Logbook; len(l) != 1 || !l[0].Distress || l[0].Total != 1 || !viewOf(t, g, 0).Attempt.Distress {
+	if l := viewOf(t, g, 0).Logbook; len(l) != 1 || !l[0].Distress || l[0].Total != 0 || !viewOf(t, g, 0).Attempt.Distress {
 		t.Errorf("logbook = %+v", l)
 	}
 }

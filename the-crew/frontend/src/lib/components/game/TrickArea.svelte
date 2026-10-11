@@ -35,9 +35,10 @@
 		})
 	);
 
-	// A trick in progress hides the peek again once it changes.
+	// A trick in progress hides the peek again once a card is played.
+	const playCount = $derived(attempt.trick.length);
 	$effect(() => {
-		void attempt.trick.length;
+		void playCount;
 		peek = false;
 	});
 
