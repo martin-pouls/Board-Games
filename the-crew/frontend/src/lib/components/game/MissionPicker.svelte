@@ -27,7 +27,7 @@
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
 	import Clock from '@lucide/svelte/icons/clock';
-	import SignalZero from '@lucide/svelte/icons/signal-zero';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Target from '@lucide/svelte/icons/target';
 	import UserStar from '@lucide/svelte/icons/user-star';
 	import { cn } from '#lib/utils.js';
@@ -76,7 +76,7 @@
 
 {#snippet marker(kind: MarkerKind)}
 	{#if kind === 'deadZone'}
-		<SignalZero class="size-3" />
+		<EyeOff class="size-3" />
 	{:else if kind === 'disruption'}
 		<Clock class="size-3" />
 	{:else if kind === 'objective'}

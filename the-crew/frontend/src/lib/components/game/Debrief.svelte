@@ -35,7 +35,9 @@
 	const disabled = $derived(busy || !connected);
 	const lastMission = $derived(view.mission >= 50);
 	const reason = $derived(
-		result ? resultText(result, attempt.members, attempt.seat, attempt.tasks) : ''
+		result
+			? resultText(result, attempt.members, attempt.seat, attempt.tasks, attempt.objectives)
+			: ''
 	);
 	// Seat order, starting with the viewer.
 	const members = $derived(

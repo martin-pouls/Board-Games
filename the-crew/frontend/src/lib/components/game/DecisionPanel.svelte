@@ -6,7 +6,7 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardLabel } from '#lib/game/cards.js';
-	import { listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
+	import { evenReachable, listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
 	import TaskCard from './TaskCard.svelte';
@@ -121,6 +121,8 @@
 					case 'objective':
 					case 'decision':
 						return m.seat !== attempt.commander;
+					case 'distribute':
+						return evenReachable(attempt.tasks, attempt.members.length, m.seat);
 					default:
 						return true;
 				}

@@ -195,11 +195,12 @@ export function resultText(
 	r: AttemptResult,
 	members: Member[],
 	you: number,
-	tasks: { card: Card | null }[]
+	tasks: { card: Card | null }[],
+	objectives: Objective[] = []
 ): string {
 	switch (r.reason) {
 		case 'completed':
-			return 'Mission accomplished. Every task is fulfilled.';
+			return 'Every task and objective is fulfilled.';
 		case 'gaveUp':
 			return 'The crew gave up this attempt.';
 		case 'taskFailed': {
@@ -217,10 +218,13 @@ export function resultText(
 				? `Task ${card} was fulfilled out of token order in trick ${r.trick}.`
 				: `Task ${card} was fulfilled out of token order.`;
 		}
-		case 'objectiveFailed':
-			return r.trick > 0
-				? `A special objective failed in trick ${r.trick}.`
-				: 'A special objective failed.';
+		case 'objectiveFailed': {
+			const o = objectives[r.objective];
+			const what = o
+				? `${ownerText(o.owner, members, you)}: ${objectiveText(o)}`
+				: 'a special objective';
+			return r.trick > 0 ? `Failed in trick ${r.trick}: ${what}.` : `Failed: ${what}.`;
+		}
 	}
 }
 
@@ -291,4 +295,21 @@ export function describeEvents(events: GameEvent[], members: Member[], you: numb
 		}
 	}
 	return parts.slice(-2).join(' ');
+}
+
+/**
+ * Commander's distribution: whether giving the task being distributed to seat s still allows an
+ * even split (nobody with two tasks more than another). Mirrors the server's check.
+ */
+export function evenReachable(tasks: { owner: number }[], members: number, s: number): boolean {
+	const counts = new Array<number>(members).fill(0);
+	let left = -1; // the task being given
+	for (const t of tasks) {
+		if (t.owner >= 0) counts[t.owner]++;
+		else left++;
+	}
+	counts[s]++;
+	const top = Math.max(...counts);
+	const need = counts.reduce((sum, c) => sum + Math.max(0, top - 1 - c), 0);
+	return need <= left;
 }
