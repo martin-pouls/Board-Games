@@ -2,6 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import Bot from '@lucide/svelte/icons/bot';
 	import Crown from '@lucide/svelte/icons/crown';
 	import DoorOpen from '@lucide/svelte/icons/door-open';
 	import Flag from '@lucide/svelte/icons/flag';
@@ -11,13 +12,16 @@
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import { getMissions } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 
 	import type { GameClient } from '#lib/game/client.js';
 	import { cn } from '#lib/utils.js';
-	import type { PlayerView } from '#lib/types.js';
+	import type { MissionDef, PlayerView } from '#lib/types.js';
 	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
+	import MissionBriefing from './MissionBriefing.svelte';
+	import MissionPicker from './MissionPicker.svelte';
 
 	let {
 		client,
@@ -35,6 +39,32 @@
 	const players = $derived([...view.players].sort((a, b) => a.seat - b.seat));
 	/** The host is still alone in the lobby. */
 	const alone = $derived(view.players.length === 1);
+
+	/** The mission table, for the grid markers; the lobby works without it. */
+	let catalogue = $state<MissionDef[] | null>(null);
+	let catalogueLoading = $state(true);
+
+	function loadCatalogue() {
+		catalogueLoading = true;
+		getMissions().then(
+			(c) => {
+				catalogue = c.missions;
+				catalogueLoading = false;
+			},
+			() => {
+				catalogueLoading = false;
+			}
+		);
+	}
+	loadCatalogue();
+
+	const def = $derived(
+		view.missionDef ?? catalogue?.find((m) => m.number === view.mission) ?? null
+	);
+	const entry = $derived(view.logbook.find((e) => e.mission === view.mission));
+	/** Attempts of all missions, plus one for each distress signal. */
+	const logbookTotal = $derived(view.logbook.reduce((n, e) => n + e.total, 0));
+	const canStart = $derived(connected && !busy && view.players.length >= 2);
 
 	async function run(action: () => Promise<void>) {
 		if (busy) return;
@@ -158,7 +188,47 @@
 				{/each}
 			</ul>
 			{#if view.players.length === 2}
-				<p class="mt-3 text-sm text-muted-foreground">JARVIS joins as the third crew member</p>
+				<p class="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+					<Bot class="size-4 shrink-0" />
+					JARVIS joins as the third crew member
+				</p>
+			{/if}
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root class="[--card-spacing:--spacing(3)]">
+		<Card.Header>
+			<Card.Title class="flex items-baseline gap-2">
+				Mission
+				<span
+					class="ml-auto text-sm font-normal text-muted-foreground"
+					title="Attempts, plus one for each mission where the distress signal was used"
+				>
+					Logbook total: <span class="font-semibold text-foreground">{logbookTotal}</span>
+				</span>
+			</Card.Title>
+			{#if !isHost}
+				<Card.Description>{host?.name ?? 'The host'} picks the mission.</Card.Description>
+			{/if}
+		</Card.Header>
+		<Card.Content class="flex flex-col gap-3">
+			<MissionPicker
+				selected={view.mission}
+				logbook={view.logbook}
+				missions={catalogue}
+				editable={isHost}
+				disabled={!connected || busy}
+				onselect={(n) => {
+					if (n !== view.mission) run(() => client.selectMission(n));
+				}}
+			/>
+			<hr class="border-border" />
+			<MissionBriefing mission={view.mission} {def} {entry} loading={catalogueLoading} />
+			{#if !catalogueLoading && !catalogue}
+				<p class="text-xs text-muted-foreground">
+					The mission table could not be loaded, so the grid shows no markers.
+					<button type="button" class="underline" onclick={loadCatalogue}>Try again</button>
+				</p>
 			{/if}
 		</Card.Content>
 	</Card.Root>
@@ -167,9 +237,13 @@
 		class="sticky bottom-0 -mx-3 mt-auto bg-background/95 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur"
 	>
 		{#if isHost}
-			<!-- Placeholder: starting a mission arrives with the game flow (implementation plan WP5/WP9). -->
-			<Button size="lg" class="h-12 w-full text-base" disabled>
-				{view.players.length < 2 ? 'Waiting for a crew member…' : 'Start mission'}
+			<Button
+				size="lg"
+				class="h-12 w-full text-base"
+				disabled={!canStart}
+				onclick={() => run(() => client.startMission())}
+			>
+				{view.players.length < 2 ? 'Waiting for a crew member…' : `Start mission ${view.mission}`}
 			</Button>
 		{:else}
 			<p class="flex h-12 items-center justify-center gap-2 text-muted-foreground">
