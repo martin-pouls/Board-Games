@@ -2,7 +2,8 @@
 	The frame of every game page: PageFrame with the "All games" link on the home screen, the theme
 	toggle wired to mode-watcher and the links to the start page's imprint and privacy pages. The
 	game's +layout.svelte renders it inside its ModeWatcher and Toaster. On the game page itself
-	(/g/[code]) the layout passes topBar={false}: its headers show HeaderThemeToggle instead.
+	(/g/[code]) the layout passes topBar={false}: its headers show HeaderThemeToggle instead. The
+	pages that do show the top bar (home, join) use a max-w-md column, so the bar is that wide too.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -39,6 +40,7 @@
 	onToggleTheme={toggleMode}
 	{wide}
 	{topBar}
+	topBarWidth="max-w-md"
 >
 	{@render children()}
 </PageFrame>

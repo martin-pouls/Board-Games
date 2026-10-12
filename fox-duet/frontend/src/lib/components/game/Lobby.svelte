@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -56,9 +57,6 @@
 		}
 	}
 
-	const headerAction =
-		'flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50';
-
 	/** Closes the lobby for everyone (host only); it moves to everyone's history. */
 	function endGame() {
 		return run(async () => {
@@ -82,50 +80,38 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3">
-	<header class="flex items-center gap-2">
-		<a
-			href={resolve('/')}
-			class="-ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground"
-			aria-label="Home"
-		>
-			<House class="size-5" />
-		</a>
+	<header class={headerRow}>
+		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<h1 class="text-lg font-semibold">Lobby</h1>
-		<div class="-mr-1 ml-auto flex items-center gap-1">
+		<div class="ml-auto flex items-center gap-1.5">
 			{#if alone}
 				<!-- A sole player cannot leave; closing affects nobody else, so no confirmation. -->
-				<button
-					type="button"
-					class={headerAction}
+				<HeaderButton
+					icon={X}
+					label="Close lobby"
+					showLabel
+					destructive
 					disabled={!connected || busy}
-					title="Close lobby"
 					onclick={endGame}
-				>
-					<X class="size-4" />
-					Close lobby
-				</button>
+				/>
 			{:else}
-				<button
-					type="button"
-					class={headerAction}
+				<HeaderButton
+					icon={DoorOpen}
+					label="Leave"
+					showLabel
+					destructive
 					disabled={busy}
-					title="Leave"
 					onclick={() => (confirmLeave = true)}
-				>
-					<DoorOpen class="size-4" />
-					Leave
-				</button>
+				/>
 				{#if isHost}
-					<button
-						type="button"
-						class={headerAction}
+					<HeaderButton
+						icon={Flag}
+						label="End game"
+						showLabel
+						destructive
 						disabled={!connected || busy}
-						title="End game"
 						onclick={() => (confirmEnd = true)}
-					>
-						<Flag class="size-4" />
-						End game
-					</button>
+					/>
 				{/if}
 			{/if}
 			<HeaderThemeToggle />

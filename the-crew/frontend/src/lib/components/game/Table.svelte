@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
@@ -147,41 +148,32 @@
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 sm:max-w-xl">
 	<header class="flex flex-col gap-1">
-		<div class="flex items-center gap-2 text-sm">
-			<a
-				href={resolve('/')}
-				class="-ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground"
-				aria-label="Home"
-			>
-				<House class="size-5" />
-			</a>
+		<div class={cn(headerRow, 'text-sm')}>
+			<HeaderButton icon={House} label="Home" href={resolve('/')} />
 			<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 			<span
 				class={cn('size-2 rounded-full', connected ? 'bg-success' : 'animate-pulse bg-amber-500')}
 				title={connected ? 'Connected' : 'Reconnecting'}
 			></span>
-			<button
-				type="button"
-				class="ml-auto rounded-md p-1 text-muted-foreground hover:text-foreground"
-				aria-label="Rules"
-				title="Rules"
+			<HeaderButton
+				class="ml-auto"
+				icon={BookOpen}
+				label="Rules"
 				onclick={() => (rulesOpen = true)}
-			>
-				<BookOpen class="size-5" />
-			</button>
+			/>
 			{#if playing}
-				<button
-					type="button"
-					class="flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
-					disabled={!connected}
+				<HeaderButton
+					icon={Flag}
+					label="Give up"
 					title="Give up this attempt"
+					showLabel
+					labelClass="max-[24rem]:sr-only"
+					destructive
+					disabled={!connected}
 					onclick={() => (confirmGiveUp = true)}
-				>
-					<Flag class="size-4" />
-					<span class="max-[24rem]:sr-only">Give up</span>
-				</button>
+				/>
 			{/if}
-			<HeaderThemeToggle class="-mr-1" />
+			<HeaderThemeToggle />
 		</div>
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 			<span class="font-display text-base font-bold">Mission {view.mission}</span>

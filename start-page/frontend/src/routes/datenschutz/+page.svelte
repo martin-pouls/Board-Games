@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { operator as controller, siteName } from '#lib/site.js';
 </script>
 
@@ -7,14 +6,7 @@
 	<title>Datenschutz · {siteName}</title>
 </svelte:head>
 
-<a
-	href={resolve('/')}
-	class="-ml-1 self-start rounded px-1 text-sm text-muted-foreground hover:text-foreground"
->
-	← {siteName}
-</a>
-
-<article lang="de" class="legal mt-4">
+<article lang="de" class="legal mt-2">
 	<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Datenschutzerklärung</h1>
 	<p class="text-sm text-muted-foreground">Stand: Oktober 2026</p>
 
@@ -210,8 +202,7 @@
 		Die Übersicht und die Spiele sind durch ein gemeinsames Passwort geschützt. Der Server
 		vergleicht das eingegebene Passwort mit den hinterlegten Passwörtern; das eingegebene Passwort
 		wird weder gespeichert noch protokolliert. Im Server-Protokoll stehen nur ein erfolgreicher oder
-		fehlgeschlagener Login, der Zeitpunkt und die Bezeichnung der Passwortgruppe (zum Beispiel
-		„Familie“).
+		fehlgeschlagener Login, der Zeitpunkt und die Bezeichnung der Passwortgruppe.
 	</p>
 	<p>
 		Nach erfolgreichem Login setzt der Server ein Cookie namens <code>bg_gate</code>, damit Sie das
@@ -237,10 +228,10 @@
 		nicht nötig, ein Spitzname genügt.
 	</p>
 	<p>
-		Spiele werden sieben Tage nach der letzten Aktivität automatisch mit allen zugehörigen Daten
-		gelöscht, bei „The Crew“ nach 30 Tagen, damit das Logbuch einer Kampagne erhalten bleibt.
-		Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO: Die Daten sind nötig, um Ihnen das gewünschte
-		Spiel bereitzustellen.
+		Spiele werden nach der letzten Aktivität automatisch mit allen zugehörigen Daten gelöscht: in
+		der Regel nach sieben Tagen, bei Spielen mit fortlaufender Kampagne nach 30 Tagen, damit der
+		Fortschritt erhalten bleibt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO: Die Daten sind
+		nötig, um Ihnen das gewünschte Spiel bereitzustellen.
 	</p>
 
 	<h3>Lokaler Speicher im Browser</h3>

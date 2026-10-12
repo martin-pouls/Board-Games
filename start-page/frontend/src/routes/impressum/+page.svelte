@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { operator, siteName } from '#lib/site.js';
 </script>
 
@@ -7,14 +6,7 @@
 	<title>Impressum · {siteName}</title>
 </svelte:head>
 
-<a
-	href={resolve('/')}
-	class="-ml-1 self-start rounded px-1 text-sm text-muted-foreground hover:text-foreground"
->
-	← {siteName}
-</a>
-
-<article lang="de" class="legal mt-4">
+<article lang="de" class="legal mt-2">
 	<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Impressum</h1>
 
 	<h2>Angaben gemäß § 5 DDG und § 18 Abs. 1 MStV</h2>

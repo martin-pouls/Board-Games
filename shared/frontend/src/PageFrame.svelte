@@ -13,6 +13,7 @@
 		onToggleTheme,
 		wide = false,
 		topBar = true,
+		topBarWidth,
 		start,
 		children
 	}: {
@@ -26,6 +27,9 @@
 		wide?: boolean;
 		/** false hides the top bar, for pages whose own header has the theme toggle (the games' table). */
 		topBar?: boolean;
+		/** A max-width class for the top bar, when the page's column is narrower than the frame's:
+		 *  the bar then lines up with it. */
+		topBarWidth?: string;
 		/** More items on the left of the top bar. */
 		start?: Snippet;
 		children: Snippet;
@@ -39,7 +43,9 @@
 	]}
 >
 	{#if topBar}
-		<TopBar {allGamesHref} {onToggleTheme} {start} />
+		<div class={['mx-auto w-full', topBarWidth]}>
+			<TopBar {allGamesHref} {onToggleTheme} {start} />
+		</div>
 	{/if}
 	{@render children()}
 	<footer class="mt-auto flex justify-center gap-4 pt-10 text-center text-xs text-muted-foreground">

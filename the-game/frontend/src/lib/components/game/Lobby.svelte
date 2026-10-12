@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
@@ -53,27 +54,19 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3">
-	<header class="flex items-center gap-2">
-		<a
-			href={resolve('/')}
-			class="-ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground"
-			aria-label="Home"
-		>
-			<House class="size-5" />
-		</a>
+	<header class={headerRow}>
+		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<h1 class="text-lg font-semibold">Lobby</h1>
-		<div class="-mr-1 ml-auto flex items-center gap-1">
+		<div class="ml-auto flex items-center gap-1.5">
 			{#if isHost}
-				<button
-					type="button"
-					class="flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
+				<HeaderButton
+					icon={Flag}
+					label="End game"
+					showLabel
+					destructive
 					disabled={!connected}
-					title="End game"
 					onclick={() => (confirmEnd = true)}
-				>
-					<Flag class="size-4" />
-					End game
-				</button>
+				/>
 			{/if}
 			<HeaderThemeToggle />
 		</div>

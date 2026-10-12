@@ -5,8 +5,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import HeaderButton, { headerRow } from './HeaderButton.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
-	import { Button } from './ui/button/index.js';
+	import { cn } from './utils.js';
 
 	let {
 		allGamesHref,
@@ -22,18 +23,15 @@
 	} = $props();
 </script>
 
-<div class="-mt-1 -mr-1 mb-1 flex min-h-8 items-center gap-1">
+<div class={cn(headerRow, 'mb-1')}>
 	{#if allGamesHref}
-		<Button
-			variant="ghost"
-			size="sm"
-			class="-ml-2 text-muted-foreground"
+		<HeaderButton
+			icon={LayoutGrid}
+			label="All games"
+			showLabel
 			href={allGamesHref}
 			rel="external"
-		>
-			<LayoutGrid class="size-4" />
-			All games
-		</Button>
+		/>
 	{/if}
 	{@render start?.()}
 	<div class="ml-auto">

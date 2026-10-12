@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -170,14 +171,8 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2">
-	<header class="flex items-center gap-2 text-sm">
-		<a
-			href={resolve('/')}
-			class="-ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground"
-			aria-label="Home"
-		>
-			<House class="size-5" />
-		</a>
+	<header class={cn(headerRow, 'text-sm')}>
+		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 		<span
 			class={cn('size-2 rounded-full', connected ? 'bg-emerald-500' : 'animate-pulse bg-amber-500')}
@@ -200,19 +195,18 @@
 			{view.drawPileCount}
 		</span>
 		{#if canEndGame}
-			<button
-				type="button"
-				class="flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+			<!-- The EXTREME badge leaves no room for the label on phones. -->
+			<HeaderButton
+				icon={Flag}
+				label="End game"
+				showLabel
+				labelClass={cn(extreme && 'max-[24rem]:sr-only')}
+				destructive
 				disabled={!connected}
-				title="End game"
 				onclick={() => (confirmEnd = true)}
-			>
-				<Flag class="size-4" />
-				<!-- The EXTREME badge leaves no room for the label on phones. -->
-				<span class={cn(extreme && 'max-[24rem]:sr-only')}>End game</span>
-			</button>
+			/>
 		{/if}
-		<HeaderThemeToggle class="-mr-1" />
+		<HeaderThemeToggle />
 	</header>
 
 	{#if view.communicationRestricted}
