@@ -67,7 +67,7 @@
 				<button
 					type="button"
 					class="flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
-					disabled={!connected || busy}
+					disabled={!connected}
 					title="End game"
 					onclick={() => (confirmEnd = true)}
 				>
