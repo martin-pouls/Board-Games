@@ -76,7 +76,7 @@ After the first push the images show up under the repository's *Packages*. They 
 
 It builds the working tree, uncommitted changes included. Use the browser on Windows at `localhost`: on another host name the gate's `Secure` cookie needs HTTPS.
 
-- WSL stops its VM shortly after the last Ubuntu window closes, and the stack with it. Keep a window open while testing; the containers come back on their own when WSL starts again.
+- WSL stops its VM shortly after the last Ubuntu window closes, and the stack with it (the site then looks "crashed"; `docker ps` shows every container as *Up 1 second* once WSL starts again). Keep a window open while testing, or keep WSL alive from Windows with `wsl -d Ubuntu -- sleep infinity` (e.g. in a spare terminal); the containers come back on their own when WSL starts again.
 - Every local request reaches the gate from the same Docker address, so after 10 wrong passwords the login is rate limited for all browsers. `docker restart gate` resets it.
 
 ## Build context
