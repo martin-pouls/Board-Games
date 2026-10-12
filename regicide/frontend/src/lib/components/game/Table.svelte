@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import BookOpen from '@lucide/svelte/icons/book-open';
@@ -14,9 +15,9 @@
 	import { cn } from '#lib/utils.js';
 	import type { PlayerView } from '#lib/types.js';
 	import ActionPanel from './ActionPanel.svelte';
-	import ChronicleLine from './ChronicleLine.svelte';
 	import EnemyCard from './EnemyCard.svelte';
 	import Hand from './Hand.svelte';
+	import LastTurnPiles from './LastTurnPiles.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import RulesHelp from './RulesHelp.svelte';
 	import TableCounters from './TableCounters.svelte';
@@ -115,7 +116,7 @@
 			{#if playing && !readonly}
 				<button
 					type="button"
-					class="-mr-1 flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+					class="flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
 					disabled={!connected}
 					title="Give up"
 					onclick={() => (confirmGiveUp = true)}
@@ -124,11 +125,13 @@
 					<span class="max-[24rem]:sr-only">Give up</span>
 				</button>
 			{/if}
+			<HeaderThemeToggle class="-mr-1" />
 		</div>
-		<TableCounters {view} />
+		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			<TableCounters {view} />
+			<PlayerStrip class="ml-auto" players={view.players} online={client.online} />
+		</div>
 	</header>
-
-	<PlayerStrip players={view.players} online={client.online} />
 
 	{#if view.enemy}
 		<EnemyCard enemy={view.enemy} players={view.players} {preview} />
@@ -141,7 +144,7 @@
 		</p>
 	{/if}
 
-	<ChronicleLine events={client.lastEvents} {view} />
+	<LastTurnPiles lastTurn={view.lastTurn} players={view.players} />
 
 	<div
 		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 bg-background/95 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur"
@@ -149,15 +152,7 @@
 		{#if controls}
 			{@render controls()}
 		{:else if playing && !readonly}
-			<ActionPanel
-				{client}
-				{view}
-				selected={selectedCards}
-				{busy}
-				{connected}
-				{run}
-				onclear={() => (selected = [])}
-			/>
+			<ActionPanel {client} {view} selected={selectedCards} {busy} {connected} {run} />
 		{/if}
 		<Hand
 			cards={view.hand}

@@ -59,6 +59,15 @@ type Enemy struct {
 	Plays             []PlayedSet `json:"plays"`             // never null
 }
 
+// LastTurn is what the most recent turn did: the table's Played and Discarded piles.
+type LastTurn struct {
+	PlayerID  string `json:"playerId"`
+	Played    []Card `json:"played"`             // null when the player yielded
+	Defeated  *Card  `json:"defeated,omitempty"` // the enemy this play defeated
+	Exact     bool   `json:"exact,omitempty"`    // the defeat was exact (enemy on top of the Tavern)
+	Discarded []Card `json:"discarded"`          // null until the player discards (or no damage was taken)
+}
+
 // Turn is the public state of the current turn.
 type Turn struct {
 	Number         int    `json:"number"`
@@ -92,6 +101,7 @@ type PlayerView struct {
 	CastleCount     int             `json:"castleCount"`
 	TavernCount     int             `json:"tavernCount"`
 	DiscardCount    int             `json:"discardCount"`
+	LastTurn        *LastTurn       `json:"lastTurn"`
 	Turn            *Turn           `json:"turn"`
 	SoloJestersLeft int             `json:"soloJestersLeft"`
 	Result          *Result         `json:"result"`

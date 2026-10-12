@@ -17,6 +17,11 @@
 
 <ModeWatcher themeColors={{ light: '#f3eedd', dark: '#0f1d17' }} />
 <Toaster />
-<AppFrame url={page.url} isHome={page.route.id === '/'} dev={import.meta.env.DEV}>
+<AppFrame
+	url={page.url}
+	isHome={page.route.id === '/'}
+	topBar={page.route.id !== '/g/[code]'}
+	dev={import.meta.env.DEV}
+>
 	{@render children()}
 </AppFrame>

@@ -99,9 +99,9 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 
 The start page uses the same SvelteKit/Tailwind/shadcn-svelte/tooling stack. It is fully prerendered with `csr = false`, so it ships HTML and CSS only, plus the small inline theme script in `src/app.html` (shadcn components render as static markup there; bits-ui interactivity is not available).
 
-**One frame for every page:** the games, the start page and the gate's login page all render `PageFrame` from `shared/frontend` (games through `AppFrame`): the same top bar (`TopBar`: optional *All games* link, light/dark toggle top right), a `max-w-3xl` column (`wide` gives `max-w-6xl` for future games that need the room) and the imprint/privacy footer. Change the frame there, not per app.
+**One frame for every page:** the games, the start page and the gate's login page all render `PageFrame` from `shared/frontend` (games through `AppFrame`): the same top bar (`TopBar`: optional *All games* link, light/dark toggle top right), a `max-w-3xl` column (`wide` gives `max-w-6xl` for future games that need the room) and the imprint/privacy footer. On the game screen (`/g/[code]`) each game's layout passes `topBar={false}` and its lobby and table headers render `HeaderThemeToggle` at the right end instead, so the table loses no row on phones. Change the frame there, not per app.
 
-**Light and dark mode:** every app has both, with the toggle in the top bar. The games use mode-watcher; the start page and the gate's login page ship no JS except an inline theme script in their `app.html` that handles clicks on `[data-theme-toggle]`. All use the same `localStorage` key (`mode-watcher-mode`), so on the shared production origin the choice carries over between apps.
+**Light and dark mode:** every app has both, with the toggle in the top bar (in the game header on the game screen). The games use mode-watcher; the start page and the gate's login page ship no JS except an inline theme script in their `app.html` that handles clicks on `[data-theme-toggle]`. All use the same `localStorage` key (`mode-watcher-mode`), so on the shared production origin the choice carries over between apps.
 
 ## Architecture: hexagonal (ports and adapters)
 

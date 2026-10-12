@@ -5,9 +5,9 @@
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { plural } from '#lib/game/format.js';
 	import { canPlayerYield } from '#lib/game/rules.js';
 	import type { Runner } from '#lib/game/selection.js';
+	import { cn } from '#lib/utils.js';
 	import type { PlayerSummary, PlayerView } from '#lib/types.js';
 
 	let {
@@ -31,33 +31,27 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2">
-	<h2 class="text-base font-semibold">Who goes next?</h2>
-	<ul class="flex flex-col gap-1.5">
+<div class="flex flex-wrap items-center gap-2">
+	<p class="text-sm text-muted-foreground">Next:</p>
+	<ul class="flex flex-1 flex-wrap justify-end gap-1.5">
 		{#each players as p (p.id)}
 			<li>
 				<Button
 					variant="secondary"
-					class="h-12 w-full justify-start gap-2 text-base"
+					class={cn('h-9 gap-1.5 px-3', stuck(p) && 'text-health')}
+					title={stuck(p) ? 'No cards and cannot yield: the game would be lost' : undefined}
 					disabled={!connected || busy}
 					onclick={() => choose(p)}
 				>
-					<span class="truncate">{p.isYou ? 'Me' : p.name}</span>
-					<span class="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-						{#if p.yieldedLastTurn}<Hourglass class="size-4" aria-label="Yielded" />{/if}
-						{#if p.signal === 'goodPlay'}
-							<ThumbsUp class="size-4 text-primary" aria-label="Has a good play" />
-						{:else if p.signal === 'ratherNot'}
-							<Hand class="size-4 text-health" aria-label="Would rather not go next" />
-						{/if}
-						{plural(p.handCount, 'card')}
-					</span>
+					<span class="max-w-[6.5rem] truncate">{p.isYou ? 'Me' : p.name}</span>
+					<span class="text-muted-foreground tabular-nums">· {p.handCount}</span>
+					{#if p.yieldedLastTurn}<Hourglass aria-label="Yielded" />{/if}
+					{#if p.signal === 'goodPlay'}
+						<ThumbsUp class="text-primary" aria-label="Has a good play" />
+					{:else if p.signal === 'ratherNot'}
+						<Hand class="text-health" aria-label="Would rather not go next" />
+					{/if}
 				</Button>
-				{#if stuck(p)}
-					<p class="px-1 text-xs text-health">
-						{p.isYou ? 'You have' : `${p.name} has`} no cards and can't yield: the game would be lost.
-					</p>
-				{/if}
 			</li>
 		{/each}
 	</ul>

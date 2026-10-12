@@ -10,7 +10,6 @@ export type GameClient = Pick<
 	| 'view'
 	| 'online'
 	| 'status'
-	| 'lastEvents'
 	| 'me'
 	| 'isHost'
 	| 'isMyTurn'

@@ -127,6 +127,7 @@ export function makeView(o: Partial<PlayerView> = {}): PlayerView {
 		castleCount: 11,
 		tavernCount: 30,
 		discardCount: 0,
+		lastTurn: null,
 		turn: null,
 		soloJestersLeft: 0,
 		result: null,
@@ -159,6 +160,7 @@ export const playView: PlayerView = makeView({
 	}),
 	tavernCount: 24,
 	discardCount: 5,
+	lastTurn: { playerId: 'p2', played: cards('4S'), discarded: cards('2D 3C') },
 	turn: turn({ number: 4 })
 });
 
@@ -172,6 +174,7 @@ export const otherTurnView: PlayerView = makeView({
 	enemy: enemyOf('QH', { plays: [{ by: 'p1', cards: '6D' }] }),
 	tavernCount: 26,
 	discardCount: 3,
+	lastTurn: { playerId: 'p2', played: null, discarded: cards('KD') },
 	turn: turn({ number: 5, activePlayerId: 'p2', canYield: false })
 });
 
@@ -181,6 +184,7 @@ export const discardView: PlayerView = makeView({
 	enemy: enemyOf('QH', { plays: [{ by: 'p1', cards: '8H', blocked: ['hearts'] }] }),
 	tavernCount: 22,
 	discardCount: 6,
+	lastTurn: { playerId: 'p1', played: cards('8H'), discarded: null },
 	turn: turn({ number: 6, step: 'discard', canYield: false, damageToCover: 15 })
 });
 
@@ -208,6 +212,27 @@ export const chooseNextOtherView: PlayerView = makeView({
 	hand: hand('3D 4H 8S 9C 10H QD'),
 	enemy: enemyOf('KC', { plays: [{ by: 'p2', cards: 'X' }] }),
 	turn: turn({ number: 7, activePlayerId: 'p2', step: 'chooseNext', canYield: false })
+});
+
+/** Ben just defeated the Jack of hearts with 10♣ and plays on against the Queen. */
+export const afterDefeatView: PlayerView = makeView({
+	players: [
+		player('p1', 'Anna', 0, { isYou: true }),
+		player('p2', 'Ben', 1, { isActive: true, handCount: 4 })
+	],
+	hand: hand('3H 4S 6D 9D 9S 10S'),
+	enemy: enemyOf('QH'),
+	castleCount: 10,
+	tavernCount: 24,
+	discardCount: 9,
+	lastTurn: {
+		playerId: 'p2',
+		played: cards('10C'),
+		defeated: card('JH'),
+		exact: true,
+		discarded: null
+	},
+	turn: turn({ number: 8, activePlayerId: 'p2' })
 });
 
 export const soloPlayView: PlayerView = makeView({

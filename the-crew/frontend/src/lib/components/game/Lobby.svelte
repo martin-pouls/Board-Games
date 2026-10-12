@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -150,6 +151,7 @@
 					</button>
 				{/if}
 			{/if}
+			<HeaderThemeToggle />
 		</div>
 	</header>
 

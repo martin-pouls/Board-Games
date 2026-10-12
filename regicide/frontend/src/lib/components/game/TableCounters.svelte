@@ -8,16 +8,14 @@
 
 	let { view }: { view: PlayerView } = $props();
 
-	const enemiesLeft = $derived(view.castleCount + (view.enemy ? 1 : 0));
 	const solo = $derived(view.rules.soloJesters > 0);
 </script>
 
 <ul class="flex items-center gap-3 text-sm text-muted-foreground tabular-nums">
-	<li class="flex items-center gap-1" title={`Castle: ${enemiesLeft} enemies left`}>
+	<li class="flex items-center gap-1" title="Castle deck">
 		<Castle class="size-4" aria-hidden="true" />
 		<span class="sr-only">Castle</span>
 		{view.castleCount}
-		<span class="text-xs">({enemiesLeft} left)</span>
 	</li>
 	<li class="flex items-center gap-1" title="Tavern deck">
 		<Beer class="size-4" aria-hidden="true" />

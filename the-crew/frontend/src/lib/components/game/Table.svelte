@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import BookOpen from '@lucide/svelte/icons/book-open';
@@ -171,7 +172,7 @@
 			{#if playing}
 				<button
 					type="button"
-					class="-mr-1 flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+					class="flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
 					disabled={!connected}
 					title="Give up this attempt"
 					onclick={() => (confirmGiveUp = true)}
@@ -180,6 +181,7 @@
 					<span class="max-[24rem]:sr-only">Give up</span>
 				</button>
 			{/if}
+			<HeaderThemeToggle class="-mr-1" />
 		</div>
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 			<span class="font-display text-base font-bold">Mission {view.mission}</span>

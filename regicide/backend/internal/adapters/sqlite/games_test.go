@@ -65,6 +65,8 @@ func TestRoundTripEachPhase(t *testing.T) {
 			{By: "p2", Cards: cs(domain.Jester())},
 		}
 		g.Turn = domain.Turn{Number: 3, ActiveSeat: 1}
+		jack := card(H, 11)
+		g.LastTurn = &domain.LastTurn{By: "p1", Played: cs(card(C, 8)), Defeated: &jack, Exact: true, Discarded: cs(card(D, 9))}
 		g.SoloJestersUsed = 1
 		return g
 	}
@@ -74,6 +76,7 @@ func TestRoundTripEachPhase(t *testing.T) {
 	nilSlices.Step = domain.StepPlay
 	nilSlices.Castle, nilSlices.Tavern, nilSlices.DiscardPile, nilSlices.Played = nil, nil, nil, nil
 	nilSlices.Players[0].Hand = nil
+	nilSlices.LastTurn = &domain.LastTurn{By: "p1"} // a yield, no discard yet
 
 	won := baseGame("WONNN")
 	won.Phase = domain.PhaseWon

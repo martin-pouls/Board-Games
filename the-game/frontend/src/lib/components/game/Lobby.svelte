@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import Crown from '@lucide/svelte/icons/crown';
@@ -61,18 +62,21 @@
 			<House class="size-5" />
 		</a>
 		<h1 class="text-lg font-semibold">Lobby</h1>
-		{#if isHost}
-			<button
-				type="button"
-				class="-mr-1 ml-auto flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
-				disabled={!connected || busy}
-				title="End game"
-				onclick={() => (confirmEnd = true)}
-			>
-				<Flag class="size-4" />
-				End game
-			</button>
-		{/if}
+		<div class="-mr-1 ml-auto flex items-center gap-1">
+			{#if isHost}
+				<button
+					type="button"
+					class="flex items-center gap-1 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
+					disabled={!connected || busy}
+					title="End game"
+					onclick={() => (confirmEnd = true)}
+				>
+					<Flag class="size-4" />
+					End game
+				</button>
+			{/if}
+			<HeaderThemeToggle />
+		</div>
 	</header>
 
 	<Card.Root>

@@ -35,14 +35,14 @@
 		xs: 'w-8 text-xs',
 		sm: 'w-11 text-sm',
 		md: 'w-14 text-base',
-		lg: 'w-28 text-2xl',
+		lg: 'w-16 text-base',
 		fluid: 'w-full text-sm'
 	};
 	const centre: Record<string, string> = {
 		xs: 'text-base',
 		sm: 'text-xl',
 		md: 'text-3xl',
-		lg: 'text-6xl',
+		lg: 'text-4xl',
 		fluid: 'text-2xl'
 	};
 
@@ -63,7 +63,7 @@
 {#snippet face()}
 	{#if jester}
 		<span class="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-			<Drama class={size === 'xs' ? 'size-3' : size === 'lg' ? 'size-12' : 'size-5'} />
+			<Drama class={size === 'xs' ? 'size-3' : size === 'lg' ? 'size-8' : 'size-5'} />
 			{#if size !== 'xs'}
 				<span class="font-display text-[0.6em] font-bold tracking-wide">Jester</span>
 			{/if}

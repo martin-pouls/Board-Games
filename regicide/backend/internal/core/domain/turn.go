@@ -57,6 +57,7 @@ func (g *Game) Play(by PlayerID, cards []Card, rng RNG) error {
 	p.Hand = rest
 	p.YieldedLastTurn = false
 	g.Played = append(g.Played, PlayedSet{By: by, Cards: played})
+	g.LastTurn = &LastTurn{By: by, Played: slices.Clone(played)}
 
 	if kind == PlayJester {
 		g.emit(JesterPlayed{PlayerID: by})
@@ -94,6 +95,9 @@ func (g *Game) Play(by PlayerID, cards []Card, rng RNG) error {
 		BlockedSuits: slices.Clone(e.BlockedSuits),
 	})
 	if g.Damage() >= EnemyHealth(g.Enemy.Rank) {
+		defeated := *g.Enemy
+		g.LastTurn.Defeated = &defeated
+		g.LastTurn.Exact = g.Damage() == EnemyHealth(defeated.Rank)
 		g.defeatEnemy()
 	} else {
 		g.beginDiscard()
@@ -117,6 +121,7 @@ func (g *Game) Yield(by PlayerID) error {
 		return fmt.Errorf("%w: every other player yielded on their last turn", ErrYieldNotAllowed)
 	}
 	g.Players[seat].YieldedLastTurn = true
+	g.LastTurn = &LastTurn{By: by}
 	g.emit(Yielded{PlayerID: by})
 	g.beginDiscard()
 	g.commit()
@@ -147,6 +152,9 @@ func (g *Game) Discard(by PlayerID, cards []Card) error {
 	SortCards(discarded)
 	g.Players[seat].Hand = rest
 	g.DiscardPile = append(g.DiscardPile, discarded...)
+	if g.LastTurn != nil && g.LastTurn.By == by {
+		g.LastTurn.Discarded = slices.Clone(discarded)
+	}
 	g.emit(CardsDiscarded{PlayerID: by, Cards: discarded, Attack: attack})
 	g.advance()
 	g.commit()

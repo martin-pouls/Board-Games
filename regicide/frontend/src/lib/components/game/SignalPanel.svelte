@@ -18,27 +18,30 @@
 	const chooser = $derived(view.players.find((p) => p.id === view.turn?.activePlayerId));
 	const current = $derived<JesterSignal>(view.players.find((p) => p.isYou)?.signal ?? 'none');
 
-	const options: { value: JesterSignal; label: string }[] = [
-		{ value: 'goodPlay', label: 'I have a good play' },
-		{ value: 'ratherNot', label: "I'd rather not go next" },
-		{ value: 'none', label: 'No signal' }
+	const options: { value: JesterSignal; label: string; title: string }[] = [
+		{ value: 'goodPlay', label: 'Good play', title: 'I have a good play' },
+		{ value: 'ratherNot', label: 'Rather not', title: "I'd rather not go next" }
 	];
+
+	/** Tapping the active signal again withdraws it. */
+	const toggle = (s: JesterSignal) => run(() => client.setSignal(current === s ? 'none' : s));
 </script>
 
-<div class="flex flex-col gap-2">
-	<p class="text-sm text-muted-foreground">
-		{chooser?.name ?? 'Someone'} is choosing who goes next. You may signal:
+<div class="flex items-center gap-2">
+	<p class="min-w-0 flex-1 text-sm leading-tight text-muted-foreground">
+		{chooser?.name ?? 'Someone'} picks who's next
 	</p>
-	<div class="flex flex-col gap-1.5" role="group" aria-label="Signal">
+	<div class="flex gap-1.5" role="group" aria-label="Signal">
 		{#each options as o (o.value)}
 			<Button
 				variant={current === o.value ? 'default' : 'secondary'}
-				class="h-11 justify-start gap-2"
+				class="h-9 gap-1.5 px-3"
 				aria-pressed={current === o.value}
+				title={o.title}
 				disabled={!connected || busy}
-				onclick={() => run(() => client.setSignal(o.value))}
+				onclick={() => toggle(o.value)}
 			>
-				{#if o.value === 'goodPlay'}<ThumbsUp />{:else if o.value === 'ratherNot'}<Hand />{/if}
+				{#if o.value === 'goodPlay'}<ThumbsUp />{:else}<Hand />{/if}
 				{o.label}
 			</Button>
 		{/each}

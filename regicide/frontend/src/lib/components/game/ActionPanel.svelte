@@ -14,8 +14,7 @@
 		selected,
 		busy,
 		connected,
-		run,
-		onclear
+		run
 	}: {
 		client: GameClient;
 		view: PlayerView;
@@ -23,7 +22,6 @@
 		busy: boolean;
 		connected: boolean;
 		run: Runner;
-		onclear: () => void;
 	} = $props();
 
 	const step = $derived(view.turn?.step ?? '');
@@ -38,17 +36,17 @@
 	);
 </script>
 
-<div class="rounded-xl border bg-card/90 p-3">
+<div class="flex min-h-13 flex-col justify-center rounded-xl border bg-card/90 p-2">
 	{#if step === 'play' && mine}
-		<PlayControls {client} {view} {selected} {busy} {connected} {run} {onclear} />
+		<PlayControls {client} {view} {selected} {busy} {connected} {run} />
 	{:else if step === 'discard' && mine}
-		<DiscardControls {client} {view} {selected} {busy} {connected} {run} {onclear} />
+		<DiscardControls {client} {view} {selected} {busy} {connected} {run} />
 	{:else if step === 'chooseNext' && mine}
 		<ChooseNextPanel {client} {view} {busy} {connected} {run} />
 	{:else if step === 'chooseNext'}
 		<SignalPanel {client} {view} {busy} {connected} {run} />
 	{:else}
-		<p class="flex min-h-12 items-center justify-center gap-2 text-muted-foreground">
+		<p class="flex items-center justify-center gap-2 text-sm text-muted-foreground">
 			<LoaderCircle class="size-4 animate-spin" />
 			{waiting}
 		</p>

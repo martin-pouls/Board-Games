@@ -58,6 +58,18 @@ export interface Enemy {
 	immunityCancelled: boolean;
 	plays: PlayedSet[];
 }
+/** What the most recent turn did: the table's Played and Discarded piles. */
+export interface LastTurn {
+	playerId: string;
+	/** null when the player yielded. */
+	played: Card[] | null;
+	/** The enemy this play defeated. */
+	defeated?: Card;
+	/** The defeat was exact: the enemy went onto the Tavern deck. */
+	exact?: boolean;
+	/** null until the player discards, and when no damage was taken. */
+	discarded: Card[] | null;
+}
 export interface Turn {
 	number: number;
 	activePlayerId: string;
@@ -87,6 +99,7 @@ export interface PlayerView {
 	castleCount: number;
 	tavernCount: number;
 	discardCount: number;
+	lastTurn: LastTurn | null;
 	turn: Turn | null;
 	soloJestersLeft: number;
 	result: Result | null;

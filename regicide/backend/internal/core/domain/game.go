@@ -75,6 +75,32 @@ type Turn struct {
 	ActiveSeat int // index into Players; in chooseNext: the Jester player (the chooser)
 }
 
+// LastTurn is what the most recent turn did, for the table's Played and Discarded piles. The next
+// turn replaces it as soon as its player plays or yields, so a defeated enemy's killing play stays
+// visible until then.
+type LastTurn struct {
+	By        PlayerID
+	Played    []Card // sorted; nil when the player yielded
+	Defeated  *Card  // the enemy this play defeated, if any
+	Exact     bool   // the defeat was exact: the enemy went on top of the Tavern
+	Discarded []Card // sorted; nil until the player discards (or when no damage was taken)
+}
+
+// clone returns a deep copy; nil stays nil.
+func (lt *LastTurn) clone() *LastTurn {
+	if lt == nil {
+		return nil
+	}
+	c := *lt
+	c.Played = slices.Clone(lt.Played)
+	c.Discarded = slices.Clone(lt.Discarded)
+	if lt.Defeated != nil {
+		e := *lt.Defeated
+		c.Defeated = &e
+	}
+	return &c
+}
+
 // Result is set iff Phase is won or lost. On a win both fields are empty.
 type Result struct {
 	Reason   LossReason
@@ -96,6 +122,7 @@ type Game struct {
 	Tavern          []Card      // last = top; "under the Tavern" = index 0
 	DiscardPile     []Card      // order irrelevant (face up)
 	Played          []PlayedSet // plays against the current enemy, in order
+	LastTurn        *LastTurn   // nil before the first play or yield
 	Turn            Turn
 	SoloJestersUsed int
 	Result          *Result
@@ -132,6 +159,7 @@ func (g *Game) Clone() *Game {
 			c.Played[i] = ps
 		}
 	}
+	c.LastTurn = g.LastTurn.clone()
 	if g.Result != nil {
 		r := *g.Result
 		c.Result = &r

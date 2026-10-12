@@ -1,6 +1,6 @@
-/** Display helpers: card labels, rule explanations and event log text. */
-import type { Card, GameEvent, Grade, PlayerView, Result, Suit } from '#lib/types.js';
-import { cardValue, type DiscardCheck, type PlayKind, type PlayProblem } from './rules.js';
+/** Display helpers: card labels and rule explanations. */
+import type { Card, Grade, PlayedSet, PlayerView, Result, Suit } from '#lib/types.js';
+import { cardValue, type DiscardCheck, type PlayProblem } from './rules.js';
 
 const GLYPHS: Record<Suit, string> = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
 const SUIT_NAMES: Record<Suit, string> = {
@@ -35,8 +35,6 @@ export function cardName(c: Card): string {
 	return `${RANK_NAMES[c.rank] ?? c.rank} of ${SUIT_NAMES[c.suit]}`;
 }
 
-export const cardsLabel = (cs: Card[]): string => cs.map(cardLabel).join(' + ');
-
 const POWER_NAMES: Record<Suit, string> = {
 	hearts: 'Heal',
 	diamonds: 'Draw',
@@ -45,17 +43,17 @@ const POWER_NAMES: Record<Suit, string> = {
 };
 export const suitPowerName = (s: Suit): string => POWER_NAMES[s];
 
+/** The plays against an enemy as one stack per player, in the order they first played. */
+export function playStacks(plays: PlayedSet[]): { playerId: string; cards: Card[] }[] {
+	const byPlayer = new Map<string, Card[]>();
+	for (const p of plays)
+		byPlayer.set(p.playerId, [...(byPlayer.get(p.playerId) ?? []), ...p.cards]);
+	return [...byPlayer].map(([playerId, cards]) => ({ playerId, cards }));
+}
+
 export function plural(n: number, word: string): string {
 	return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
-
-const KIND_LABELS: Record<PlayKind, string> = {
-	single: 'Single card',
-	combo: 'Combo',
-	companion: 'Animal Companion',
-	jester: 'Jester'
-};
-export const playKindLabel = (k: PlayKind): string => KIND_LABELS[k];
 
 const PROBLEM_TEXTS: Record<PlayProblem, string> = {
 	empty: 'Select a card to play.',
@@ -121,48 +119,5 @@ export function lossText(view: PlayerView): string {
 			return `${name} gave up.`;
 		default:
 			return 'The game was lost.';
-	}
-}
-
-/** One line for the event log; null for events not worth showing. */
-export function eventText(e: GameEvent, view: PlayerView): string | null {
-	switch (e.type) {
-		case 'cardsPlayed': {
-			const parts: string[] = [];
-			if (e.healed > 0) parts.push(`healed ${e.healed}`);
-			if (e.drawn > 0) parts.push(`drew ${e.drawn}`);
-			if (e.damage > 0) parts.push(`${e.damage} damage`);
-			for (const s of e.blockedSuits ?? []) parts.push(`immune to ${GLYPHS[s]}`);
-			const head = `${who(view, e.playerId)} played ${cardsLabel(e.cards)} (${e.value})`;
-			return parts.length ? `${head}: ${parts.join(', ')}` : head;
-		}
-		case 'jesterPlayed':
-			return `${who(view, e.playerId)} played the Jester — immunity cancelled`;
-		case 'yielded':
-			return `${who(view, e.playerId)} yielded`;
-		case 'enemyDefeated':
-			return e.exact
-				? `${cardLabel(e.card)} defeated — exact! It joins the Tavern`
-				: `${cardLabel(e.card)} defeated`;
-		case 'cardsDiscarded':
-			return `${who(view, e.playerId)} took ${e.attack}: discarded ${cardsLabel(e.cards)}`;
-		case 'attackBlocked':
-			return 'Shield holds: no damage';
-		case 'nextPlayerChosen':
-			return e.byPlayerId === e.playerId
-				? `${who(view, e.byPlayerId)} will go next`
-				: `${who(view, e.byPlayerId)} chose ${who(view, e.playerId)} to go next`;
-		case 'soloJesterUsed':
-			return `Jester power used: drew ${e.drawn} (${e.left} left)`;
-		case 'gameStarted':
-			return 'The siege begins';
-		case 'playerLeft':
-			return 'A player left';
-		case 'gameWon':
-			return e.grade ? `${gradeLabel(e.grade)}!` : 'The last King has fallen!';
-		case 'gameLost':
-			return 'The realm has fallen';
-		default:
-			return null;
 	}
 }

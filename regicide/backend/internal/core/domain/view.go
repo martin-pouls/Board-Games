@@ -7,7 +7,8 @@ import (
 )
 
 // PlayerView is the projection of a game for one player. It never exposes another player's hand
-// before the game ends, nor the order of the Tavern or Castle, nor the Discard contents.
+// before the game ends, nor the order of the Tavern or Castle, nor the Discard contents beyond the
+// last turn's discard (the pile is face up, rules §3).
 type PlayerView struct {
 	GameID          GameID
 	Revision        int64
@@ -20,6 +21,7 @@ type PlayerView struct {
 	CastleCount     int             // facedown Castle cards (excludes Enemy)
 	TavernCount     int
 	DiscardCount    int
+	LastTurn        *LastTurn // nil before the first play or yield
 	Turn            *TurnView // nil in the lobby
 	SoloJestersLeft int       // 0 unless solo
 	Result          *ResultView
@@ -121,6 +123,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		CastleCount:     len(g.Castle),
 		TavernCount:     len(g.Tavern),
 		DiscardCount:    len(g.DiscardPile),
+		LastTurn:        g.LastTurn.clone(),
 		SoloJestersLeft: g.SoloJestersLeft(),
 		NextGameID:      g.NextGameID,
 	}

@@ -12,6 +12,7 @@
 		allGamesHref,
 		onToggleTheme,
 		wide = false,
+		topBar = true,
 		start,
 		children
 	}: {
@@ -23,6 +24,8 @@
 		onToggleTheme?: () => void;
 		/** A wider column on desktop, for screens that need the room (e.g. a big board). */
 		wide?: boolean;
+		/** false hides the top bar, for pages whose own header has the theme toggle (the games' table). */
+		topBar?: boolean;
 		/** More items on the left of the top bar. */
 		start?: Snippet;
 		children: Snippet;
@@ -35,7 +38,9 @@
 		wide ? 'max-w-6xl' : 'max-w-3xl'
 	]}
 >
-	<TopBar {allGamesHref} {onToggleTheme} {start} />
+	{#if topBar}
+		<TopBar {allGamesHref} {onToggleTheme} {start} />
+	{/if}
 	{@render children()}
 	<footer class="mt-auto flex justify-center gap-4 pt-10 text-center text-xs text-muted-foreground">
 		<!-- Pages of the start page app: full page loads. -->

@@ -25,7 +25,7 @@ func mustJSON(t *testing.T, v any) string {
 
 func TestFromViewEmptySlicesMarshalAsArrays(t *testing.T) {
 	s := mustJSON(t, FromView(domain.PlayerView{}))
-	for _, want := range []string{`"players":[]`, `"hand":[]`, `"enemy":null`, `"turn":null`, `"result":null`} {
+	for _, want := range []string{`"players":[]`, `"hand":[]`, `"enemy":null`, `"lastTurn":null`, `"turn":null`, `"result":null`} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %s in %s", want, s)
 		}
@@ -40,6 +40,11 @@ func TestFromViewEmptySlicesMarshalAsArrays(t *testing.T) {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %s in %s", want, s)
 		}
+	}
+	// A yield without a discard yet: both piles are null, so the client can tell them from "no cards".
+	s = mustJSON(t, FromView(domain.PlayerView{LastTurn: &domain.LastTurn{By: "p1"}}))
+	if want := `"lastTurn":{"playerId":"p1","played":null,"discarded":null}`; !strings.Contains(s, want) {
+		t.Errorf("missing %s in %s", want, s)
 	}
 	s = mustJSON(t, FromView(domain.PlayerView{Enemy: &domain.EnemyView{}}))
 	if !strings.Contains(s, `"plays":[]`) {
@@ -69,6 +74,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		CastleCount:  8,
 		TavernCount:  20,
 		DiscardCount: 3,
+		LastTurn:     &domain.LastTurn{By: "p1", Played: []domain.Card{c8}, Defeated: &jack, Exact: true, Discarded: []domain.Card{domain.Jester()}},
 		Turn:         &domain.TurnView{Number: 4, ActivePlayerID: "p1", Step: domain.StepDiscard, CanYield: false, DamageToCover: 6},
 		NextGameID:   "NEXT1",
 		Result:       &domain.ResultView{Outcome: domain.PhaseLost, Reason: domain.LossCannotCover, PlayerID: "p1", Grade: domain.GradeNone, EnemiesDefeated: 3, SoloJestersUsed: 1},
@@ -90,6 +96,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			Plays: []PlayedSet{{PlayerID: "p1", Cards: []Card{{Suit: "clubs", Rank: 8}}, Value: 8, Damage: 16, Doubled: true, BlockedSuits: []string{"spades"}}},
 		},
 		CastleCount: 8, TavernCount: 20, DiscardCount: 3,
+		LastTurn:        &LastTurn{PlayerID: "p1", Played: []Card{{Suit: "clubs", Rank: 8}}, Defeated: &Card{Suit: "spades", Rank: 11}, Exact: true, Discarded: []Card{{Suit: "", Rank: 0}}},
 		Turn:            &Turn{Number: 4, ActivePlayerID: "p1", Step: "discard", DamageToCover: 6},
 		SoloJestersLeft: 1,
 		Result:          &Result{Outcome: "lost", Reason: "cannotCoverDamage", PlayerID: "p1", EnemiesDefeated: 3, SoloJestersUsed: 1},

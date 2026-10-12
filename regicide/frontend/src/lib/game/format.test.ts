@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
 	cardLabel,
 	cardName,
-	cardsLabel,
 	discardProblemText,
-	eventText,
 	gradeLabel,
 	isRed,
 	lossText,
 	plural,
-	playKindLabel,
+	playStacks,
 	playProblemText,
 	rankLabel,
 	resultHeadline,
@@ -18,17 +16,7 @@ import {
 	who
 } from './format.js';
 import { checkDiscard } from './rules.js';
-import {
-	card,
-	cards,
-	chooseNextOtherView,
-	lostView,
-	makeView,
-	player,
-	playView,
-	wonSoloView
-} from './fixtures.js';
-import type { GameEvent } from '#lib/types.js';
+import { card, cards, lostView, makeView, playView, wonSoloView } from './fixtures.js';
 
 describe('cards', () => {
 	it.each([
@@ -53,7 +41,6 @@ describe('cards', () => {
 		expect(cardName(card('QS'))).toBe('Queen of Spades');
 		expect(cardName(card('AD'))).toBe('Ace of Diamonds');
 		expect(cardName(card('X'))).toBe('Jester');
-		expect(cardsLabel(cards('5H 5C'))).toBe('5♥ + 5♣');
 	});
 
 	it('knows glyphs, colours and powers', () => {
@@ -68,6 +55,23 @@ describe('cards', () => {
 		expect(suitPowerName('spades')).toBe('Shield');
 	});
 
+	it('stacks the plays per player', () => {
+		const play = (playerId: string, cs: string) => ({
+			playerId,
+			cards: cards(cs),
+			value: 0,
+			damage: 0,
+			doubled: false,
+			blockedSuits: [],
+			jester: false
+		});
+		expect(playStacks([play('p2', '2S'), play('p1', '5H 5C'), play('p2', 'X')])).toEqual([
+			{ playerId: 'p2', cards: cards('2S X') },
+			{ playerId: 'p1', cards: cards('5H 5C') }
+		]);
+		expect(playStacks([])).toEqual([]);
+	});
+
 	it('pluralises', () => {
 		expect(plural(1, 'card')).toBe('1 card');
 		expect(plural(0, 'card')).toBe('0 cards');
@@ -76,13 +80,6 @@ describe('cards', () => {
 });
 
 describe('labels and problems', () => {
-	it('labels kinds', () => {
-		expect(playKindLabel('single')).toBe('Single card');
-		expect(playKindLabel('combo')).toBe('Combo');
-		expect(playKindLabel('companion')).toBe('Animal Companion');
-		expect(playKindLabel('jester')).toBe('Jester');
-	});
-
 	it('explains every play problem', () => {
 		for (const p of [
 			'empty',
@@ -136,90 +133,5 @@ describe('who and lossText', () => {
 		expect(lossText(lost('cannotAct', 'p2'))).toBe("Ben had no cards and couldn't yield.");
 		expect(lossText(lost('gaveUp', 'p2'))).toBe('Ben gave up.');
 		expect(lossText(playView)).toBe('');
-	});
-});
-
-describe('eventText', () => {
-	const view = chooseNextOtherView; // I am Cara (p3); Anna p1, Ben p2
-	const text = (e: GameEvent) => eventText(e, view);
-
-	it('describes plays', () => {
-		expect(
-			text({
-				type: 'cardsPlayed',
-				playerId: 'p1',
-				cards: cards('5H 5C'),
-				value: 10,
-				healed: 10,
-				drawn: 0,
-				damage: 20
-			})
-		).toBe('Anna played 5♥ + 5♣ (10): healed 10, 20 damage');
-		expect(
-			text({
-				type: 'cardsPlayed',
-				playerId: 'p3',
-				cards: cards('3D'),
-				value: 3,
-				healed: 0,
-				drawn: 3,
-				damage: 3,
-				blockedSuits: []
-			})
-		).toBe('You played 3♦ (3): drew 3, 3 damage');
-		expect(
-			text({
-				type: 'cardsPlayed',
-				playerId: 'p2',
-				cards: cards('5S'),
-				value: 5,
-				healed: 0,
-				drawn: 0,
-				damage: 5,
-				blockedSuits: ['spades']
-			})
-		).toBe('Ben played 5♠ (5): 5 damage, immune to ♠');
-	});
-
-	it('describes everything else', () => {
-		expect(text({ type: 'jesterPlayed', playerId: 'p2' })).toBe(
-			'Ben played the Jester — immunity cancelled'
-		);
-		expect(text({ type: 'yielded', playerId: 'p2' })).toBe('Ben yielded');
-		expect(text({ type: 'enemyDefeated', card: card('JS'), exact: true })).toBe(
-			'J♠ defeated — exact! It joins the Tavern'
-		);
-		expect(text({ type: 'enemyDefeated', card: card('JS'), exact: false })).toBe('J♠ defeated');
-		expect(text({ type: 'cardsDiscarded', playerId: 'p3', cards: cards('KD'), attack: 15 })).toBe(
-			'You took 15: discarded K♦'
-		);
-		expect(text({ type: 'attackBlocked', playerId: 'p2' })).toBe('Shield holds: no damage');
-		expect(text({ type: 'nextPlayerChosen', byPlayerId: 'p1', playerId: 'p2' })).toBe(
-			'Anna chose Ben to go next'
-		);
-		expect(text({ type: 'nextPlayerChosen', byPlayerId: 'p1', playerId: 'p1' })).toBe(
-			'Anna will go next'
-		);
-		expect(text({ type: 'soloJesterUsed', playerId: 'p1', drawn: 8, left: 1 })).toBe(
-			'Jester power used: drew 8 (1 left)'
-		);
-		expect(text({ type: 'gameWon', grade: 'gold' })).toBe('Gold victory!');
-		expect(text({ type: 'gameWon' })).toBe('The last King has fallen!');
-		expect(text({ type: 'gameLost', reason: 'gaveUp', playerId: 'p1' })).toBe(
-			'The realm has fallen'
-		);
-	});
-
-	it('is silent for noise events', () => {
-		expect(text({ type: 'turnStarted', playerId: 'p1', number: 2 })).toBeNull();
-		expect(text({ type: 'enemyRevealed', card: card('QH') })).toBeNull();
-		expect(text({ type: 'signalSet', playerId: 'p1', signal: 'goodPlay' })).toBeNull();
-		expect(text({ type: 'playerJoined', playerId: 'p4', name: 'Dan' })).toBeNull();
-		expect(text({ type: 'rematchCreated', gameId: 'ZZZZ' })).toBeNull();
-	});
-
-	it('handles unknown players gracefully', () => {
-		const v = makeView({ players: [player('p1', 'Anna', 0, { isYou: true })] });
-		expect(eventText({ type: 'yielded', playerId: 'gone' }, v)).toBe('Someone yielded');
 	});
 });

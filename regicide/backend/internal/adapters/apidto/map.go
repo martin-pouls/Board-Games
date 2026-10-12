@@ -134,6 +134,19 @@ func FromView(v domain.PlayerView) PlayerView {
 		}
 		out.Enemy = enemy
 	}
+	if lt := v.LastTurn; lt != nil {
+		out.LastTurn = &LastTurn{PlayerID: string(lt.By)}
+		if lt.Played != nil {
+			out.LastTurn.Played = fromCards(lt.Played)
+		}
+		if lt.Defeated != nil {
+			out.LastTurn.Defeated = ptr(FromCard(*lt.Defeated))
+			out.LastTurn.Exact = lt.Exact
+		}
+		if lt.Discarded != nil {
+			out.LastTurn.Discarded = fromCards(lt.Discarded)
+		}
+	}
 	if t := v.Turn; t != nil {
 		out.Turn = &Turn{
 			Number:         t.Number,

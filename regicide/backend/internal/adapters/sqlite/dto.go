@@ -28,6 +28,14 @@ type playedDTO struct {
 	Cards []cardDTO `json:"cards"`
 }
 
+type lastTurnDTO struct {
+	By        string    `json:"by"`
+	Played    []cardDTO `json:"played"`
+	Defeated  *cardDTO  `json:"defeated,omitempty"`
+	Exact     bool      `json:"exact,omitempty"`
+	Discarded []cardDTO `json:"discarded"`
+}
+
 type turnDTO struct {
 	Number     int `json:"number"`
 	ActiveSeat int `json:"activeSeat"`
@@ -40,23 +48,24 @@ type resultDTO struct {
 
 // gameDTO is the persisted JSON snapshot of a domain.Game (pending events excluded).
 type gameDTO struct {
-	SchemaVersion   int         `json:"schemaVersion"`
-	ID              string      `json:"id"`
-	Phase           string      `json:"phase"`
-	Step            string      `json:"step"`
-	HostID          string      `json:"hostId"`
-	Players         []playerDTO `json:"players"`
-	Castle          []cardDTO   `json:"castle"`
-	Enemy           *cardDTO    `json:"enemy"`
-	Tavern          []cardDTO   `json:"tavern"`
-	Discard         []cardDTO   `json:"discard"`
-	Played          []playedDTO `json:"played"`
-	Turn            turnDTO     `json:"turn"`
-	SoloJestersUsed int         `json:"soloJestersUsed"`
-	Result          *resultDTO  `json:"result"`
-	NextGameID      string      `json:"nextGameId"`
-	Revision        int64       `json:"revision"`
-	CreatedAt       time.Time   `json:"createdAt"`
+	SchemaVersion   int          `json:"schemaVersion"`
+	ID              string       `json:"id"`
+	Phase           string       `json:"phase"`
+	Step            string       `json:"step"`
+	HostID          string       `json:"hostId"`
+	Players         []playerDTO  `json:"players"`
+	Castle          []cardDTO    `json:"castle"`
+	Enemy           *cardDTO     `json:"enemy"`
+	Tavern          []cardDTO    `json:"tavern"`
+	Discard         []cardDTO    `json:"discard"`
+	Played          []playedDTO  `json:"played"`
+	LastTurn        *lastTurnDTO `json:"lastTurn,omitempty"` // optional: older snapshots have none
+	Turn            turnDTO      `json:"turn"`
+	SoloJestersUsed int          `json:"soloJestersUsed"`
+	Result          *resultDTO   `json:"result"`
+	NextGameID      string       `json:"nextGameId"`
+	Revision        int64        `json:"revision"`
+	CreatedAt       time.Time    `json:"createdAt"`
 }
 
 func cardToDTO(c domain.Card) cardDTO {
@@ -125,6 +134,14 @@ func toDTO(g *domain.Game) gameDTO {
 			d.Played[i] = playedDTO{By: string(ps.By), Cards: cardsToDTO(ps.Cards)}
 		}
 	}
+	if lt := g.LastTurn; lt != nil {
+		d.LastTurn = &lastTurnDTO{By: string(lt.By), Played: cardsToDTO(lt.Played), Discarded: cardsToDTO(lt.Discarded)}
+		if lt.Defeated != nil {
+			e := cardToDTO(*lt.Defeated)
+			d.LastTurn.Defeated = &e
+			d.LastTurn.Exact = lt.Exact
+		}
+	}
 	if g.Result != nil {
 		d.Result = &resultDTO{Reason: string(g.Result.Reason), PlayerID: string(g.Result.PlayerID)}
 	}
@@ -166,6 +183,14 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 		g.Played = make([]domain.PlayedSet, len(d.Played))
 		for i, ps := range d.Played {
 			g.Played[i] = domain.PlayedSet{By: domain.PlayerID(ps.By), Cards: cardsFromDTO(ps.Cards)}
+		}
+	}
+	if lt := d.LastTurn; lt != nil {
+		g.LastTurn = &domain.LastTurn{By: domain.PlayerID(lt.By), Played: cardsFromDTO(lt.Played), Discarded: cardsFromDTO(lt.Discarded)}
+		if lt.Defeated != nil {
+			e := cardFromDTO(*lt.Defeated)
+			g.LastTurn.Defeated = &e
+			g.LastTurn.Exact = lt.Exact
 		}
 	}
 	if d.Result != nil {

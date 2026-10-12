@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
@@ -201,7 +202,7 @@
 		{#if canEndGame}
 			<button
 				type="button"
-				class="-mr-1 flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+				class="flex items-center gap-1 rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
 				disabled={!connected}
 				title="End game"
 				onclick={() => (confirmEnd = true)}
@@ -211,6 +212,7 @@
 				<span class={cn(extreme && 'max-[24rem]:sr-only')}>End game</span>
 			</button>
 		{/if}
+		<HeaderThemeToggle class="-mr-1" />
 	</header>
 
 	{#if view.communicationRestricted}

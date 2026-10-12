@@ -1,7 +1,8 @@
 <!--
 	The frame of every game page: PageFrame with the "All games" link on the home screen, the theme
 	toggle wired to mode-watcher and the links to the start page's imprint and privacy pages. The
-	game's +layout.svelte renders it inside its ModeWatcher and Toaster.
+	game's +layout.svelte renders it inside its ModeWatcher and Toaster. On the game page itself
+	(/g/[code]) the layout passes topBar={false}: its headers show HeaderThemeToggle instead.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -14,6 +15,7 @@
 		isHome,
 		dev,
 		wide = false,
+		topBar = true,
 		children
 	}: {
 		/** The current page URL (page.url): links go to the same host. */
@@ -24,6 +26,8 @@
 		dev: boolean;
 		/** A wider column on desktop (see PageFrame). */
 		wide?: boolean;
+		/** false hides the top bar; the page's own header then shows HeaderThemeToggle. */
+		topBar?: boolean;
 		children: Snippet;
 	} = $props();
 </script>
@@ -34,6 +38,7 @@
 	allGamesHref={isHome ? startPageHref(url, dev) : undefined}
 	onToggleTheme={toggleMode}
 	{wide}
+	{topBar}
 >
 	{@render children()}
 </PageFrame>

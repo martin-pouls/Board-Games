@@ -613,3 +613,88 @@ func TestSoloJester(t *testing.T) {
 		}
 	})
 }
+
+func TestLastTurn(t *testing.T) {
+	t.Run("play then discard", func(t *testing.T) {
+		g := table{hands: []string{"7H 5C KC", "6H"}, enemy: "JC"}.build(t)
+		mustOK(t, g.Play(pid(0), cs("7H"), noShuffle{}))
+		want := LastTurn{By: pid(0), Played: cs("7H")}
+		if !reflect.DeepEqual(*g.LastTurn, want) {
+			t.Fatalf("after play %+v", *g.LastTurn)
+		}
+		mustOK(t, g.Discard(pid(0), cs("KC")))
+		want.Discarded = cs("KC")
+		if !reflect.DeepEqual(*g.LastTurn, want) {
+			t.Fatalf("after discard %+v", *g.LastTurn)
+		}
+		// The next play replaces it, dropping the old discard.
+		mustOK(t, g.Play(pid(1), cs("6H"), noShuffle{}))
+		if !reflect.DeepEqual(*g.LastTurn, LastTurn{By: pid(1), Played: cs("6H")}) {
+			t.Fatalf("after next play %+v", *g.LastTurn)
+		}
+	})
+	t.Run("an exact defeat records the enemy", func(t *testing.T) {
+		g := table{hands: []string{"5C KH", "6H"}, enemy: "JS", castle: "JC", played: []played{{1, "10H"}}}.build(t)
+		mustOK(t, g.Play(pid(0), cs("5C"), noShuffle{}))
+		want := LastTurn{By: pid(0), Played: cs("5C"), Defeated: new(c("JS")), Exact: true}
+		if !reflect.DeepEqual(*g.LastTurn, want) {
+			t.Fatalf("after defeat %+v", *g.LastTurn)
+		}
+	})
+	t.Run("an overkill is not exact", func(t *testing.T) {
+		g := table{hands: []string{"6C KH", "6H"}, enemy: "JS", castle: "JC", played: []played{{1, "10H"}}}.build(t)
+		mustOK(t, g.Play(pid(0), cs("6C"), noShuffle{}))
+		want := LastTurn{By: pid(0), Played: cs("6C"), Defeated: new(c("JS"))}
+		if !reflect.DeepEqual(*g.LastTurn, want) {
+			t.Fatalf("after defeat %+v", *g.LastTurn)
+		}
+	})
+	t.Run("yield has no played cards", func(t *testing.T) {
+		g := table{hands: []string{"KC", "6H"}, enemy: "JS"}.build(t)
+		mustOK(t, g.Yield(pid(0)))
+		mustOK(t, g.Discard(pid(0), cs("KC")))
+		if !reflect.DeepEqual(*g.LastTurn, LastTurn{By: pid(0), Discarded: cs("KC")}) {
+			t.Fatalf("after yield %+v", *g.LastTurn)
+		}
+	})
+	t.Run("a blocked attack has no discard", func(t *testing.T) {
+		g := table{hands: []string{"2C 3H", "6H"}, enemy: "JH", played: []played{{1, "10S"}}}.build(t)
+		mustOK(t, g.Play(pid(0), cs("2C"), noShuffle{}))
+		if !reflect.DeepEqual(*g.LastTurn, LastTurn{By: pid(0), Played: cs("2C")}) {
+			t.Fatalf("after blocked %+v", *g.LastTurn)
+		}
+	})
+	t.Run("a Jester play", func(t *testing.T) {
+		g := table{hands: []string{"X 2C", "6H"}, enemy: "JH"}.build(t)
+		mustOK(t, g.Play(pid(0), cs("X"), noShuffle{}))
+		if !reflect.DeepEqual(*g.LastTurn, LastTurn{By: pid(0), Played: cs("X")}) {
+			t.Fatalf("after Jester %+v", *g.LastTurn)
+		}
+	})
+	t.Run("an illegal play keeps it", func(t *testing.T) {
+		g := table{hands: []string{"7H 5C KC", "6H"}, enemy: "JC"}.build(t)
+		mustOK(t, g.Play(pid(0), cs("7H"), noShuffle{}))
+		mustOK(t, g.Discard(pid(0), cs("KC")))
+		before := *g.LastTurn
+		if err := g.Play(pid(1), cs("6H 6H"), noShuffle{}); err == nil {
+			t.Fatal("illegal play accepted")
+		}
+		if !reflect.DeepEqual(*g.LastTurn, before) {
+			t.Fatalf("changed to %+v", *g.LastTurn)
+		}
+	})
+	t.Run("clone and view copy it", func(t *testing.T) {
+		g := table{hands: []string{"5C KH", "6H"}, enemy: "JS", castle: "JC", played: []played{{1, "10H"}}}.build(t)
+		mustOK(t, g.Play(pid(0), cs("5C"), noShuffle{}))
+		cl := g.Clone()
+		v, err := g.ViewFor(pid(1))
+		mustOK(t, err)
+		g.LastTurn.Played[0] = c("9D")
+		*g.LastTurn.Defeated = c("KD")
+		for _, lt := range []*LastTurn{cl.LastTurn, v.LastTurn} {
+			if lt.Played[0] != c("5C") || *lt.Defeated != c("JS") {
+				t.Fatalf("aliased: %+v", *lt)
+			}
+		}
+	})
+}
