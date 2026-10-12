@@ -16,6 +16,11 @@ export class ActionError<C extends string = string> extends Error {
 }
 
 const REQUEST_TIMEOUT_MS = 10_000;
+/**
+ * After the tab was hidden this long, the socket is replaced when it becomes visible again: after
+ * sleep or a network switch a phone's socket can still look open although it is dead.
+ */
+export const STALE_AFTER_HIDDEN_MS = 15_000;
 
 interface Pending<C extends string> {
 	resolve: () => void;
@@ -26,7 +31,8 @@ interface Pending<C extends string> {
 /**
  * The live connection to one game: the player's current view, who is online, and commands
  * acknowledged by the server. It reconnects with backoff (and at once when the tab becomes
- * visible or the browser goes online) and stops for good on 4401/4404. Each game subclasses it
+ * visible or the browser goes online) and stops for good on 4401/4404. A socket that may be
+ * half-dead (the tab was hidden for a while, or a command timed out) is replaced. Each game subclasses it
  * with its typed commands, calling `send`.
  *
  * V is the game's player view, E its events, Cmd its client commands and C its error codes
@@ -49,6 +55,7 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 	private retryTimer: ReturnType<typeof setTimeout> | null = null;
 	private closed = false;
 	private listening = false;
+	private hiddenAt: number | null = null;
 
 	/** basePath is the app's base path (`__BASE_PATH__`, '' in dev). */
 	constructor(code: string, token: string, basePath: string) {
@@ -74,18 +81,21 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 		this.closed = true;
 		this.removeListeners();
 		this.clearRetry();
-		const ws = this.ws;
-		this.ws = null;
-		if (ws) {
-			ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
-			try {
-				ws.close();
-			} catch {
-				// ignore
-			}
-		}
+		this.dropSocket();
 		this.rejectAll('disconnected' as C);
 		this.status = 'closed';
+	}
+
+	private dropSocket() {
+		const ws = this.ws;
+		this.ws = null;
+		if (!ws) return;
+		ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
+		try {
+			ws.close();
+		} catch {
+			// ignore
+		}
 	}
 
 	/** Sends cmd and resolves on the server's ack (after the resulting view arrived). */
@@ -99,6 +109,8 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 			const timer = setTimeout(() => {
 				this.pending.delete(requestId);
 				reject(new ActionError('timeout' as C));
+				// No ack in time: the socket is probably dead without the browser noticing.
+				if (this.ws === ws) this.reopen();
 			}, REQUEST_TIMEOUT_MS);
 			this.pending.set(requestId, { resolve, reject, timer });
 			try {
@@ -216,8 +228,24 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 		this.attempt = 0;
 		this.open();
 	};
+	/** Replaces the current socket (which may be half-dead) with a fresh one. */
+	private reopen() {
+		if (this.closed) return;
+		this.dropSocket();
+		this.rejectAll('disconnected' as C);
+		this.clearRetry();
+		this.attempt = 0;
+		this.open();
+	}
 	private onVisibility = () => {
-		if (document.visibilityState === 'visible') this.reconnectNow();
+		if (document.visibilityState !== 'visible') {
+			this.hiddenAt ??= Date.now();
+			return;
+		}
+		const hiddenFor = this.hiddenAt === null ? 0 : Date.now() - this.hiddenAt;
+		this.hiddenAt = null;
+		if (this.ws && hiddenFor >= STALE_AFTER_HIDDEN_MS) this.reopen();
+		else this.reconnectNow();
 	};
 
 	private addListeners() {
