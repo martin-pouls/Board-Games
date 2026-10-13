@@ -7,7 +7,6 @@ Short list of games we might add. Not a plan: no rules have been checked against
 | Game | Players | Time | Type | Fit with current stack | Effort |
 |---|---|---|---|---|---|
 | Regicide Inferno | 1–4 | not stated | Cooperative, Regicide with classes and a growing enemy | Excellent (same lobby, session, hand and enemy-flow plumbing as Regicide) | Medium |
-| The Crew: Quest for Planet Nine | 2–5 | ~20 min/mission | Cooperative trick-taking, no talking | Very good (same hidden-hand and per-player-view model) | Low |
 | The Crew: Mission Deep Sea | 2–5 | ~10–20 min/mission | Same, bigger task deck | Very good; share the engine with Planet Nine | Low (after Planet Nine) |
 | Sail | 2 | ~20 min | Cooperative trick-taking + track | Good | Low–medium |
 | Sky Team | 2 | ~15–20 min | Cooperative dice placement, no talking | Needs a simultaneous, secret dice-placement UI | Medium |

@@ -1,7 +1,6 @@
 # Games
 
 ## All Card Games
-- Some highlight for drawn cards would be nice. so when i draw i want to see which cards i just drew. maybe highlight them in hand for a few seconds or until i select something or something along those lines. think of a good idea, its also an option to give me multiple ui designs and let me choose.
 
 ## The Game
 
@@ -17,7 +16,6 @@
   - Add half a sentence on this setting to the privacy policy's local storage section.
   - Comparators next to `compareCards` in `frontend/src/lib/game/rules.ts`, with tests.
   - Other games: no option. Fox Duet and The Crew sort by suit, then rank (following suit makes that the natural order), and The Game by value.
-- we went a little over board when saving space yesterday, so we can make some stuff a little larger now. one specific thing is that i would put the attack, block, etc in a separate line from the health bar again. see also the screenshot where we can see a bug where it wraps depending on whether a card is selected. so just make that two rows. probably make this enemy area than slightly larger again. but dont overdo it, we need to support smaller screens like the iphone 13 and there should be some wiggleroom. dont make stuf larger just for the sake of it. also we found today that we have all of the info we need, so that was fine. if you have smart suggestions for the space, feel free to add them. give me ui designs before implementing anything bigger though.
 
 
 
