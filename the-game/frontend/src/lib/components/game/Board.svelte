@@ -191,7 +191,7 @@
 			title="Draw pile"
 		>
 			<Layers class="size-4" />
-			<span class={cn(extreme && 'max-[24rem]:sr-only')}>Deck</span>
+			<span class={cn(extreme && 'max-sm:sr-only')}>Deck</span>
 			{view.drawPileCount}
 		</span>
 		{#if canEndGame}
@@ -200,7 +200,7 @@
 				icon={Flag}
 				label="End game"
 				showLabel
-				labelClass={cn(extreme && 'max-[24rem]:sr-only')}
+				labelClass={cn(extreme && 'max-sm:sr-only')}
 				destructive
 				disabled={!connected}
 				onclick={() => (confirmEnd = true)}
