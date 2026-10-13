@@ -5,6 +5,11 @@ redir /board-games /board-games/
 redir /board-games/impressum /board-games/impressum/
 redir /board-games/datenschutz /board-games/datenschutz/
 handle_path /board-games/* {
+	# The file server sends no Cache-Control, so browsers would cache the pages heuristically and
+	# miss a new game's tile for hours. Hashed assets never change; everything else is revalidated.
+	@mutable not path /_app/immutable/*
+	header @mutable Cache-Control "no-cache"
+	header /_app/immutable/* Cache-Control "public, max-age=31536000, immutable"
 	# The legal pages stay public (the login page links to them), with their assets.
 	@public path /impressum* /datenschutz* /_app/* /favicon.svg /robots.txt
 	handle @public {

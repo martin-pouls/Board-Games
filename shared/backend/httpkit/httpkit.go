@@ -122,13 +122,19 @@ func BearerToken(r *http.Request) string {
 }
 
 // SPA serves static files from dir and falls back to index.html for client-side routes.
+// Hashed files under _app/immutable/ are cached for good; everything else (index.html,
+// _app/version.json, ...) must be revalidated, so a redeploy reaches the browser at once.
 func SPA(dir string) http.Handler {
 	files := http.FileServer(http.Dir(dir))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
 		p := filepath.Join(dir, filepath.FromSlash(filepath.Clean("/"+r.URL.Path)))
 		if info, err := os.Stat(p); err != nil || info.IsDir() && r.URL.Path != "/" {
 			http.ServeFile(w, r, filepath.Join(dir, "index.html"))
 			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/_app/immutable/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		}
 		files.ServeHTTP(w, r)
 	})

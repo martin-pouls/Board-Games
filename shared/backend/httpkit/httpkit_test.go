@@ -105,3 +105,35 @@ func TestRouterHealthCatchAllAndSPA(t *testing.T) {
 		t.Fatalf("client route: %d %s", w.Code, w.Body)
 	}
 }
+
+func TestSPACacheControl(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"index.html":              "<html>spa</html>",
+		"_app/version.json":       `{"version":"1"}`,
+		"_app/immutable/entry.js": "js",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := SPA(dir)
+	const immutable = "public, max-age=31536000, immutable"
+	for _, tt := range []struct{ path, want string }{
+		{"/", "no-cache"},
+		{"/g/ABCDE", "no-cache"},
+		{"/_app/version.json", "no-cache"},
+		{"/_app/immutable/entry.js", immutable},
+		{"/_app/immutable/missing.js", "no-cache"}, // falls back to index.html
+	} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, tt.path, nil))
+		if w.Code != 200 || w.Header().Get("Cache-Control") != tt.want {
+			t.Errorf("%s: %d Cache-Control %q, want %q", tt.path, w.Code, w.Header().Get("Cache-Control"), tt.want)
+		}
+	}
+}
