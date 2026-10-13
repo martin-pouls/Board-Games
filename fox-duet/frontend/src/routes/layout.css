@@ -178,9 +178,16 @@
 	}
 	body {
 		@apply bg-background text-foreground;
-		background:
-			radial-gradient(ellipse at top, var(--glow), transparent 60%) fixed,
-			var(--background);
+	}
+	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
+	   would size (and repeat) it to the page, cutting it off with hard edges. */
+	body::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(ellipse at top, var(--glow), transparent 60%) no-repeat;
 	}
 	html {
 		@apply font-sans;

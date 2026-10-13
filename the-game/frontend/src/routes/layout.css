@@ -89,7 +89,7 @@
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 
 	--glow-up: oklch(0.33 0.08 250 / 55%);
-	--glow-down: oklch(0.32 0.07 50 / 30%);
+	--glow-down: oklch(0.32 0.065 50 / 24%);
 	--new-card: oklch(0.78 0.15 65);
 }
 
@@ -141,10 +141,18 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+	/* The glows sit on a fixed layer: iOS Safari ignores background-attachment: fixed and would
+	   size (and repeat) them to the page, cutting the bottom glow off with hard edges. */
+	body::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
 		background:
-			radial-gradient(ellipse 90% 55% at 0% 0%, var(--glow-up), transparent 70%) fixed,
-			radial-gradient(ellipse 80% 50% at 100% 100%, var(--glow-down), transparent 70%) fixed,
-			var(--background);
+			radial-gradient(ellipse 90% 55% at 0% 0%, var(--glow-up), transparent 70%) no-repeat,
+			radial-gradient(ellipse 100% 60% at 100% 100%, var(--glow-down), transparent 75%) no-repeat;
 	}
 	html {
 		@apply font-sans;

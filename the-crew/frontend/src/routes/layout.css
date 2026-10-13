@@ -180,18 +180,26 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
+	   would size (and repeat) it to the page, cutting it off with hard edges. */
+	body::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
 		/* A faint starfield (transparent in light mode) under a glow at the top. */
 		background:
-			radial-gradient(1px 1px at 12% 18%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1px 1px at 68% 9%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1.5px 1.5px at 85% 42%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1px 1px at 33% 61%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1px 1px at 52% 83%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1.5px 1.5px at 7% 77%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1px 1px at 91% 88%, var(--stars), transparent 60%) fixed,
-			radial-gradient(1px 1px at 24% 35%, var(--stars), transparent 60%) fixed,
-			radial-gradient(ellipse at top, var(--glow), transparent 60%) fixed,
-			var(--background);
+			radial-gradient(1px 1px at 12% 18%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1px 1px at 68% 9%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1.5px 1.5px at 85% 42%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1px 1px at 33% 61%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1px 1px at 52% 83%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1.5px 1.5px at 7% 77%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1px 1px at 91% 88%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(1px 1px at 24% 35%, var(--stars), transparent 60%) no-repeat,
+			radial-gradient(ellipse at top, var(--glow), transparent 60%) no-repeat;
 	}
 	html {
 		@apply font-sans;
