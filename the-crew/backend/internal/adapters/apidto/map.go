@@ -40,6 +40,12 @@ func ptr[T any](v T) *T { return &v }
 
 func ints(s []int) []int { return append([]int{}, s...) }
 
+// FromOptions maps domain options.
+func FromOptions(o domain.Options) GameOptions { return GameOptions{Distress: o.Distress} }
+
+// ToDomain maps wire options to domain options.
+func (o GameOptions) ToDomain() domain.Options { return domain.Options{Distress: o.Distress} }
+
 // FromView maps a player view. Slices are never nil, except Member.Cards (null until the debrief).
 func FromView(v domain.PlayerView) PlayerView {
 	out := PlayerView{
@@ -50,6 +56,7 @@ func FromView(v domain.PlayerView) PlayerView {
 		HostID:   string(v.HostID),
 		Players:  make([]PlayerSummary, 0, len(v.Players)),
 		Edition:  string(v.Edition),
+		Options:  FromOptions(v.Options),
 		Mission:  v.Mission,
 		Logbook:  fromLogbook(v.Logbook),
 	}
@@ -278,6 +285,8 @@ func FromEvent(e domain.Event) (Event, bool) {
 		return Event{Type: EventPlayerLeft, PlayerID: string(e.PlayerID), HostID: string(e.HostID)}, true
 	case domain.MissionSelected:
 		return Event{Type: EventMissionSelected, Mission: ptr(e.Mission)}, true
+	case domain.OptionsChanged:
+		return Event{Type: EventOptionsChanged}, true
 	case domain.AttemptStarted:
 		return Event{Type: EventAttemptStarted, Mission: ptr(e.Mission), Number: ptr(e.Number), Commander: ptr(e.Commander)}, true
 	case domain.TokensAdjusted:

@@ -193,6 +193,11 @@ func (s *Service) LeaveGame(ctx context.Context, id domain.GameID, player domain
 	return err
 }
 
+// SetOptions implements ports.GameService.
+func (s *Service) SetOptions(ctx context.Context, id domain.GameID, player domain.PlayerID, opts domain.Options) (domain.PlayerView, error) {
+	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SetOptions(player, opts) })
+}
+
 // SelectMission implements ports.GameService.
 func (s *Service) SelectMission(ctx context.Context, id domain.GameID, player domain.PlayerID, mission int) (domain.PlayerView, error) {
 	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SelectMission(player, mission) })

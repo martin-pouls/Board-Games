@@ -119,6 +119,7 @@ export function baseView(n = 1, viewer = 0, over: Partial<PlayerView> = {}): Pla
 		hostId: idOf(0),
 		players: playerList(n, viewer),
 		edition: 'planetNine',
+		options: { distress: false },
 		mission: 4,
 		missionDef: missionDef(4),
 		logbook: logbook(),

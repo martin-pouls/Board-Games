@@ -29,9 +29,15 @@ func mustJSON(t *testing.T, v any) string {
 // ends, and returns that game and its RNG.
 func reach(t *testing.T, n, mission int, done func(*domain.Game) bool) (*domain.Game, domain.RNG) {
 	t.Helper()
+	return reachWith(t, n, mission, domain.Options{}, done)
+}
+
+// reachWith is reach for a game with the lobby options opts.
+func reachWith(t *testing.T, n, mission int, opts domain.Options, done func(*domain.Game) bool) (*domain.Game, domain.RNG) {
+	t.Helper()
 	for seed := uint64(1); seed < 300; seed++ {
 		rng := gametest.NewRNG(seed)
-		g := gametest.NewGame(t, n, mission, rng)
+		g := gametest.NewGameWith(t, n, mission, opts, rng)
 		if gametest.TryUntil(t, g, rng, done) {
 			return g, rng
 		}
@@ -134,6 +140,40 @@ func TestFromViewLobby(t *testing.T) {
 	assertNoNulls(t, got)
 	if got.Attempt != nil {
 		t.Error("a lobby has no attempt")
+	}
+}
+
+func TestOptionsOnTheWire(t *testing.T) {
+	g, err := domain.NewGame("K7MQ2", "p1", "Anna")
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := func() PlayerView {
+		v, err := g.ViewFor("p1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return FromView(v)
+	}
+	if got := mustJSON(t, view().Options); got != `{"distress":false}` {
+		t.Fatalf("default options = %s", got)
+	}
+	if err := g.SetOptions("p1", GameOptions{Distress: true}.ToDomain()); err != nil {
+		t.Fatal(err)
+	}
+	if got := view().Options; got != (GameOptions{Distress: true}) || FromOptions(g.Options) != got {
+		t.Fatalf("options = %+v", got)
+	}
+	if !strings.Contains(mustJSON(t, view()), `"options":{"distress":true}`) {
+		t.Fatalf("view = %s", mustJSON(t, view()))
+	}
+	// An absent flag in a setOptions command means off.
+	var m ClientMessage
+	if err := json.Unmarshal([]byte(`{"type":"setOptions","requestId":"1","options":{}}`), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Options == nil || m.Options.ToDomain().Distress {
+		t.Fatalf("decoded %+v", m.Options)
 	}
 }
 
@@ -400,7 +440,7 @@ func TestFaceDownTasksAndPoll(t *testing.T) {
 // The distress pass: each player sees only their own choice; the events name no card; afterwards
 // the exchange shows the viewer's side only.
 func TestPassAndExchange(t *testing.T) {
-	g, rng := reach(t, 3, 1, func(g *domain.Game) bool {
+	g, rng := reachWith(t, 3, 1, domain.Options{Distress: true}, func(g *domain.Game) bool {
 		return g.Attempt.Step == domain.StepPlay && g.CanSendDistress(g.Attempt.Commander) == nil
 	})
 	cmd := g.Attempt.Commander
@@ -682,6 +722,7 @@ func TestFromEvents(t *testing.T) {
 		{domain.PlayerJoined{PlayerID: "p2", Name: "Ben"}, `{"type":"playerJoined","playerId":"p2","name":"Ben"}`},
 		{domain.PlayerLeft{PlayerID: "p2", HostID: "p1"}, `{"type":"playerLeft","playerId":"p2","hostId":"p1"}`},
 		{domain.MissionSelected{Mission: 7}, `{"type":"missionSelected","mission":7}`},
+		{domain.OptionsChanged{Options: domain.Options{Distress: true}}, `{"type":"optionsChanged"}`},
 		{domain.AttemptStarted{Mission: 7, Number: 2, Commander: 0}, `{"type":"attemptStarted","mission":7,"number":2,"commander":0}`},
 		{domain.TokensAdjusted{From: 0, To: 2}, `{"type":"tokensAdjusted","from":0,"to":2}`},
 		{domain.TokensAdjusted{From: -1, To: -1}, `{"type":"tokensAdjusted","from":-1,"to":-1}`},
@@ -723,7 +764,7 @@ func TestFromEvents(t *testing.T) {
 		seen[e.Type] = true
 	}
 	for _, typ := range []string{
-		EventPlayerJoined, EventPlayerLeft, EventMissionSelected, EventAttemptStarted, EventTokensAdjusted, EventPollAnswered,
+		EventPlayerJoined, EventPlayerLeft, EventMissionSelected, EventOptionsChanged, EventAttemptStarted, EventTokensAdjusted, EventPollAnswered,
 		EventPicked, EventTaskPicked, EventDistressSignal, EventPassCardChosen, EventCardsPassed, EventTaskHandedOver,
 		EventCommunicated, EventCardPlayed, EventTrickWon, EventCardsDrawn, EventAttemptEnded, EventBackInLobby, EventGameEnded,
 	} {
@@ -809,12 +850,12 @@ func TestClientMessageDecode(t *testing.T) {
 	}
 	// The command names are the ones of the protocol.
 	want := []string{
-		"selectMission", "startMission", "adjustTokens", "skipTokens", "answerPoll", "pick", "pickTask", "sendDistress",
+		"setOptions", "selectMission", "startMission", "adjustTokens", "skipTokens", "answerPoll", "pick", "pickTask", "sendDistress",
 		"skipDistress", "choosePassCard", "handover", "communicate", "playCard", "giveUp", "nextAttempt", "nextMission",
 		"backToLobby", "endGame",
 	}
 	got := []string{
-		CmdSelectMission, CmdStartMission, CmdAdjustTokens, CmdSkipTokens, CmdAnswerPoll, CmdPick, CmdPickTask, CmdSendDistress,
+		CmdSetOptions, CmdSelectMission, CmdStartMission, CmdAdjustTokens, CmdSkipTokens, CmdAnswerPoll, CmdPick, CmdPickTask, CmdSendDistress,
 		CmdSkipDistress, CmdChoosePassCard, CmdHandover, CmdCommunicate, CmdPlayCard, CmdGiveUp, CmdNextAttempt, CmdNextMission,
 		CmdBackToLobby, CmdEndGame,
 	}

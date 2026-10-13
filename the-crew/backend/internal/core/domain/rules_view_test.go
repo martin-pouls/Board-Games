@@ -132,7 +132,7 @@ func TestRulesViewDummyHiddenCards(t *testing.T) {
 
 // rules §9: other players' pass choices are secret; each sees their own side of the exchange.
 func TestRulesViewPassSecrecy(t *testing.T) {
-	g := bbReady(t, 4, 1)
+	g := withDistress(bbReady(t, 4, 1))
 	must(t, g.SendDistress(bbCmd(g), DirLeft))
 	hands := make([][]Card, 4)
 	chosen := make([]Card, 4)

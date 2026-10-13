@@ -179,7 +179,7 @@ func TestRoundTripSetupOfEveryMission(t *testing.T) {
 // TestRoundTripDistressPass snapshots the pass in progress and the exchange afterwards.
 func TestRoundTripDistressPass(t *testing.T) {
 	rng := gametest.NewRNG(5)
-	g := gametest.NewGame(t, 3, 1, rng)
+	g := gametest.NewGameWith(t, 3, 1, domain.Options{Distress: true}, rng)
 	gametest.Until(t, g, rng, func(g *domain.Game) bool { return g.Attempt.Step == domain.StepPlay })
 	if err := g.SendDistress(g.Players[g.Attempt.Commander].ID, domain.DirLeft); err != nil {
 		t.Fatal(err)
@@ -219,4 +219,52 @@ func TestRoundTripNilAndEmpty(t *testing.T) {
 		Silenced: -1,
 	}
 	assertRoundTrip(t, g)
+}
+
+// TestRoundTripOptions keeps the lobby options, in the lobby and while playing.
+func TestRoundTripOptions(t *testing.T) {
+	g := baseGame("OPTNS")
+	g.Options = domain.Options{Distress: true}
+	assertRoundTrip(t, g)
+	if got := roundTrip(t, g); !got.Options.Distress {
+		t.Fatalf("options lost: %+v", got.Options)
+	}
+	rng := gametest.NewRNG(7)
+	played := gametest.NewGameWith(t, 3, 1, domain.Options{Distress: true}, rng)
+	assertRoundTrip(t, played)
+	if got := roundTrip(t, played); !got.Options.Distress {
+		t.Fatalf("options lost mid-attempt: %+v", got.Options)
+	}
+}
+
+// TestSnapshotWithoutOptionsLoadsDisabled: a snapshot saved before the options existed has no
+// "options" key and loads with the distress signal off.
+func TestSnapshotWithoutOptionsLoadsDisabled(t *testing.T) {
+	b, err := json.Marshal(toDTO(baseGame("OLDSN")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := raw["options"]; !ok {
+		t.Fatal("the snapshot should carry the options")
+	}
+	delete(raw, "options")
+	old, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var d gameDTO
+	if err := json.Unmarshal(old, &d); err != nil {
+		t.Fatal(err)
+	}
+	g, err := fromDTO(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Options != (domain.Options{}) {
+		t.Fatalf("options = %+v, want the zero value", g.Options)
+	}
 }

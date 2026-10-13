@@ -103,7 +103,8 @@ func (a *Attempt) CommunicatedCard(seat int) *Communication {
 }
 
 // CanSendDistress reports why the commander (seat) may not send or skip the distress signal now,
-// or nil: before the first trick, before anyone has communicated, once per attempt (rules §9).
+// or nil: only if the lobby option is on, before the first trick, before anyone has communicated,
+// once per attempt (rules §9).
 func (g *Game) CanSendDistress(seat int) error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: no attempt is running", ErrWrongPhase)
@@ -113,6 +114,8 @@ func (g *Game) CanSendDistress(seat int) error {
 		return err
 	}
 	switch {
+	case !g.Options.Distress:
+		return fmt.Errorf("%w: the distress signal is off", ErrNotAllowed)
 	case !a.prePlay():
 		return fmt.Errorf("%w: only before the first trick", ErrNotAllowed)
 	case a.DistressDecided:

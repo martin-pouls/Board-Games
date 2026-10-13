@@ -163,7 +163,7 @@ func TestViewDebriefRevealsAll(t *testing.T) {
 }
 
 func TestViewActions(t *testing.T) {
-	g := fourAtPlay(t, 1)
+	g := withDistress(fourAtPlay(t, 1))
 	v, _ := g.ViewFor(alice)
 	want := []CommOption{{c("p1"), PosLowest}, {c("p5"), PosHighest}, {c("b3"), PosOnly}}
 	if !slices.Equal(v.Attempt.Actions.Communicate, want) || !v.Attempt.Actions.SendDistress || v.Attempt.Actions.Handover {
@@ -179,7 +179,7 @@ func TestViewActions(t *testing.T) {
 }
 
 func TestEventsCarryNoHiddenCards(t *testing.T) {
-	g := fourAtPlay(t, 12)
+	g := withDistress(fourAtPlay(t, 12))
 	must(t, g.SendDistress(alice, DirLeft))
 	for i, card := range []string{"b3", "g2", "g4", "y3"} {
 		must(t, g.ChoosePassCard(crewIDs[i], c(card)))

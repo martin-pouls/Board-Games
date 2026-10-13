@@ -45,7 +45,7 @@ func bbNonTrump(g *Game, seat int) Card {
 // ---------------------------------------------------------------- §9 distress
 
 func TestRulesDistressWho(t *testing.T) {
-	g := bbReady(t, 4, 1)
+	g := withDistress(bbReady(t, 4, 1))
 	cmd := g.Attempt.Commander
 	for seat := range 4 {
 		if got := g.CanSendDistress(seat) == nil; got != (seat == cmd) {
@@ -70,7 +70,7 @@ func TestRulesDistressWho(t *testing.T) {
 }
 
 func TestRulesDistressNotBeforeDistribution(t *testing.T) {
-	g := startMission(t, 4, 4) // draft pending
+	g := withDistress(startMission(t, 4, 4)) // draft pending
 	bbFailAny(t, g, func(g *Game) error { return g.SendDistress(bbCmd(g), DirLeft) }, ErrWrongStep, ErrNotAllowed)
 	if g.CanSendDistress(g.Attempt.Commander) == nil {
 		t.Fatal("no distress during the draft")
@@ -87,7 +87,7 @@ func TestRulesDistressPass(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%dp %s", tc.players, tc.dir), func(t *testing.T) {
 			n := tc.players
-			g := bbReady(t, n, 1)
+			g := withDistress(bbReady(t, n, 1))
 			a := g.Attempt
 			must(t, g.SendDistress(bbCmd(g), tc.dir))
 			if a.Step != StepPass {
@@ -195,7 +195,7 @@ func TestRulesDistressPass(t *testing.T) {
 // rules §9 app decision: with two players the humans swap, JARVIS stays out; direction is irrelevant.
 func TestRulesDistressTwoPlayers(t *testing.T) {
 	for _, dir := range []Direction{DirLeft, DirRight} {
-		g := bbReady(t, 2, 1)
+		g := withDistress(bbReady(t, 2, 1))
 		a := g.Attempt
 		dummyBefore := fmt.Sprint(a.Members[2].Stacks)
 		must(t, g.SendDistress(bbCmd(g), dir))
@@ -221,7 +221,7 @@ func TestRulesDistressTwoPlayers(t *testing.T) {
 // rules §9: not after anyone communicated, not once a trick has started.
 func TestRulesDistressTiming(t *testing.T) {
 	t.Run("after a communication", func(t *testing.T) {
-		g := bbCommGame(t, 1)
+		g := withDistress(bbCommGame(t, 1))
 		must(t, g.Communicate(alice, c("p9"), PosHighest))
 		if g.CanSendDistress(3) == nil {
 			t.Fatal("distress after a communication")
@@ -229,7 +229,7 @@ func TestRulesDistressTiming(t *testing.T) {
 		bbFailAny(t, g, func(g *Game) error { return g.SendDistress(dave, DirLeft) }, ErrNotAllowed, ErrCannotCommunicate)
 	})
 	t.Run("after the first card", func(t *testing.T) {
-		g := bbCommGame(t, 1)
+		g := withDistress(bbCommGame(t, 1))
 		if g.CanSendDistress(3) != nil {
 			t.Fatal("the commander may send before the lead")
 		}
@@ -240,7 +240,7 @@ func TestRulesDistressTiming(t *testing.T) {
 		bbFailAny(t, g, func(g *Game) error { return g.SendDistress(dave, DirLeft) }, ErrNotAllowed, ErrWrongStep)
 	})
 	t.Run("skipping closes the window", func(t *testing.T) {
-		g := bbReady(t, 4, 1)
+		g := withDistress(bbReady(t, 4, 1))
 		must(t, g.SkipDistress(bbCmd(g)))
 		if g.CanSendDistress(g.Attempt.Commander) == nil {
 			t.Fatal("distress after skipping")
@@ -252,7 +252,7 @@ func TestRulesDistressTiming(t *testing.T) {
 		}
 	})
 	t.Run("the first card may be played without a decision", func(t *testing.T) {
-		g := bbReady(t, 4, 1)
+		g := withDistress(bbReady(t, 4, 1))
 		cmd := g.Attempt.Commander
 		legal := g.LegalCards(cmd)
 		must(t, g.PlayCard(bbCmd(g), legal[0], noShuffle{}))
@@ -261,7 +261,7 @@ func TestRulesDistressTiming(t *testing.T) {
 
 // rules §9 / §15: the logbook counts one more with the signal; it can be sent again later.
 func TestRulesDistressLogbook(t *testing.T) {
-	g := bbReady(t, 3, 1)
+	g := withDistress(bbReady(t, 3, 1))
 	must(t, g.SendDistress(bbCmd(g), DirLeft))
 	for s := range 3 {
 		must(t, g.ChoosePassCard(bbID(g, s), bbNonTrump(g, s)))
@@ -725,7 +725,7 @@ func TestRulesMission46Owner(t *testing.T) {
 		}
 	}
 	// fixed before a distress pass: passing the pink 9 does not change the owner
-	g := startMission(t, 4, 46)
+	g := withDistress(startMission(t, 4, 46))
 	a := g.Attempt
 	holder := -1
 	for i, m := range a.Members {

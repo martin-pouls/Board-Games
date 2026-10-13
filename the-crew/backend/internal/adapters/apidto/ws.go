@@ -13,6 +13,7 @@ const (
 // Client -> server message types. Gameplay runs over the WebSocket only; REST covers the lobby.
 // The comments list the required fields of each command.
 const (
+	CmdSetOptions     = "setOptions"     // options
 	CmdSelectMission  = "selectMission"  // mission
 	CmdStartMission   = "startMission"   //
 	CmdAdjustTokens   = "adjustTokens"   // from, to
@@ -45,16 +46,17 @@ func ViewMessage(v PlayerView, events []Event) ServerMessage {
 // ClientMessage is a client -> server WebSocket message. Pointer fields tell "absent" from 0 and
 // false; a missing required field is bad_request.
 type ClientMessage struct {
-	Type      string `json:"type"`
-	RequestID string `json:"requestId"`
-	Mission   *int   `json:"mission,omitempty"`
-	Seats     []int  `json:"seats,omitempty"`
-	TaskID    *int   `json:"taskId,omitempty"`
-	Card      *Card  `json:"card,omitempty"`
-	Position  string `json:"position,omitempty"`
-	Direction string `json:"direction,omitempty"`
-	Yes       *bool  `json:"yes,omitempty"`
-	From      *int   `json:"from,omitempty"`
-	To        *int   `json:"to,omitempty"`
-	Seat      *int   `json:"seat,omitempty"`
+	Type      string       `json:"type"`
+	RequestID string       `json:"requestId"`
+	Options   *GameOptions `json:"options,omitempty"`
+	Mission   *int         `json:"mission,omitempty"`
+	Seats     []int        `json:"seats,omitempty"`
+	TaskID    *int         `json:"taskId,omitempty"`
+	Card      *Card        `json:"card,omitempty"`
+	Position  string       `json:"position,omitempty"`
+	Direction string       `json:"direction,omitempty"`
+	Yes       *bool        `json:"yes,omitempty"`
+	From      *int         `json:"from,omitempty"`
+	To        *int         `json:"to,omitempty"`
+	Seat      *int         `json:"seat,omitempty"`
 }

@@ -139,6 +139,9 @@ func (f *fakeService) rec(ctx context.Context, id domain.GameID, p domain.Player
 	return f.mutate(ctx, call, id, p)
 }
 
+func (f *fakeService) SetOptions(ctx context.Context, id domain.GameID, p domain.PlayerID, o domain.Options) (domain.PlayerView, error) {
+	return f.rec(ctx, id, p, "SetOptions", o.Distress)
+}
 func (f *fakeService) SelectMission(ctx context.Context, id domain.GameID, p domain.PlayerID, m int) (domain.PlayerView, error) {
 	return f.rec(ctx, id, p, "SelectMission", m)
 }
@@ -390,6 +393,8 @@ func TestAllCommands(t *testing.T) {
 	tests := []struct {
 		msg, call string
 	}{
+		{`{"type":"setOptions","requestId":"1","options":{"distress":true}}`, "SetOptions(true)"},
+		{`{"type":"setOptions","requestId":"1","options":{"distress":false}}`, "SetOptions(false)"},
 		{`{"type":"selectMission","requestId":"1","mission":7}`, "SelectMission(7)"},
 		{`{"type":"selectMission","requestId":"1","mission":0}`, "SelectMission(0)"}, // 0 is present, the domain judges it
 		{`{"type":"startMission","requestId":"1"}`, "StartMission"},
@@ -450,6 +455,7 @@ func TestCommandErrors(t *testing.T) {
 	}
 	// A command without its required fields is bad_request and never reaches the service.
 	for _, msg := range []string{
+		`{"type":"setOptions","requestId":"3"}`,
 		`{"type":"selectMission","requestId":"3"}`,
 		`{"type":"adjustTokens","requestId":"3","from":1}`,
 		`{"type":"adjustTokens","requestId":"3","to":1}`,

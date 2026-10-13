@@ -21,6 +21,7 @@
 	}
 
 	const n = $derived(attempt.members.length);
+	const side3 = $derived(n <= 3);
 	const live = $derived(attempt.trick.length > 0);
 	// Between tricks (and in the debrief) the last trick stays on the table; during a trick the
 	// peek button shows it instead of the trick in progress.
@@ -49,9 +50,18 @@
 	const from = (seat: number): Offstage => (seat === dummySeat ? 'none' : side(seat));
 </script>
 
-<section class="flex flex-col items-center gap-1" aria-label="Trick">
-	<div class="flex w-full items-center justify-between text-xs text-muted-foreground">
-		<span class="font-display font-semibold tracking-wide uppercase">
+<!-- Up to three cards leave room beside the trick for its label; with more, it sits on top. -->
+<section
+	class={cn('grid items-start gap-1', side3 ? 'grid-cols-[3.5rem_1fr_3.5rem]' : 'grid-cols-1')}
+	aria-label="Trick"
+>
+	<div
+		class={cn(
+			'flex text-xs text-muted-foreground',
+			side3 ? 'flex-col items-start gap-1.5 pt-1' : 'items-center justify-between'
+		)}
+	>
+		<span class="font-display leading-tight font-semibold tracking-wide uppercase">
 			{#if showLast && (peek || attempt.step === '')}
 				Last trick
 			{:else if showLast}
@@ -64,13 +74,14 @@
 			<button
 				type="button"
 				class={cn(
-					'flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:text-foreground',
+					'-mx-1.5 flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:text-foreground',
 					peek && 'bg-muted text-foreground'
 				)}
 				aria-pressed={peek}
+				title="Show the last trick"
 				onclick={() => (peek = !peek)}
 			>
-				<History class="size-3.5" />Last trick
+				<History class="size-3.5" />Last
 			</button>
 		{/if}
 	</div>
@@ -110,11 +121,10 @@
 						slot.seat === attempt.seat ? 'font-semibold' : 'text-muted-foreground'
 					)}
 				>
-					{seatName(attempt.members, slot.seat, attempt.seat)}
+					{#if i === 0}<span class="sr-only">Lead: </span><span aria-hidden="true"
+							>▸
+						</span>{/if}{seatName(attempt.members, slot.seat, attempt.seat)}
 				</span>
-				{#if i === 0}
-					<span class="text-[0.6rem] leading-none text-muted-foreground uppercase">lead</span>
-				{/if}
 			</li>
 		{/each}
 	</ol>

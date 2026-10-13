@@ -15,6 +15,9 @@ type PlayerLeft struct{ PlayerID, HostID PlayerID }
 
 type MissionSelected struct{ Mission int }
 
+// OptionsChanged: the host changed the lobby options.
+type OptionsChanged struct{ Options Options }
+
 // AttemptStarted: the cards were dealt and the tasks drawn.
 type AttemptStarted struct {
 	Mission, Number int
@@ -82,6 +85,7 @@ type GameEnded struct{ ByPlayerID PlayerID }
 func (PlayerJoined) isEvent()    {}
 func (PlayerLeft) isEvent()      {}
 func (MissionSelected) isEvent() {}
+func (OptionsChanged) isEvent()  {}
 func (AttemptStarted) isEvent()  {}
 func (TokensAdjusted) isEvent()  {}
 func (PollAnswered) isEvent()    {}

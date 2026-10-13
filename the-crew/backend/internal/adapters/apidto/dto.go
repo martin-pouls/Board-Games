@@ -207,6 +207,11 @@ type Attempt struct {
 	Result      *AttemptResult  `json:"result"`
 }
 
+// GameOptions are the host-selectable lobby settings.
+type GameOptions struct {
+	Distress bool `json:"distress"` // the distress signal (rules §9) is on; off by default
+}
+
 // PlayerView is the per-player projection.
 type PlayerView struct {
 	GameID     string          `json:"gameId"`
@@ -216,6 +221,7 @@ type PlayerView struct {
 	HostID     string          `json:"hostId"`
 	Players    []PlayerSummary `json:"players"` // never null
 	Edition    string          `json:"edition"`
+	Options    GameOptions     `json:"options"`
 	Mission    int             `json:"mission"`    // selected (lobby) or being played
 	MissionDef *MissionDef     `json:"missionDef"` // null if the mission is unknown
 	Logbook    []LogEntry      `json:"logbook"`    // never null; sorted by mission
@@ -238,6 +244,7 @@ const (
 	EventPlayerJoined    = "playerJoined"
 	EventPlayerLeft      = "playerLeft"
 	EventMissionSelected = "missionSelected"
+	EventOptionsChanged  = "optionsChanged"
 	EventAttemptStarted  = "attemptStarted"
 	EventTokensAdjusted  = "tokensAdjusted"
 	EventPollAnswered    = "pollAnswered"

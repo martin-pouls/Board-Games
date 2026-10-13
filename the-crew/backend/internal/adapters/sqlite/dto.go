@@ -128,6 +128,11 @@ type attemptDTO struct {
 	Result          *resultDTO       `json:"result"`
 }
 
+// optionsDTO holds the lobby options. A snapshot without it loads with every option off.
+type optionsDTO struct {
+	Distress bool `json:"distress"`
+}
+
 // gameDTO is the persisted JSON snapshot of a domain.Game (pending events excluded).
 type gameDTO struct {
 	SchemaVersion int                 `json:"schemaVersion"`
@@ -136,6 +141,7 @@ type gameDTO struct {
 	HostID        string              `json:"hostId"`
 	Players       []playerDTO         `json:"players"`
 	Edition       string              `json:"edition"`
+	Options       optionsDTO          `json:"options"`
 	Mission       int                 `json:"mission"`
 	Logbook       map[int]logEntryDTO `json:"logbook"`
 	Attempt       *attemptDTO         `json:"attempt"`
@@ -179,6 +185,7 @@ func toDTO(g *domain.Game) gameDTO {
 		HostID:        string(g.HostID),
 		Players:       mapSlice(g.Players, func(p domain.Player) playerDTO { return playerDTO{ID: string(p.ID), Name: p.Name} }),
 		Edition:       string(g.Edition),
+		Options:       optionsDTO{Distress: g.Options.Distress},
 		Mission:       g.Mission,
 		Attempt:       attemptToDTO(g.Attempt),
 		Revision:      g.Revision,
@@ -293,6 +300,7 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 		HostID:    domain.PlayerID(d.HostID),
 		Players:   mapSlice(d.Players, func(p playerDTO) domain.Player { return domain.Player{ID: domain.PlayerID(p.ID), Name: p.Name} }),
 		Edition:   domain.Edition(d.Edition),
+		Options:   domain.Options{Distress: d.Options.Distress},
 		Mission:   d.Mission,
 		Attempt:   attemptFromDTO(d.Attempt),
 		Revision:  d.Revision,

@@ -18,8 +18,15 @@ func NewRNG(seed uint64) *rand.Rand { return rand.New(rand.NewPCG(seed, seed^0x9
 func PlayerID(seat int) domain.PlayerID { return domain.PlayerID(fmt.Sprintf("p%d", seat+1)) }
 
 // NewGame creates a lobby of n players (Ann, Ben, Cleo, Dan, Eve; p1 hosts), selects mission and
-// starts it with rng. The returned game has no pending events.
+// starts it with rng. The options are the defaults (distress signal off). The returned game has no
+// pending events.
 func NewGame(t testing.TB, n, mission int, rng domain.RNG) *domain.Game {
+	t.Helper()
+	return NewGameWith(t, n, mission, domain.Options{}, rng)
+}
+
+// NewGameWith is NewGame with the lobby options opts set by the host.
+func NewGameWith(t testing.TB, n, mission int, opts domain.Options, rng domain.RNG) *domain.Game {
 	t.Helper()
 	names := []string{"Ann", "Ben", "Cleo", "Dan", "Eve"}
 	g, err := domain.NewGame("GAME1", PlayerID(0), names[0])
@@ -30,6 +37,9 @@ func NewGame(t testing.TB, n, mission int, rng domain.RNG) *domain.Game {
 		if err := g.AddPlayer(PlayerID(i), names[i]); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := g.SetOptions(PlayerID(0), opts); err != nil {
+		t.Fatal(err)
 	}
 	if err := g.SelectMission(PlayerID(0), mission); err != nil {
 		t.Fatal(err)

@@ -238,6 +238,11 @@ export interface Attempt {
 	actions: Actions;
 	result: AttemptResult | null;
 }
+/** The host-selectable lobby settings. */
+export interface GameOptions {
+	/** The distress signal (rules §9) is on; off by default. */
+	distress: boolean;
+}
 export interface PlayerView {
 	gameId: string;
 	revision: number;
@@ -246,6 +251,7 @@ export interface PlayerView {
 	hostId: string;
 	players: PlayerSummary[];
 	edition: string;
+	options: GameOptions;
 	/** Selected (lobby) or being played. */
 	mission: number;
 	missionDef: MissionDef | null;
@@ -275,6 +281,7 @@ export type GameEvent =
 	| { type: 'playerJoined'; playerId: string; name: string }
 	| { type: 'playerLeft'; playerId: string; hostId: string }
 	| { type: 'missionSelected'; mission: number }
+	| { type: 'optionsChanged' }
 	| { type: 'attemptStarted'; mission: number; number: number; commander: number }
 	| { type: 'tokensAdjusted'; from: number; to: number }
 	| { type: 'pollAnswered'; seat: number; yes: boolean }
@@ -325,6 +332,7 @@ export type ErrorBody = SharedErrorBody<ApiErrorCode>;
 export type ServerMessage = SharedServerMessage<PlayerView, GameEvent, ApiErrorCode>;
 // sent as ClientCommand & { requestId: string }
 export type ClientCommand =
+	| { type: 'setOptions'; options: GameOptions }
 	| { type: 'selectMission'; mission: number }
 	| { type: 'startMission' }
 	| { type: 'adjustTokens'; from: number; to: number }

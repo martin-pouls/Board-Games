@@ -24,6 +24,8 @@ type GameService interface {
 	Summary(ctx context.Context, id domain.GameID) (domain.GameSummary, error)
 	View(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
 	LeaveGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error
+	// SetOptions changes the lobby options (host, lobby).
+	SetOptions(ctx context.Context, id domain.GameID, player domain.PlayerID, opts domain.Options) (domain.PlayerView, error)
 	// SelectMission picks the mission to play next (host, lobby).
 	SelectMission(ctx context.Context, id domain.GameID, player domain.PlayerID, mission int) (domain.PlayerView, error)
 	// StartMission deals the first attempt of the selected mission (host, lobby).

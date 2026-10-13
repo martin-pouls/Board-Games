@@ -16,8 +16,7 @@
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { cardLabel, sameCard } from '#lib/game/cards.js';
-	import { describeEvents } from '#lib/game/format.js';
+	import { byTokenOrder, cardLabel, sameCard } from '#lib/game/cards.js';
 	import { cn } from '#lib/utils.js';
 	import {
 		OWNER_UNASSIGNED,
@@ -34,6 +33,8 @@
 	import Hand from './Hand.svelte';
 	import MissionPanel from './MissionPanel.svelte';
 	import RulesHelp from './RulesHelp.svelte';
+	import TaskList, { type TaskPick } from './TaskList.svelte';
+	import TaskPool from './TaskPool.svelte';
 	import TrickArea from './TrickArea.svelte';
 
 	let { client, view, attempt }: { client: GameClient; view: PlayerView; attempt: Attempt } =
@@ -57,14 +58,14 @@
 	const dummy = $derived(attempt.members.find((m) => m.dummy));
 	const forJarvis = $derived(mine && !!dummy && attempt.turn === dummy.seat);
 	const ready = $derived(!busy && connected);
-	const chronicle = $derived(describeEvents(client.lastEvents, attempt.members, attempt.seat));
 	const dealing = $derived(
 		attempt.trickNumber === 1 && attempt.trick.length === 0 && step !== 'play'
 	);
 
 	// Drop the selection whenever the decision it belongs to changes.
+	const assigned = $derived(attempt.tasks.filter((t) => t.owner !== OWNER_UNASSIGNED).length);
 	const selectionKey = $derived(
-		`${attempt.number}|${step}|${attempt.pick}|${attempt.trickNumber}|${attempt.trick.length}|${attempt.hand.length}|${mine}`
+		`${attempt.number}|${step}|${attempt.pick}|${attempt.trickNumber}|${attempt.trick.length}|${attempt.hand.length}|${assigned}|${mine}`
 	);
 	$effect(() => {
 		void selectionKey;
@@ -107,14 +108,29 @@
 		return false;
 	}
 	function pickTask(t: Task) {
+		// Like a card: tap to select, tap again (or confirm in the decision panel) to take it.
 		if (step === 'draft') {
-			void run(() => client.pickTask(t.id));
+			if (selectedTasks[0] === t.id) void run(() => client.pickTask(t.id));
+			else selectedTasks = [t.id];
 			return;
 		}
 		selectedTasks = selectedTasks.includes(t.id)
 			? selectedTasks.filter((id) => id !== t.id)
 			: [...selectedTasks, t.id].slice(-2);
 	}
+
+	const taskPick: TaskPick = {
+		canPick: taskEnabled,
+		get selected() {
+			return selectedTasks;
+		},
+		onpick: pickTask
+	};
+	const myTasks = $derived(byTokenOrder(attempt.tasks.filter((t) => t.owner === attempt.seat)));
+	// During the setup the open tasks lie in the middle, where the trick goes later.
+	const pool = $derived(
+		step !== 'play' && step !== '' && attempt.tasks.some((t) => t.owner === OWNER_UNASSIGNED)
+	);
 
 	/** Runs an action; false when it failed (the error is shown as a toast). */
 	async function run(action: () => Promise<void>): Promise<boolean> {
@@ -147,63 +163,48 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 sm:max-w-xl">
-	<header class="flex flex-col gap-1">
-		<div class={cn(headerRow, 'text-sm')}>
-			<HeaderButton icon={House} label="Home" href={resolve('/')} />
-			<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
-			<span
-				class={cn('size-2 rounded-full', connected ? 'bg-success' : 'animate-pulse bg-amber-500')}
-				title={connected ? 'Connected' : 'Reconnecting'}
-			></span>
+	<header class={cn(headerRow, 'text-sm')}>
+		<HeaderButton icon={House} label="Home" href={resolve('/')} />
+		<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
+		<span
+			class={cn('size-2 rounded-full', connected ? 'bg-success' : 'animate-pulse bg-amber-500')}
+			title={connected ? 'Connected' : 'Reconnecting'}
+		></span>
+		<span class="ml-1.5 truncate font-display text-base font-bold">Mission {view.mission}</span>
+		<HeaderButton
+			class="ml-auto"
+			icon={BookOpen}
+			label="Rules"
+			onclick={() => (rulesOpen = true)}
+		/>
+		{#if playing}
 			<HeaderButton
-				class="ml-auto"
-				icon={BookOpen}
-				label="Rules"
-				onclick={() => (rulesOpen = true)}
+				icon={Flag}
+				label="Give up"
+				title="Give up this attempt"
+				destructive
+				disabled={!connected}
+				onclick={() => (confirmGiveUp = true)}
 			/>
-			{#if playing}
-				<HeaderButton
-					icon={Flag}
-					label="Give up"
-					title="Give up this attempt"
-					showLabel
-					labelClass="max-[24rem]:sr-only"
-					destructive
-					disabled={!connected}
-					onclick={() => (confirmGiveUp = true)}
-				/>
-			{/if}
-			<HeaderThemeToggle />
-		</div>
-		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-			<span class="font-display text-base font-bold">Mission {view.mission}</span>
-			<span class="text-muted-foreground">Attempt {attempt.number}</span>
-			{#if mission?.deadZone}
-				<span
-					class="rounded-full bg-muted px-2 py-0.5 text-xs"
-					title="Communicate without position"
-				>
-					dead zone
-				</span>
-			{/if}
-			{#if mission && mission.fromTrick > 1}
-				<span class="rounded-full bg-muted px-2 py-0.5 text-xs">
-					comms from trick {mission.fromTrick}
-				</span>
-			{/if}
-			{#if attempt.distress}
-				<span class="rounded-full bg-muted px-2 py-0.5 text-xs">distress signal used</span>
-			{/if}
-		</div>
+		{/if}
+		<HeaderThemeToggle />
 	</header>
 
-	<CrewStrip {attempt} online={client.online} {jarvisEnabled} {selected} onpick={pickCard} />
+	<CrewStrip
+		{attempt}
+		online={client.online}
+		{jarvisEnabled}
+		{selected}
+		onpick={pickCard}
+		{taskPick}
+	/>
 
-	<MissionPanel {attempt} canPick={taskEnabled} selected={selectedTasks} onpick={pickTask} />
+	<MissionPanel {attempt} {mission} />
 
-	{#if step === 'play' || step === ''}
+	{#if pool}
+		<TaskPool {attempt} pick={taskPick} />
+	{:else if step === 'play' || step === ''}
 		<TrickArea {attempt} />
-		<p class="min-h-5 text-center text-sm text-muted-foreground" aria-live="polite">{chronicle}</p>
 	{/if}
 
 	<div
@@ -228,6 +229,47 @@
 			<p class="text-center text-xs text-muted-foreground">{exchangeText}</p>
 		{/if}
 
+		<!-- In front of you: your tasks, and the button to communicate. -->
+		<div class="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+			<span class="flex items-center gap-1">
+				You
+				{#if attempt.seat === attempt.commander}
+					<Crown class="size-3.5 text-rocket-ink" aria-label="Commander" />
+				{/if}
+				{#if attempt.seat === attempt.silenced}
+					<MicOff class="size-3.5 text-danger" aria-label="Silenced" />
+				{/if}
+			</span>
+			<span class="flex items-center gap-0.5" title="Tricks won">
+				<Trophy class="size-3.5" />{me?.tricksWon ?? 0}
+			</span>
+			{#if me?.communication}
+				<span class="flex items-center gap-1">
+					<CommBadge comm={me.communication} />
+					{cardLabel(me.communication.card)}
+				</span>
+			{/if}
+			<TaskList
+				tasks={myTasks}
+				attempt={attempt.number}
+				pick={taskPick}
+				label="Your tasks"
+				class="pt-1"
+			/>
+			{#if playing && step === 'play' && !me?.communicated && attempt.seat !== attempt.silenced}
+				<Button
+					size="sm"
+					variant="outline"
+					class="ml-auto h-8"
+					disabled={!canCommunicate}
+					title={canCommunicate ? 'Communicate a card' : 'Not possible right now'}
+					onclick={() => (commOpen = true)}
+				>
+					<MessageSquare />Communicate
+				</Button>
+			{/if}
+		</div>
+
 		{#if playing}
 			<Hand
 				cards={attempt.hand}
@@ -238,38 +280,6 @@
 				{dealing}
 				onpick={pickCard}
 			/>
-			<div class="flex items-center gap-2 text-xs text-muted-foreground">
-				<span class="flex items-center gap-1">
-					You
-					{#if attempt.seat === attempt.commander}
-						<Crown class="size-3.5 text-rocket-ink" aria-label="Commander" />
-					{/if}
-					{#if attempt.seat === attempt.silenced}
-						<MicOff class="size-3.5 text-danger" aria-label="Silenced" />
-					{/if}
-				</span>
-				<span class="flex items-center gap-0.5" title="Tricks won">
-					<Trophy class="size-3.5" />{me?.tricksWon ?? 0}
-				</span>
-				{#if me?.communication}
-					<span class="flex items-center gap-1">
-						<CommBadge comm={me.communication} />
-						{cardLabel(me.communication.card)}
-					</span>
-				{/if}
-				{#if step === 'play' && !me?.communicated && attempt.seat !== attempt.silenced}
-					<Button
-						size="sm"
-						variant="outline"
-						class="ml-auto h-8"
-						disabled={!canCommunicate}
-						title={canCommunicate ? 'Communicate a card' : 'Not possible right now'}
-						onclick={() => (commOpen = true)}
-					>
-						<MessageSquare />Communicate
-					</Button>
-				{/if}
-			</div>
 		{/if}
 	</div>
 </div>

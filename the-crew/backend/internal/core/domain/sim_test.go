@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"reflect"
@@ -414,6 +415,12 @@ func (s *simRun) checkView(name string, seat int, v PlayerView) {
 	}
 
 	// Actions.
+	if v.Options != g.Options {
+		s.failf("%s: view of seat %d: options %+v, game %+v", name, seat, v.Options, g.Options)
+	}
+	if !g.Options.Distress && av.Actions.SendDistress {
+		s.failf("%s: view of seat %d offers the distress signal while it is off", name, seat)
+	}
 	if over {
 		if len(av.Actions.Communicate) != 0 || av.Actions.SendDistress || av.Actions.Handover {
 			s.failf("%s: debrief view of seat %d offers actions %+v", name, seat, av.Actions)
@@ -547,6 +554,15 @@ func (s *simRun) play() {
 	cid := s.pid(cmd)
 
 	if a.prePlay() {
+		if !g.Options.Distress && a.Step == StepPlay && rng.IntN(4) == 0 {
+			// Off: the commander's attempts to send or skip are rejected and change nothing.
+			if err := s.try("sendDistress(off)", func() error { return g.SendDistress(cid, DirLeft) }); !errors.Is(err, ErrNotAllowed) {
+				s.failf("sendDistress while off: %v, want ErrNotAllowed", err)
+			}
+			if err := s.try("skipDistress(off)", func() error { return g.SkipDistress(cid) }); !errors.Is(err, ErrNotAllowed) {
+				s.failf("skipDistress while off: %v, want ErrNotAllowed", err)
+			}
+		}
 		if g.CanSendDistress(cmd) == nil {
 			switch rng.IntN(7) {
 			case 0, 1:
@@ -789,6 +805,8 @@ func runGame(t *testing.T, st *simStats, mission, players int, seed uint64) {
 
 	s.g = newCrew(t, players)
 	g := s.g
+	// A third of the games play with the distress signal on, the rest with the default (off).
+	s.act("setOptions", func() error { return g.SetOptions(alice, Options{Distress: seed%3 == 1}) })
 	s.act("selectMission", func() error { return g.SelectMission(alice, mission) })
 	s.act("startMission", func() error { return g.StartMission(alice, s.rng) })
 	s.runAttempt(1)

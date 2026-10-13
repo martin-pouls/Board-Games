@@ -1,47 +1,32 @@
+<!--
+	What the mission asks beyond the tasks: the special objectives and the communication rules.
+	The tasks themselves lie with their owners (crew strip, own row) or in the open pool.
+-->
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
 	import Circle from '@lucide/svelte/icons/circle';
 	import X from '@lucide/svelte/icons/x';
-	import { objectiveText, ownerText, seatName } from '#lib/game/format.js';
+	import { objectiveText, ownerText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
-	import { OWNER_UNASSIGNED, type Attempt, type Task } from '#lib/types.js';
-	import TaskCard from './TaskCard.svelte';
+	import type { Attempt, MissionDef } from '#lib/types.js';
 
-	let {
-		attempt,
-		canPick = () => false,
-		selected = [],
-		onpick
-	}: {
-		attempt: Attempt;
-		/** Whether a task can be tapped now (draft, token setup). */
-		canPick?: (t: Task) => boolean;
-		selected?: number[];
-		onpick?: (t: Task) => void;
-	} = $props();
+	let { attempt, mission }: { attempt: Attempt; mission: MissionDef | null } = $props();
 
-	const done = $derived(attempt.tasks.filter((t) => t.status === 'fulfilled').length);
-	const owner = (t: Task) =>
-		t.owner === OWNER_UNASSIGNED ? '' : seatName(attempt.members, t.owner, attempt.seat);
+	const rules = $derived(
+		[
+			mission?.deadZone && { text: 'dead zone', title: 'Communicate without position' },
+			mission && mission.fromTrick > 1 && { text: `comms from trick ${mission.fromTrick}` },
+			attempt.distress && { text: 'distress signal used' }
+		].filter((r): r is { text: string; title?: string } => !!r)
+	);
 </script>
 
-{#if attempt.tasks.length || attempt.objectives.length}
-	<section class="flex flex-col gap-2 rounded-xl bg-panel px-3 py-2" aria-label="Mission">
-		{#if attempt.tasks.length}
-			<div class="flex items-baseline justify-between text-xs text-muted-foreground">
-				<span class="font-display font-semibold tracking-wide uppercase">Tasks</span>
-				<span>{done}/{attempt.tasks.length} done</span>
-			</div>
-			<ul class="flex flex-wrap justify-center gap-x-2.5 gap-y-1.5 pt-1">
-				{#each attempt.tasks as t (t.id)}
-					<li>
-						<TaskCard
-							task={t}
-							owner={owner(t)}
-							selected={selected.includes(t.id)}
-							onpick={canPick(t) ? () => onpick?.(t) : undefined}
-						/>
-					</li>
+{#if attempt.objectives.length || rules.length}
+	<section class="flex flex-col gap-1 rounded-xl bg-panel px-3 py-1.5" aria-label="Mission">
+		{#if rules.length}
+			<ul class="flex flex-wrap gap-1.5 text-xs">
+				{#each rules as r (r.text)}
+					<li class="rounded-full bg-muted px-2 py-0.5" title={r.title}>{r.text}</li>
 				{/each}
 			</ul>
 		{/if}

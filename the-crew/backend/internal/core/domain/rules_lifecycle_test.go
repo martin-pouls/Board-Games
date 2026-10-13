@@ -127,7 +127,7 @@ func TestRulesLogbook(t *testing.T) {
 
 // rules §9 / §15: a signal used on a replay of a completed mission does not change its line.
 func TestRulesLogbookReplayWithDistress(t *testing.T) {
-	g := bbReady(t, 3, 1)
+	g := withDistress(bbReady(t, 3, 1))
 	bbWin(t, g)
 	before := g.Logbook[1]
 	must(t, g.BackToLobby(alice))

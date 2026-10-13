@@ -105,6 +105,7 @@ When a mission shows tokens, place them first. The drawn task cards are then lai
 ## 9. Distress signal
 
 - After the playing cards and tasks are distributed and before **anyone has communicated** in the attempt, the crew may send a distress signal.
+  - **App decision:** the distress signal is a **lobby option** (*Distress signal*), set by the host and **off by default**, because most crews never use it. While it is off, the commander is not asked before the first trick, the server rejects `sendDistress` and `skipDistress` (`not_allowed`), and the rest of this section does not apply. The option can only change in the lobby, so it holds for every attempt of a mission and is kept when the crew returns to the lobby.
   - **App decision:** the **commander** decides, and chooses the direction, left or right. The players coordinate outside the app.
 - Then **every** human crew member passes exactly **one card** to their neighbour in that direction, all in the same direction. **Rockets may never be passed.**
   - **App decision:** each member chooses their card secretly. When all have chosen, the cards move at once. Each player sees which card they gave and which they received. The others see only that cards were passed.
@@ -246,6 +247,7 @@ Reading notes for the sheet:
 ## 16. App decisions without a rule counterpart
 
 - **Session model:** a game (lobby code) is one sitting of a crew. In the lobby the host picks any mission 1–50; the next unfinished mission is preselected. After a mission, the crew returns to the lobby or goes straight to the next mission. Players may join or leave only in the lobby. The logbook lives in the game and is shown in the lobby, and read-only once the game has ended. Games idle for 30 days are deleted (longer than the other games' 7 days, since a campaign spans many evenings), so to continue after that, the host picks the mission in a new game.
+- **Lobby options:** the host sets them in the lobby, everyone sees them, and they cannot change once a mission is running. There is one so far: the distress signal (§9), off by default.
 - **Starting:** 2–5 players. The host starts the selected mission. With 2 players, JARVIS joins automatically.
 - **Commander makes the group calls:** whenever the rules say "decide together", the commander decides in the app: the distress signal and its direction, the five-player handover, the token swap (23) and token move (40), and the roles in mission 50. The players may talk about these outside the app.
 - **Token swap / move (missions 23, 40):** after the tasks are drawn and the tokens placed, and before distribution, the commander may swap the tokens of two task cards (23), or move one token to a task card without one (40). Either may be skipped. One swap or move per attempt.

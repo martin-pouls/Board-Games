@@ -5,7 +5,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { cardLabel } from '#lib/game/cards.js';
+	import { byTokenOrder, cardLabel } from '#lib/game/cards.js';
 	import { listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
@@ -26,7 +26,7 @@
 		mission: MissionDef | null;
 		/** The card picked in the hand or among JARVIS's stacks. */
 		selectedCard: Card | null;
-		/** Tasks tapped in the mission panel (token swap or move). */
+		/** Tasks tapped in the pool or a member's row (draft, token swap or move). */
 		selectedTasks: number[];
 		busy: boolean;
 		connected: boolean;
@@ -124,6 +124,11 @@
 		roles = roles.includes(s) ? roles.filter((r) => r !== s) : [...roles, s].slice(-2);
 	}
 
+	// --- Draft: a tapped task is taken only on confirmation, like a played card ---
+	const draftTask = $derived(
+		attempt.step === 'draft' && selectedTasks.length ? attempt.tasks[selectedTasks[0]] : null
+	);
+
 	// --- Token swap / move ---
 	const moveToken = $derived(mission?.setup.includes('moveToken') ?? false);
 	const tokenReady = $derived(selectedTasks.length === 2);
@@ -148,25 +153,39 @@
 	class="flex min-h-14 flex-col justify-center gap-2 rounded-xl bg-muted/60 px-3 py-2"
 	role="status"
 >
-	<p
-		class={cn(
-			'flex items-center gap-2 leading-snug',
-			mine ? 'font-semibold' : 'text-muted-foreground'
-		)}
-	>
-		{#if !mine}<LoaderCircle class="size-4 shrink-0 animate-spin" />{/if}
-		{status}
-	</p>
-
-	{#if attempt.step === 'play' && mine && selectedCard}
-		<Button
-			class="h-11 text-base"
-			{disabled}
-			onclick={() => run(() => client.playCard(selectedCard))}
+	<!-- The status, with the button that confirms a tapped card or task beside it. -->
+	<div class="flex flex-wrap items-center gap-2">
+		<p
+			class={cn(
+				'flex min-w-[9rem] flex-1 items-center gap-2 leading-snug',
+				mine ? 'font-semibold' : 'text-muted-foreground'
+			)}
 		>
-			Play {cardLabel(selectedCard)}{forJarvis ? ' for JARVIS' : ''}
-		</Button>
-	{:else if attempt.step === 'poll' && poll}
+			{#if !mine}<LoaderCircle class="size-4 shrink-0 animate-spin" />{/if}
+			{status}
+		</p>
+		{#if attempt.step === 'play' && mine && selectedCard}
+			<Button
+				class="ml-auto h-11 text-base"
+				{disabled}
+				onclick={() => run(() => client.playCard(selectedCard))}
+			>
+				Play {cardLabel(selectedCard)}{forJarvis ? ' for JARVIS' : ''}
+			</Button>
+		{:else if attempt.step === 'draft' && mine && draftTask}
+			<Button
+				class="ml-auto h-11 text-base"
+				{disabled}
+				onclick={() => run(() => client.pickTask(draftTask.id))}
+			>
+				Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
+					? ' for JARVIS'
+					: ''}
+			</Button>
+		{/if}
+	</div>
+
+	{#if attempt.step === 'poll' && poll}
 		<p class="text-sm">{question}</p>
 		<ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
 			{#each pollers as s (s)}
@@ -314,7 +333,7 @@
 			</Dialog.Description>
 		</Dialog.Header>
 		<ul class="flex flex-wrap justify-center gap-2.5 py-1">
-			{#each attempt.tasks as t (t.id)}
+			{#each byTokenOrder(attempt.tasks) as t (t.id)}
 				<li>
 					<TaskCard
 						task={t}

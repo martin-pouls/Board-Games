@@ -16,7 +16,7 @@ func TestRulesPlayCardWrongStep(t *testing.T) {
 		{"pass", 1, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g := startMission(t, 4, tc.mission)
+			g := withDistress(startMission(t, 4, tc.mission))
 			if tc.pass {
 				bbDraft(t, g)
 				must(t, g.SendDistress(bbCmd(g), DirLeft))

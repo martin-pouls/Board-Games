@@ -24,10 +24,6 @@
 ## Fox in the Forest: Duet
 
 ## The Crew
-- when you select a task you should have to confirm it similar like when you play a card. 
-- when you have a mission where you can swap tokens, the final ordering of the tasks should also swap. so when playing the tasks should be ordered appropriately, e.g. 1 - 5 or >, >>, >>>.
-- the distress signal stuff is annoying. give me an option when starting a lobby to en / disable the distress signal. this should be default to disabled, because we never use it. what i mean is this question at the start o the game whether i want to use a distress beacon or how its named. you know what i mean.
-- the biggest stuff is the layout. currently we sometimes need to scroll which is annoying so we need so save some height. the tasks section can probably be made more compact. we optimize for two player mode with jarvis here, because thats what we regularly play. obviously other modes should still be functional. give me layout suggestions here.
 
 # General
 - maybe drop test from ci, so we have faster pipelines?

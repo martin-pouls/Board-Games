@@ -183,6 +183,8 @@ describe('named fixtures', () => {
 			expect(v.logbook.length, name).toBeGreaterThanOrEqual(3);
 			expect(v.mission, name).toBe(4);
 			expect(v.logbook.find((e) => e.mission === 4)?.completed).toBe(false);
+			// The distress signal is a lobby option and off by default.
+			expect(v.options, name).toEqual({ distress: false });
 		}
 		expect(fixtures.lobbyView4().players.find((p) => p.isYou)?.isHost).toBe(false);
 	});

@@ -95,6 +95,13 @@ func newCrew(t *testing.T, n int) *Game {
 	return g
 }
 
+// withDistress switches the lobby option for the distress signal on (it is off by default) and
+// returns g. The tests that exercise the signal call it on a running game.
+func withDistress(g *Game) *Game {
+	g.Options.Distress = true
+	return g
+}
+
 // startMission returns a game of n players playing mission with noShuffle (pending events
 // cleared). With noShuffle the deal is fixed; tests then overwrite what they need.
 func startMission(t *testing.T, n, mission int) *Game {

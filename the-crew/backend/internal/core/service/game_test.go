@@ -38,6 +38,20 @@ func TestMissionFlow(t *testing.T) {
 	id, ss := f.lobby(t)
 	host, guest := ss[0], ss[1]
 
+	// Lobby options: host only, saved and published; this flow plays with the distress signal on.
+	if _, err := f.svc.SetOptions(ctx, id, guest.PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrNotHost) {
+		t.Fatalf("guest sets options: %v", err)
+	}
+	if v := must(f.svc.SetOptions(ctx, id, host.PlayerID, domain.Options{Distress: true})); !v.Options.Distress {
+		t.Fatalf("options = %+v", v.Options)
+	}
+	if got := eventTypes(f.rec.all()[len(f.rec.all())-1].Events); !reflect.DeepEqual(got, []string{"OptionsChanged"}) {
+		t.Fatalf("events = %v", got)
+	}
+	if !f.loadGame(t, id).Options.Distress {
+		t.Fatal("the option was not saved")
+	}
+
 	// Lobby: only the host selects and starts; a rejected intent is neither saved nor published.
 	base := len(f.rec.all())
 	if _, err := f.svc.SelectMission(ctx, id, guest.PlayerID, 4); !errors.Is(err, domain.ErrNotHost) {
@@ -180,5 +194,42 @@ func TestMissionFlow(t *testing.T) {
 	v = must(f.svc.EndGame(ctx, id, host.PlayerID))
 	if v.Phase != domain.PhaseEnded {
 		t.Fatalf("phase = %s", v.Phase)
+	}
+}
+
+// TestDistressIsOffByDefault: without the lobby option the commander cannot send or skip the
+// signal, and the view does not offer it.
+func TestDistressIsOffByDefault(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, func(c *Config) { c.NewRNG = func() domain.RNG { return noShuffle{} } })
+	id, ss := f.lobby(t)
+	if _, err := f.svc.StartMission(ctx, id, ss[0].PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	g := f.loadGame(t, id)
+	if g.Options.Distress {
+		t.Fatal("the signal must be off by default")
+	}
+	// Mission 1's draft comes first; let the commander take the task so the play step is reached.
+	cmdID := g.Players[g.Attempt.Commander].ID
+	if _, err := f.svc.PickTask(ctx, id, cmdID, 0); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.View(ctx, id, cmdID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Attempt.Actions.SendDistress {
+		t.Fatal("the commander is offered the signal")
+	}
+	if _, err := f.svc.SendDistress(ctx, id, cmdID, domain.DirLeft); !errors.Is(err, domain.ErrNotAllowed) {
+		t.Fatalf("send: %v", err)
+	}
+	if _, err := f.svc.SkipDistress(ctx, id, cmdID); !errors.Is(err, domain.ErrNotAllowed) {
+		t.Fatalf("skip: %v", err)
+	}
+	// Options cannot change any more once the mission runs.
+	if _, err := f.svc.SetOptions(ctx, id, ss[0].PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrWrongPhase) {
+		t.Fatalf("set options while playing: %v", err)
 	}
 }

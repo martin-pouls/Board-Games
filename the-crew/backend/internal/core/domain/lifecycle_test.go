@@ -115,3 +115,97 @@ func TestClone(t *testing.T) {
 		t.Fatal("clone shares the players slice")
 	}
 }
+
+func TestSetOptions(t *testing.T) {
+	g := newLobbyGame(t)
+	if g.Options != (Options{}) || g.Options.Distress {
+		t.Fatalf("a new game starts with the defaults: %+v", g.Options)
+	}
+
+	for _, tc := range []struct {
+		name string
+		game func(t *testing.T) *Game
+		by   PlayerID
+		want error
+	}{
+		{"a guest may not", newLobbyGame, bob, ErrNotHost},
+		{"a stranger may not", newLobbyGame, "nobody", ErrUnknownPlayer},
+		{"not while playing", func(t *testing.T) *Game { return startMission(t, 2, 1) }, alice, ErrWrongPhase},
+		{"not once the session ended", func(t *testing.T) *Game {
+			g := newLobbyGame(t)
+			must(t, g.EndGame(alice))
+			return g
+		}, alice, ErrWrongPhase},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mustFail(t, tc.game(t), tc.want, func(g *Game) error { return g.SetOptions(tc.by, Options{Distress: true}) })
+		})
+	}
+
+	t.Run("the host turns it on and off", func(t *testing.T) {
+		g := newLobbyGame(t)
+		rev := g.Revision
+		must(t, g.SetOptions(alice, Options{Distress: true}))
+		if !g.Options.Distress || g.Revision != rev+1 {
+			t.Fatalf("options %+v revision %d (was %d)", g.Options, g.Revision, rev)
+		}
+		if ev := eventsOf[OptionsChanged](g); len(ev) != 1 || !ev[0].Options.Distress {
+			t.Fatalf("events %+v", ev)
+		}
+		if v, _ := g.ViewFor(bob); !v.Options.Distress {
+			t.Fatal("every player sees the option")
+		}
+		g.PullEvents()
+		must(t, g.SetOptions(alice, Options{}))
+		if g.Options.Distress || g.Revision != rev+2 {
+			t.Fatalf("options %+v revision %d", g.Options, g.Revision)
+		}
+		if v, _ := g.ViewFor(bob); v.Options.Distress {
+			t.Fatal("the view follows the option")
+		}
+	})
+
+	t.Run("the option survives the attempts and is kept by Clone", func(t *testing.T) {
+		g := newLobbyGame(t)
+		must(t, g.SetOptions(alice, Options{Distress: true}))
+		must(t, g.StartMission(alice, noShuffle{}))
+		if c := g.Clone(); !c.Options.Distress {
+			t.Fatal("clone lost the option")
+		}
+		c := g.Clone()
+		g.Options.Distress = false
+		if !c.Options.Distress {
+			t.Fatal("the clone is independent of later changes of g")
+		}
+	})
+}
+
+func TestDistressNeedsTheOption(t *testing.T) {
+	g := fourAtPlay(t, 1)
+	if g.Options.Distress {
+		t.Fatal("off by default")
+	}
+	cmd := g.Attempt.Commander
+	if g.CanSendDistress(cmd) == nil {
+		t.Fatal("the signal is off: nothing may be offered")
+	}
+	if v, _ := g.ViewFor(alice); v.Attempt.Actions.SendDistress {
+		t.Fatal("the commander is not asked while the option is off")
+	}
+	mustFail(t, g, ErrNotAllowed, func(g *Game) error { return g.SendDistress(alice, DirLeft) })
+	mustFail(t, g, ErrNotAllowed, func(g *Game) error { return g.SkipDistress(alice) })
+	if g.Logbook[1].Distress || g.Attempt.DistressDecided || g.Attempt.Step != StepPlay {
+		t.Fatal("a rejected signal changes nothing")
+	}
+	// Play simply goes on without the question.
+	must(t, g.PlayCard(alice, c("p1"), noShuffle{}))
+
+	g = withDistress(fourAtPlay(t, 1))
+	if g.CanSendDistress(g.Attempt.Commander) != nil {
+		t.Fatal("the signal is on: the commander may send it")
+	}
+	if v, _ := g.ViewFor(alice); !v.Attempt.Actions.SendDistress {
+		t.Fatal("the commander is asked while the option is on")
+	}
+	must(t, g.SendDistress(alice, DirLeft))
+}

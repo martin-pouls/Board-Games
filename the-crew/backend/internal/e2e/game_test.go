@@ -446,7 +446,26 @@ func TestTwoPlayersWithJarvisWinMission1(t *testing.T) {
 	}
 	c.run(0, apidto.ClientMessage{Type: apidto.CmdSelectMission, Mission: ptr(1)})
 
+	// Lobby options: the distress signal is off by default; only the host changes it.
+	if v := c.rest(1); v.Options.Distress {
+		t.Fatalf("distress is on by default: %+v", v.Options)
+	}
+	c.reject(1, apidto.ClientMessage{Type: apidto.CmdSetOptions, Options: &apidto.GameOptions{Distress: true}}, "not_host")
+	c.reject(0, apidto.ClientMessage{Type: apidto.CmdSetOptions}, "bad_request")
+	c.run(0, apidto.ClientMessage{Type: apidto.CmdSetOptions, Options: &apidto.GameOptions{Distress: true}})
+	if m := c.ps[1].ws.last; hasEvent(m.Events, apidto.EventOptionsChanged) == nil || !m.View.Options.Distress {
+		t.Fatalf("guest after setOptions: %+v", m)
+	}
+	if v := c.rest(1); !v.Options.Distress {
+		t.Fatalf("options over REST: %+v", v.Options)
+	}
+	c.run(0, apidto.ClientMessage{Type: apidto.CmdSetOptions, Options: &apidto.GameOptions{}})
+	if v := c.rest(1); v.Options.Distress {
+		t.Fatalf("options over REST: %+v", v.Options)
+	}
+
 	c.run(0, apidto.ClientMessage{Type: apidto.CmdStartMission})
+	c.reject(0, apidto.ClientMessage{Type: apidto.CmdSetOptions, Options: &apidto.GameOptions{Distress: true}}, "wrong_phase")
 	for k := range c.ps {
 		v := c.rest(k)
 		if v.Phase != "playing" || v.Attempt == nil || len(v.Attempt.Members) != 3 || !v.Attempt.Members[2].Dummy ||
@@ -633,6 +652,7 @@ func TestFourPlayersLoseThenWinThenNextMission(t *testing.T) {
 func TestDistressSignalOverWebSocket(t *testing.T) {
 	c := newCrew(t, 3, 5)
 	c.distress = true
+	c.run(0, apidto.ClientMessage{Type: apidto.CmdSetOptions, Options: &apidto.GameOptions{Distress: true}})
 	c.run(0, apidto.ClientMessage{Type: apidto.CmdStartMission})
 	if !c.until(func(g *domain.Game) bool { return g.Attempt.Step == domain.StepPass }) {
 		t.Fatal("no pass step")

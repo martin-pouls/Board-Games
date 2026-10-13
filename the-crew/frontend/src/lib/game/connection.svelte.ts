@@ -5,6 +5,7 @@ import type {
 	ClientCommand,
 	Direction,
 	GameEvent,
+	GameOptions,
 	PlayerView,
 	Position
 } from '#lib/types.js';
@@ -23,6 +24,10 @@ export class GameConnection extends GameSocket<PlayerView, GameEvent, ClientComm
 		super(code, token, __BASE_PATH__);
 	}
 
+	/** Host only, lobby only. */
+	setOptions(options: GameOptions): Promise<void> {
+		return this.send({ type: 'setOptions', options });
+	}
 	selectMission(mission: number): Promise<void> {
 		return this.send({ type: 'selectMission', mission });
 	}

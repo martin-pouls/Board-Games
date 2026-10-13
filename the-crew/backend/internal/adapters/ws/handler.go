@@ -54,6 +54,11 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 	id, p := domain.GameID(gameID), domain.PlayerID(playerID)
 	var err error
 	switch msg.Type {
+	case apidto.CmdSetOptions:
+		if msg.Options == nil {
+			return apidto.BadRequest("missing options")
+		}
+		_, err = b.svc.SetOptions(ctx, id, p, msg.Options.ToDomain())
 	case apidto.CmdSelectMission:
 		if msg.Mission == nil {
 			return apidto.BadRequest("missing mission")

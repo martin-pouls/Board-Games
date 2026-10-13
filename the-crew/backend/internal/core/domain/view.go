@@ -17,6 +17,7 @@ type PlayerView struct {
 	You, HostID PlayerID
 	Players     []PlayerSummary // humans, seat order
 	Edition     Edition
+	Options     Options
 	Mission     int              // selected (lobby) or being played
 	Logbook     map[int]LogEntry // per mission
 	Attempt     *AttemptView     // nil in the lobby (and when ended from the lobby)
@@ -157,6 +158,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		HostID:   g.HostID,
 		Players:  make([]PlayerSummary, len(g.Players)),
 		Edition:  g.Edition,
+		Options:  g.Options,
 		Mission:  g.Mission,
 		Logbook:  maps.Clone(g.Logbook),
 	}

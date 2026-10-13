@@ -59,8 +59,8 @@
 					</li>
 					<li>In a dead zone (?) the position stays secret.</li>
 					<li>
-						Distress signal: before the first trick, the commander may have everyone pass one
-						non-rocket card left or right. It counts as an extra attempt.
+						Distress signal (a lobby option, off by default): before the first trick, the commander
+						may have everyone pass one non-rocket card left or right. It counts as an extra attempt.
 					</li>
 				</ul>
 			</section>

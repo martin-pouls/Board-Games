@@ -74,7 +74,7 @@ func TestGiveUpAndNextAttempt(t *testing.T) {
 }
 
 func TestDistressCountsInLogbook(t *testing.T) {
-	g := startMission(t, 4, 1)
+	g := withDistress(startMission(t, 4, 1))
 	setHands(g, "t4 p9 b3 b4", "p3 b2 g1 g2", "g3 g4 y1 y4", "y2 y3 t1 t2")
 	setTasks(g, "p9:0")
 	must(t, g.SendDistress(alice, DirLeft))

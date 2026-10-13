@@ -14,6 +14,8 @@
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { Switch } from '#lib/components/ui/switch/index.js';
 	import { getMissions } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
@@ -67,6 +69,8 @@
 	/** Attempts of all missions, plus one for each distress signal. */
 	const logbookTotal = $derived(view.logbook.reduce((n, e) => n + e.total, 0));
 	const canStart = $derived(connected && !busy && view.players.length >= 2);
+	/** Only the host changes the options; everybody else sees them. */
+	const canEdit = $derived(isHost && connected && !busy);
 
 	async function run(action: () => Promise<void>) {
 		if (busy) return;
@@ -78,6 +82,10 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	function setDistress(distress: boolean) {
+		return run(() => client.setOptions({ ...view.options, distress }));
 	}
 
 	/** Closes the lobby for everyone (host only); it moves to everyone's history. */
@@ -218,6 +226,28 @@
 					<button type="button" class="underline" onclick={loadCatalogue}>Try again</button>
 				</p>
 			{/if}
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Options</Card.Title>
+			{#if !isHost}
+				<Card.Description>{host?.name ?? 'The host'} sets the options.</Card.Description>
+			{/if}
+		</Card.Header>
+		<Card.Content class="flex flex-col gap-1.5">
+			<div class="flex items-center justify-between gap-3">
+				<Label for="opt-distress" class="text-base">Distress signal</Label>
+				<Switch
+					id="opt-distress"
+					disabled={!canEdit}
+					bind:checked={() => view.options.distress, setDistress}
+				/>
+			</div>
+			<p class="text-sm text-muted-foreground">
+				Lets the commander have everyone pass a card before the first trick.
+			</p>
 		</Card.Content>
 	</Card.Root>
 

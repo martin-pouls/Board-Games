@@ -114,7 +114,7 @@ func TestDummyNeverCommunicates(t *testing.T) {
 }
 
 func TestDistressPass(t *testing.T) {
-	g := fourAtPlay(t, 1)
+	g := withDistress(fourAtPlay(t, 1))
 	mustFail(t, g, ErrNotCommander, func(g *Game) error { return g.SendDistress(bob, DirLeft) })
 	mustFail(t, g, ErrInvalidDirection, func(g *Game) error { return g.SendDistress(alice, "up") })
 	must(t, g.SendDistress(alice, DirLeft))
@@ -158,7 +158,7 @@ func TestDistressPass(t *testing.T) {
 }
 
 func TestDistressRightAndTwoPlayers(t *testing.T) {
-	g := fourAtPlay(t, 1)
+	g := withDistress(fourAtPlay(t, 1))
 	must(t, g.SendDistress(alice, DirRight))
 	for i, card := range []string{"b3", "g2", "g4", "y3"} {
 		must(t, g.ChoosePassCard(crewIDs[i], c(card)))
@@ -168,7 +168,7 @@ func TestDistressRightAndTwoPlayers(t *testing.T) {
 		t.Fatalf("hands %+v", g.Attempt.Members)
 	}
 
-	g = startMission(t, 2, 1)
+	g = withDistress(startMission(t, 2, 1))
 	setTasks(g, "p1:0")
 	must(t, g.SendDistress(bob, DirRight))
 	if !slices.Equal(g.Actors(), []int{0, 1}) {
@@ -183,15 +183,15 @@ func TestDistressRightAndTwoPlayers(t *testing.T) {
 }
 
 func TestDistressWindow(t *testing.T) {
-	g := fourAtPlay(t, 1)
+	g := withDistress(fourAtPlay(t, 1))
 	must(t, g.Communicate(bob, c("b2"), PosOnly))
 	mustFail(t, g, ErrNotAllowed, func(g *Game) error { return g.SendDistress(alice, DirLeft) })
 
-	g = fourAtPlay(t, 1)
+	g = withDistress(fourAtPlay(t, 1))
 	must(t, g.PlayCard(alice, c("p1"), noShuffle{}))
 	mustFail(t, g, ErrNotAllowed, func(g *Game) error { return g.SendDistress(alice, DirLeft) })
 
-	g = fourAtPlay(t, 1)
+	g = withDistress(fourAtPlay(t, 1))
 	must(t, g.SkipDistress(alice))
 	if g.Logbook[1].Distress || g.Attempt.Step != StepPlay {
 		t.Fatal("skipping does not use the signal")

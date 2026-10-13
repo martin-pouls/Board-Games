@@ -39,6 +39,20 @@ export function tokenLabel(t: Token): string {
 	return t;
 }
 
+/** The place of a token in the order the tasks are to be fulfilled: 1–5, then › … ››››, then
+ * tasks without a token, then Ω. */
+function tokenRank(t: Token): number {
+	if (t === '') return 100;
+	if (t === 'omega') return 200;
+	if (t.startsWith('arrow')) return 10 + Number(t.slice(5));
+	return Number(t);
+}
+
+/** The tasks in the order their tokens ask for (stable: tasks with equal tokens keep their order). */
+export function byTokenOrder<T extends { token: Token }>(tasks: readonly T[]): T[] {
+	return [...tasks].sort((a, b) => tokenRank(a.token) - tokenRank(b.token));
+}
+
 /** A sentence about a token, for titles and help. */
 export function tokenMeaning(t: Token): string {
 	if (t === '') return '';

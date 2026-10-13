@@ -5,20 +5,22 @@
 	import Radio from '@lucide/svelte/icons/radio';
 	import Trophy from '@lucide/svelte/icons/trophy';
 	import { getCardMotion } from '@board-games/shared/cardMotion.js';
-	import { cardKey, sameCard } from '#lib/game/cards.js';
+	import { byTokenOrder, cardKey, sameCard } from '#lib/game/cards.js';
 	import { JARVIS } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Member } from '#lib/types.js';
 	import CardBack from './CardBack.svelte';
 	import CommBadge from './CommBadge.svelte';
 	import PlayingCard from './PlayingCard.svelte';
+	import TaskList, { type TaskPick } from './TaskList.svelte';
 
 	let {
 		attempt,
 		online,
 		jarvisEnabled = () => false,
 		selected = null,
-		onpick
+		onpick,
+		taskPick
 	}: {
 		attempt: Attempt;
 		/** Player IDs with a live connection. */
@@ -27,6 +29,7 @@
 		jarvisEnabled?: (c: Card) => boolean;
 		selected?: Card | null;
 		onpick?: (c: Card) => void;
+		taskPick?: TaskPick;
 	} = $props();
 
 	const { send, receive } = getCardMotion();
@@ -43,6 +46,8 @@
 	const turnSeat = $derived(
 		attempt.step === 'play' || attempt.step === 'draft' ? attempt.turn : -1
 	);
+	const tasks = $derived(byTokenOrder(attempt.tasks));
+	const tasksOf = (m: Member) => tasks.filter((t) => t.owner === m.seat);
 	const anyJarvisEnabled = $derived(!!jarvis?.stacks.some((s) => s.up && jarvisEnabled(s.up)));
 </script>
 
@@ -68,34 +73,27 @@
 
 <section class="flex flex-col gap-1.5" aria-label="Crew">
 	{#if humans.length}
-		<ul
-			class={cn(
-				'grid gap-1.5',
-				humans.length === 1 ? 'grid-cols-1' : humans.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
-			)}
-		>
+		<ul class={cn('grid gap-1.5', humans.length < 3 ? 'grid-cols-1' : 'grid-cols-2')}>
 			{#each humans as m (m.seat)}
 				{@const up = online.includes(m.playerId)}
 				<li
 					class={cn(
-						'flex min-w-0 items-center gap-2 rounded-xl bg-panel px-2 py-1.5 ring-2 ring-transparent transition-shadow',
+						'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-panel px-2 py-1.5 ring-2 ring-transparent transition-shadow',
 						(m.mustAct || turnSeat === m.seat) && 'ring-signal/70'
 					)}
 				>
-					<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-						<span class="flex min-w-0 items-center gap-1 text-sm font-semibold">
-							<span
-								class={cn(
-									'size-1.5 shrink-0 rounded-full',
-									up ? 'bg-success' : 'bg-muted-foreground/40'
-								)}
-								title={up ? 'Online' : 'Offline'}
-							></span>
-							<span class="truncate">{m.name}</span>
-							{@render badges(m)}
-						</span>
-						{@render stats(m)}
-					</div>
+					<span class="flex min-w-0 items-center gap-1 text-sm font-semibold">
+						<span
+							class={cn(
+								'size-1.5 shrink-0 rounded-full',
+								up ? 'bg-success' : 'bg-muted-foreground/40'
+							)}
+							title={up ? 'Online' : 'Offline'}
+						></span>
+						<span class="truncate">{m.name}</span>
+						{@render badges(m)}
+					</span>
+					{@render stats(m)}
 					{#if m.communication}
 						{@const c = m.communication.card}
 						<span class="relative shrink-0">
@@ -113,6 +111,13 @@
 					{:else if m.communicated}
 						<Radio class="size-4 shrink-0 text-muted-foreground/60" aria-label="Has communicated" />
 					{/if}
+					<TaskList
+						tasks={tasksOf(m)}
+						attempt={attempt.number}
+						pick={taskPick}
+						label={`${m.name}'s tasks`}
+						class="ml-auto pt-1"
+					/>
 				</li>
 			{/each}
 		</ul>
@@ -125,10 +130,17 @@
 				(turnSeat === jarvis.seat || anyJarvisEnabled) && 'ring-signal/70'
 			)}
 		>
-			<div class="flex items-center gap-2">
+			<div class="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1">
 				<span class="font-display text-sm font-semibold tracking-wider">{JARVIS}</span>
 				{@render badges(jarvis)}
-				<span class="ml-auto">{@render stats(jarvis)}</span>
+				{@render stats(jarvis)}
+				<TaskList
+					tasks={tasksOf(jarvis)}
+					attempt={attempt.number}
+					pick={taskPick}
+					label="JARVIS's tasks"
+					class="ml-auto pt-1"
+				/>
 			</div>
 			<ul class="flex justify-between gap-1" aria-label="JARVIS's stacks">
 				{#each jarvis.stacks as s, i (i)}

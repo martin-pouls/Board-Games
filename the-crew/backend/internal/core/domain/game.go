@@ -43,6 +43,12 @@ func (e LogEntry) Total() int {
 	return e.Attempts
 }
 
+// Options are the host-selectable settings of a session. The zero value is the default.
+type Options struct {
+	// Distress enables the distress signal (rules §9). Off by default: the commander is not asked.
+	Distress bool
+}
+
 // Game is the aggregate root. Fields are exported for the persistence mapper and tests; code
 // outside this package must mutate a Game only through its methods. Statuses, actors, legal cards
 // and the trick winner are derived, never stored.
@@ -52,6 +58,7 @@ type Game struct {
 	HostID    PlayerID
 	Players   []Player // seat order = join order
 	Edition   Edition
+	Options   Options          // lobby settings; changeable in the lobby only
 	Mission   int              // the selected mission (lobby) or the one being played
 	Logbook   map[int]LogEntry // per mission number; never nil
 	Attempt   *Attempt         // nil in the lobby; kept in the debrief for the reveal

@@ -147,6 +147,18 @@ func (g *Game) SelectMission(by PlayerID, n int) error {
 	return nil
 }
 
+// SetOptions changes the lobby options (host only, lobby only).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase. Emits OptionsChanged.
+func (g *Game) SetOptions(by PlayerID, opts Options) error {
+	if err := g.requireHostIn(by, PhaseLobby); err != nil {
+		return err
+	}
+	g.Options = opts
+	g.emit(OptionsChanged{Options: opts})
+	g.commit()
+	return nil
+}
+
 // StartMission deals the first attempt of the selected mission (host, lobby, 2–5 players).
 // Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrNotEnoughPlayers.
 // Emits AttemptStarted (and whatever the setup emits).
