@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { flip } from 'svelte/animate';
+	import NewCardMark from '@board-games/shared/NewCardMark.svelte';
 	import { getCardMotion } from '@board-games/shared/cardMotion.js';
+	import { trackNewCards } from '@board-games/shared/newCards.svelte.js';
 	import { cardKey, sameCard } from '#lib/game/cards.js';
 	import { cn } from '#lib/utils.js';
 	import type { Card } from '#lib/types.js';
@@ -12,6 +14,7 @@
 		marked = null,
 		enabled = () => false,
 		dealing = false,
+		deal,
 		label = 'Your hand',
 		onpick
 	}: {
@@ -23,6 +26,8 @@
 		enabled?: (c: Card) => boolean;
 		/** A fresh deal: cards come in one after another. */
 		dealing?: boolean;
+		/** Identifies the deal; when it changes, no card counts as just received. */
+		deal?: string;
 		label?: string;
 		onpick?: (c: Card) => void;
 	} = $props();
@@ -31,6 +36,10 @@
 	const { send, receive } = motion;
 	const CARD_WIDTH = 52;
 	let width = $state(0);
+	const fresh = trackNewCards(
+		() => cards.map(cardKey),
+		() => deal
+	);
 
 	const anyEnabled = $derived(cards.some((c) => enabled(c)));
 	// Overlap the cards so the whole hand fits (14 cards at 360 px); never spread them more than a
@@ -63,7 +72,7 @@
 				<button
 					type="button"
 					class={cn(
-						'block rounded-lg transition-[translate,opacity,filter] duration-150 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
+						'relative block rounded-lg transition-[translate,opacity,filter] duration-150 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
 						isSelected && '-translate-y-3 ring-3 ring-signal',
 						isMarked && !isSelected && 'ring-2 ring-signal/60',
 						on && !isSelected && 'hover:-translate-y-1.5',
@@ -74,6 +83,9 @@
 					onclick={() => onpick?.(card)}
 				>
 					<PlayingCard {card} size="sm" />
+					{#if fresh.has(cardKey(card))}
+						<NewCardMark dot="corner-left" ring="var(--paper)" />
+					{/if}
 				</button>
 			</li>
 		{:else}

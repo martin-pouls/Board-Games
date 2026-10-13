@@ -147,6 +147,7 @@
 		{/if}
 		<Hand
 			cards={view.hand}
+			deal={view.gameId}
 			{selected}
 			interactive={canSelect && !busy}
 			ontoggle={(i) => (selected = toggleIndex(selected, i))}

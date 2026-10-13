@@ -58,6 +58,8 @@
 	--jester: oklch(0.55 0.2 330);
 	/* Tint of the glow at the top of the page. */
 	--glow: oklch(0.85 0.06 300 / 55%);
+	/* Marks cards that just came into the hand (NewCardMark). */
+	--new-card: oklch(0.62 0.13 185);
 }
 
 .dark {
@@ -104,6 +106,7 @@
 	--shield: oklch(0.68 0.11 235);
 	--jester: oklch(0.66 0.2 330);
 	--glow: oklch(0.25 0.05 300 / 60%);
+	--new-card: oklch(0.76 0.12 185);
 }
 
 @theme inline {

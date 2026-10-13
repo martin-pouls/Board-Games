@@ -204,6 +204,7 @@
 		{/if}
 		<Hand
 			cards={view.hand}
+			deal={`${view.gameId}:${view.round}`}
 			{selected}
 			marked={pending?.yourGift ?? null}
 			{enabled}

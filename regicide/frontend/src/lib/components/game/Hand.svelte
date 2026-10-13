@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { cardKey } from '#lib/game/rules.js';
+	import NewCardMark from '@board-games/shared/NewCardMark.svelte';
+	import { trackNewCards } from '@board-games/shared/newCards.svelte.js';
+	import { handKeys } from '#lib/game/rules.js';
 	import type { Card } from '#lib/types.js';
 	import PlayingCard from './PlayingCard.svelte';
 
@@ -7,6 +9,7 @@
 		cards,
 		selected,
 		interactive,
+		deal,
 		ontoggle,
 		hint
 	}: {
@@ -14,9 +17,17 @@
 		/** Indices into `cards`. */
 		selected: number[];
 		interactive: boolean;
+		/** Identifies the deal; when it changes, no card counts as just drawn. */
+		deal?: string;
 		ontoggle: (index: number) => void;
 		hint?: (index: number) => 'dim' | undefined;
 	} = $props();
+
+	const keys = $derived(handKeys(cards));
+	const fresh = trackNewCards(
+		() => keys,
+		() => deal
+	);
 </script>
 
 <div class="flex flex-col">
@@ -29,15 +40,24 @@
 			class="grid justify-center gap-1 pt-3"
 			style="grid-template-columns: repeat({cards.length}, minmax(0, 4.5rem))"
 		>
-			{#each cards as c, i (`${cardKey(c)}#${i}`)}
-				<PlayingCard
-					card={c}
-					size="fluid"
-					selected={selected.includes(i)}
-					dimmed={hint?.(i) === 'dim' && !selected.includes(i)}
-					disabled={!interactive}
-					onclick={() => ontoggle(i)}
-				/>
+			{#each cards as c, i (keys[i])}
+				{@const isSelected = selected.includes(i)}
+				<div class="relative rounded-lg">
+					<PlayingCard
+						card={c}
+						size="fluid"
+						selected={isSelected}
+						dimmed={hint?.(i) === 'dim' && !isSelected}
+						disabled={!interactive}
+						onclick={() => ontoggle(i)}
+					/>
+					{#if fresh.has(keys[i])}
+						<NewCardMark
+							ring="var(--parchment)"
+							class={isSelected ? '-translate-y-3 transition-transform' : 'transition-transform'}
+						/>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	{/if}

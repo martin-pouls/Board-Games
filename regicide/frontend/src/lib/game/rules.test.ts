@@ -6,6 +6,7 @@ import {
 	checkPlay,
 	compareCards,
 	enemyStats,
+	handKeys,
 	handValue,
 	isCompanion,
 	isJester,
@@ -75,6 +76,11 @@ describe('card helpers', () => {
 	it('builds keys', () => {
 		expect(cardKey(card('X'))).toBe('jester-0');
 		expect(cardKey(card('5H'))).toBe('hearts-5');
+		expect(handKeys([card('X'), card('5H'), card('X')])).toEqual([
+			'jester-0#0',
+			'hearts-5#0',
+			'jester-0#1'
+		]);
 	});
 });
 

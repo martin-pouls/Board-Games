@@ -51,6 +51,8 @@
 	/* Tints of the two glows of the page background. */
 	--glow-up: oklch(0.86 0.07 235 / 55%);
 	--glow-down: oklch(0.9 0.07 65 / 45%);
+	/* Marks cards that just came into the hand (NewCardMark). */
+	--new-card: oklch(0.72 0.16 60);
 }
 
 .dark {
@@ -88,6 +90,7 @@
 
 	--glow-up: oklch(0.33 0.08 250 / 55%);
 	--glow-down: oklch(0.32 0.07 50 / 30%);
+	--new-card: oklch(0.78 0.15 65);
 }
 
 @theme inline {

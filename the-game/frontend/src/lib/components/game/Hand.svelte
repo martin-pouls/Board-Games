@@ -1,4 +1,6 @@
 <script lang="ts">
+	import NewCardMark from '@board-games/shared/NewCardMark.svelte';
+	import { trackNewCards } from '@board-games/shared/newCards.svelte.js';
 	import { commandInfo } from '#lib/game/commands.js';
 	import { cn } from '#lib/utils.js';
 	import type { HandCard } from '#lib/types.js';
@@ -8,15 +10,22 @@
 		cards,
 		selected = null,
 		interactive = false,
+		deal,
 		onselect
 	}: {
 		cards: HandCard[];
 		selected?: number | null;
 		interactive?: boolean;
+		/** Identifies the deal; when it changes, no card counts as just drawn. */
+		deal?: string;
 		onselect?: (card: HandCard) => void;
 	} = $props();
 
 	const sorted = $derived([...cards].sort((a, b) => a.value - b.value));
+	const fresh = trackNewCards(
+		() => cards.map((c) => String(c.value)),
+		() => deal
+	);
 </script>
 
 {#if sorted.length === 0}
@@ -39,7 +48,7 @@
 					aria-label={`Card ${c.value}${info ? `, ${info.label}` : ''}${noMove ? ', no legal pile' : ''}`}
 					onclick={() => onselect?.(c)}
 					class={cn(
-						'flex aspect-[2/3] w-full flex-col items-center justify-center gap-0.5 rounded-lg border-2 bg-card text-lg font-bold text-card-foreground tabular-nums shadow-sm transition-all duration-150 select-none sm:text-xl',
+						'relative flex aspect-[2/3] w-full flex-col items-center justify-center gap-0.5 rounded-lg border-2 bg-card text-lg font-bold text-card-foreground tabular-nums shadow-sm transition-all duration-150 select-none sm:text-xl',
 						'[touch-action:manipulation] [-webkit-tap-highlight-color:transparent] disabled:cursor-default',
 						info?.kind === 'lightning' && 'border-red-400 dark:border-red-500',
 						info?.kind === 'infinity' && 'border-violet-400 dark:border-violet-500',
@@ -48,6 +57,9 @@
 						noMove && !isSelected && 'opacity-45'
 					)}
 				>
+					{#if fresh.has(String(c.value))}
+						<NewCardMark dot="corner-right" />
+					{/if}
 					<span class="leading-none">{c.value}</span>
 					{#if c.command}
 						<CommandIcon

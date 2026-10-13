@@ -264,7 +264,7 @@
 				ongiveup={() => (confirmGiveUp = true)}
 			/>
 		{/if}
-		<Hand cards={view.hand} {selected} {interactive} {onselect} />
+		<Hand cards={view.hand} deal={view.gameId} {selected} {interactive} {onselect} />
 		<p class="h-4 text-center text-xs text-muted-foreground">
 			{#if myTurn && !selectedCard && view.turn?.cardsPlayed === 0 && view.hand.length > 0}
 				Tap a card, then a highlighted pile.

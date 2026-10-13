@@ -41,6 +41,20 @@ export const sortCards = (cs: Card[]): Card[] => [...cs].sort(compareCards);
 
 export const cardKey = (c: Card): string => `${c.suit || 'jester'}-${c.rank}`;
 
+/**
+ * Keys that are unique within a hand: the card plus its occurrence (the two Jesters look alike).
+ * Unlike positions, they stay with a card when a drawn card lands before it.
+ */
+export function handKeys(cs: Card[]): string[] {
+	const seen = new Map<string, number>();
+	return cs.map((c) => {
+		const k = cardKey(c);
+		const n = seen.get(k) ?? 0;
+		seen.set(k, n + 1);
+		return `${k}#${n}`;
+	});
+}
+
 export type PlayKind = 'single' | 'combo' | 'companion' | 'jester';
 export type PlayProblem =
 	| 'empty'

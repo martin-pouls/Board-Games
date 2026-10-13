@@ -62,6 +62,8 @@
 	--location: oklch(0.93 0.02 100);
 	/* Tint of the glow at the top of the page. */
 	--glow: oklch(0.86 0.08 125 / 50%);
+	/* Marks cards that just came into the hand (NewCardMark). */
+	--new-card: oklch(0.63 0.12 195);
 }
 
 .dark {
@@ -112,6 +114,7 @@
 	--path: oklch(0.78 0.04 110);
 	--location: oklch(0.42 0.04 130);
 	--glow: oklch(0.3 0.06 150 / 60%);
+	--new-card: oklch(0.74 0.11 195);
 }
 
 @theme inline {

@@ -231,6 +231,7 @@
 		{#if playing}
 			<Hand
 				cards={attempt.hand}
+				deal={`${view.gameId}:${view.mission}:${attempt.number}`}
 				{selected}
 				marked={attempt.pass?.chosen ?? me?.communication?.card ?? null}
 				enabled={handEnabled}
