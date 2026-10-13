@@ -8,9 +8,27 @@
 	import X from '@lucide/svelte/icons/x';
 	import { objectiveText, ownerText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
-	import type { Attempt, MissionDef } from '#lib/types.js';
+	import { OWNER_UNASSIGNED, type Attempt, type MissionDef } from '#lib/types.js';
 
-	let { attempt, mission }: { attempt: Attempt; mission: MissionDef | null } = $props();
+	let {
+		attempt,
+		mission,
+		roles = []
+	}: {
+		attempt: Attempt;
+		mission: MissionDef | null;
+		/** Mission 50: the seats the commander tapped for the roles (null = open), not yet confirmed. */
+		roles?: (number | null)[];
+	} = $props();
+
+	/** The objective's owner, or the seat tapped for its role while the commander picks. */
+	function owner(i: number): number {
+		const rule = mission?.objectives[i]?.ownerRule;
+		const pending = rule === 'roleA' ? roles[0] : rule === 'roleB' ? roles[1] : undefined;
+		return attempt.objectives[i].owner === OWNER_UNASSIGNED && pending != null
+			? pending
+			: attempt.objectives[i].owner;
+	}
 
 	const rules = $derived(
 		[
@@ -42,7 +60,7 @@
 							<Circle class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 						{/if}
 						<span class={cn(o.status === 'failed' && 'text-muted-foreground line-through')}>
-							<b class="font-semibold">{ownerText(o.owner, attempt.members, attempt.seat)}:</b>
+							<b class="font-semibold">{ownerText(owner(i), attempt.members, attempt.seat)}:</b>
 							{objectiveText(o)}
 						</span>
 					</li>

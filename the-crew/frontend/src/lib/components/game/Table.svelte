@@ -44,6 +44,7 @@
 
 	let selected = $state<Card | null>(null);
 	let selectedTasks = $state<number[]>([]);
+	let roles = $state<(number | null)[]>([]);
 	let busy = $state(false);
 	let confirmGiveUp = $state(false);
 	let rulesOpen = $state(false);
@@ -199,7 +200,7 @@
 		{taskPick}
 	/>
 
-	<MissionPanel {attempt} {mission} />
+	<MissionPanel {attempt} {mission} {roles} />
 
 	{#if pool}
 		<TaskPool {attempt} pick={taskPick} />
@@ -220,6 +221,7 @@
 				{busy}
 				{connected}
 				{run}
+				bind:roles
 			/>
 		{:else}
 			<Debrief {client} {view} {attempt} {busy} {connected} {run} />

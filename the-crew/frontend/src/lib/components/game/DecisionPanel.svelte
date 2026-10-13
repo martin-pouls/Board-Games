@@ -19,7 +19,8 @@
 		selectedTasks,
 		busy,
 		connected,
-		run
+		run,
+		roles = $bindable([])
 	}: {
 		client: GameClient;
 		attempt: Attempt;
@@ -32,6 +33,8 @@
 		connected: boolean;
 		/** Runs an action; false when it failed (the error is shown already). */
 		run: (action: () => Promise<void>) => Promise<boolean>;
+		/** Mission 50: the seats tapped for the two roles (null = open), not yet confirmed. */
+		roles?: (number | null)[];
 	} = $props();
 
 	const me = $derived(attempt.seat);
@@ -64,7 +67,7 @@
 		switch (step) {
 			case 'play':
 				if (!mine) return `Waiting for ${waitingFor} to play.`;
-				if (forJarvis) return "JARVIS's turn: tap one of its face-up cards.";
+				if (forJarvis) return "JARVIS's turn: tap one of its cards.";
 				return attempt.trick.length
 					? 'Your turn: follow suit if you can.'
 					: 'Your turn: lead a card.';
@@ -79,6 +82,15 @@
 				if (mine) return 'The commander asks you.';
 				return isCommander ? 'Waiting for the crew to answer.' : `Waiting for ${waitingFor}.`;
 			case 'pick':
+				if (mine && attempt.pick === 'roles')
+					return roles[0] == null
+						? 'Pick who wins only the first four tricks.'
+						: roles[1] == null
+							? 'Now pick who wins only the last trick.'
+							: 'Confirm the roles.';
+				return mine
+					? stepText(step, attempt.pick)
+					: `${stepText(step, attempt.pick)} Waiting for ${name(attempt.commander)}.`;
 			case 'adjustTokens':
 				return mine
 					? stepText(step, attempt.pick)
@@ -107,13 +119,13 @@
 		attempt.members.filter((m) => !m.dummy && m.seat !== attempt.commander).map((m) => m.seat)
 	);
 
-	let roles = $state<number[]>([]);
 	// A derived string changes only with the pick itself, not with every new view object.
 	const pickKey = $derived(`${attempt.step}|${attempt.pick}`);
 	$effect(() => {
 		void pickKey;
 		roles = [];
 	});
+	const pickedRoles = $derived(roles[0] != null && roles[1] != null ? [roles[0], roles[1]] : null);
 	/** The seats the commander may pick now (the server applies the rules, e.g. the even split). */
 	const pickable = $derived(attempt.pickable);
 	function pickSeat(s: number) {
@@ -121,7 +133,13 @@
 			void run(() => client.pick([s]));
 			return;
 		}
-		roles = roles.includes(s) ? roles.filter((r) => r !== s) : [...roles, s].slice(-2);
+		// Each role keeps its seat: tapping a picked seat frees only its role, a new seat fills the
+		// first open role (or replaces the last trick's).
+		const next = [roles[0] ?? null, roles[1] ?? null];
+		const slot = next.indexOf(s);
+		if (slot >= 0) next[slot] = null;
+		else next[next[0] == null ? 0 : 1] = s;
+		roles = next;
 	}
 
 	// --- Draft: a tapped task is taken only on confirmation, like a played card ---
@@ -153,37 +171,36 @@
 	class="flex min-h-14 flex-col justify-center gap-2 rounded-xl bg-muted/60 px-3 py-2"
 	role="status"
 >
-	<!-- The status, with the button that confirms a tapped card or task beside it. -->
-	<div class="flex flex-wrap items-center gap-2">
+	<!-- The status; a tapped card or task replaces it with the button that confirms it. -->
+	{#if attempt.step === 'play' && mine && selectedCard}
+		<Button
+			class="h-10 w-full text-base"
+			{disabled}
+			onclick={() => run(() => client.playCard(selectedCard))}
+		>
+			Play {cardLabel(selectedCard)}{forJarvis ? ' for JARVIS' : ''}
+		</Button>
+	{:else if attempt.step === 'draft' && mine && draftTask}
+		<Button
+			class="h-10 w-full text-base"
+			{disabled}
+			onclick={() => run(() => client.pickTask(draftTask.id))}
+		>
+			Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
+				? ' for JARVIS'
+				: ''}
+		</Button>
+	{:else}
 		<p
 			class={cn(
-				'flex min-w-[9rem] flex-1 items-center gap-2 leading-snug',
+				'flex items-center gap-2 leading-snug',
 				mine ? 'font-semibold' : 'text-muted-foreground'
 			)}
 		>
 			{#if !mine}<LoaderCircle class="size-4 shrink-0 animate-spin" />{/if}
 			{status}
 		</p>
-		{#if attempt.step === 'play' && mine && selectedCard}
-			<Button
-				class="ml-auto h-11 text-base"
-				{disabled}
-				onclick={() => run(() => client.playCard(selectedCard))}
-			>
-				Play {cardLabel(selectedCard)}{forJarvis ? ' for JARVIS' : ''}
-			</Button>
-		{:else if attempt.step === 'draft' && mine && draftTask}
-			<Button
-				class="ml-auto h-11 text-base"
-				{disabled}
-				onclick={() => run(() => client.pickTask(draftTask.id))}
-			>
-				Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
-					? ' for JARVIS'
-					: ''}
-			</Button>
-		{/if}
-	</div>
+	{/if}
 
 	{#if attempt.step === 'poll' && poll}
 		<p class="text-sm">{question}</p>
@@ -219,43 +236,32 @@
 		{:else if pollObjective}
 			<p class="text-sm">{objectiveText(pollObjective)}</p>
 		{/if}
-		{#if attempt.pick === 'roles'}
-			<p class="text-sm text-muted-foreground">
-				{roles.length === 0
-					? 'First pick the member who wins only the first four tricks.'
-					: 'Then pick the member who wins only the last trick.'}
-			</p>
-		{/if}
-		<div class="grid grid-cols-2 gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			{#each pickable as s (s)}
 				{@const answer = poll?.answers[s]}
-				{@const role = roles.indexOf(s)}
+				<!-- A tapped role shows in the mission panel's objectives. -->
 				<Button
-					class={cn('h-auto min-h-11 flex-col gap-0 py-1', role >= 0 && 'ring-3 ring-signal')}
-					variant={role >= 0 ? 'default' : 'secondary'}
+					class="h-9 gap-1.5"
+					variant={roles.includes(s) ? 'default' : 'secondary'}
 					{disabled}
 					onclick={() => pickSeat(s)}
 				>
-					<span>{name(s)}</span>
-					{#if role >= 0}
-						<span class="text-xs font-normal opacity-75">
-							{role === 0 ? 'first four tricks' : 'last trick'}
-						</span>
-					{:else if answer != null}
+					{name(s)}
+					{#if answer != null}
 						<span class="text-xs font-normal opacity-75">said {answerText(answer)}</span>
 					{/if}
 				</Button>
 			{/each}
+			{#if attempt.pick === 'roles'}
+				<Button
+					class="ml-auto h-9"
+					disabled={disabled || !pickedRoles}
+					onclick={() => pickedRoles && run(() => client.pick(pickedRoles))}
+				>
+					Confirm
+				</Button>
+			{/if}
 		</div>
-		{#if attempt.pick === 'roles'}
-			<Button
-				class="h-11"
-				disabled={disabled || roles.length !== 2}
-				onclick={() => run(() => client.pick(roles))}
-			>
-				Confirm roles
-			</Button>
-		{/if}
 	{:else if attempt.step === 'adjustTokens' && mine}
 		<p class="text-sm text-muted-foreground">
 			{moveToken
