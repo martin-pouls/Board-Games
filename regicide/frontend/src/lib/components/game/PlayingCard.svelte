@@ -35,14 +35,14 @@
 		xs: 'w-8 text-xs',
 		sm: 'w-11 text-sm',
 		md: 'w-14 text-base',
-		lg: 'w-16 text-base',
+		lg: 'w-19 text-lg',
 		fluid: 'w-full text-sm'
 	};
 	const centre: Record<string, string> = {
 		xs: 'text-base',
 		sm: 'text-xl',
 		md: 'text-3xl',
-		lg: 'text-4xl',
+		lg: 'text-5xl',
 		fluid: 'text-2xl'
 	};
 
