@@ -191,16 +191,13 @@
 			title="Draw pile"
 		>
 			<Layers class="size-4" />
-			<span class={cn(extreme && 'max-sm:sr-only')}>Deck</span>
+			<span class="sr-only">Deck</span>
 			{view.drawPileCount}
 		</span>
 		{#if canEndGame}
-			<!-- The EXTREME badge leaves no room for the label on phones. -->
 			<HeaderButton
 				icon={Flag}
 				label="End game"
-				showLabel
-				labelClass={cn(extreme && 'max-sm:sr-only')}
 				destructive
 				disabled={!connected}
 				onclick={() => (confirmEnd = true)}
