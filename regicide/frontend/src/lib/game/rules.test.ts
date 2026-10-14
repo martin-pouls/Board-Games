@@ -5,8 +5,11 @@ import {
 	checkDiscard,
 	checkPlay,
 	compareCards,
+	DEFAULT_HAND_ORDER,
 	enemyStats,
+	HAND_ORDERS,
 	handKeys,
+	type HandOrder,
 	handValue,
 	isCompanion,
 	isJester,
@@ -14,6 +17,7 @@ import {
 	isRoyal,
 	previewPlay,
 	sortCards,
+	sortHand,
 	SUITS
 } from './rules.js';
 import { card, cards, enemyOf, hand, makeView, player, playView } from './fixtures.js';
@@ -71,6 +75,29 @@ describe('card helpers', () => {
 		expect(compareCards(card('2H'), card('2S'))).toBeLessThan(0);
 		expect(compareCards(card('3H'), card('2S'))).toBeGreaterThan(0);
 		expect(SUITS).toEqual(['hearts', 'diamonds', 'clubs', 'spades']);
+	});
+
+	it.each<[HandOrder, string]>([
+		['rank', 'X AD 2H 2S 5C 10H JC KS'],
+		['rankAceHigh', 'X 2H 2S 5C 10H JC KS AD'],
+		['suit', 'X 2H 10H AD 5C JC 2S KS'],
+		['suitAceHigh', 'X 2H 10H AD 5C JC 2S KS']
+	])('sorts a hand in %s order, as a copy', (order, want) => {
+		const input = cards('KS 2S 2H X AD 10H JC 5C');
+		expect(sortHand(input, order)).toEqual(cards(want));
+		expect(input[0]).toEqual(card('KS'));
+	});
+
+	it('puts the Ace last within its suit when ace high', () => {
+		const input = cards('KH AH 2H AS QS');
+		expect(sortHand(input, 'suit')).toEqual(cards('AH 2H KH AS QS'));
+		expect(sortHand(input, 'suitAceHigh')).toEqual(cards('2H KH AH QS AS'));
+	});
+
+	it('defaults to the server order', () => {
+		const input = cards('KS 2C 2H X AD 10H JC 2S 2D');
+		expect(sortHand(input, DEFAULT_HAND_ORDER)).toEqual(sortCards(input));
+		expect(HAND_ORDERS).toHaveLength(4);
 	});
 
 	it('builds keys', () => {

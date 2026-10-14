@@ -39,6 +39,32 @@ export function compareCards(a: Card, b: Card): number {
 /** Returns a sorted copy. */
 export const sortCards = (cs: Card[]): Card[] => [...cs].sort(compareCards);
 
+/**
+ * How a player wants their hand sorted (display only, per device). The Jester always comes first;
+ * "ace high" moves the Ace's sort position behind the King without changing its value.
+ */
+export type HandOrder = 'rank' | 'rankAceHigh' | 'suit' | 'suitAceHigh';
+export const HAND_ORDERS: HandOrder[] = ['rank', 'rankAceHigh', 'suit', 'suitAceHigh'];
+export const DEFAULT_HAND_ORDER: HandOrder = 'rank';
+
+const sortRank = (c: Card, aceHigh: boolean): number => (aceHigh && c.rank === 1 ? 14 : c.rank);
+// The Jester has no suit: indexOf gives -1, so it sorts first by suit too.
+const suitIndex = (c: Card): number => SUITS.indexOf(c.suit as Suit);
+
+export function handComparator(order: HandOrder): (a: Card, b: Card) => number {
+	const aceHigh = order === 'rankAceHigh' || order === 'suitAceHigh';
+	const bySuit = order === 'suit' || order === 'suitAceHigh';
+	return (a, b) => {
+		const rank = sortRank(a, aceHigh) - sortRank(b, aceHigh);
+		const suit = suitIndex(a) - suitIndex(b);
+		return bySuit ? suit || rank : rank || suit;
+	};
+}
+
+/** Returns a copy sorted in the player's hand order. */
+export const sortHand = (cs: Card[], order: HandOrder): Card[] =>
+	[...cs].sort(handComparator(order));
+
 export const cardKey = (c: Card): string => `${c.suit || 'jester'}-${c.rank}`;
 
 /**

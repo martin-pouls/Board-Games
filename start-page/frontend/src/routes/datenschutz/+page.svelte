@@ -242,6 +242,7 @@
 			weiterspielen können und Ihre letzten Spiele angezeigt werden,
 		</li>
 		<li>den zuletzt verwendeten Spielernamen,</li>
+		<li>die gewählte Sortierung Ihrer Handkarten (Regicide),</li>
 		<li>Ihre Wahl zwischen hellem und dunklem Design.</li>
 	</ul>
 	<p>

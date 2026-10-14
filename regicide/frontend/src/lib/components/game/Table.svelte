@@ -11,13 +11,15 @@
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { checkPlay, previewPlay } from '#lib/game/rules.js';
+	import { loadHandOrder, saveHandOrder } from '#lib/game/handOrder.js';
+	import { checkPlay, previewPlay, sortHand, type HandOrder } from '#lib/game/rules.js';
 	import { pickCards, selectionKey, toggleIndex } from '#lib/game/selection.js';
 	import { cn } from '#lib/utils.js';
 	import type { PlayerView } from '#lib/types.js';
 	import ActionPanel from './ActionPanel.svelte';
 	import EnemyCard from './EnemyCard.svelte';
 	import Hand from './Hand.svelte';
+	import HandOrderMenu from './HandOrderMenu.svelte';
 	import LastTurnPiles from './LastTurnPiles.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import RulesHelp from './RulesHelp.svelte';
@@ -41,13 +43,17 @@
 	let busy = $state(false);
 	let confirmGiveUp = $state(false);
 	let rulesOpen = $state(false);
+	let handOrder = $state<HandOrder>(loadHandOrder());
+	let headerIcons = $state<HTMLElement>();
 
 	const connected = $derived(client.status === 'open');
 	const playing = $derived(view.phase === 'playing');
 	const step = $derived(view.turn?.step ?? '');
 	const myTurn = $derived(!readonly && playing && view.turn?.activePlayerId === view.you);
 	const canSelect = $derived(connected && myTurn && (step === 'play' || step === 'discard'));
-	const selectedCards = $derived(pickCards(view.hand, selected));
+	// The hand in the player's order: selection indices refer to this array, not to view.hand.
+	const hand = $derived(sortHand(view.hand, handOrder));
+	const selectedCards = $derived(pickCards(hand, selected));
 	const preview = $derived(
 		myTurn && step === 'play' && selected.length > 0 ? previewPlay(view, selectedCards) : null
 	);
@@ -66,7 +72,7 @@
 
 	function hint(i: number): 'dim' | undefined {
 		if (step !== 'play' || selected.length === 0) return undefined;
-		return checkPlay([...selectedCards, view.hand[i]]).ok ? undefined : 'dim';
+		return checkPlay([...selectedCards, hand[i]]).ok ? undefined : 'dim';
 	}
 
 	async function run(action: () => Promise<void>) {
@@ -81,6 +87,13 @@
 		}
 	}
 
+	function setHandOrder(order: HandOrder) {
+		if (order === handOrder) return;
+		handOrder = order;
+		saveHandOrder(order);
+		selected = [];
+	}
+
 	async function giveUp() {
 		await run(() => client.giveUp());
 		confirmGiveUp = false;
@@ -89,7 +102,7 @@
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 sm:max-w-xl">
 	<header class="flex flex-col gap-1">
-		<div class={cn(headerRow, 'text-sm')}>
+		<div bind:this={headerIcons} class={cn(headerRow, 'text-sm')}>
 			<HeaderButton icon={House} label="Home" href={resolve('/')} />
 			<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 			<span
@@ -99,18 +112,17 @@
 				)}
 				title={connected ? 'Connected' : 'Reconnecting'}
 			></span>
-			<HeaderButton
+			<HandOrderMenu
 				class="ml-auto"
-				icon={BookOpen}
-				label="Rules"
-				onclick={() => (rulesOpen = true)}
+				order={handOrder}
+				anchor={headerIcons}
+				onchange={setHandOrder}
 			/>
+			<HeaderButton icon={BookOpen} label="Rules" onclick={() => (rulesOpen = true)} />
 			{#if playing && !readonly}
 				<HeaderButton
 					icon={Flag}
 					label="Give up"
-					showLabel
-					labelClass="max-[24rem]:sr-only"
 					destructive
 					disabled={!connected}
 					onclick={() => (confirmGiveUp = true)}
@@ -146,7 +158,7 @@
 			<ActionPanel {client} {view} selected={selectedCards} {busy} {connected} {run} />
 		{/if}
 		<Hand
-			cards={view.hand}
+			cards={hand}
 			deal={view.gameId}
 			{selected}
 			interactive={canSelect && !busy}
