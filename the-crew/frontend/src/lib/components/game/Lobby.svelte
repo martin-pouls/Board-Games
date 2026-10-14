@@ -252,7 +252,7 @@
 	</Card.Root>
 
 	<div
-		class="sticky bottom-0 -mx-3 mt-auto bg-background/95 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur"
+		class="sticky bottom-0 -mx-3 mt-auto px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
 	>
 		{#if isHost}
 			<Button

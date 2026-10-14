@@ -142,10 +142,10 @@
 	body {
 		@apply bg-background text-foreground;
 	}
-	/* The glows sit on a fixed layer: iOS Safari ignores background-attachment: fixed and would
-	   size (and repeat) them to the page, cutting the bottom glow off with hard edges. iOS 26
-	   Safari fills the status bar and the area around its toolbar with the plain background
-	   colour, so the glows fade out towards the top and bottom edges instead of ending there. */
+	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
+	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
+	   the status bar and the area around its toolbar with the plain background colour, so the
+	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
 	body::before {
 		content: '';
 		position: fixed;
@@ -155,8 +155,14 @@
 		mask-image: linear-gradient(
 			to bottom,
 			transparent,
-			#000 3rem,
-			#000 calc(100% - 7rem),
+			rgb(0 0 0 / 0.12) 2rem,
+			rgb(0 0 0 / 0.45) 4rem,
+			rgb(0 0 0 / 0.82) 6rem,
+			#000 8rem,
+			#000 calc(100% - 8rem),
+			rgb(0 0 0 / 0.82) calc(100% - 6rem),
+			rgb(0 0 0 / 0.45) calc(100% - 4rem),
+			rgb(0 0 0 / 0.12) calc(100% - 2rem),
 			transparent
 		);
 		background:
