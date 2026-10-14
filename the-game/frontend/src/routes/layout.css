@@ -143,13 +143,22 @@
 		@apply bg-background text-foreground;
 	}
 	/* The glows sit on a fixed layer: iOS Safari ignores background-attachment: fixed and would
-	   size (and repeat) them to the page, cutting the bottom glow off with hard edges. */
+	   size (and repeat) them to the page, cutting the bottom glow off with hard edges. iOS 26
+	   Safari fills the status bar and the area around its toolbar with the plain background
+	   colour, so the glows fade out towards the top and bottom edges instead of ending there. */
 	body::before {
 		content: '';
 		position: fixed;
 		inset: 0;
 		z-index: -1;
 		pointer-events: none;
+		mask-image: linear-gradient(
+			to bottom,
+			transparent,
+			#000 3rem,
+			#000 calc(100% - 7rem),
+			transparent
+		);
 		background:
 			radial-gradient(ellipse 90% 55% at 0% 0%, var(--glow-up), transparent 70%) no-repeat,
 			radial-gradient(ellipse 100% 60% at 100% 100%, var(--glow-down), transparent 75%) no-repeat;

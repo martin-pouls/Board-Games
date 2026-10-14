@@ -246,7 +246,7 @@
 	/>
 
 	<div
-		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 bg-background/95 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur"
+		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
 	>
 		{#if controls}
 			{@render controls()}
