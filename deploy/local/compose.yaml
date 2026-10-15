@@ -4,7 +4,7 @@ name: caddy-local
 
 services:
   caddy:
-    image: caddy:2
+    image: caddy:2@sha256:685ae3d7c34d9b5f8caeddc5d14051db7bbd88ff1f5a2fa0c16bd8ca328fb7af
     container_name: caddy-local
     restart: unless-stopped
     ports:

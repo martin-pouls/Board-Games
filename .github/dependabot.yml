@@ -1,5 +1,5 @@
-# The actions in .github/workflows are pinned to commit SHAs; this keeps the pins current (one
-# grouped pull request a month).
+# The actions in .github/workflows and the base images in the Dockerfiles and the Caddy compose
+# files are pinned to digests; this keeps the pins current (one grouped pull request a month each).
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -8,4 +8,26 @@ updates:
       interval: monthly
     groups:
       actions:
+        patterns: ['*']
+  - package-ecosystem: docker
+    directories:
+      - /the-game
+      - /regicide
+      - /fox-duet
+      - /the-crew
+      - /gate
+      - /start-page
+    schedule:
+      interval: monthly
+    groups:
+      base-images:
+        patterns: ['*']
+  - package-ecosystem: docker-compose
+    directories:
+      - /deploy/caddy
+      - /deploy/local
+    schedule:
+      interval: monthly
+    groups:
+      caddy:
         patterns: ['*']

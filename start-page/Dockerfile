@@ -6,7 +6,7 @@
 # The build context is the repository root (the page frame comes from shared/), so paths below are
 # from the root. Dockerfile.dockerignore next to this file applies.
 
-FROM node:24-alpine AS web
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS web
 WORKDIR /src/start-page/frontend
 COPY start-page/frontend/package.json start-page/frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -17,7 +17,7 @@ COPY start-page/frontend/ ./
 ARG BASE_PATH=""
 RUN BASE_PATH="$BASE_PATH" npm run build
 
-FROM caddy:2-alpine
+FROM caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
 # Links the image to the repo on ghcr.io; the server prunes old images by it.
 LABEL org.opencontainers.image.source=https://github.com/martin-pouls/Board-Games
 COPY --from=web /src/start-page/frontend/build /srv
