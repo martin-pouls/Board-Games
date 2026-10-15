@@ -52,23 +52,13 @@ function pile(
 	const direction = index < 2 ? 'up' : 'down';
 	const startValue = direction === 'up' ? 1 : 100;
 	const topCard = top === undefined ? null : opts.extreme ? xcard(top) : card(top);
-	const cards: Card[] = [];
-	if (top !== undefined && topCard) {
-		// Plausible history: evenly spaced values from the start card towards the top.
-		for (let i = 1; i < count; i++) {
-			const v = Math.round(startValue + ((top - startValue) * i) / count);
-			cards.push(opts.extreme ? xcard(v) : card(v));
-		}
-		cards.push(topCard);
-	}
 	return {
 		index,
 		direction,
 		startValue,
 		topValue: top ?? startValue,
 		topCard,
-		cardCount: cards.length,
-		cards,
+		cardCount: topCard ? count : 0,
 		commandActive: opts.commandActive ?? false
 	};
 }

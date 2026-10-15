@@ -3,7 +3,6 @@
 ## All Card Games
 
 ## The Game
-- remove pile browsing
 
 ## Regicide
 

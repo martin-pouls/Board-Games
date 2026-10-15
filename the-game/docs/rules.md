@@ -66,7 +66,7 @@ Cooperative game for 1–5 players. The team wins together or loses together.
 - Players must **never reveal or ask for concrete numbers**, in any form.
 - Anything else is allowed, e.g. "please don't play on this pile" or "only a small jump here, please".
 - In this app, chat and in-game hints must not leak exact hand values.
-- *Interpretation (decided by the project owner):* played cards are public. Anyone may look through a pile's cards in the order they were played (the app shows this when a pile is tapped without a card selected).
+- *App decision (owner, 2026-10-15):* the app shows only each pile's top card and card count; there is no way to look through a pile's earlier cards.
 
 ### Pro variant
 - The minimum per turn is **3** instead of 2. Optionally the hand size is also reduced by 1 (see table above).

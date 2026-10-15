@@ -85,7 +85,7 @@ func TestViewForPlaying(t *testing.T) {
 		t.Fatalf("turn %+v", active.Turn)
 	}
 	top := NumberCard(45)
-	if !reflect.DeepEqual(active.Piles[2], PileView{Index: 2, Direction: DirectionDown, StartValue: 100, TopValue: 45, CardCount: 2, TopCard: active.Piles[2].TopCard, Cards: g.Piles[2].Cards}) ||
+	if !reflect.DeepEqual(active.Piles[2], PileView{Index: 2, Direction: DirectionDown, StartValue: 100, TopValue: 45, CardCount: 2, TopCard: active.Piles[2].TopCard}) ||
 		active.Piles[2].TopCard == nil || *active.Piles[2].TopCard != top || active.Piles[1].TopCard != nil {
 		t.Fatalf("piles %+v", active.Piles)
 	}

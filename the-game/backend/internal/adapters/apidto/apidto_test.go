@@ -68,7 +68,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{Card: domain.NumberCard(50), Blocked: errors.New("odd")},
 		},
 		Piles: []domain.PileView{
-			{Index: 0, Direction: domain.DirectionUp, StartValue: 1, TopValue: 42, TopCard: &top, CardCount: 3, Cards: []domain.Card{domain.NumberCard(5), domain.NumberCard(30), top}},
+			{Index: 0, Direction: domain.DirectionUp, StartValue: 1, TopValue: 42, TopCard: &top, CardCount: 3},
 			{Index: 2, Direction: domain.DirectionDown, StartValue: 100, TopValue: 59, TopCard: &nbt, CardCount: 4, CommandActive: true},
 			{Index: 3, Direction: domain.DirectionDown, StartValue: 100, TopValue: 100},
 		},
@@ -101,9 +101,9 @@ func TestFromViewMapsEveryField(t *testing.T) {
 			{Card: Card{Value: 50, Kind: "number"}, LegalPiles: []int{}},
 		},
 		Piles: []Pile{
-			{Index: 0, Direction: "up", StartValue: 1, TopValue: 42, TopCard: &wantTop, CardCount: 3, Cards: []Card{{Value: 5, Kind: "number"}, {Value: 30, Kind: "number"}, wantTop}},
-			{Index: 2, Direction: "down", StartValue: 100, TopValue: 59, TopCard: &wantNBT, CardCount: 4, CommandActive: true, Cards: []Card{}},
-			{Index: 3, Direction: "down", StartValue: 100, TopValue: 100, Cards: []Card{}},
+			{Index: 0, Direction: "up", StartValue: 1, TopValue: 42, TopCard: &wantTop, CardCount: 3},
+			{Index: 2, Direction: "down", StartValue: 100, TopValue: 59, TopCard: &wantNBT, CardCount: 4, CommandActive: true},
+			{Index: 3, Direction: "down", StartValue: 100, TopValue: 100},
 		},
 		DrawPileCount: 60,
 		Turn: &Turn{

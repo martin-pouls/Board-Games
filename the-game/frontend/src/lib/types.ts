@@ -62,8 +62,6 @@ export interface Pile {
 	topValue: number;
 	topCard: Card | null;
 	cardCount: number;
-	/** Played cards, bottom first (last = topCard). */
-	cards: Card[];
 	/** topCard.command is in effect now (Infinity top, or lightning top played this turn). */
 	commandActive: boolean;
 }

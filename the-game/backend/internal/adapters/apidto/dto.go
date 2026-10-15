@@ -64,7 +64,6 @@ type Pile struct {
 	TopValue      int    `json:"topValue"`
 	TopCard       *Card  `json:"topCard"` // null when only the start card shows
 	CardCount     int    `json:"cardCount"`
-	Cards         []Card `json:"cards"`         // played cards, bottom first (last = top); never null
 	CommandActive bool   `json:"commandActive"` // topCard.command is in effect now
 }
 

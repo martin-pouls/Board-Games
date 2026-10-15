@@ -88,11 +88,7 @@ func FromView(v domain.PlayerView) PlayerView {
 			StartValue:    p.StartValue,
 			TopValue:      p.TopValue,
 			CardCount:     p.CardCount,
-			Cards:         make([]Card, 0, len(p.Cards)),
 			CommandActive: p.CommandActive,
-		}
-		for _, c := range p.Cards {
-			pile.Cards = append(pile.Cards, FromCard(c))
 		}
 		if p.TopCard != nil {
 			c := FromCard(*p.TopCard)

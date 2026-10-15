@@ -19,7 +19,6 @@
 		playsThisTurn = 0,
 		bound = false,
 		skull = false,
-		inspectable = false,
 		onclick
 	}: {
 		pile: Pile;
@@ -31,8 +30,6 @@
 		bound?: boolean;
 		/** A skull played this turn shows here and must be covered. */
 		skull?: boolean;
-		/** A tap opens the pile history instead of playing a card. */
-		inspectable?: boolean;
 		onclick?: () => void;
 	} = $props();
 
@@ -46,8 +43,7 @@
 				: '') +
 			(skull ? ', skull must be covered' : '') +
 			(bound ? ', all cards this turn go here' : '') +
-			(highlight ? ', tap to play here' : '') +
-			(inspectable ? ', tap to see all its cards' : '')
+			(highlight ? ', tap to play here' : '')
 	);
 </script>
 

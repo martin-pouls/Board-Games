@@ -14,7 +14,6 @@
 	import { cn } from '#lib/utils.js';
 	import type { HandCard, PlayerView } from '#lib/types.js';
 	import PileCard from './PileCard.svelte';
-	import PileInspector from './PileInspector.svelte';
 	import Hand from './Hand.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import TurnBar from './TurnBar.svelte';
@@ -40,9 +39,6 @@
 	let confirmEnd = $state(false);
 	let ending = $state(false);
 	let confirmGiveUp = $state(false);
-	// The pile whose history is open; kept by index so the dialog follows live updates.
-	let inspecting = $state<number | null>(null);
-	let inspectOpen = $state(false);
 
 	const connected = $derived(client.status === 'open');
 	const extreme = $derived(view.options.variant === 'extreme');
@@ -218,32 +214,18 @@
 		{#each piles as pile (pile.index)}
 			{@const legal = selectedCard?.legalPiles.includes(pile.index) ?? false}
 			{@const playable = interactive && !!selectedCard}
-			{@const inspectable = !playable && pile.cardCount > 0}
 			<PileCard
 				{pile}
 				highlight={legal}
 				dimmed={!!selectedCard && !legal}
-				disabled={!playable && !inspectable}
-				{inspectable}
+				disabled={!playable}
 				playsThisTurn={playsByPile[pile.index] ?? 0}
 				bound={playing && view.turn?.constraints.boundPile === pile.index}
 				skull={playing && (view.turn?.constraints.skullPiles.includes(pile.index) ?? false)}
-				onclick={() => {
-					if (playable) {
-						onpile(pile.index);
-					} else {
-						inspecting = pile.index;
-						inspectOpen = true;
-					}
-				}}
+				onclick={() => onpile(pile.index)}
 			/>
 		{/each}
 	</div>
-
-	<PileInspector
-		pile={view.piles.find((p) => p.index === inspecting) ?? null}
-		bind:open={inspectOpen}
-	/>
 
 	<div
 		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
