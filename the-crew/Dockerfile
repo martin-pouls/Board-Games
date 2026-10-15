@@ -6,7 +6,7 @@
 # root. The image keeps the repo layout (/src/the-crew, /src/shared): the app finds shared/ at
 # ../../shared as it does in a checkout. Dockerfile.dockerignore next to this file applies.
 
-FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS web
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS web
 WORKDIR /src/the-crew/frontend
 COPY the-crew/frontend/package.json the-crew/frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
