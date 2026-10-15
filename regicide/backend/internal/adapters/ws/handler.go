@@ -55,37 +55,37 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 	var err error
 	switch msg.Type {
 	case apidto.CmdStartGame:
-		_, err = b.svc.StartGame(ctx, id, p, domain.PlayerID(msg.FirstPlayerID))
+		err = b.svc.StartGame(ctx, id, p, domain.PlayerID(msg.FirstPlayerID))
 	case apidto.CmdPlay:
 		var cards []domain.Card
 		if cards, err = cardsOf(msg); err == nil {
-			_, err = b.svc.Play(ctx, id, p, cards)
+			err = b.svc.Play(ctx, id, p, cards)
 		}
 	case apidto.CmdYield:
-		_, err = b.svc.Yield(ctx, id, p)
+		err = b.svc.Yield(ctx, id, p)
 	case apidto.CmdDiscard:
 		var cards []domain.Card
 		if cards, err = cardsOf(msg); err == nil {
-			_, err = b.svc.Discard(ctx, id, p, cards)
+			err = b.svc.Discard(ctx, id, p, cards)
 		}
 	case apidto.CmdChooseNext:
 		if msg.PlayerID == "" {
 			return apidto.BadRequest("missing playerId")
 		}
-		_, err = b.svc.ChooseNext(ctx, id, p, domain.PlayerID(msg.PlayerID))
+		err = b.svc.ChooseNext(ctx, id, p, domain.PlayerID(msg.PlayerID))
 	case apidto.CmdUseSoloJester:
-		_, err = b.svc.UseSoloJester(ctx, id, p)
+		err = b.svc.UseSoloJester(ctx, id, p)
 	case apidto.CmdSetSignal:
 		if msg.Signal == nil {
 			return apidto.BadRequest("missing signal")
 		}
-		_, err = b.svc.SetJesterSignal(ctx, id, p, apidto.SignalFromWire(*msg.Signal))
+		err = b.svc.SetJesterSignal(ctx, id, p, apidto.SignalFromWire(*msg.Signal))
 	case apidto.CmdGiveUp:
-		_, err = b.svc.GiveUp(ctx, id, p)
+		err = b.svc.GiveUp(ctx, id, p)
 	case apidto.CmdEndGame:
-		_, err = b.svc.EndGame(ctx, id, p)
+		err = b.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:
-		_, err = b.svc.Rematch(ctx, id, p)
+		err = b.svc.Rematch(ctx, id, p)
 	default:
 		return apidto.BadRequest("unknown message type %q", msg.Type)
 	}

@@ -22,7 +22,6 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games/{code}/players", a.joinGame)
 	mux.HandleFunc("GET /api/games/{code}/view", a.authed(a.view))
 	mux.HandleFunc("POST /api/games/{code}/leave", a.leave)
-	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
 }
 
 // gameCode returns the {code} path value, normalised to upper case.
@@ -128,8 +127,4 @@ func (a *gamesAPI) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (a *gamesAPI) endGame(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.EndGame(r.Context(), id, p)
 }

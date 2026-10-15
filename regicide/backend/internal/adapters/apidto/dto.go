@@ -175,27 +175,6 @@ type JoinGameRequest struct {
 	Name string `json:"name"`
 }
 
-// StartGameRequest is the body of POST /api/games/{code}/start. An empty first
-// player (or an empty body) means random.
-type StartGameRequest struct {
-	FirstPlayerID string `json:"firstPlayerId"`
-}
-
-// CardsRequest is the body of play and discard. A nil Cards means bad_request.
-type CardsRequest struct {
-	Cards []Card `json:"cards"`
-}
-
-// ChooseNextRequest is the body of POST /api/games/{code}/next-player. An empty id means bad_request.
-type ChooseNextRequest struct {
-	PlayerID string `json:"playerId"`
-}
-
-// SignalRequest is the body of PUT /api/games/{code}/signal. A nil signal means bad_request.
-type SignalRequest struct {
-	Signal *string `json:"signal"`
-}
-
 // SessionResponse is returned when creating or joining a game.
 type SessionResponse struct {
 	GameID   string     `json:"gameId"`

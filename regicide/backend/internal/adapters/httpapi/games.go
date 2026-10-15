@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -17,31 +16,19 @@ type gamesAPI struct {
 	logger *slog.Logger
 }
 
+// registerGameRoutes registers the lobby routes. Gameplay (start, play, ...) goes over the WebSocket only.
 func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games", a.createGame)
 	mux.HandleFunc("GET /api/games/{code}", a.summary)
 	mux.HandleFunc("POST /api/games/{code}/players", a.joinGame)
-	mux.HandleFunc("GET /api/games/{code}/view", a.authed(a.view))
+	mux.HandleFunc("GET /api/games/{code}/view", a.view)
 	mux.HandleFunc("POST /api/games/{code}/leave", a.leave)
-	mux.HandleFunc("POST /api/games/{code}/start", a.authed(a.start))
-	mux.HandleFunc("POST /api/games/{code}/play", a.authed(a.play))
-	mux.HandleFunc("POST /api/games/{code}/yield", a.authed(a.yield))
-	mux.HandleFunc("POST /api/games/{code}/discard", a.authed(a.discard))
-	mux.HandleFunc("POST /api/games/{code}/next-player", a.authed(a.chooseNext))
-	mux.HandleFunc("POST /api/games/{code}/solo-jester", a.authed(a.soloJester))
-	mux.HandleFunc("PUT /api/games/{code}/signal", a.authed(a.setSignal))
-	mux.HandleFunc("POST /api/games/{code}/give-up", a.authed(a.giveUp))
-	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
-	mux.HandleFunc("POST /api/games/{code}/rematch", a.authed(a.rematch))
 }
 
 // gameCode returns the {code} path value, normalised to upper case.
 func gameCode(r *http.Request) domain.GameID {
 	return domain.GameID(httpkit.GameCode(r))
 }
-
-// errEmptyBody is returned by decodeBody for a body with no content.
-var errEmptyBody = httpkit.ErrEmptyBody
 
 // decodeBody decodes a JSON body capped at httpkit.MaxBodyBytes. Every failure maps to bad_request.
 func decodeBody(w http.ResponseWriter, r *http.Request, v any) error {
@@ -53,37 +40,12 @@ func (a *gamesAPI) writeError(w http.ResponseWriter, r *http.Request, err error)
 	apidto.Errors.WriteError(w, r, a.logger, err)
 }
 
-func (a *gamesAPI) writeView(w http.ResponseWriter, r *http.Request, v domain.PlayerView, err error) {
-	if err != nil {
-		a.writeError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, apidto.FromView(v))
-}
-
 func sessionResponse(s ports.Session) apidto.SessionResponse {
 	return apidto.SessionResponse{
 		GameID:   string(s.GameID),
 		PlayerID: string(s.PlayerID),
 		Token:    s.Token,
 		View:     apidto.FromView(s.View),
-	}
-}
-
-// authedFunc handles an authenticated request and returns the actor's view.
-type authedFunc func(w http.ResponseWriter, r *http.Request, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
-
-// authed wraps fn with bearer authentication and view/error writing.
-func (a *gamesAPI) authed(fn authedFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := gameCode(r)
-		player, err := a.authenticate(r, id)
-		if err != nil {
-			a.writeError(w, r, err)
-			return
-		}
-		v, err := fn(w, r, id, player)
-		a.writeView(w, r, v, err)
 	}
 }
 
@@ -124,8 +86,20 @@ func (a *gamesAPI) joinGame(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, sessionResponse(s))
 }
 
-func (a *gamesAPI) view(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.View(r.Context(), id, p)
+// view answers with the caller's current view.
+func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
+	id := gameCode(r)
+	player, err := a.authenticate(r, id)
+	if err != nil {
+		a.writeError(w, r, err)
+		return
+	}
+	v, err := a.svc.View(r.Context(), id, player)
+	if err != nil {
+		a.writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, apidto.FromView(v))
 }
 
 // leave removes the caller from a lobby; it answers 204 without a body.
@@ -141,83 +115,4 @@ func (a *gamesAPI) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// start accepts an optional body; an empty body means a random first player.
-func (a *gamesAPI) start(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.StartGameRequest
-	if err := decodeBody(w, r, &req); err != nil && !errors.Is(err, errEmptyBody) {
-		return domain.PlayerView{}, err
-	}
-	return a.svc.StartGame(r.Context(), id, p, domain.PlayerID(req.FirstPlayerID))
-}
-
-// decodeCards decodes a {cards} body; a missing or null list is bad_request.
-func decodeCards(w http.ResponseWriter, r *http.Request) ([]domain.Card, error) {
-	var req apidto.CardsRequest
-	if err := decodeBody(w, r, &req); err != nil {
-		return nil, err
-	}
-	if req.Cards == nil {
-		return nil, apidto.BadRequest("cards are required")
-	}
-	return apidto.CardsToDomain(req.Cards)
-}
-
-func (a *gamesAPI) play(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	cards, err := decodeCards(w, r)
-	if err != nil {
-		return domain.PlayerView{}, err
-	}
-	return a.svc.Play(r.Context(), id, p, cards)
-}
-
-func (a *gamesAPI) yield(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.Yield(r.Context(), id, p)
-}
-
-func (a *gamesAPI) discard(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	cards, err := decodeCards(w, r)
-	if err != nil {
-		return domain.PlayerView{}, err
-	}
-	return a.svc.Discard(r.Context(), id, p, cards)
-}
-
-func (a *gamesAPI) chooseNext(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.ChooseNextRequest
-	if err := decodeBody(w, r, &req); err != nil {
-		return domain.PlayerView{}, err
-	}
-	if req.PlayerID == "" {
-		return domain.PlayerView{}, apidto.BadRequest("missing playerId")
-	}
-	return a.svc.ChooseNext(r.Context(), id, p, domain.PlayerID(req.PlayerID))
-}
-
-func (a *gamesAPI) soloJester(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.UseSoloJester(r.Context(), id, p)
-}
-
-func (a *gamesAPI) setSignal(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.SignalRequest
-	if err := decodeBody(w, r, &req); err != nil {
-		return domain.PlayerView{}, err
-	}
-	if req.Signal == nil {
-		return domain.PlayerView{}, apidto.BadRequest("missing signal")
-	}
-	return a.svc.SetJesterSignal(r.Context(), id, p, apidto.SignalFromWire(*req.Signal))
-}
-
-func (a *gamesAPI) giveUp(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.GiveUp(r.Context(), id, p)
-}
-
-func (a *gamesAPI) endGame(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.EndGame(r.Context(), id, p)
-}
-
-func (a *gamesAPI) rematch(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.Rematch(r.Context(), id, p)
 }

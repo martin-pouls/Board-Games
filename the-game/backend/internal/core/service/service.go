@@ -92,13 +92,10 @@ func (s *Service) mutate(ctx context.Context, id domain.GameID, fn func(*ports.G
 	return nil, ports.ErrVersionConflict
 }
 
-// act runs a domain mutator for player and returns the actor's view.
-func (s *Service) act(ctx context.Context, id domain.GameID, player domain.PlayerID, fn func(*domain.Game) error) (domain.PlayerView, error) {
-	rec, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
-	if err != nil {
-		return domain.PlayerView{}, err
-	}
-	return rec.Game.ViewFor(player)
+// act runs a domain mutator for the game, saves it and publishes the result.
+func (s *Service) act(ctx context.Context, id domain.GameID, fn func(*domain.Game) error) error {
+	_, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
+	return err
 }
 
 // CreateGame implements ports.GameService.
@@ -186,61 +183,61 @@ func (s *Service) View(ctx context.Context, id domain.GameID, player domain.Play
 }
 
 // SetOptions implements ports.GameService.
-func (s *Service) SetOptions(ctx context.Context, id domain.GameID, player domain.PlayerID, opts domain.Options) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SetOptions(player, opts) })
+func (s *Service) SetOptions(ctx context.Context, id domain.GameID, player domain.PlayerID, opts domain.Options) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.SetOptions(player, opts) })
 }
 
 // StartGame implements ports.GameService.
-func (s *Service) StartGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.Start(player, s.cfg.NewRNG()) })
+func (s *Service) StartGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.Start(player, s.cfg.NewRNG()) })
 }
 
 // ChooseFirstPlayer implements ports.GameService.
-func (s *Service) ChooseFirstPlayer(ctx context.Context, id domain.GameID, player, first domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.ChooseFirstPlayer(player, first) })
+func (s *Service) ChooseFirstPlayer(ctx context.Context, id domain.GameID, player, first domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.ChooseFirstPlayer(player, first) })
 }
 
 // PlayCard implements ports.GameService.
-func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card, pile int) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PlayCard(player, card, pile) })
+func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card, pile int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.PlayCard(player, card, pile) })
 }
 
 // UndoPlay implements ports.GameService.
-func (s *Service) UndoPlay(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.UndoPlay(player) })
+func (s *Service) UndoPlay(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.UndoPlay(player) })
 }
 
 // GiveUp implements ports.GameService.
-func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.GiveUp(player) })
+func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.GiveUp(player) })
 }
 
 // EndTurn implements ports.GameService.
-func (s *Service) EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndTurn(player) })
+func (s *Service) EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.EndTurn(player) })
 }
 
 // EndGame implements ports.GameService.
-func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndGame(player) })
+func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.EndGame(player) })
 }
 
 // Rematch implements ports.GameService. It is idempotent: when the old game already
-// has a NextGameID, the actor's view of the old game is returned unchanged.
-func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+// has a NextGameID, nothing changes and nothing is published.
+func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
 	id = normalizeID(id)
 	s.locks.Lock(id)
 	defer s.locks.Unlock(id)
 	for range maxOCCAttempts {
 		rec, err := s.repo.Load(ctx, id)
 		if err != nil {
-			return domain.PlayerView{}, err
+			return err
 		}
 		if _, _, ok := rec.Game.PlayerByID(player); ok && rec.Game.NextGameID != "" {
-			return rec.Game.ViewFor(player)
+			return nil
 		}
 		if err := s.createRematch(ctx, rec, player); err != nil {
-			return domain.PlayerView{}, err
+			return err
 		}
 		events := rec.Game.PullEvents()
 		err = s.repo.Update(ctx, rec)
@@ -248,12 +245,12 @@ func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.P
 			continue
 		}
 		if err != nil {
-			return domain.PlayerView{}, fmt.Errorf("save game %s: %w", id, err)
+			return fmt.Errorf("save game %s: %w", id, err)
 		}
 		s.pub.Publish(ctx, ports.GameUpdate{Game: rec.Game, Events: events})
-		return rec.Game.ViewFor(player)
+		return nil
 	}
-	return domain.PlayerView{}, ports.ErrVersionConflict
+	return ports.ErrVersionConflict
 }
 
 // createRematch creates the new lobby game and, on success, replaces rec.Game with the

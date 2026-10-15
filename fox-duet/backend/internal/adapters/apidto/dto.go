@@ -212,11 +212,6 @@ type JoinGameRequest struct {
 	Name string `json:"name"`
 }
 
-// StartGameRequest is the body of POST /api/games/{code}/start. A missing level means 1.
-type StartGameRequest struct {
-	Level int `json:"level"`
-}
-
 // SessionResponse is returned when creating or joining a game.
 type SessionResponse struct {
 	GameID   string     `json:"gameId"`

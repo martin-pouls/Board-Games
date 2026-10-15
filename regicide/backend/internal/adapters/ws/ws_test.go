@@ -92,19 +92,19 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return stubView(&domain.Game{ID: id, Revision: rev}, p)
 }
 
-func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, p domain.PlayerID, evs ...domain.Event) (domain.PlayerView, error) {
+func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, p domain.PlayerID, evs ...domain.Event) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, name)
 	if f.err != nil {
 		err := f.err
 		f.mu.Unlock()
-		return domain.PlayerView{}, err
+		return err
 	}
 	f.rev++
 	g := &domain.Game{ID: id, Revision: f.rev}
 	f.mu.Unlock()
 	f.hub.Publish(ctx, ports.GameUpdate{Game: g, Events: evs})
-	return stubView(g, p)
+	return nil
 }
 
 func (f *fakeService) callNames() []string {
@@ -125,49 +125,49 @@ func (f *fakeService) Summary(context.Context, domain.GameID) (domain.GameSummar
 func (f *fakeService) LeaveGame(context.Context, domain.GameID, domain.PlayerID) error {
 	return errors.New("not used")
 }
-func (f *fakeService) StartGame(ctx context.Context, id domain.GameID, p, first domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) StartGame(ctx context.Context, id domain.GameID, p, first domain.PlayerID) error {
 	f.mu.Lock()
 	f.lastFirst = first
 	f.mu.Unlock()
 	return f.mutate(ctx, "StartGame", id, p, domain.GameStarted{FirstPlayerID: first})
 }
-func (f *fakeService) Play(ctx context.Context, id domain.GameID, p domain.PlayerID, cards []domain.Card) (domain.PlayerView, error) {
+func (f *fakeService) Play(ctx context.Context, id domain.GameID, p domain.PlayerID, cards []domain.Card) error {
 	f.mu.Lock()
 	f.lastCards = cards
 	f.mu.Unlock()
 	return f.mutate(ctx, "Play", id, p, domain.CardsPlayed{PlayerID: p, Cards: cards})
 }
-func (f *fakeService) Yield(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) Yield(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.mutate(ctx, "Yield", id, p, domain.Yielded{PlayerID: p})
 }
-func (f *fakeService) Discard(ctx context.Context, id domain.GameID, p domain.PlayerID, cards []domain.Card) (domain.PlayerView, error) {
+func (f *fakeService) Discard(ctx context.Context, id domain.GameID, p domain.PlayerID, cards []domain.Card) error {
 	f.mu.Lock()
 	f.lastCards = cards
 	f.mu.Unlock()
 	return f.mutate(ctx, "Discard", id, p, domain.CardsDiscarded{PlayerID: p, Cards: cards})
 }
-func (f *fakeService) ChooseNext(ctx context.Context, id domain.GameID, p, next domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) ChooseNext(ctx context.Context, id domain.GameID, p, next domain.PlayerID) error {
 	f.mu.Lock()
 	f.lastNext = next
 	f.mu.Unlock()
 	return f.mutate(ctx, "ChooseNext", id, p, domain.NextPlayerChosen{ByPlayerID: p, PlayerID: next})
 }
-func (f *fakeService) UseSoloJester(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) UseSoloJester(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.mutate(ctx, "UseSoloJester", id, p, domain.SoloJesterUsed{PlayerID: p})
 }
-func (f *fakeService) SetJesterSignal(ctx context.Context, id domain.GameID, p domain.PlayerID, s domain.JesterSignal) (domain.PlayerView, error) {
+func (f *fakeService) SetJesterSignal(ctx context.Context, id domain.GameID, p domain.PlayerID, s domain.JesterSignal) error {
 	f.mu.Lock()
 	f.lastSignal = s
 	f.mu.Unlock()
 	return f.mutate(ctx, "SetJesterSignal", id, p, domain.JesterSignalSet{PlayerID: p, Signal: s})
 }
-func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.mutate(ctx, "GiveUp", id, p, domain.GameLost{Reason: domain.LossGaveUp, PlayerID: p})
 }
-func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.mutate(ctx, "EndGame", id, p, domain.GameEnded{ByPlayerID: p})
 }
-func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.mutate(ctx, "Rematch", id, p, domain.RematchCreated{GameID: "NEXT2"})
 }
 

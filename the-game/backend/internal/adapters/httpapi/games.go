@@ -16,20 +16,12 @@ type gamesAPI struct {
 	logger *slog.Logger
 }
 
+// registerGameRoutes mounts the lobby routes. Gameplay runs over the WebSocket only.
 func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("POST /api/games", a.createGame)
 	mux.HandleFunc("GET /api/games/{code}", a.summary)
 	mux.HandleFunc("POST /api/games/{code}/players", a.joinGame)
-	mux.HandleFunc("GET /api/games/{code}/view", a.authed(a.view))
-	mux.HandleFunc("PUT /api/games/{code}/options", a.authed(a.setOptions))
-	mux.HandleFunc("POST /api/games/{code}/start", a.authed(a.start))
-	mux.HandleFunc("POST /api/games/{code}/first-player", a.authed(a.chooseFirstPlayer))
-	mux.HandleFunc("POST /api/games/{code}/plays", a.authed(a.playCard))
-	mux.HandleFunc("POST /api/games/{code}/undo", a.authed(a.undoPlay))
-	mux.HandleFunc("POST /api/games/{code}/end-turn", a.authed(a.endTurn))
-	mux.HandleFunc("POST /api/games/{code}/give-up", a.authed(a.giveUp))
-	mux.HandleFunc("POST /api/games/{code}/end-game", a.authed(a.endGame))
-	mux.HandleFunc("POST /api/games/{code}/rematch", a.authed(a.rematch))
+	mux.HandleFunc("GET /api/games/{code}/view", a.view)
 }
 
 // gameCode returns the {code} path value, normalised to upper case.
@@ -47,37 +39,12 @@ func (a *gamesAPI) writeError(w http.ResponseWriter, r *http.Request, err error)
 	apidto.Errors.WriteError(w, r, a.logger, err)
 }
 
-func (a *gamesAPI) writeView(w http.ResponseWriter, r *http.Request, v domain.PlayerView, err error) {
-	if err != nil {
-		a.writeError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, apidto.FromView(v))
-}
-
 func sessionResponse(s ports.Session) apidto.SessionResponse {
 	return apidto.SessionResponse{
 		GameID:   string(s.GameID),
 		PlayerID: string(s.PlayerID),
 		Token:    s.Token,
 		View:     apidto.FromView(s.View),
-	}
-}
-
-// authedFunc handles an authenticated request and returns the actor's view.
-type authedFunc func(w http.ResponseWriter, r *http.Request, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
-
-// authed wraps fn with bearer authentication and view/error writing.
-func (a *gamesAPI) authed(fn authedFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := gameCode(r)
-		player, err := a.authenticate(r, id)
-		if err != nil {
-			a.writeError(w, r, err)
-			return
-		}
-		v, err := fn(w, r, id, player)
-		a.writeView(w, r, v, err)
 	}
 }
 
@@ -122,60 +89,18 @@ func (a *gamesAPI) joinGame(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, sessionResponse(s))
 }
 
-func (a *gamesAPI) view(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.View(r.Context(), id, p)
-}
-
-func (a *gamesAPI) setOptions(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.GameOptions
-	if err := decodeBody(w, r, &req); err != nil {
-		return domain.PlayerView{}, err
+// view returns the caller's current view; the bearer token identifies the player.
+func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
+	id := gameCode(r)
+	player, err := a.authenticate(r, id)
+	if err != nil {
+		a.writeError(w, r, err)
+		return
 	}
-	return a.svc.SetOptions(r.Context(), id, p, req.ToDomain())
-}
-
-func (a *gamesAPI) start(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.StartGame(r.Context(), id, p)
-}
-
-func (a *gamesAPI) chooseFirstPlayer(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.ChooseFirstPlayerRequest
-	if err := decodeBody(w, r, &req); err != nil {
-		return domain.PlayerView{}, err
+	v, err := a.svc.View(r.Context(), id, player)
+	if err != nil {
+		a.writeError(w, r, err)
+		return
 	}
-	if req.PlayerID == "" {
-		return domain.PlayerView{}, apidto.BadRequest("missing playerId")
-	}
-	return a.svc.ChooseFirstPlayer(r.Context(), id, p, domain.PlayerID(req.PlayerID))
-}
-
-func (a *gamesAPI) playCard(w http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	var req apidto.PlayCardRequest
-	if err := decodeBody(w, r, &req); err != nil {
-		return domain.PlayerView{}, err
-	}
-	if req.Card == nil || req.Pile == nil {
-		return domain.PlayerView{}, apidto.BadRequest("card and pile are required")
-	}
-	return a.svc.PlayCard(r.Context(), id, p, *req.Card, *req.Pile)
-}
-
-func (a *gamesAPI) undoPlay(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.UndoPlay(r.Context(), id, p)
-}
-
-func (a *gamesAPI) endTurn(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.EndTurn(r.Context(), id, p)
-}
-
-func (a *gamesAPI) giveUp(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.GiveUp(r.Context(), id, p)
-}
-
-func (a *gamesAPI) rematch(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.Rematch(r.Context(), id, p)
-}
-
-func (a *gamesAPI) endGame(_ http.ResponseWriter, r *http.Request, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return a.svc.EndGame(r.Context(), id, p)
+	writeJSON(w, http.StatusOK, apidto.FromView(v))
 }

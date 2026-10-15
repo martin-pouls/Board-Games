@@ -539,15 +539,16 @@ func TestThreePlayerJesterFlow(t *testing.T) {
 	}
 }
 
-// soloPolicy decides the next REST action for the solo player from the view.
-func soloStep(t *testing.T, a *app, code, token string, v apidto.PlayerView) apidto.PlayerView {
+// soloStep decides the next WebSocket command for the solo player from the view, sends it and
+// returns the view that came back with it. The service publishes before it acks, so the client
+// has read the new view by the time send returns.
+func soloStep(t *testing.T, cl *client, v apidto.PlayerView) apidto.PlayerView {
 	t.Helper()
-	base := "/api/games/" + code
-	post := func(path string, body any) apidto.PlayerView {
-		var out apidto.PlayerView
-		a.call(t, http.MethodPost, base+path, token, body, &out, http.StatusOK)
-		return out
+	do := func(cmd apidto.ClientMessage) apidto.PlayerView {
+		cl.send(cmd)
+		return cl.view
 	}
+	soloJester := apidto.ClientMessage{Type: apidto.CmdUseSoloJester}
 	value := func(c apidto.Card) int {
 		switch c.Rank {
 		case 11:
@@ -563,9 +564,9 @@ func soloStep(t *testing.T, a *app, code, token string, v apidto.PlayerView) api
 	case "play":
 		if len(v.Hand) == 0 {
 			if v.SoloJestersLeft > 0 {
-				return post("/solo-jester", nil)
+				return do(soloJester)
 			}
-			return post("/yield", nil)
+			return do(apidto.ClientMessage{Type: apidto.CmdYield})
 		}
 		e := v.Enemy
 		score := func(c apidto.Card) float64 {
@@ -596,9 +597,9 @@ func soloStep(t *testing.T, a *app, code, token string, v apidto.PlayerView) api
 		}
 		// Use a Jester power when the hand is nearly spent.
 		if len(v.Hand) <= 2 && v.SoloJestersLeft > 0 {
-			return post("/solo-jester", nil)
+			return do(soloJester)
 		}
-		return post("/play", apidto.CardsRequest{Cards: []apidto.Card{best}})
+		return do(apidto.ClientMessage{Type: apidto.CmdPlay, Cards: []apidto.Card{best}})
 	case "discard":
 		attack := v.Turn.DamageToCover
 		total := 0
@@ -609,7 +610,7 @@ func soloStep(t *testing.T, a *app, code, token string, v apidto.PlayerView) api
 			if v.SoloJestersLeft == 0 {
 				t.Fatalf("hand total %d < attack %d with no Jester, yet the game is still running", total, attack)
 			}
-			return post("/solo-jester", nil)
+			return do(soloJester)
 		}
 		// Smallest sum (then fewest cards) of a legal discard set, by brute force.
 		var bestSet []apidto.Card
@@ -634,7 +635,7 @@ func soloStep(t *testing.T, a *app, code, token string, v apidto.PlayerView) api
 		if bestSet == nil {
 			t.Fatalf("no legal discard for hand %v attack %d", cardNames(v.Hand), attack)
 		}
-		return post("/discard", apidto.CardsRequest{Cards: bestSet})
+		return do(apidto.ClientMessage{Type: apidto.CmdDiscard, Cards: bestSet})
 	}
 	t.Fatalf("unexpected step %q in phase %s", v.Turn.Step, v.Phase)
 	return v
@@ -647,15 +648,16 @@ func TestSoloGameToCompletion(t *testing.T) {
 			a := startApp(t, filepath.Join(t.TempDir(), "solo.db"), seed)
 			s := a.create(t, "Solo")
 			code := s.GameID
-			var v apidto.PlayerView
-			a.call(t, http.MethodPost, "/api/games/"+code+"/start", s.Token, nil, &v, http.StatusOK)
+			cl := a.dial(t, "solo", code, s.Token)
+			cl.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+			v := cl.view
 			if v.Rules.MaxHandSize != 8 || len(v.Hand) != 8 || v.SoloJestersLeft != 2 || v.Rules.SoloJesters != 2 || v.TavernCount != 32 {
 				t.Fatalf("solo setup: %+v hand %d tavern %d", v.Rules, len(v.Hand), v.TavernCount)
 			}
 			for i := 0; i < 2000 && v.Phase == "playing"; i++ {
-				v = soloStep(t, a, code, s.Token, v)
+				v = soloStep(t, cl, v)
 				if got := a.view(t, code, s.Token); got.Revision != v.Revision {
-					t.Fatalf("REST view revision %d != action view %d", got.Revision, v.Revision)
+					t.Fatalf("REST view revision %d != WebSocket view %d", got.Revision, v.Revision)
 				}
 			}
 			if v.Phase != "won" && v.Phase != "lost" {
@@ -682,7 +684,9 @@ func TestSoloGameToCompletion(t *testing.T) {
 				t.Fatal("hand not revealed after the end")
 			}
 			// Everything is rejected after the end, except a rematch.
-			a.call(t, http.MethodPost, "/api/games/"+code+"/yield", s.Token, nil, nil, http.StatusConflict)
+			if e := cl.sendErr(apidto.ClientMessage{Type: apidto.CmdYield}); e.Code != "wrong_phase" {
+				t.Fatalf("yield after the end: %+v", e)
+			}
 		})
 	}
 	t.Logf("solo results: %d won, %d lost", won, lost)
@@ -693,23 +697,26 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	ann := a.create(t, "Ann")
 	code := ann.GameID
 	bob := a.join(t, code, "Bob")
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, nil, http.StatusConflict) // not finished yet
-	// An empty body means a random first player.
-	var started apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/start", ann.Token, nil, &started, http.StatusOK)
+	annWS := a.dial(t, "ann", code, ann.Token)
+	bobWS := a.dial(t, "bob", code, bob.Token)
+	if e := annWS.sendErr(apidto.ClientMessage{Type: apidto.CmdRematch}); e.Code != "wrong_phase" { // not finished yet
+		t.Fatalf("early rematch: %+v", e)
+	}
+	// No first player means a random one.
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	started := annWS.view
 	if started.Phase != "playing" || started.Turn == nil || started.Turn.Number != 1 {
 		t.Fatalf("start: %+v", started)
 	}
 
-	annWS := a.dial(t, "ann", code, ann.Token)
-	var fin apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/give-up", bob.Token, nil, &fin, http.StatusOK)
+	bobWS.send(apidto.ClientMessage{Type: apidto.CmdGiveUp})
+	fin := bobWS.view
 	if fin.Phase != "lost" || fin.Result == nil || fin.Result.Reason != "gaveUp" || fin.Result.PlayerID != bob.PlayerID || !hasRevealedHands(fin) {
 		t.Fatalf("give up: %+v", fin)
 	}
 
-	var old apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", bob.Token, nil, &old, http.StatusOK)
+	bobWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	old := bobWS.view
 	next := old.NextGameID
 	if next == "" || next == code || old.Phase != "lost" {
 		t.Fatalf("rematch: next=%q phase=%s", next, old.Phase)
@@ -719,10 +726,9 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	if m.View.NextGameID != next || !slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventRematchCreated && e.GameID == next }) {
 		t.Fatalf("ann's rematch update: next=%q events=%+v", m.View.NextGameID, m.Events)
 	}
-	// Idempotent: a second request returns the same next game.
-	var again apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, &again, http.StatusOK)
-	if again.NextGameID != next {
+	// Idempotent: a second request is accepted and keeps the same next game.
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	if again := a.view(t, code, ann.Token); again.NextGameID != next {
 		t.Fatalf("second rematch: %q, want %q", again.NextGameID, next)
 	}
 
@@ -736,15 +742,17 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 			t.Fatalf("next game not fresh: %+v", v)
 		}
 	}
-	a.call(t, http.MethodPost, "/api/games/"+next+"/start", ann.Token, nil, nil, http.StatusForbidden) // Ann is no longer host
-	nextWS := a.dial(t, "ann-next", next, ann.Token)
-	if nextWS.view.GameID != next {
-		t.Fatalf("ws on next game: %+v", nextWS.view)
+	annNext := a.dial(t, "ann-next", next, ann.Token)
+	if annNext.view.GameID != next {
+		t.Fatalf("ws on next game: %+v", annNext.view)
 	}
-	var again2 apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+next+"/start", bob.Token, apidto.StartGameRequest{FirstPlayerID: ann.PlayerID}, &again2, http.StatusOK)
-	if again2.Phase != "playing" || again2.Turn.ActivePlayerID != ann.PlayerID {
-		t.Fatalf("next game start: %s %+v", again2.Phase, again2.Turn)
+	if e := annNext.sendErr(apidto.ClientMessage{Type: apidto.CmdStartGame}); e.Code != "not_host" { // Ann is no longer host
+		t.Fatalf("start by a non-host: %+v", e)
+	}
+	bobNext := a.dial(t, "bob-next", next, bob.Token)
+	bobNext.send(apidto.ClientMessage{Type: apidto.CmdStartGame, FirstPlayerID: ann.PlayerID})
+	if v := bobNext.view; v.Phase != "playing" || v.Turn.ActivePlayerID != ann.PlayerID {
+		t.Fatalf("next game start: %s %+v", v.Phase, v.Turn)
 	}
 }
 

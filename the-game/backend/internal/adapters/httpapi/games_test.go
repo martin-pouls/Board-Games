@@ -28,12 +28,9 @@ type fakeService struct {
 	err   error
 	calls []string
 
-	lastName  string
-	lastOpts  domain.Options
-	lastFirst domain.PlayerID
-	lastCard  int
-	lastPile  int
-	lastID    domain.GameID
+	lastName string
+	lastOpts domain.Options
+	lastID   domain.GameID
 }
 
 var _ ports.GameService = (*fakeService)(nil)
@@ -129,51 +126,42 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return f.viewCall("View", id, p)
 }
 
-func (f *fakeService) SetOptions(_ context.Context, id domain.GameID, p domain.PlayerID, opts domain.Options) (domain.PlayerView, error) {
-	f.mu.Lock()
-	f.lastOpts = opts
-	f.mu.Unlock()
-	return f.viewCall("SetOptions", id, p)
+// The gameplay calls are WebSocket-only; the REST tests never reach them.
+
+func (f *fakeService) SetOptions(context.Context, domain.GameID, domain.PlayerID, domain.Options) error {
+	return f.record("SetOptions", testGame)
 }
 
-func (f *fakeService) StartGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("StartGame", id, p)
+func (f *fakeService) StartGame(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("StartGame", testGame)
 }
 
-func (f *fakeService) ChooseFirstPlayer(_ context.Context, id domain.GameID, p, first domain.PlayerID) (domain.PlayerView, error) {
-	f.mu.Lock()
-	f.lastFirst = first
-	f.mu.Unlock()
-	return f.viewCall("ChooseFirstPlayer", id, p)
+func (f *fakeService) ChooseFirstPlayer(context.Context, domain.GameID, domain.PlayerID, domain.PlayerID) error {
+	return f.record("ChooseFirstPlayer", testGame)
 }
 
-func (f *fakeService) PlayCard(_ context.Context, id domain.GameID, p domain.PlayerID, card, pile int) (domain.PlayerView, error) {
-	f.mu.Lock()
-	f.lastCard, f.lastPile = card, pile
-	f.mu.Unlock()
-	return f.viewCall("PlayCard", id, p)
+func (f *fakeService) PlayCard(context.Context, domain.GameID, domain.PlayerID, int, int) error {
+	return f.record("PlayCard", testGame)
 }
 
-func (f *fakeService) UndoPlay(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("UndoPlay", id, p)
+func (f *fakeService) UndoPlay(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("UndoPlay", testGame)
 }
 
-func (f *fakeService) EndTurn(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("EndTurn", id, p)
+func (f *fakeService) EndTurn(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("EndTurn", testGame)
 }
 
-func (f *fakeService) GiveUp(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("GiveUp", id, p)
+func (f *fakeService) GiveUp(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("GiveUp", testGame)
 }
 
-func (f *fakeService) EndGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("EndGame", id, p)
+func (f *fakeService) EndGame(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("EndGame", testGame)
 }
 
-func (f *fakeService) Rematch(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	v, err := f.viewCall("Rematch", id, p)
-	v.NextGameID = "NEXT2"
-	return v, err
+func (f *fakeService) Rematch(context.Context, domain.GameID, domain.PlayerID) error {
+	return f.record("Rematch", testGame)
 }
 
 // --- helpers ---
@@ -287,11 +275,6 @@ func TestBadBodies(t *testing.T) {
 		{"create wrong type", "POST", "/api/games", "", `{"name":5}`},
 		{"create too large", "POST", "/api/games", "", big},
 		{"join malformed", "POST", "/api/games/ABCDE/players", "", `nope`},
-		{"options malformed", "PUT", "/api/games/ABCDE/options", "tok-host", `[`},
-		{"first-player missing id", "POST", "/api/games/ABCDE/first-player", "tok-host", `{}`},
-		{"plays missing pile", "POST", "/api/games/ABCDE/plays", "tok-host", `{"card":5}`},
-		{"plays missing card", "POST", "/api/games/ABCDE/plays", "tok-host", `{"pile":0}`},
-		{"plays too large", "POST", "/api/games/ABCDE/plays", "tok-host", big},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -323,83 +306,62 @@ func TestSummaryAndJoin(t *testing.T) {
 	wantError(t, do(t, h, "POST", "/api/games/ZZZZZ/players", "", `{"name":"Bob"}`), http.StatusNotFound, apidto.CodeGameNotFound)
 }
 
-func TestAuthedRoutes(t *testing.T) {
-	routes := []struct {
-		method, path, body, call string
-	}{
-		{"GET", "/api/games/%s/view", "", "View"},
-		{"PUT", "/api/games/%s/options", `{"variant":"classic","pro":true,"reducedHandSize":false}`, "SetOptions"},
-		{"POST", "/api/games/%s/start", "", "StartGame"},
-		{"POST", "/api/games/%s/first-player", `{"playerId":"p_guest"}`, "ChooseFirstPlayer"},
-		{"POST", "/api/games/%s/plays", `{"card":42,"pile":3}`, "PlayCard"},
-		{"POST", "/api/games/%s/undo", "", "UndoPlay"},
-		{"POST", "/api/games/%s/end-turn", "", "EndTurn"},
-		{"POST", "/api/games/%s/give-up", "", "GiveUp"},
-		{"POST", "/api/games/%s/end-game", "", "EndGame"},
-		{"POST", "/api/games/%s/rematch", "", "Rematch"},
+func TestView(t *testing.T) {
+	svc := &fakeService{}
+	h := newTestRouter(t, svc)
+	path := "/api/games/abcde/view"
+
+	wantError(t, do(t, h, "GET", path, "", ""), http.StatusUnauthorized, apidto.CodeUnauthorized)
+	wantError(t, do(t, h, "GET", path, "wrong", ""), http.StatusUnauthorized, apidto.CodeUnauthorized)
+	wantError(t, do(t, h, "GET", "/api/games/ZZZZZ/view", "tok-host", ""), http.StatusNotFound, apidto.CodeGameNotFound)
+
+	// Non-bearer scheme is rejected.
+	r := httptest.NewRequest("GET", path, nil)
+	r.Header.Set("Authorization", "Basic tok-host")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	wantError(t, w, http.StatusUnauthorized, apidto.CodeUnauthorized)
+
+	if c := svc.lastCall(); c != "" {
+		t.Fatalf("service %s called despite failed auth", c)
 	}
-	for _, rt := range routes {
-		t.Run(rt.call, func(t *testing.T) {
-			svc := &fakeService{}
-			h := newTestRouter(t, svc)
-			path := fmt.Sprintf(rt.path, "abcde")
 
-			wantError(t, do(t, h, rt.method, path, "", rt.body), http.StatusUnauthorized, apidto.CodeUnauthorized)
-			wantError(t, do(t, h, rt.method, path, "wrong", rt.body), http.StatusUnauthorized, apidto.CodeUnauthorized)
-			wantError(t, do(t, h, rt.method, fmt.Sprintf(rt.path, "ZZZZZ"), "tok-host", rt.body), http.StatusNotFound, apidto.CodeGameNotFound)
+	w = do(t, h, "GET", path, "tok-guest", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d %s", w.Code, w.Body.String())
+	}
+	v := decode[apidto.PlayerView](t, w)
+	if v.You != "p_guest" || v.GameID != "ABCDE" || v.Revision != 7 {
+		t.Fatalf("view = %+v", v)
+	}
+	if svc.lastCall() != "View" || svc.lastID != "ABCDE" {
+		t.Fatalf("last call = %s on %s", svc.lastCall(), svc.lastID)
+	}
 
-			// Non-bearer scheme is rejected.
-			r := httptest.NewRequest(rt.method, path, strings.NewReader(rt.body))
-			r.Header.Set("Authorization", "Basic tok-host")
-			w := httptest.NewRecorder()
-			h.ServeHTTP(w, r)
-			wantError(t, w, http.StatusUnauthorized, apidto.CodeUnauthorized)
-
-			if c := svc.lastCall(); c != "" {
-				t.Fatalf("service %s called despite failed auth", c)
-			}
-
-			w = do(t, h, rt.method, path, "tok-guest", rt.body)
-			if w.Code != http.StatusOK {
-				t.Fatalf("status = %d %s", w.Code, w.Body.String())
-			}
-			v := decode[apidto.PlayerView](t, w)
-			if v.You != "p_guest" || v.GameID != "ABCDE" || v.Revision != 7 {
-				t.Fatalf("view = %+v", v)
-			}
-			if svc.lastCall() != rt.call || svc.lastID != "ABCDE" {
-				t.Fatalf("last call = %s on %s", svc.lastCall(), svc.lastID)
-			}
-		})
+	// Lower-case scheme and extra whitespace are accepted.
+	r = httptest.NewRequest("GET", path, nil)
+	r.Header.Set("Authorization", "bearer   tok-host ")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("lower-case bearer: %d", w.Code)
 	}
 }
 
-func TestAuthedRouteArgs(t *testing.T) {
+// Gameplay is WebSocket-only: its former REST routes do not exist.
+func TestGameplayRoutesAreGone(t *testing.T) {
 	svc := &fakeService{}
 	h := newTestRouter(t, svc)
-
-	if w := do(t, h, "PUT", "/api/games/ABCDE/options", "tok-host", `{"pro":true}`); w.Code != http.StatusOK {
-		t.Fatalf("options: %d", w.Code)
+	for _, rt := range []struct{ method, path string }{
+		{"PUT", "options"}, {"POST", "start"}, {"POST", "first-player"}, {"POST", "plays"}, {"POST", "undo"},
+		{"POST", "end-turn"}, {"POST", "give-up"}, {"POST", "end-game"}, {"POST", "rematch"},
+	} {
+		t.Run(rt.path, func(t *testing.T) {
+			wantError(t, do(t, h, rt.method, "/api/games/ABCDE/"+rt.path, "tok-host", `{}`), http.StatusNotFound, apidto.CodeNotFound)
+		})
 	}
-	if want := (domain.Options{Variant: domain.VariantExtreme, Pro: true}); svc.lastOpts != want {
-		t.Fatalf("opts = %+v", svc.lastOpts)
-	}
-	do(t, h, "POST", "/api/games/ABCDE/first-player", "tok-host", `{"playerId":"p_guest"}`)
-	if svc.lastFirst != "p_guest" {
-		t.Fatalf("first = %q", svc.lastFirst)
-	}
-	// Lower-case scheme and extra whitespace are accepted.
-	r := httptest.NewRequest("POST", "/api/games/ABCDE/plays", strings.NewReader(`{"card":0,"pile":2}`))
-	r.Header.Set("Authorization", "bearer   tok-host ")
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-	if w.Code != http.StatusOK || svc.lastCard != 0 || svc.lastPile != 2 {
-		t.Fatalf("plays: %d card %d pile %d", w.Code, svc.lastCard, svc.lastPile)
-	}
-
-	w = do(t, h, "POST", "/api/games/ABCDE/rematch", "tok-host", "")
-	if v := decode[apidto.PlayerView](t, w); v.NextGameID != "NEXT2" {
-		t.Fatalf("rematch view nextGameId = %q", v.NextGameID)
+	if c := svc.lastCall(); c != "" {
+		t.Fatalf("service %s called", c)
 	}
 }
 
@@ -445,7 +407,7 @@ func TestErrorTable(t *testing.T) {
 				Health: func(context.Context) error { return nil },
 				Games:  svc,
 			})
-			w := do(t, h, "POST", "/api/games/ABCDE/plays", "tok-host", `{"card":42,"pile":1}`)
+			w := do(t, h, "GET", "/api/games/ABCDE/view", "tok-host", "")
 			wantError(t, w, tt.status, tt.code)
 			e := decode[apidto.ErrorResponse](t, w)
 			if tt.status == 500 {

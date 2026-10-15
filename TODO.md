@@ -3,14 +3,13 @@
 ## All Card Games
 
 ## The Game
+- remove pile browsing
 
 ## Regicide
-
-
 
 ## Fox in the Forest: Duet
 
 ## The Crew
 
 # General
-- maybe drop test from ci, so we have faster pipelines?
+- implement the suggestions from [review.md](review.md) (order in its last section)

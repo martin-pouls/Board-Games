@@ -92,13 +92,10 @@ func (s *Service) mutate(ctx context.Context, id domain.GameID, fn func(*ports.G
 	return nil, ports.ErrVersionConflict
 }
 
-// act runs a domain mutator for player and returns the actor's view.
-func (s *Service) act(ctx context.Context, id domain.GameID, player domain.PlayerID, fn func(*domain.Game) error) (domain.PlayerView, error) {
-	rec, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
-	if err != nil {
-		return domain.PlayerView{}, err
-	}
-	return rec.Game.ViewFor(player)
+// act runs a domain mutator; the resulting views reach the players through the publisher.
+func (s *Service) act(ctx context.Context, id domain.GameID, fn func(*domain.Game) error) error {
+	_, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
+	return err
 }
 
 // CreateGame implements ports.GameService.
@@ -195,71 +192,71 @@ func (s *Service) LeaveGame(ctx context.Context, id domain.GameID, player domain
 }
 
 // StartGame implements ports.GameService.
-func (s *Service) StartGame(ctx context.Context, id domain.GameID, player domain.PlayerID, level int) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.Start(player, level, s.cfg.NewRNG()) })
+func (s *Service) StartGame(ctx context.Context, id domain.GameID, player domain.PlayerID, level int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.Start(player, level, s.cfg.NewRNG()) })
 }
 
 // PlayCard implements ports.GameService.
-func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.PlayCard(player, card, s.cfg.NewRNG()) })
+func (s *Service) PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.PlayCard(player, card, s.cfg.NewRNG()) })
 }
 
 // ChooseFoxesPlayer implements ports.GameService.
-func (s *Service) ChooseFoxesPlayer(ctx context.Context, id domain.GameID, player, chosen domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.ChooseFoxesPlayer(player, chosen, s.cfg.NewRNG()) })
+func (s *Service) ChooseFoxesPlayer(ctx context.Context, id domain.GameID, player, chosen domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.ChooseFoxesPlayer(player, chosen, s.cfg.NewRNG()) })
 }
 
 // SwapDecree implements ports.GameService.
-func (s *Service) SwapDecree(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.SwapDecree(player, card, s.cfg.NewRNG()) })
+func (s *Service) SwapDecree(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.SwapDecree(player, card, s.cfg.NewRNG()) })
 }
 
 // KeepDecree implements ports.GameService.
-func (s *Service) KeepDecree(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.KeepDecree(player, s.cfg.NewRNG()) })
+func (s *Service) KeepDecree(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.KeepDecree(player, s.cfg.NewRNG()) })
 }
 
 // GiveGift implements ports.GameService.
-func (s *Service) GiveGift(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.GiveGift(player, card, s.cfg.NewRNG()) })
+func (s *Service) GiveGift(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.GiveGift(player, card, s.cfg.NewRNG()) })
 }
 
 // ChooseMove implements ports.GameService.
-func (s *Service) ChooseMove(ctx context.Context, id domain.GameID, player domain.PlayerID, delta int) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.ChooseMove(player, delta, s.cfg.NewRNG()) })
+func (s *Service) ChooseMove(ctx context.Context, id domain.GameID, player domain.PlayerID, delta int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.ChooseMove(player, delta, s.cfg.NewRNG()) })
 }
 
 // ChooseForestEnd implements ports.GameService.
-func (s *Service) ChooseForestEnd(ctx context.Context, id domain.GameID, player domain.PlayerID, end domain.End) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.ChooseForestEnd(player, end, s.cfg.NewRNG()) })
+func (s *Service) ChooseForestEnd(ctx context.Context, id domain.GameID, player domain.PlayerID, end domain.End) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.ChooseForestEnd(player, end, s.cfg.NewRNG()) })
 }
 
 // GiveUp implements ports.GameService.
-func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.GiveUp(player) })
+func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.GiveUp(player) })
 }
 
 // EndGame implements ports.GameService.
-func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	return s.act(ctx, id, player, func(g *domain.Game) error { return g.EndGame(player) })
+func (s *Service) EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.EndGame(player) })
 }
 
 // Rematch implements ports.GameService. It is idempotent: when the old game already
-// has a NextGameID, the actor's view of the old game is returned unchanged.
-func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
+// has a NextGameID, nothing changes.
+func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
 	id = normalizeID(id)
 	s.locks.Lock(id)
 	defer s.locks.Unlock(id)
 	for range maxOCCAttempts {
 		rec, err := s.repo.Load(ctx, id)
 		if err != nil {
-			return domain.PlayerView{}, err
+			return err
 		}
 		if _, _, ok := rec.Game.PlayerByID(player); ok && rec.Game.NextGameID != "" {
-			return rec.Game.ViewFor(player)
+			return nil
 		}
 		if err := s.createRematch(ctx, rec, player); err != nil {
-			return domain.PlayerView{}, err
+			return err
 		}
 		events := rec.Game.PullEvents()
 		err = s.repo.Update(ctx, rec)
@@ -267,12 +264,12 @@ func (s *Service) Rematch(ctx context.Context, id domain.GameID, player domain.P
 			continue
 		}
 		if err != nil {
-			return domain.PlayerView{}, fmt.Errorf("save game %s: %w", id, err)
+			return fmt.Errorf("save game %s: %w", id, err)
 		}
 		s.pub.Publish(ctx, ports.GameUpdate{Game: rec.Game, Events: events})
-		return rec.Game.ViewFor(player)
+		return nil
 	}
-	return domain.PlayerView{}, ports.ErrVersionConflict
+	return ports.ErrVersionConflict
 }
 
 // createRematch creates the new lobby game and, on success, replaces rec.Game with the

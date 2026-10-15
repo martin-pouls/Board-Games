@@ -15,6 +15,16 @@
 # The site: every app's snippet (copied to sites/ by each deploy), then the root.
 (site) {
 	encode zstd gzip
+	# On every response, including the apps'. Deferred, so they replace what an upstream already
+	# set (the gate's login page sets the same ones) instead of doubling it. Browsers ignore HSTS
+	# over plain http (the local stack).
+	header {
+		defer
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+	}
 	import /etc/caddy/sites/*.caddy
 
 	# The start page links to every game.

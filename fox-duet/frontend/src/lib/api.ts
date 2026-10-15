@@ -2,16 +2,15 @@
 // Paths are prefixed with the build-time base path (BASE_PATH, e.g. /fox-duet in production).
 // The request helper and the lobby endpoints are shared (shared/frontend api.ts). Gameplay runs
 // over the WebSocket (game/connection.svelte.ts).
-import { createRequest, gamePath as game, lobbyApi } from '@board-games/shared/api.js';
+import { createRequest, lobbyApi } from '@board-games/shared/api.js';
 import type { ApiErrorCode, GameSummary, PlayerView, SessionResponse } from '#lib/types.js';
 
 export { ApiError } from '@board-games/shared/api.js';
 
 const request = createRequest<ApiErrorCode>(__BASE_PATH__);
 
-export const { getHealth, createGame, joinGame, getSummary, getView, leaveGame, giveUp, rematch } =
-	lobbyApi<SessionResponse, GameSummary, PlayerView>(request);
-
-export function startGame(code: string, token: string, level: number): Promise<PlayerView> {
-	return request('POST', `${game(code)}/start`, { token, body: { level } });
-}
+export const { getHealth, createGame, joinGame, getSummary, getView, leaveGame } = lobbyApi<
+	SessionResponse,
+	GameSummary,
+	PlayerView
+>(request);

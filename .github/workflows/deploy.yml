@@ -1,7 +1,7 @@
 # Continuous deployment to https://yoshi-und-kruemli.de. On every push to main: find the apps that
-# changed, test them, build their arm64 images and push them to ghcr.io tagged with the commit SHA,
-# then deploy them over SSH. The deploy key can only run deploy/server/board-games-deploy on the
-# server (forced command), which deploys only commits of main, from its own clone of the repo.
+# changed, test them and meanwhile build their arm64 images and push them to ghcr.io tagged with the
+# commit SHA, then deploy them over SSH. The deploy key can only run deploy/server/board-games-deploy
+# on the server (forced command), which deploys only commits of main, from its own clone of the repo.
 # Setup and rollback: deploy/README.md.
 name: Deploy
 
@@ -38,6 +38,8 @@ jobs:
       actions: read # last successful run
     outputs:
       apps: ${{ steps.plan.outputs.apps }}
+      shared_backend: ${{ steps.plan.outputs.shared_backend }}
+      shared_frontend: ${{ steps.plan.outputs.shared_frontend }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -59,6 +61,44 @@ jobs:
           REQUESTED: ${{ inputs.apps }}
         run: bash .github/scripts/plan-deploy.sh
 
+  # shared/ once per run, not in every app's job: only when it changed (see plan-deploy.sh).
+  test-shared:
+    needs: plan
+    if: needs.plan.outputs.shared_backend == 'true' || needs.plan.outputs.shared_frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: needs.plan.outputs.shared_backend == 'true'
+        with:
+          go-version-file: shared/backend/go.mod
+          cache-dependency-path: shared/backend/go.sum
+      - name: Shared backend
+        if: needs.plan.outputs.shared_backend == 'true'
+        working-directory: shared/backend
+        run: |
+          go vet ./...
+          go test ./...
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: needs.plan.outputs.shared_frontend == 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: shared/frontend/package-lock.json
+      - name: Shared frontend
+        if: needs.plan.outputs.shared_frontend == 'true'
+        working-directory: shared/frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run lint
+          npm test
+
   test:
     needs: plan
     if: needs.plan.outputs.apps != '[]'
@@ -74,14 +114,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Apps whose Dockerfile copies shared/ are built with it (see plan-deploy.sh): test the parts
-      # they use too. Apps without a backend or frontend (the start page, the gate) skip those steps.
-      - name: Uses shared/?
+      # shared/ itself is checked in test-shared. Apps without a backend or frontend (the start
+      # page, the gate) skip those steps.
+      - name: Uses shared/frontend?
         id: shared
         run: |
-          for part in backend frontend; do
-            if grep -q "^COPY shared/$part" "${{ matrix.app }}/Dockerfile"; then echo "$part=true"; else echo "$part=false"; fi
-          done >>"$GITHUB_OUTPUT"
+          if grep -q "^COPY shared/frontend" "${{ matrix.app }}/Dockerfile"; then echo "frontend=true"; else echo "frontend=false"; fi >>"$GITHUB_OUTPUT"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         if: hashFiles(format('{0}/backend/go.mod', matrix.app)) != ''
         with:
@@ -89,12 +127,6 @@ jobs:
           cache-dependency-path: |
             ${{ matrix.app }}/backend/go.sum
             shared/backend/go.sum
-      - name: Shared backend
-        if: steps.shared.outputs.backend == 'true'
-        working-directory: shared/backend
-        run: |
-          go vet ./...
-          go test ./...
       - name: Backend
         if: hashFiles(format('{0}/backend/go.mod', matrix.app)) != ''
         working-directory: ${{ matrix.app }}/backend
@@ -109,15 +141,12 @@ jobs:
           cache-dependency-path: |
             ${{ matrix.app }}/frontend/package-lock.json
             shared/frontend/package-lock.json
-      # Its own dev install also gives the app's type check the types of the shared code's imports.
-      - name: Shared frontend
+      # The app compiles the shared code as source; its type check finds the types of that code's
+      # imports in the shared dev install.
+      - name: Install shared frontend
         if: steps.shared.outputs.frontend == 'true'
         working-directory: shared/frontend
-        run: |
-          npm ci --no-audit --no-fund
-          npm run check
-          npm run lint
-          npm test
+        run: npm ci --no-audit --no-fund
       - name: Frontend
         if: hashFiles(format('{0}/frontend/package.json', matrix.app)) != ''
         working-directory: ${{ matrix.app }}/frontend
@@ -127,9 +156,11 @@ jobs:
           npm run lint
           npm test
 
+  # Runs alongside the tests, so the pipeline takes as long as the slowest job. An image whose tests
+  # fail is still pushed, but deploy waits for all of them and never ships it.
   build:
-    needs: [plan, test]
-    if: github.ref == 'refs/heads/main'
+    needs: plan
+    if: github.ref == 'refs/heads/main' && needs.plan.outputs.apps != '[]'
     # Native arm64 like the server: no emulation (free for public repositories).
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
@@ -164,9 +195,13 @@ jobs:
             *.cache-from=type=gha,scope=${{ matrix.app }}
             *.cache-to=type=gha,mode=max,scope=${{ matrix.app }}
 
+  # test-shared is skipped when shared/ didn't change; that still counts as passed.
   deploy:
-    needs: [plan, build]
-    if: github.ref == 'refs/heads/main'
+    needs: [plan, test-shared, test, build]
+    if: >-
+      github.ref == 'refs/heads/main' && !cancelled() &&
+      needs.test.result == 'success' && needs.build.result == 'success' &&
+      (needs.test-shared.result == 'success' || needs.test-shared.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Holds the SSH key. Restrict it to the main branch in the repository settings.

@@ -93,19 +93,19 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return stubView(&domain.Game{ID: id, Revision: rev}, p)
 }
 
-func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, p domain.PlayerID, evs ...domain.Event) (domain.PlayerView, error) {
+func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, evs ...domain.Event) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, name)
 	if f.err != nil {
 		err := f.err
 		f.mu.Unlock()
-		return domain.PlayerView{}, err
+		return err
 	}
 	f.rev++
 	g := &domain.Game{ID: id, Revision: f.rev}
 	f.mu.Unlock()
 	f.hub.Publish(ctx, ports.GameUpdate{Game: g, Events: evs})
-	return stubView(g, p)
+	return nil
 }
 
 func (f *fakeService) callNames() []string {
@@ -126,59 +126,59 @@ func (f *fakeService) Summary(context.Context, domain.GameID) (domain.GameSummar
 func (f *fakeService) LeaveGame(context.Context, domain.GameID, domain.PlayerID) error {
 	return errors.New("not used")
 }
-func (f *fakeService) StartGame(ctx context.Context, id domain.GameID, p domain.PlayerID, level int) (domain.PlayerView, error) {
+func (f *fakeService) StartGame(ctx context.Context, id domain.GameID, p domain.PlayerID, level int) error {
 	f.mu.Lock()
 	f.lastLevel = level
 	f.mu.Unlock()
-	return f.mutate(ctx, "StartGame", id, p, domain.GameStarted{Level: level})
+	return f.mutate(ctx, "StartGame", id, domain.GameStarted{Level: level})
 }
-func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
+func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) error {
 	f.mu.Lock()
 	f.lastCard = card
 	f.mu.Unlock()
-	return f.mutate(ctx, "PlayCard", id, p, domain.CardPlayed{PlayerID: p, Card: card, Lead: true})
+	return f.mutate(ctx, "PlayCard", id, domain.CardPlayed{PlayerID: p, Card: card, Lead: true})
 }
-func (f *fakeService) ChooseFoxesPlayer(ctx context.Context, id domain.GameID, p, chosen domain.PlayerID) (domain.PlayerView, error) {
+func (f *fakeService) ChooseFoxesPlayer(ctx context.Context, id domain.GameID, p, chosen domain.PlayerID) error {
 	f.mu.Lock()
 	f.lastChosen = chosen
 	f.mu.Unlock()
-	return f.mutate(ctx, "ChooseFoxesPlayer", id, p, domain.FoxesChosen{ByPlayerID: p, PlayerID: chosen})
+	return f.mutate(ctx, "ChooseFoxesPlayer", id, domain.FoxesChosen{ByPlayerID: p, PlayerID: chosen})
 }
-func (f *fakeService) SwapDecree(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
+func (f *fakeService) SwapDecree(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) error {
 	f.mu.Lock()
 	f.lastCard = card
 	f.mu.Unlock()
-	return f.mutate(ctx, "SwapDecree", id, p, domain.DecreeSwapped{PlayerID: p, New: card})
+	return f.mutate(ctx, "SwapDecree", id, domain.DecreeSwapped{PlayerID: p, New: card})
 }
-func (f *fakeService) KeepDecree(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.mutate(ctx, "KeepDecree", id, p, domain.DecreeKept{PlayerID: p})
+func (f *fakeService) KeepDecree(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.mutate(ctx, "KeepDecree", id, domain.DecreeKept{PlayerID: p})
 }
-func (f *fakeService) GiveGift(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) (domain.PlayerView, error) {
+func (f *fakeService) GiveGift(ctx context.Context, id domain.GameID, p domain.PlayerID, card domain.Card) error {
 	f.mu.Lock()
 	f.lastCard = card
 	f.mu.Unlock()
-	return f.mutate(ctx, "GiveGift", id, p, domain.GiftChosen{PlayerID: p})
+	return f.mutate(ctx, "GiveGift", id, domain.GiftChosen{PlayerID: p})
 }
-func (f *fakeService) ChooseMove(ctx context.Context, id domain.GameID, p domain.PlayerID, delta int) (domain.PlayerView, error) {
+func (f *fakeService) ChooseMove(ctx context.Context, id domain.GameID, p domain.PlayerID, delta int) error {
 	f.mu.Lock()
 	f.lastDelta = delta
 	f.mu.Unlock()
-	return f.mutate(ctx, "ChooseMove", id, p, domain.TravellerMoved{Delta: delta})
+	return f.mutate(ctx, "ChooseMove", id, domain.TravellerMoved{Delta: delta})
 }
-func (f *fakeService) ChooseForestEnd(ctx context.Context, id domain.GameID, p domain.PlayerID, end domain.End) (domain.PlayerView, error) {
+func (f *fakeService) ChooseForestEnd(ctx context.Context, id domain.GameID, p domain.PlayerID, end domain.End) error {
 	f.mu.Lock()
 	f.lastEnd = end
 	f.mu.Unlock()
-	return f.mutate(ctx, "ChooseForestEnd", id, p, domain.ForestTokenPlaced{End: end})
+	return f.mutate(ctx, "ChooseForestEnd", id, domain.ForestTokenPlaced{End: end})
 }
-func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.mutate(ctx, "GiveUp", id, p, domain.GameLost{Reason: domain.LossGaveUp, PlayerID: p})
+func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.mutate(ctx, "GiveUp", id, domain.GameLost{Reason: domain.LossGaveUp, PlayerID: p})
 }
-func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.mutate(ctx, "EndGame", id, p, domain.GameEnded{ByPlayerID: p})
+func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.mutate(ctx, "EndGame", id, domain.GameEnded{ByPlayerID: p})
 }
-func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.mutate(ctx, "Rematch", id, p, domain.RematchCreated{GameID: "NEXT2"})
+func (f *fakeService) Rematch(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.mutate(ctx, "Rematch", id, domain.RematchCreated{GameID: "NEXT2"})
 }
 
 // --- helpers ---

@@ -111,9 +111,9 @@ The start page uses the same SvelteKit/Tailwind/shadcn-svelte/tooling stack. It 
 - **The server is authoritative.** Clients send *intents*. The domain validates them and returns typed errors for illegal moves. Never trust client-side validation; the client may pre-validate only for UX.
 - **Per-player views:** never send other players' hands (or hidden deck order) to a client. Build a projection per player.
 - **Transport split:**
-  - **REST** (`/api/...`) for lobby and request/response actions: create game, join, start, fetch current view.
-  - **WebSocket** (`/ws/...`) for live gameplay: server pushes per-player state/events to everyone in a game, and clients send turn actions over it.
-  - Both call the same driving ports.
+  - **REST** (`/api/...`) only for the lobby: create game, summary, join, fetch current view, leave (plus static data such as The Crew's `GET /api/missions`).
+  - **WebSocket** (`/ws/...`) for everything else, from *start* to *rematch*: server pushes per-player state/events to everyone in a game, and clients send their actions over it. No gameplay routes over REST.
+  - Both call the same driving ports. Gameplay methods return only `error`: the actor's new view arrives with the broadcast.
 - **Persistence:** each game is stored as a JSON snapshot of the domain aggregate (`games.state`) with a `version` column for optimistic concurrency. Serialise through explicit DTOs in the sqlite adapter, not through struct tags on domain types. Live connections and presence may be in memory; game state must survive a restart.
 - **Domain methods validate fully before mutating:** on error the state stays unchanged (tests assert this).
 - **Illegal moves are rejected, never punished.** A game is lost only by its rules (or by give-up).

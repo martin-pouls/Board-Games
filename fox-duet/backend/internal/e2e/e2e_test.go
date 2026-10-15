@@ -431,12 +431,9 @@ func TestTwoPlayerGameToCompletionSurvivesRestart(t *testing.T) {
 			ps := lobby(t, a)
 			code := ps[0].sess.GameID
 
-			// Start over REST; both sockets learn about it.
-			var started apidto.PlayerView
-			a.call(t, http.MethodPost, "/api/games/"+code+"/start", ps[0].sess.Token, apidto.StartGameRequest{Level: tc.level}, &started, http.StatusOK)
-			for _, p := range ps {
-				p.ws.untilView("started", func(m wireMsg) bool { return m.View.Phase == "playing" })
-			}
+			// The host starts over WebSocket; both sockets learn about it.
+			ps[0].ws.send(apidto.ClientMessage{Type: apidto.CmdStartGame, Level: tc.level})
+			ps[1].ws.untilView("started", func(m wireMsg) bool { return m.View.Phase == "playing" })
 			v0, v1 := ps[0].ws.view, ps[1].ws.view
 			if v0.Level != tc.level || len(v0.Hand) != domain.HandSize || len(v1.Hand) != domain.HandSize || v0.Board == nil || v0.Decree == nil || v0.Round != 1 {
 				t.Fatalf("start views: %+v / %+v", v0, v1)
@@ -523,9 +520,7 @@ func TestTwoPlayerGameToCompletionSurvivesRestart(t *testing.T) {
 					t.Fatalf("hand of %s not revealed after the end: %+v", p.ID, p)
 				}
 			}
-			var e apidto.ErrorResponse
-			a.call(t, http.MethodPost, "/api/games/"+code+"/give-up", ps[0].sess.Token, nil, &e, http.StatusConflict)
-			if e.Error.Code != "wrong_phase" {
+			if e := ps[0].ws.sendErr(apidto.ClientMessage{Type: apidto.CmdGiveUp}); e.Code != "wrong_phase" {
 				t.Fatalf("give-up after the end: %+v", e)
 			}
 		})
@@ -541,16 +536,15 @@ func TestGiveUpAndRematchKeepGroupAndTokens(t *testing.T) {
 	ps := lobby(t, a)
 	ann, bob := ps[0].sess, ps[1].sess
 	code := ann.GameID
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, nil, http.StatusConflict) // not finished yet
-	// A missing body starts level 1.
-	var started apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/start", ann.Token, nil, &started, http.StatusOK)
-	if started.Phase != "playing" || started.Level != 1 || started.Round != 1 {
+	if e := ps[0].ws.sendErr(apidto.ClientMessage{Type: apidto.CmdRematch}); e.Code != "wrong_phase" { // not finished yet
+		t.Fatalf("rematch before the start: %+v", e)
+	}
+	// A missing level starts level 1.
+	ps[0].ws.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	if started := ps[0].ws.view; started.Phase != "playing" || started.Level != 1 || started.Round != 1 {
 		t.Fatalf("start: %+v", started)
 	}
-	for _, p := range ps {
-		p.ws.untilView("started", func(m wireMsg) bool { return m.View.Phase == "playing" })
-	}
+	ps[1].ws.untilView("started", func(m wireMsg) bool { return m.View.Phase == "playing" })
 
 	// Bob gives up over WebSocket; both players see the revealed hands.
 	ps[1].ws.send(apidto.ClientMessage{Type: apidto.CmdGiveUp})
@@ -560,8 +554,8 @@ func TestGiveUpAndRematchKeepGroupAndTokens(t *testing.T) {
 		t.Fatalf("give up: %+v events %+v", fin.Result, m.Events)
 	}
 
-	var old apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", bob.Token, nil, &old, http.StatusOK)
+	ps[1].ws.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	old := a.view(t, code, bob.Token)
 	next := old.NextGameID
 	if next == "" || next == code || old.Phase != "lost" {
 		t.Fatalf("rematch: next=%q phase=%s", next, old.Phase)
@@ -571,10 +565,9 @@ func TestGiveUpAndRematchKeepGroupAndTokens(t *testing.T) {
 	if m.View.NextGameID != next || !slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventRematchCreated && e.GameID == next }) {
 		t.Fatalf("ann's rematch update: next=%q events=%+v", m.View.NextGameID, m.Events)
 	}
-	// Idempotent: a second request returns the same next game.
-	var again apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, &again, http.StatusOK)
-	if again.NextGameID != next {
+	// Idempotent: a second request keeps the same next game.
+	ps[0].ws.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	if again := a.view(t, code, ann.Token); again.NextGameID != next {
 		t.Fatalf("second rematch: %q, want %q", again.NextGameID, next)
 	}
 
@@ -588,10 +581,12 @@ func TestGiveUpAndRematchKeepGroupAndTokens(t *testing.T) {
 			t.Fatalf("next game not fresh: %+v", v)
 		}
 	}
-	a.call(t, http.MethodPost, "/api/games/"+next+"/start", ann.Token, nil, nil, http.StatusForbidden) // Ann is no longer host
 	nextWS := a.dial(t, "ann-next", next, ann.Token)
 	if nextWS.view.GameID != next {
 		t.Fatalf("ws on next game: %+v", nextWS.view)
+	}
+	if e := nextWS.sendErr(apidto.ClientMessage{Type: apidto.CmdStartGame}); e.Code != "not_host" { // Ann is no longer host
+		t.Fatalf("start by the non-host: %+v", e)
 	}
 	// The rematch is started over WebSocket by its host, at level 2.
 	bobNext := a.dial(t, "bob-next", next, bob.Token)
@@ -638,12 +633,11 @@ func TestLeave(t *testing.T) {
 	if len(m.View.Players) != 1 || m.View.Players[0].ID != host.PlayerID {
 		t.Fatalf("host players = %+v", m.View.Players)
 	}
-	var e apidto.ErrorResponse
-	a.call(t, http.MethodPost, "/api/games/"+code+"/start", host.Token, nil, &e, http.StatusConflict)
-	if e.Error.Code != "not_enough_players" {
+	if e := hostWS.sendErr(apidto.ClientMessage{Type: apidto.CmdStartGame}); e.Code != "not_enough_players" {
 		t.Fatalf("start alone: %+v", e)
 	}
 	// The sole remaining player cannot leave.
+	var e apidto.ErrorResponse
 	a.call(t, http.MethodPost, "/api/games/"+code+"/leave", host.Token, nil, &e, http.StatusConflict)
 	if e.Error.Code != "cannot_leave" {
 		t.Fatalf("sole leave: %+v", e)
@@ -658,12 +652,16 @@ func TestEndGameClosesLobby(t *testing.T) {
 	a := startApp(t, filepath.Join(t.TempDir(), "end.db"), 9)
 	host := a.create(t, "Ann")
 	guest := a.join(t, host.GameID, "Bob")
-	a.call(t, http.MethodPost, "/api/games/"+host.GameID+"/end-game", guest.Token, nil, nil, http.StatusForbidden)
-	var v apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+host.GameID+"/end-game", host.Token, nil, &v, http.StatusOK)
-	if v.Phase != "ended" {
+	hostWS := a.dial(t, "host", host.GameID, host.Token)
+	guestWS := a.dial(t, "guest", host.GameID, guest.Token)
+	if e := guestWS.sendErr(apidto.ClientMessage{Type: apidto.CmdEndGame}); e.Code != "not_host" {
+		t.Fatalf("end by the guest: %+v", e)
+	}
+	hostWS.send(apidto.ClientMessage{Type: apidto.CmdEndGame})
+	if v := hostWS.view; v.Phase != "ended" {
 		t.Fatalf("phase = %s", v.Phase)
 	}
+	guestWS.untilView("ended", func(m wireMsg) bool { return m.View.Phase == "ended" })
 	var s apidto.GameSummary
 	a.call(t, http.MethodGet, "/api/games/"+host.GameID, "", nil, &s, http.StatusOK)
 	if s.Joinable || s.Phase != "ended" {

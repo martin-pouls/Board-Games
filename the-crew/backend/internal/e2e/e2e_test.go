@@ -450,11 +450,15 @@ func TestHostLeavesPassesHostToSeatZero(t *testing.T) {
 			t.Fatalf("view for %s: %+v", s.PlayerID, v)
 		}
 	}
-	// The new host can end the lobby over REST.
-	var v apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/end-game", bob.Token, nil, &v, http.StatusOK)
-	if v.Phase != "ended" {
-		t.Fatalf("phase = %s", v.Phase)
+	// The new host can end the lobby over the WebSocket; the guest cannot.
+	bobWS := a.dial(t, "bob", code, bob.Token)
+	cyWS := a.dial(t, "cy", code, cy.Token)
+	if e := cyWS.sendErr(apidto.ClientMessage{Type: apidto.CmdEndGame}); e.Code != "not_host" {
+		t.Fatalf("guest ends the game: %+v", e)
 	}
-	a.call(t, http.MethodPost, "/api/games/"+code+"/end-game", bob.Token, nil, nil, http.StatusConflict)
+	bobWS.send(apidto.ClientMessage{Type: apidto.CmdEndGame})
+	cyWS.untilView("ended", func(m wireMsg) bool { return m.View.Phase == "ended" })
+	if e := bobWS.sendErr(apidto.ClientMessage{Type: apidto.CmdEndGame}); e.Code != "wrong_phase" {
+		t.Fatalf("second end: %+v", e)
+	}
 }

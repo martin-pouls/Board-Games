@@ -55,45 +55,45 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 	var err error
 	switch msg.Type {
 	case apidto.CmdStartGame:
-		_, err = b.svc.StartGame(ctx, id, p, apidto.LevelOrDefault(msg.Level))
+		err = b.svc.StartGame(ctx, id, p, apidto.LevelOrDefault(msg.Level))
 	case apidto.CmdPlayCard:
 		var c domain.Card
 		if c, err = cardOf(msg); err == nil {
-			_, err = b.svc.PlayCard(ctx, id, p, c)
+			err = b.svc.PlayCard(ctx, id, p, c)
 		}
 	case apidto.CmdChooseFoxesPlayer:
 		if msg.PlayerID == "" {
 			return apidto.BadRequest("missing playerId")
 		}
-		_, err = b.svc.ChooseFoxesPlayer(ctx, id, p, domain.PlayerID(msg.PlayerID))
+		err = b.svc.ChooseFoxesPlayer(ctx, id, p, domain.PlayerID(msg.PlayerID))
 	case apidto.CmdSwapDecree:
 		var c domain.Card
 		if c, err = cardOf(msg); err == nil {
-			_, err = b.svc.SwapDecree(ctx, id, p, c)
+			err = b.svc.SwapDecree(ctx, id, p, c)
 		}
 	case apidto.CmdKeepDecree:
-		_, err = b.svc.KeepDecree(ctx, id, p)
+		err = b.svc.KeepDecree(ctx, id, p)
 	case apidto.CmdGiveGift:
 		var c domain.Card
 		if c, err = cardOf(msg); err == nil {
-			_, err = b.svc.GiveGift(ctx, id, p, c)
+			err = b.svc.GiveGift(ctx, id, p, c)
 		}
 	case apidto.CmdChooseMove:
 		if msg.Delta == nil {
 			return apidto.BadRequest("missing delta")
 		}
-		_, err = b.svc.ChooseMove(ctx, id, p, *msg.Delta)
+		err = b.svc.ChooseMove(ctx, id, p, *msg.Delta)
 	case apidto.CmdChooseForestEnd:
 		if msg.End == "" {
 			return apidto.BadRequest("missing end")
 		}
-		_, err = b.svc.ChooseForestEnd(ctx, id, p, apidto.EndFromWire(msg.End))
+		err = b.svc.ChooseForestEnd(ctx, id, p, apidto.EndFromWire(msg.End))
 	case apidto.CmdGiveUp:
-		_, err = b.svc.GiveUp(ctx, id, p)
+		err = b.svc.GiveUp(ctx, id, p)
 	case apidto.CmdEndGame:
-		_, err = b.svc.EndGame(ctx, id, p)
+		err = b.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:
-		_, err = b.svc.Rematch(ctx, id, p)
+		err = b.svc.Rematch(ctx, id, p)
 	default:
 		return apidto.BadRequest("unknown message type %q", msg.Type)
 	}

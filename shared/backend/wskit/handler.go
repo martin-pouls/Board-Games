@@ -53,8 +53,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	gameID := idgen.NormalizeCode(r.PathValue("code"))
 	token := r.URL.Query().Get("token")
 
-	// Accept first so the browser can see the close code on auth failure.
-	wsc, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: h.opts.OriginPatterns})
+	// Accept first so the browser can see the close code on auth failure. Views are repetitive
+	// JSON: compress them (the library leaves messages under 512 bytes, e.g. acks, as they are),
+	// without context takeover so a connection keeps no compression state between messages.
+	wsc, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		OriginPatterns:  h.opts.OriginPatterns,
+		CompressionMode: websocket.CompressionNoContextTakeover,
+	})
 	if err != nil {
 		h.hub.logger.Debug("ws accept failed", "path", r.URL.Path, "err", err)
 		return

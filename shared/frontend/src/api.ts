@@ -72,7 +72,8 @@ export const gamePath = (code: string) =>
 	`/api/games/${encodeURIComponent(code.trim().toUpperCase())}`;
 
 /**
- * The lobby endpoints every game has. Session, Summary and View are the game's response types.
+ * The lobby endpoints every game has; gameplay goes over the WebSocket. Session, Summary and View
+ * are the game's response types.
  */
 export function lobbyApi<Session, Summary, View>(request: Request) {
 	return {
@@ -84,10 +85,6 @@ export function lobbyApi<Session, Summary, View>(request: Request) {
 		getView: (code: string, token: string) =>
 			request<View>('GET', `${gamePath(code)}/view`, { token }),
 		leaveGame: (code: string, token: string) =>
-			request<void>('POST', `${gamePath(code)}/leave`, { token }),
-		giveUp: (code: string, token: string) =>
-			request<View>('POST', `${gamePath(code)}/give-up`, { token }),
-		rematch: (code: string, token: string) =>
-			request<View>('POST', `${gamePath(code)}/rematch`, { token })
+			request<void>('POST', `${gamePath(code)}/leave`, { token })
 	};
 }

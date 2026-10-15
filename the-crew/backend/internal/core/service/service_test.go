@@ -134,8 +134,10 @@ func TestLifecycle(t *testing.T) {
 	}
 
 	// The host ends the lobby.
-	ev, err := f.svc.EndGame(ctx, host.GameID, host.PlayerID)
-	if err != nil || ev.Phase != domain.PhaseEnded {
+	if err := f.svc.EndGame(ctx, host.GameID, host.PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	if ev, err := f.svc.View(ctx, host.GameID, host.PlayerID); err != nil || ev.Phase != domain.PhaseEnded {
 		t.Fatalf("end: %+v %v", ev, err)
 	}
 	if _, err := f.svc.JoinGame(ctx, host.GameID, "Late"); !errors.Is(err, domain.ErrWrongPhase) {
@@ -178,7 +180,7 @@ func TestLeaveGame(t *testing.T) {
 		t.Fatalf("rejoin: %v", err)
 	}
 	// Once the lobby is ended nobody can leave.
-	if _, err := f.svc.EndGame(ctx, host.GameID, host.PlayerID); err != nil {
+	if err := f.svc.EndGame(ctx, host.GameID, host.PlayerID); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.svc.LeaveGame(ctx, host.GameID, host.PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
@@ -294,7 +296,7 @@ func TestEventsPublishedOncePerCommandInOrder(t *testing.T) {
 	if _, err := f.svc.JoinGame(ctx, host.GameID, "Bob"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.EndGame(ctx, host.GameID, host.PlayerID); err != nil {
+	if err := f.svc.EndGame(ctx, host.GameID, host.PlayerID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -329,11 +331,11 @@ func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 		err  error
 		want error
 	}{
-		{"non-host end", second(f.svc.EndGame(ctx, host.GameID, bob.PlayerID)), domain.ErrNotHost},
-		{"unknown player end", second(f.svc.EndGame(ctx, host.GameID, "ghost")), domain.ErrUnknownPlayer},
-		{"name taken", second2(f.svc.JoinGame(ctx, host.GameID, "ann")), domain.ErrNameTaken},
-		{"invalid name", second2(f.svc.JoinGame(ctx, host.GameID, " ")), domain.ErrInvalidName},
-		{"unknown game", second(f.svc.EndGame(ctx, "NOPE1", host.PlayerID)), ports.ErrGameNotFound},
+		{"non-host end", f.svc.EndGame(ctx, host.GameID, bob.PlayerID), domain.ErrNotHost},
+		{"unknown player end", f.svc.EndGame(ctx, host.GameID, "ghost"), domain.ErrUnknownPlayer},
+		{"name taken", second(f.svc.JoinGame(ctx, host.GameID, "ann")), domain.ErrNameTaken},
+		{"invalid name", second(f.svc.JoinGame(ctx, host.GameID, " ")), domain.ErrInvalidName},
+		{"unknown game", f.svc.EndGame(ctx, "NOPE1", host.PlayerID), ports.ErrGameNotFound},
 	}
 	for _, c := range checks {
 		if !errors.Is(c.err, c.want) {
@@ -352,8 +354,7 @@ func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 	}
 }
 
-func second(_ domain.PlayerView, err error) error { return err }
-func second2(_ ports.Session, err error) error    { return err }
+func second(_ ports.Session, err error) error { return err }
 
 func TestConcurrentEndGameSerialised(t *testing.T) {
 	ctx := context.Background()
@@ -369,7 +370,7 @@ func TestConcurrentEndGameSerialised(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if _, err := f.svc.EndGame(ctx, id, host.PlayerID); err == nil {
+			if err := f.svc.EndGame(ctx, id, host.PlayerID); err == nil {
 				ok.Add(1)
 			}
 		}()

@@ -143,6 +143,11 @@ type client struct {
 	c     *websocket.Conn
 	view  apidto.PlayerView
 	reqID int
+
+	// events and raw belong to the last view message read, so a test can inspect
+	// the update that a command caused after send returned.
+	events []apidto.Event
+	raw    []byte
 }
 
 // wireMsg decodes any server message; View is kept raw too for leak checks.
@@ -192,6 +197,7 @@ func (cl *client) read() wireMsg {
 			cl.t.Fatalf("%s: view revision went backwards: %d < %d", cl.name, m.View.Revision, cl.view.Revision)
 		}
 		cl.view = *m.View
+		cl.events, cl.raw = m.Events, data
 	}
 	return m
 }
@@ -215,8 +221,10 @@ func (cl *client) presence(n int) {
 	})
 }
 
-// send sends a command and reads until its ack, failing on an error reply.
-func (cl *client) send(cmd apidto.ClientMessage) {
+// try sends a command and reads until its ack or error reply. It returns the
+// error, or nil on an ack. The ack follows the update the command published,
+// so cl.view is current when try returns.
+func (cl *client) try(cmd apidto.ClientMessage) *apidto.ErrorBody {
 	cl.t.Helper()
 	cl.reqID++
 	cmd.RequestID = strconv.Itoa(cl.reqID)
@@ -226,12 +234,41 @@ func (cl *client) send(cmd apidto.ClientMessage) {
 	if err := cl.c.Write(ctx, websocket.MessageText, b); err != nil {
 		cl.t.Fatalf("%s: write: %v", cl.name, err)
 	}
-	cl.until("ack "+cmd.RequestID, func(m wireMsg) bool {
-		if m.Type == apidto.MsgError && m.RequestID == cmd.RequestID {
-			cl.t.Fatalf("%s: %s rejected: %+v", cl.name, cmd.Type, m.Error)
-		}
-		return m.Type == apidto.MsgAck && m.RequestID == cmd.RequestID
+	reply := cl.until("reply to "+cmd.RequestID, func(m wireMsg) bool {
+		return (m.Type == apidto.MsgAck || m.Type == apidto.MsgError) && m.RequestID == cmd.RequestID
 	})
+	return reply.Error
+}
+
+// send sends a command that must be accepted.
+func (cl *client) send(cmd apidto.ClientMessage) {
+	cl.t.Helper()
+	if e := cl.try(cmd); e != nil {
+		cl.t.Fatalf("%s: %s rejected: %+v", cl.name, cmd.Type, e)
+	}
+}
+
+// reject sends a command that must be refused with the given error code.
+func (cl *client) reject(cmd apidto.ClientMessage, code string) {
+	cl.t.Helper()
+	if e := cl.try(cmd); e == nil || e.Code != code {
+		cl.t.Fatalf("%s: %s: got %+v, want error %s", cl.name, cmd.Type, e, code)
+	}
+}
+
+// syncAll reads on every client until each has seen the newest revision, so no
+// socket's send buffer fills up while another player acts.
+func syncAll(clients map[string]*client) {
+	var rev int64
+	for _, cl := range clients {
+		rev = max(rev, cl.view.Revision)
+	}
+	for _, cl := range clients {
+		if cl.view.Revision < rev {
+			cl.t.Helper()
+			cl.until(fmt.Sprintf("revision %d", rev), func(m wireMsg) bool { return m.Type == apidto.MsgView && m.View.Revision >= rev })
+		}
+	}
 }
 
 func intp(i int) *int { return &i }
@@ -322,14 +359,7 @@ func TestTwoPlayerGameOverWebSocketSurvivesRestart(t *testing.T) {
 	}
 
 	// Only the host may choose; Bob's attempt is rejected without changing state.
-	bobWS.reqID++
-	b, _ := json.Marshal(apidto.ClientMessage{Type: apidto.CmdChooseFirstPlayer, RequestID: strconv.Itoa(bobWS.reqID), PlayerID: bob.PlayerID})
-	if err := bobWS.c.Write(context.Background(), websocket.MessageText, b); err != nil {
-		t.Fatal(err)
-	}
-	if m := bobWS.until("error", func(m wireMsg) bool { return m.Type == apidto.MsgError }); m.Error.Code != apidto.CodeNotHost {
-		t.Fatalf("bob choosing: got %+v, want not_host", m.Error)
-	}
+	bobWS.reject(apidto.ClientMessage{Type: apidto.CmdChooseFirstPlayer, PlayerID: bob.PlayerID}, apidto.CodeNotHost)
 
 	annWS.send(apidto.ClientMessage{Type: apidto.CmdChooseFirstPlayer, PlayerID: bob.PlayerID})
 	bobWS.until("bob's turn", func(m wireMsg) bool {
@@ -417,27 +447,28 @@ func TestTwoPlayerGameOverWebSocketSurvivesRestart(t *testing.T) {
 	}
 }
 
-// playToEnd plays every turn over REST with a greedy smallest-jump strategy
-// (ending the turn as soon as the minimum is met) until the game finishes.
-func playToEnd(t *testing.T, a *app, code string, tokens map[string]string) apidto.PlayerView {
+// playToEnd plays every turn over the players' WebSockets with a greedy
+// smallest-jump strategy (ending the turn as soon as the minimum is met) until
+// the game finishes. All clients must be connected and in sync.
+func playToEnd(t *testing.T, clients map[string]*client) apidto.PlayerView {
 	t.Helper()
-	var anyTok string
-	for _, tok := range tokens {
-		anyTok = tok
+	var anyone *client
+	for _, cl := range clients {
+		anyone = cl
 		break
 	}
 	for range 2000 {
-		v := a.view(t, code, anyTok)
-		if v.Phase == "finished" {
-			return v
+		if anyone.view.Phase == "finished" {
+			return anyone.view
 		}
-		tok := tokens[v.Turn.ActivePlayerID]
-		v = a.view(t, code, tok)
+		cl := clients[anyone.view.Turn.ActivePlayerID]
+		v := cl.view
 		if hasRevealedHands(v) {
 			t.Fatal("hands revealed before the game finished")
 		}
 		if v.Turn.CanEndTurn {
-			a.call(t, http.MethodPost, "/api/games/"+code+"/end-turn", tok, nil, nil, http.StatusOK)
+			cl.send(apidto.ClientMessage{Type: apidto.CmdEndTurn})
+			syncAll(clients)
 			continue
 		}
 		card, pile, ok := pickPlay(v)
@@ -446,16 +477,28 @@ func playToEnd(t *testing.T, a *app, code string, tokens map[string]string) apid
 			if !v.Turn.Stuck || v.Turn.CardsPlayed == 0 {
 				t.Fatalf("no play, no end turn, but not stuck mid-turn: %+v", v)
 			}
-			a.call(t, http.MethodPost, "/api/games/"+code+"/give-up", tok, nil, nil, http.StatusOK)
+			cl.send(apidto.ClientMessage{Type: apidto.CmdGiveUp})
+			syncAll(clients)
 			continue
 		}
 		if v.Turn.Stuck {
 			t.Fatalf("stuck although %d fits on pile %d", card, pile)
 		}
-		a.call(t, http.MethodPost, "/api/games/"+code+"/plays", tok, apidto.PlayCardRequest{Card: intp(card), Pile: intp(pile)}, nil, http.StatusOK)
+		cl.send(apidto.ClientMessage{Type: apidto.CmdPlayCard, Card: intp(card), Pile: intp(pile)})
+		syncAll(clients)
 	}
 	t.Fatal("game did not finish")
 	return apidto.PlayerView{}
+}
+
+// dialAll connects every session to game code over WebSocket.
+func (a *app) dialAll(t *testing.T, code string, sessions ...apidto.SessionResponse) map[string]*client {
+	t.Helper()
+	clients := make(map[string]*client, len(sessions))
+	for _, s := range sessions {
+		clients[s.PlayerID] = a.dial(t, s.PlayerID, code, s.Token)
+	}
+	return clients
 }
 
 func checkFinished(t *testing.T, v apidto.PlayerView) {
@@ -493,16 +536,18 @@ func TestSoloGameToCompletion(t *testing.T) {
 		t.Run(fmt.Sprint(seed), func(t *testing.T) {
 			a := startApp(t, filepath.Join(t.TempDir(), "solo.db"), seed)
 			s := a.create(t, "Solo", nil)
-			var v apidto.PlayerView
-			a.call(t, http.MethodPost, "/api/games/"+s.GameID+"/start", s.Token, nil, &v, http.StatusOK)
+			clients := a.dialAll(t, s.GameID, s)
+			cl := clients[s.PlayerID]
+			cl.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+			v := cl.view
 			if v.Phase != "playing" || len(v.Hand) != 8 || v.Turn.ActivePlayerID != s.PlayerID {
 				t.Fatalf("solo start: phase %s hand %d", v.Phase, len(v.Hand))
 			}
-			v = playToEnd(t, a, s.GameID, map[string]string{s.PlayerID: s.Token})
+			v = playToEnd(t, clients)
 			checkFinished(t, v)
 			t.Logf("seed %d: %s, score %d", seed, v.Result.Outcome, v.Result.Score)
 			// Further actions are rejected once finished.
-			a.call(t, http.MethodPost, "/api/games/"+s.GameID+"/end-turn", s.Token, nil, nil, http.StatusConflict)
+			cl.reject(apidto.ClientMessage{Type: apidto.CmdEndTurn}, apidto.CodeWrongPhase)
 		})
 	}
 }
@@ -512,16 +557,19 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	ann := a.create(t, "Ann", nil)
 	code := ann.GameID
 	bob := a.join(t, code, "Bob")
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, nil, http.StatusConflict) // not finished yet
-	a.call(t, http.MethodPost, "/api/games/"+code+"/start", ann.Token, nil, nil, http.StatusOK)
-	a.call(t, http.MethodPost, "/api/games/"+code+"/first-player", ann.Token, apidto.ChooseFirstPlayerRequest{PlayerID: ann.PlayerID}, nil, http.StatusOK)
+	clients := a.dialAll(t, code, ann, bob)
+	annWS := clients[ann.PlayerID]
+	annWS.reject(apidto.ClientMessage{Type: apidto.CmdRematch}, apidto.CodeWrongPhase) // not finished yet
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdChooseFirstPlayer, PlayerID: ann.PlayerID})
+	syncAll(clients)
 
-	annWS := a.dial(t, "ann", code, ann.Token)
-	fin := playToEnd(t, a, code, map[string]string{ann.PlayerID: ann.Token, bob.PlayerID: bob.Token})
+	fin := playToEnd(t, clients)
 	checkFinished(t, fin)
 
-	var old apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", bob.Token, nil, &old, http.StatusOK)
+	bobWS := clients[bob.PlayerID]
+	bobWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	old := bobWS.view
 	next := old.NextGameID
 	if next == "" || next == code || old.Phase != "finished" {
 		t.Fatalf("rematch: next=%q phase=%s", next, old.Phase)
@@ -531,10 +579,9 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	if m.View.NextGameID != next || !slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventRematchCreated && e.GameID == next }) {
 		t.Fatalf("ann's rematch update: next=%q events=%+v", m.View.NextGameID, m.Events)
 	}
-	// Idempotent: a second request returns the same next game.
-	var again apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/rematch", ann.Token, nil, &again, http.StatusOK)
-	if again.NextGameID != next {
+	// Idempotent: a second request is accepted and still points at the same next game.
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	if again := a.view(t, code, ann.Token); again.NextGameID != next {
 		t.Fatalf("second rematch: %q, want %q", again.NextGameID, next)
 	}
 
@@ -548,15 +595,15 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 			t.Fatalf("next game not fresh: %+v", v)
 		}
 	}
-	a.call(t, http.MethodPost, "/api/games/"+next+"/start", ann.Token, nil, nil, http.StatusForbidden) // Ann is no longer host
 	nextWS := a.dial(t, "ann-next", next, ann.Token)
 	if nextWS.view.GameID != next {
 		t.Fatalf("ws on next game: %+v", nextWS.view)
 	}
-	var started apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+next+"/start", bob.Token, nil, &started, http.StatusOK)
-	if started.Phase != "choosingFirstPlayer" {
-		t.Fatalf("next game start: %s", started.Phase)
+	nextWS.reject(apidto.ClientMessage{Type: apidto.CmdStartGame}, apidto.CodeNotHost) // Ann is no longer host
+	bobNextWS := a.dial(t, "bob-next", next, bob.Token)
+	bobNextWS.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	if bobNextWS.view.Phase != "choosingFirstPlayer" {
+		t.Fatalf("next game start: %s", bobNextWS.view.Phase)
 	}
 }
 
@@ -565,8 +612,9 @@ func TestExtremeSoloDeterministic(t *testing.T) {
 	a := startAppRNG(t, dbPath, func() domain.RNG { return identityRNG{} })
 	s := a.create(t, "Solo", &apidto.GameOptions{Variant: "extreme"})
 	code := s.GameID
-	var v apidto.PlayerView
-	a.call(t, http.MethodPost, "/api/games/"+code+"/start", s.Token, nil, &v, http.StatusOK)
+	ws := a.dial(t, "solo", code, s.Token)
+	ws.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	v := ws.view
 
 	// Identity RNG: ascending deck, hand 92..99, draw pile top 91.
 	if v.Phase != "playing" || v.Options.Variant != "extreme" || !slices.Equal(handValues(v), []int{92, 93, 94, 95, 96, 97, 98, 99}) {
@@ -585,15 +633,11 @@ func TestExtremeSoloDeterministic(t *testing.T) {
 		t.Fatalf("constraints = %+v", c)
 	}
 
-	ws := a.dial(t, "solo", code, s.Token)
-	var e apidto.ErrorResponse
-	a.call(t, http.MethodPost, "/api/games/"+code+"/end-turn", s.Token, nil, &e, http.StatusUnprocessableEntity)
-	if e.Error.Code != apidto.CodeMinimumNotReached {
-		t.Fatalf("end-turn code = %q", e.Error.Code)
-	}
+	ws.reject(apidto.ClientMessage{Type: apidto.CmdEndTurn}, apidto.CodeMinimumNotReached)
 
 	// STOP overrides the minimum and blocks every further card; the turn stays open.
-	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(95), Pile: intp(0)}, &v, http.StatusOK)
+	ws.send(apidto.ClientMessage{Type: apidto.CmdPlayCard, Card: intp(95), Pile: intp(0)})
+	v = ws.view
 	if v.Turn.Number != 1 || v.Turn.CardsPlayed != 1 || !v.Turn.CanEndTurn || !v.Turn.Constraints.StopPlayed || v.Turn.Stuck {
 		t.Fatalf("after STOP: turn %+v", v.Turn)
 	}
@@ -602,45 +646,38 @@ func TestExtremeSoloDeterministic(t *testing.T) {
 			t.Fatalf("after STOP: card %+v", hc)
 		}
 	}
-	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(96), Pile: intp(0)}, &e, http.StatusUnprocessableEntity)
-	if e.Error.Code != apidto.CodeStopPlayed {
-		t.Fatalf("play after STOP code = %q", e.Error.Code)
-	}
+	ws.reject(apidto.ClientMessage{Type: apidto.CmdPlayCard, Card: intp(96), Pile: intp(0)}, apidto.CodeStopPlayed)
 
 	// Undo takes the STOP back into the hand.
-	a.call(t, http.MethodPost, "/api/games/"+code+"/undo", s.Token, nil, &v, http.StatusOK)
+	ws.send(apidto.ClientMessage{Type: apidto.CmdUndoPlay})
+	v = ws.view
 	if v.Turn.CardsPlayed != 0 || v.Turn.Constraints.StopPlayed || v.Piles[0].TopCard != nil || !slices.Contains(handValues(v), 95) {
 		t.Fatalf("after undo: turn %+v pile 0 %+v hand %v", v.Turn, v.Piles[0], handValues(v))
 	}
-	m := ws.until("undo update", func(m wireMsg) bool {
-		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventPlayUndone })
-	})
-	if len(m.Events) != 1 || m.Events[0].Card == nil || m.Events[0].Card.Value != 95 || m.Events[0].Pile == nil || *m.Events[0].Pile != 0 {
-		t.Fatalf("undo events = %s", m.raw)
+	if len(ws.events) != 1 || ws.events[0].Type != apidto.EventPlayUndone || ws.events[0].Card == nil || ws.events[0].Card.Value != 95 ||
+		ws.events[0].Pile == nil || *ws.events[0].Pile != 0 {
+		t.Fatalf("undo events = %s", ws.raw)
 	}
-	a.call(t, http.MethodPost, "/api/games/"+code+"/undo", s.Token, nil, &e, http.StatusConflict)
-	if e.Error.Code != apidto.CodeNothingToUndo {
-		t.Fatalf("second undo code = %q", e.Error.Code)
-	}
+	ws.reject(apidto.ClientMessage{Type: apidto.CmdUndoPlay}, apidto.CodeNothingToUndo)
 
 	// STOP again, then End turn: the draw refills the hand.
-	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(95), Pile: intp(0)}, &v, http.StatusOK)
-	a.call(t, http.MethodPost, "/api/games/"+code+"/end-turn", s.Token, nil, &v, http.StatusOK)
+	ws.send(apidto.ClientMessage{Type: apidto.CmdPlayCard, Card: intp(95), Pile: intp(0)})
+	ws.send(apidto.ClientMessage{Type: apidto.CmdEndTurn})
+	v = ws.view
 	if v.Turn.Number != 2 || v.Turn.CardsPlayed != 0 || !slices.Equal(handValues(v), []int{91, 92, 93, 94, 96, 97, 98, 99}) {
 		t.Fatalf("after STOP: turn %+v hand %v", v.Turn, handValues(v))
 	}
 	if top := v.Piles[0].TopCard; top == nil || top.Command != "stop" || v.Piles[0].CommandActive {
 		t.Fatalf("pile 0 = %+v", v.Piles[0])
 	}
-	m = ws.until("end turn update", func(m wireMsg) bool {
-		return m.Type == apidto.MsgView && slices.ContainsFunc(m.Events, func(e apidto.Event) bool { return e.Type == apidto.EventTurnEnded })
-	})
-	if len(m.Events) != 2 || m.Events[0].CardsDrawn == nil || *m.Events[0].CardsDrawn != 1 || m.Events[1].Type != apidto.EventTurnStarted {
-		t.Fatalf("end turn events = %s", m.raw)
+	if len(ws.events) != 2 || ws.events[0].Type != apidto.EventTurnEnded || ws.events[0].CardsDrawn == nil || *ws.events[0].CardsDrawn != 1 ||
+		ws.events[1].Type != apidto.EventTurnStarted {
+		t.Fatalf("end turn events = %s", ws.raw)
 	}
 
 	// No communication on a descending pile is an Infinity card: active while visible.
-	a.call(t, http.MethodPost, "/api/games/"+code+"/plays", s.Token, apidto.PlayCardRequest{Card: intp(92), Pile: intp(2)}, &v, http.StatusOK)
+	ws.send(apidto.ClientMessage{Type: apidto.CmdPlayCard, Card: intp(92), Pile: intp(2)})
+	v = ws.view
 	wantActive := []apidto.ActiveCommand{{Command: "noCommunication", Pile: 2}}
 	if !v.CommunicationRestricted || !reflect.DeepEqual(v.ActiveCommands, wantActive) {
 		t.Fatalf("after NC: restricted %v active %v", v.CommunicationRestricted, v.ActiveCommands)
@@ -668,17 +705,18 @@ func TestExtremeGamesToCompletion(t *testing.T) {
 					a := startApp(t, filepath.Join(t.TempDir(), "x.db"), seed)
 					host := a.create(t, "P1", &apidto.GameOptions{Variant: "extreme", Pro: pro})
 					code := host.GameID
-					tokens := map[string]string{host.PlayerID: host.Token}
+					sessions := []apidto.SessionResponse{host}
 					for i := 2; i <= players; i++ {
-						s := a.join(t, code, fmt.Sprintf("P%d", i))
-						tokens[s.PlayerID] = s.Token
+						sessions = append(sessions, a.join(t, code, fmt.Sprintf("P%d", i)))
 					}
-					var v apidto.PlayerView
-					a.call(t, http.MethodPost, "/api/games/"+code+"/start", host.Token, nil, &v, http.StatusOK)
+					clients := a.dialAll(t, code, sessions...)
+					hostWS := clients[host.PlayerID]
+					hostWS.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
 					if players > 1 {
-						a.call(t, http.MethodPost, "/api/games/"+code+"/first-player", host.Token, apidto.ChooseFirstPlayerRequest{PlayerID: host.PlayerID}, nil, http.StatusOK)
+						hostWS.send(apidto.ClientMessage{Type: apidto.CmdChooseFirstPlayer, PlayerID: host.PlayerID})
 					}
-					v = playToEnd(t, a, code, tokens)
+					syncAll(clients)
+					v := playToEnd(t, clients)
 					checkFinished(t, v)
 					t.Logf("%s, score %d", v.Result.Outcome, v.Result.Score)
 				})

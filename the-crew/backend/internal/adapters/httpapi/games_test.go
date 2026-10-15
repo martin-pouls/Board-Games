@@ -127,10 +127,6 @@ func (f *fakeService) LeaveGame(_ context.Context, id domain.GameID, _ domain.Pl
 	return f.record("LeaveGame", id)
 }
 
-func (f *fakeService) EndGame(_ context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.viewCall("EndGame", id, p)
-}
-
 // --- helpers ---
 
 func newTestRouter(t *testing.T, svc *fakeService) http.Handler {
@@ -260,7 +256,6 @@ func TestAuthedRoutes(t *testing.T) {
 		method, path, body, call string
 	}{
 		{"GET", "/api/games/%s/view", "", "View"},
-		{"POST", "/api/games/%s/end-game", "", "EndGame"},
 	}
 	for _, rt := range routes {
 		t.Run(rt.call, func(t *testing.T) {
@@ -302,7 +297,7 @@ func TestAuthedRoutes(t *testing.T) {
 func TestNoGameplayRoutes(t *testing.T) {
 	svc := &fakeService{}
 	h := newTestRouter(t, svc)
-	for _, p := range []string{"start", "play", "play-card", "give-up", "rematch", "gift", "move"} {
+	for _, p := range []string{"start", "play", "play-card", "give-up", "rematch", "end-game", "gift", "move"} {
 		wantError(t, do(t, h, "POST", "/api/games/ABCDE/"+p, "tok-host", `{}`), http.StatusNotFound, apidto.CodeNotFound)
 	}
 	if c := svc.lastCall(); c != "" {
@@ -357,7 +352,7 @@ func TestErrorTable(t *testing.T) {
 				Health: func(context.Context) error { return nil },
 				Games:  svc,
 			})
-			w := do(t, h, "POST", "/api/games/ABCDE/end-game", "tok-host", "")
+			w := do(t, h, "POST", "/api/games/ABCDE/players", "", `{"name":"Bob"}`)
 			wantError(t, w, tt.status, tt.code)
 			e := decode[apidto.ErrorResponse](t, w)
 			if tt.status == 500 {

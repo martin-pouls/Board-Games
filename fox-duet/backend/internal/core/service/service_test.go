@@ -81,7 +81,7 @@ func (f *fixture) started(t *testing.T) (domain.GameID, []ports.Session) {
 		t.Fatal(err)
 	}
 	sessions = append(sessions, guest)
-	if _, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); err != nil {
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); err != nil {
 		t.Fatal(err)
 	}
 	return host.GameID, sessions
@@ -121,7 +121,10 @@ func TestLifecycle(t *testing.T) {
 	}
 
 	// With noShuffle the host deals and Bob leads.
-	v, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 2)
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 2); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.View(ctx, host.GameID, host.PlayerID)
 	if err != nil || v.Phase != domain.PhasePlaying || v.Level != 2 || v.Pending == nil || v.Pending.Step != domain.StepLead {
 		t.Fatalf("start: %+v %v", v, err)
 	}
@@ -138,10 +141,10 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("bob hand = %v playable = %v", bv.Hand, bv.Playable)
 	}
 	lead := bv.Playable[0]
-	bv, err = f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, lead)
-	if err != nil {
+	if err := f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, lead); err != nil {
 		t.Fatal(err)
 	}
+	bv, _ = f.svc.View(ctx, host.GameID, bob.PlayerID)
 	if len(bv.Hand) != domain.HandSize-1 || bv.Trick == nil || bv.Trick.Lead == nil || *bv.Trick.Lead != lead {
 		t.Fatalf("bob view after the lead: %+v", bv)
 	}
@@ -150,7 +153,7 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("host view after bob's lead: %+v", hv)
 	}
 	// The teammate acts out of turn: rejected, state unchanged.
-	if _, err := f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, bv.Hand[0]); !errors.Is(err, domain.ErrNotYourTurn) {
+	if err := f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, bv.Hand[0]); !errors.Is(err, domain.ErrNotYourTurn) {
 		t.Fatalf("bob plays again: %v", err)
 	}
 }
@@ -159,24 +162,27 @@ func TestStartLevel(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
 	host, _ := f.svc.CreateGame(ctx, "Ann")
-	if _, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); !errors.Is(err, domain.ErrNotEnoughPlayers) {
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); !errors.Is(err, domain.ErrNotEnoughPlayers) {
 		t.Fatalf("start alone: %v", err)
 	}
 	bob, _ := f.svc.JoinGame(ctx, host.GameID, "Bob")
 
-	if _, err := f.svc.StartGame(ctx, host.GameID, bob.PlayerID, 1); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.StartGame(ctx, host.GameID, bob.PlayerID, 1); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("non-host start: %v", err)
 	}
 	for _, level := range []int{0, 4, -1} {
-		if _, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, level); !errors.Is(err, domain.ErrInvalidLevel) {
+		if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, level); !errors.Is(err, domain.ErrInvalidLevel) {
 			t.Fatalf("level %d: %v", level, err)
 		}
 	}
-	v, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 3)
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 3); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.View(ctx, host.GameID, host.PlayerID)
 	if err != nil || v.Level != 3 || v.Board == nil || v.Board.ForestTokensTotal != 3 {
 		t.Fatalf("level 3 start: %+v %v", v, err)
 	}
-	if _, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); !errors.Is(err, domain.ErrWrongPhase) {
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); !errors.Is(err, domain.ErrWrongPhase) {
 		t.Fatalf("second start: %v", err)
 	}
 }
@@ -216,7 +222,7 @@ func TestLeaveGame(t *testing.T) {
 		t.Fatalf("rejoin: %v", err)
 	}
 	// After the start nobody can leave.
-	if _, err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); err != nil {
+	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID, 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.svc.LeaveGame(ctx, host.GameID, host.PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
@@ -236,7 +242,7 @@ func TestPlayUsesFreshRNG(t *testing.T) {
 		t.Fatalf("RNG created %d times after start, want 1", n.Load())
 	}
 	v, _ := f.svc.View(ctx, id, sessions[1].PlayerID) // with noShuffle the guest leads
-	if _, err := f.svc.PlayCard(ctx, id, sessions[1].PlayerID, v.Playable[0]); err != nil {
+	if err := f.svc.PlayCard(ctx, id, sessions[1].PlayerID, v.Playable[0]); err != nil {
 		t.Fatal(err)
 	}
 	if n.Load() != 2 {
@@ -244,7 +250,7 @@ func TestPlayUsesFreshRNG(t *testing.T) {
 	}
 	// Non-RNG commands and failed plays do not matter for correctness, but give-up must not need one.
 	before := n.Load()
-	if _, err := f.svc.GiveUp(ctx, id, sessions[0].PlayerID); err != nil {
+	if err := f.svc.GiveUp(ctx, id, sessions[0].PlayerID); err != nil {
 		t.Fatal(err)
 	}
 	if n.Load() != before {
@@ -379,7 +385,7 @@ func TestEventsPublishedOncePerCommandInOrder(t *testing.T) {
 
 	// A play publishes exactly one more update.
 	v, _ := f.svc.View(ctx, host.GameID, bob.PlayerID)
-	if _, err := f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, v.Playable[0]); err != nil {
+	if err := f.svc.PlayCard(ctx, host.GameID, bob.PlayerID, v.Playable[0]); err != nil {
 		t.Fatal(err)
 	}
 	got = f.rec.all()
@@ -401,12 +407,12 @@ func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 		err  error
 		want error
 	}{
-		{"non-host start", second(f.svc.StartGame(ctx, host.GameID, bob.PlayerID, 1)), domain.ErrNotHost},
-		{"play in lobby", second(f.svc.PlayCard(ctx, host.GameID, host.PlayerID, domain.NewCard(domain.SuitDoves, 2))), domain.ErrWrongPhase},
-		{"keep decree in lobby", second(f.svc.KeepDecree(ctx, host.GameID, host.PlayerID)), domain.ErrWrongPhase},
+		{"non-host start", f.svc.StartGame(ctx, host.GameID, bob.PlayerID, 1), domain.ErrNotHost},
+		{"play in lobby", f.svc.PlayCard(ctx, host.GameID, host.PlayerID, domain.NewCard(domain.SuitDoves, 2)), domain.ErrWrongPhase},
+		{"keep decree in lobby", f.svc.KeepDecree(ctx, host.GameID, host.PlayerID), domain.ErrWrongPhase},
 		{"join a full game", second2(f.svc.JoinGame(ctx, host.GameID, "Cleo")), domain.ErrGameFull},
-		{"rematch in lobby", second(f.svc.Rematch(ctx, host.GameID, host.PlayerID)), domain.ErrWrongPhase},
-		{"unknown game", second(f.svc.StartGame(ctx, "NOPE1", host.PlayerID, 1)), ports.ErrGameNotFound},
+		{"rematch in lobby", f.svc.Rematch(ctx, host.GameID, host.PlayerID), domain.ErrWrongPhase},
+		{"unknown game", f.svc.StartGame(ctx, "NOPE1", host.PlayerID, 1), ports.ErrGameNotFound},
 	}
 	for _, c := range checks {
 		if !errors.Is(c.err, c.want) {
@@ -425,8 +431,7 @@ func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 	}
 }
 
-func second(_ domain.PlayerView, err error) error { return err }
-func second2(_ ports.Session, err error) error    { return err }
+func second2(_ ports.Session, err error) error { return err }
 
 func TestConcurrentGiveUpSerialised(t *testing.T) {
 	ctx := context.Background()
@@ -442,7 +447,7 @@ func TestConcurrentGiveUpSerialised(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if _, err := f.svc.GiveUp(ctx, id, host.PlayerID); err == nil {
+			if err := f.svc.GiveUp(ctx, id, host.PlayerID); err == nil {
 				ok.Add(1)
 			}
 		}()
@@ -501,7 +506,7 @@ func TestOCCRetry(t *testing.T) {
 // finish ends the game by giving up (any seated player may).
 func finish(t *testing.T, f *fixture, id domain.GameID, by domain.PlayerID) {
 	t.Helper()
-	if _, err := f.svc.GiveUp(context.Background(), id, by); err != nil {
+	if err := f.svc.GiveUp(context.Background(), id, by); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -514,7 +519,10 @@ func TestRematch(t *testing.T) {
 	finish(t, f, id, host.PlayerID)
 	before := len(f.rec.all())
 
-	v, err := f.svc.Rematch(ctx, id, bob.PlayerID)
+	if err := f.svc.Rematch(ctx, id, bob.PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.View(ctx, id, bob.PlayerID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -543,9 +551,8 @@ func TestRematch(t *testing.T) {
 
 	// Idempotent: second call (by anyone) changes nothing and publishes nothing.
 	recBefore, _ := f.repo.Load(ctx, id)
-	v2, err := f.svc.Rematch(ctx, id, host.PlayerID)
-	if err != nil || v2.NextGameID != v.NextGameID {
-		t.Fatalf("idempotent rematch: %q %v", v2.NextGameID, err)
+	if err := f.svc.Rematch(ctx, id, host.PlayerID); err != nil {
+		t.Fatalf("idempotent rematch: %v", err)
 	}
 	recAfter, _ := f.repo.Load(ctx, id)
 	if recAfter.Version != recBefore.Version || len(f.rec.all()) != before+1 {
@@ -570,7 +577,10 @@ func TestRematchIDCollisionRetry(t *testing.T) {
 	id, sessions := f.started(t)
 	finish(t, f, id, sessions[0].PlayerID)
 	calls = 3
-	v, err := f.svc.Rematch(ctx, id, sessions[0].PlayerID)
+	if err := f.svc.Rematch(ctx, id, sessions[0].PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	v, err := f.svc.View(ctx, id, sessions[0].PlayerID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -586,14 +596,14 @@ func TestRematchErrors(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
 	id, sessions := f.started(t)
-	if _, err := f.svc.Rematch(ctx, id, sessions[0].PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
+	if err := f.svc.Rematch(ctx, id, sessions[0].PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
 		t.Errorf("unfinished: %v", err)
 	}
 	finish(t, f, id, sessions[0].PlayerID)
-	if _, err := f.svc.Rematch(ctx, id, "ghost"); !errors.Is(err, domain.ErrUnknownPlayer) {
+	if err := f.svc.Rematch(ctx, id, "ghost"); !errors.Is(err, domain.ErrUnknownPlayer) {
 		t.Errorf("unknown player: %v", err)
 	}
-	if _, err := f.svc.Rematch(ctx, "NOPE1", sessions[0].PlayerID); !errors.Is(err, ports.ErrGameNotFound) {
+	if err := f.svc.Rematch(ctx, "NOPE1", sessions[0].PlayerID); !errors.Is(err, ports.ErrGameNotFound) {
 		t.Errorf("unknown game: %v", err)
 	}
 }

@@ -379,7 +379,9 @@ func TestErrorFor(t *testing.T) {
 	}
 	var typeErr error
 	{
-		var v StartGameRequest
+		var v struct {
+			Level int `json:"level"`
+		}
 		typeErr = json.Unmarshal([]byte(`{"level":"x"}`), &v)
 	}
 	tests := []struct {

@@ -89,19 +89,19 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return stubView(&domain.Game{ID: id, Revision: rev}, p)
 }
 
-func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, p domain.PlayerID, evs ...domain.Event) (domain.PlayerView, error) {
+func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, evs ...domain.Event) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, name)
 	if f.err != nil {
 		err := f.err
 		f.mu.Unlock()
-		return domain.PlayerView{}, err
+		return err
 	}
 	f.rev++
 	g := &domain.Game{ID: id, Revision: f.rev}
 	f.mu.Unlock()
 	f.hub.Publish(ctx, ports.GameUpdate{Game: g, Events: evs})
-	return stubView(g, p)
+	return nil
 }
 
 func (f *fakeService) callNames() []string {
@@ -122,12 +122,12 @@ func (f *fakeService) Summary(context.Context, domain.GameID) (domain.GameSummar
 func (f *fakeService) LeaveGame(context.Context, domain.GameID, domain.PlayerID) error {
 	return errors.New("not used")
 }
-func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.mutate(ctx, "EndGame", id, p, domain.GameEnded{ByPlayerID: p})
+func (f *fakeService) EndGame(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.mutate(ctx, "EndGame", id, domain.GameEnded{ByPlayerID: p})
 }
 
 // The gameplay commands record the call with its arguments, e.g. "AdjustTokens(1,2)".
-func (f *fakeService) rec(ctx context.Context, id domain.GameID, p domain.PlayerID, name string, args ...any) (domain.PlayerView, error) {
+func (f *fakeService) rec(ctx context.Context, id domain.GameID, name string, args ...any) error {
 	call := name
 	if len(args) > 0 {
 		parts := make([]string, len(args))
@@ -136,62 +136,62 @@ func (f *fakeService) rec(ctx context.Context, id domain.GameID, p domain.Player
 		}
 		call += "(" + strings.Join(parts, ",") + ")"
 	}
-	return f.mutate(ctx, call, id, p)
+	return f.mutate(ctx, call, id)
 }
 
-func (f *fakeService) SetOptions(ctx context.Context, id domain.GameID, p domain.PlayerID, o domain.Options) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "SetOptions", o.Distress)
+func (f *fakeService) SetOptions(ctx context.Context, id domain.GameID, p domain.PlayerID, o domain.Options) error {
+	return f.rec(ctx, id, "SetOptions", o.Distress)
 }
-func (f *fakeService) SelectMission(ctx context.Context, id domain.GameID, p domain.PlayerID, m int) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "SelectMission", m)
+func (f *fakeService) SelectMission(ctx context.Context, id domain.GameID, p domain.PlayerID, m int) error {
+	return f.rec(ctx, id, "SelectMission", m)
 }
-func (f *fakeService) StartMission(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "StartMission")
+func (f *fakeService) StartMission(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "StartMission")
 }
-func (f *fakeService) AdjustTokens(ctx context.Context, id domain.GameID, p domain.PlayerID, from, to int) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "AdjustTokens", from, to)
+func (f *fakeService) AdjustTokens(ctx context.Context, id domain.GameID, p domain.PlayerID, from, to int) error {
+	return f.rec(ctx, id, "AdjustTokens", from, to)
 }
-func (f *fakeService) SkipTokens(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "SkipTokens")
+func (f *fakeService) SkipTokens(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "SkipTokens")
 }
-func (f *fakeService) AnswerPoll(ctx context.Context, id domain.GameID, p domain.PlayerID, yes bool) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "AnswerPoll", yes)
+func (f *fakeService) AnswerPoll(ctx context.Context, id domain.GameID, p domain.PlayerID, yes bool) error {
+	return f.rec(ctx, id, "AnswerPoll", yes)
 }
-func (f *fakeService) PickSeats(ctx context.Context, id domain.GameID, p domain.PlayerID, seats []int) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "PickSeats", seats)
+func (f *fakeService) PickSeats(ctx context.Context, id domain.GameID, p domain.PlayerID, seats []int) error {
+	return f.rec(ctx, id, "PickSeats", seats)
 }
-func (f *fakeService) PickTask(ctx context.Context, id domain.GameID, p domain.PlayerID, task int) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "PickTask", task)
+func (f *fakeService) PickTask(ctx context.Context, id domain.GameID, p domain.PlayerID, task int) error {
+	return f.rec(ctx, id, "PickTask", task)
 }
-func (f *fakeService) SendDistress(ctx context.Context, id domain.GameID, p domain.PlayerID, d domain.Direction) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "SendDistress", d)
+func (f *fakeService) SendDistress(ctx context.Context, id domain.GameID, p domain.PlayerID, d domain.Direction) error {
+	return f.rec(ctx, id, "SendDistress", d)
 }
-func (f *fakeService) SkipDistress(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "SkipDistress")
+func (f *fakeService) SkipDistress(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "SkipDistress")
 }
-func (f *fakeService) ChoosePassCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "ChoosePassCard", c)
+func (f *fakeService) ChoosePassCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) error {
+	return f.rec(ctx, id, "ChoosePassCard", c)
 }
-func (f *fakeService) Handover(ctx context.Context, id domain.GameID, p domain.PlayerID, task, seat int) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "Handover", task, seat)
+func (f *fakeService) Handover(ctx context.Context, id domain.GameID, p domain.PlayerID, task, seat int) error {
+	return f.rec(ctx, id, "Handover", task, seat)
 }
-func (f *fakeService) Communicate(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card, pos domain.Position) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "Communicate", c, "["+string(pos)+"]")
+func (f *fakeService) Communicate(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card, pos domain.Position) error {
+	return f.rec(ctx, id, "Communicate", c, "["+string(pos)+"]")
 }
-func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "PlayCard", c)
+func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.Card) error {
+	return f.rec(ctx, id, "PlayCard", c)
 }
-func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "GiveUp")
+func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "GiveUp")
 }
-func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "NextAttempt")
+func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "NextAttempt")
 }
-func (f *fakeService) NextMission(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "NextMission")
+func (f *fakeService) NextMission(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "NextMission")
 }
-func (f *fakeService) BackToLobby(ctx context.Context, id domain.GameID, p domain.PlayerID) (domain.PlayerView, error) {
-	return f.rec(ctx, id, p, "BackToLobby")
+func (f *fakeService) BackToLobby(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "BackToLobby")
 }
 
 // --- helpers ---

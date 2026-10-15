@@ -184,17 +184,6 @@ type JoinGameRequest struct {
 	Name string `json:"name"`
 }
 
-// ChooseFirstPlayerRequest is the body of POST /api/games/{code}/first-player.
-type ChooseFirstPlayerRequest struct {
-	PlayerID string `json:"playerId"`
-}
-
-// PlayCardRequest is the body of POST /api/games/{code}/plays. A nil field means bad_request.
-type PlayCardRequest struct {
-	Card *int `json:"card"`
-	Pile *int `json:"pile"`
-}
-
 // SessionResponse is returned when creating or joining a game.
 type SessionResponse struct {
 	GameID   string     `json:"gameId"`

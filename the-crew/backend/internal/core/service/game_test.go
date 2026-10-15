@@ -21,16 +21,9 @@ func (f *fixture) loadGame(t *testing.T, id domain.GameID) *domain.Game {
 }
 
 // TestMissionFlow runs a 2-player mission 1 through the service: every intent loads the game,
-// calls the domain, saves, publishes the events once and returns the actor's view.
+// calls the domain, saves and publishes the events once.
 func TestMissionFlow(t *testing.T) {
 	ctx := context.Background()
-	must := func(v domain.PlayerView, err error) domain.PlayerView {
-		t.Helper()
-		if err != nil {
-			t.Fatal(err)
-		}
-		return v
-	}
 	var rngCalls atomic.Int64
 	f := newFixture(t, func(c *Config) {
 		c.NewRNG = func() domain.RNG { rngCalls.Add(1); return noShuffle{} }
@@ -38,11 +31,26 @@ func TestMissionFlow(t *testing.T) {
 	id, ss := f.lobby(t)
 	host, guest := ss[0], ss[1]
 
+	// do runs a command that must succeed; view reads a player's view afterwards.
+	do := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	view := func(pid domain.PlayerID) domain.PlayerView {
+		t.Helper()
+		v, err := f.svc.View(ctx, id, pid)
+		do(err)
+		return v
+	}
+
 	// Lobby options: host only, saved and published; this flow plays with the distress signal on.
-	if _, err := f.svc.SetOptions(ctx, id, guest.PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.SetOptions(ctx, id, guest.PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("guest sets options: %v", err)
 	}
-	if v := must(f.svc.SetOptions(ctx, id, host.PlayerID, domain.Options{Distress: true})); !v.Options.Distress {
+	do(f.svc.SetOptions(ctx, id, host.PlayerID, domain.Options{Distress: true}))
+	if v := view(host.PlayerID); !v.Options.Distress {
 		t.Fatalf("options = %+v", v.Options)
 	}
 	if got := eventTypes(f.rec.all()[len(f.rec.all())-1].Events); !reflect.DeepEqual(got, []string{"OptionsChanged"}) {
@@ -54,22 +62,24 @@ func TestMissionFlow(t *testing.T) {
 
 	// Lobby: only the host selects and starts; a rejected intent is neither saved nor published.
 	base := len(f.rec.all())
-	if _, err := f.svc.SelectMission(ctx, id, guest.PlayerID, 4); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.SelectMission(ctx, id, guest.PlayerID, 4); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("guest selects: %v", err)
 	}
-	if _, err := f.svc.SelectMission(ctx, id, host.PlayerID, 51); !errors.Is(err, domain.ErrInvalidMission) {
+	if err := f.svc.SelectMission(ctx, id, host.PlayerID, 51); !errors.Is(err, domain.ErrInvalidMission) {
 		t.Fatalf("mission 51: %v", err)
 	}
-	if _, err := f.svc.StartMission(ctx, id, guest.PlayerID); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.StartMission(ctx, id, guest.PlayerID); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("guest starts: %v", err)
 	}
 	if got := len(f.rec.all()); got != base {
 		t.Fatalf("rejected intents published %d updates", got-base)
 	}
-	if v := must(f.svc.SelectMission(ctx, id, host.PlayerID, 4)); v.Mission != 4 {
+	do(f.svc.SelectMission(ctx, id, host.PlayerID, 4))
+	if v := view(host.PlayerID); v.Mission != 4 {
 		t.Fatalf("mission = %d", v.Mission)
 	}
-	v := must(f.svc.SelectMission(ctx, id, host.PlayerID, 1))
+	do(f.svc.SelectMission(ctx, id, host.PlayerID, 1))
+	v := view(host.PlayerID)
 	if v.Mission != 1 {
 		t.Fatalf("select failed: %+v", v)
 	}
@@ -78,9 +88,10 @@ func TestMissionFlow(t *testing.T) {
 		t.Fatalf("publishes after select: %+v", pubs)
 	}
 
-	// Start: the deal uses the injected RNG, the view is the starter's.
+	// Start: the deal uses the injected RNG.
 	calls0 := rngCalls.Load()
-	v = must(f.svc.StartMission(ctx, id, host.PlayerID))
+	do(f.svc.StartMission(ctx, id, host.PlayerID))
+	v = view(host.PlayerID)
 	if v.Phase != domain.PhasePlaying || v.Attempt == nil || v.Attempt.Seat != 0 || rngCalls.Load() != calls0+1 {
 		t.Fatalf("after start: %+v (rng calls %d)", v.Attempt, rngCalls.Load())
 	}
@@ -95,25 +106,26 @@ func TestMissionFlow(t *testing.T) {
 
 	// Steps the attempt is not in are rejected with the domain's error.
 	for name, err := range map[string]error{
-		"AdjustTokens": second(f.svc.AdjustTokens(ctx, id, cmdID, 0, 1)),
-		"SkipTokens":   second(f.svc.SkipTokens(ctx, id, cmdID)),
-		"AnswerPoll":   second(f.svc.AnswerPoll(ctx, id, otherID, true)),
-		"PickSeats":    second(f.svc.PickSeats(ctx, id, cmdID, []int{1})),
+		"AdjustTokens": f.svc.AdjustTokens(ctx, id, cmdID, 0, 1),
+		"SkipTokens":   f.svc.SkipTokens(ctx, id, cmdID),
+		"AnswerPoll":   f.svc.AnswerPoll(ctx, id, otherID, true),
+		"PickSeats":    f.svc.PickSeats(ctx, id, cmdID, []int{1}),
 	} {
 		if !errors.Is(err, domain.ErrWrongStep) {
 			t.Errorf("%s in the draft: %v", name, err)
 		}
 	}
-	if _, err := f.svc.PlayCard(ctx, id, cmdID, domain.Card{Suit: domain.SuitPink, Rank: 1}); !errors.Is(err, domain.ErrWrongStep) {
+	if err := f.svc.PlayCard(ctx, id, cmdID, domain.Card{Suit: domain.SuitPink, Rank: 1}); !errors.Is(err, domain.ErrWrongStep) {
 		t.Errorf("PlayCard in the draft: %v", err)
 	}
 
 	// Draft: the commander takes the only task.
 	before := len(f.rec.all())
-	if _, err := f.svc.PickTask(ctx, id, otherID, 0); !errors.Is(err, domain.ErrNotYourTurn) {
+	if err := f.svc.PickTask(ctx, id, otherID, 0); !errors.Is(err, domain.ErrNotYourTurn) {
 		t.Fatalf("pick out of turn: %v", err)
 	}
-	v = must(f.svc.PickTask(ctx, id, cmdID, 0))
+	do(f.svc.PickTask(ctx, id, cmdID, 0))
+	v = view(cmdID)
 	if v.Attempt.Step != domain.StepPlay || v.Attempt.Tasks[0].Owner != cmd {
 		t.Fatalf("after the draft: %+v", v.Attempt)
 	}
@@ -122,21 +134,22 @@ func TestMissionFlow(t *testing.T) {
 	}
 
 	// Before the first trick: handover is not for this mission; the commander sends the signal.
-	if _, err := f.svc.Handover(ctx, id, cmdID, 0, 1-cmd); !errors.Is(err, domain.ErrNotAllowed) {
+	if err := f.svc.Handover(ctx, id, cmdID, 0, 1-cmd); !errors.Is(err, domain.ErrNotAllowed) {
 		t.Fatalf("handover: %v", err)
 	}
-	if _, err := f.svc.SendDistress(ctx, id, otherID, domain.DirLeft); !errors.Is(err, domain.ErrNotCommander) {
+	if err := f.svc.SendDistress(ctx, id, otherID, domain.DirLeft); !errors.Is(err, domain.ErrNotCommander) {
 		t.Fatalf("distress by a crew member: %v", err)
 	}
-	if _, err := f.svc.SendDistress(ctx, id, cmdID, "up"); !errors.Is(err, domain.ErrInvalidDirection) {
+	if err := f.svc.SendDistress(ctx, id, cmdID, "up"); !errors.Is(err, domain.ErrInvalidDirection) {
 		t.Fatalf("distress up: %v", err)
 	}
-	v = must(f.svc.SendDistress(ctx, id, cmdID, domain.DirLeft))
+	do(f.svc.SendDistress(ctx, id, cmdID, domain.DirLeft))
+	v = view(cmdID)
 	if v.Attempt.Step != domain.StepPass || v.Attempt.Pass == nil || !v.Attempt.Distress {
 		t.Fatalf("after the signal: %+v", v.Attempt)
 	}
 	for _, pid := range []domain.PlayerID{cmdID, otherID} {
-		hand := must(f.svc.View(ctx, id, pid)).Attempt.Hand
+		hand := view(pid).Attempt.Hand
 		var pick domain.Card
 		for _, c := range hand {
 			if !c.IsTrump() {
@@ -144,54 +157,60 @@ func TestMissionFlow(t *testing.T) {
 				break
 			}
 		}
-		if _, err := f.svc.ChoosePassCard(ctx, id, pid, domain.Card{Suit: domain.SuitTrump, Rank: 4}); err == nil {
+		if err := f.svc.ChoosePassCard(ctx, id, pid, domain.Card{Suit: domain.SuitTrump, Rank: 4}); err == nil {
 			t.Fatal("a trump cannot be passed")
 		}
-		v = must(f.svc.ChoosePassCard(ctx, id, pid, pick))
+		do(f.svc.ChoosePassCard(ctx, id, pid, pick))
+		v = view(pid)
 	}
 	if v.Attempt.Step != domain.StepPlay || v.Attempt.Exchange == nil {
 		t.Fatalf("after the pass: %+v", v.Attempt)
 	}
-	if _, err := f.svc.SkipDistress(ctx, id, cmdID); !errors.Is(err, domain.ErrNotAllowed) {
+	if err := f.svc.SkipDistress(ctx, id, cmdID); !errors.Is(err, domain.ErrNotAllowed) {
 		t.Fatalf("second decision: %v", err)
 	}
 
 	// A trick: the commander leads; communicate before the next one.
-	v = must(f.svc.View(ctx, id, cmdID))
+	v = view(cmdID)
 	lead := v.Attempt.Playable[0]
-	v = must(f.svc.PlayCard(ctx, id, cmdID, lead))
+	do(f.svc.PlayCard(ctx, id, cmdID, lead))
+	v = view(cmdID)
 	if len(v.Attempt.Trick) != 1 || v.Attempt.Trick[0].Card != lead {
 		t.Fatalf("trick = %+v", v.Attempt.Trick)
 	}
-	if _, err := f.svc.Communicate(ctx, id, otherID, domain.Card{Suit: domain.SuitPink, Rank: 1}, domain.PosHighest); !errors.Is(err, domain.ErrCannotCommunicate) {
+	if err := f.svc.Communicate(ctx, id, otherID, domain.Card{Suit: domain.SuitPink, Rank: 1}, domain.PosHighest); !errors.Is(err, domain.ErrCannotCommunicate) {
 		t.Fatalf("communicate during a trick: %v", err)
 	}
 
 	// Give up: any player; then the host deals the next attempt.
-	v = must(f.svc.GiveUp(ctx, id, otherID))
+	do(f.svc.GiveUp(ctx, id, otherID))
+	v = view(otherID)
 	if v.Phase != domain.PhaseDebrief || v.Attempt.Result == nil || v.Attempt.Result.Reason != domain.ReasonGaveUp {
 		t.Fatalf("after giving up: %+v", v)
 	}
-	if _, err := f.svc.NextMission(ctx, id, host.PlayerID); !errors.Is(err, domain.ErrInvalidResultChoice) {
+	if err := f.svc.NextMission(ctx, id, host.PlayerID); !errors.Is(err, domain.ErrInvalidResultChoice) {
 		t.Fatalf("next mission after a loss: %v", err)
 	}
-	if _, err := f.svc.NextAttempt(ctx, id, guest.PlayerID); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.NextAttempt(ctx, id, guest.PlayerID); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("next attempt by a guest: %v", err)
 	}
 	calls := rngCalls.Load()
-	v = must(f.svc.NextAttempt(ctx, id, host.PlayerID))
+	do(f.svc.NextAttempt(ctx, id, host.PlayerID))
+	v = view(host.PlayerID)
 	if v.Phase != domain.PhasePlaying || v.Attempt.Number != 2 || rngCalls.Load() != calls+1 {
 		t.Fatalf("next attempt: %+v", v.Attempt)
 	}
 	if e := v.Logbook[1]; e.Attempts != 1 || e.Completed {
 		t.Fatalf("logbook = %+v", e)
 	}
-	must(f.svc.GiveUp(ctx, id, host.PlayerID))
-	v = must(f.svc.BackToLobby(ctx, id, host.PlayerID))
+	do(f.svc.GiveUp(ctx, id, host.PlayerID))
+	do(f.svc.BackToLobby(ctx, id, host.PlayerID))
+	v = view(host.PlayerID)
 	if v.Phase != domain.PhaseLobby || v.Attempt != nil || v.Mission != 1 {
 		t.Fatalf("back in the lobby: %+v", v)
 	}
-	v = must(f.svc.EndGame(ctx, id, host.PlayerID))
+	do(f.svc.EndGame(ctx, id, host.PlayerID))
+	v = view(host.PlayerID)
 	if v.Phase != domain.PhaseEnded {
 		t.Fatalf("phase = %s", v.Phase)
 	}
@@ -203,7 +222,7 @@ func TestDistressIsOffByDefault(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, func(c *Config) { c.NewRNG = func() domain.RNG { return noShuffle{} } })
 	id, ss := f.lobby(t)
-	if _, err := f.svc.StartMission(ctx, id, ss[0].PlayerID); err != nil {
+	if err := f.svc.StartMission(ctx, id, ss[0].PlayerID); err != nil {
 		t.Fatal(err)
 	}
 	g := f.loadGame(t, id)
@@ -212,7 +231,7 @@ func TestDistressIsOffByDefault(t *testing.T) {
 	}
 	// Mission 1's draft comes first; let the commander take the task so the play step is reached.
 	cmdID := g.Players[g.Attempt.Commander].ID
-	if _, err := f.svc.PickTask(ctx, id, cmdID, 0); err != nil {
+	if err := f.svc.PickTask(ctx, id, cmdID, 0); err != nil {
 		t.Fatal(err)
 	}
 	v, err := f.svc.View(ctx, id, cmdID)
@@ -222,14 +241,14 @@ func TestDistressIsOffByDefault(t *testing.T) {
 	if v.Attempt.Actions.SendDistress {
 		t.Fatal("the commander is offered the signal")
 	}
-	if _, err := f.svc.SendDistress(ctx, id, cmdID, domain.DirLeft); !errors.Is(err, domain.ErrNotAllowed) {
+	if err := f.svc.SendDistress(ctx, id, cmdID, domain.DirLeft); !errors.Is(err, domain.ErrNotAllowed) {
 		t.Fatalf("send: %v", err)
 	}
-	if _, err := f.svc.SkipDistress(ctx, id, cmdID); !errors.Is(err, domain.ErrNotAllowed) {
+	if err := f.svc.SkipDistress(ctx, id, cmdID); !errors.Is(err, domain.ErrNotAllowed) {
 		t.Fatalf("skip: %v", err)
 	}
 	// Options cannot change any more once the mission runs.
-	if _, err := f.svc.SetOptions(ctx, id, ss[0].PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrWrongPhase) {
+	if err := f.svc.SetOptions(ctx, id, ss[0].PlayerID, domain.Options{Distress: true}); !errors.Is(err, domain.ErrWrongPhase) {
 		t.Fatalf("set options while playing: %v", err)
 	}
 }

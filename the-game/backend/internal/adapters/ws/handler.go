@@ -58,29 +58,29 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 		if msg.Options == nil {
 			return apidto.BadRequest("missing options")
 		}
-		_, err = b.svc.SetOptions(ctx, id, p, msg.Options.ToDomain())
+		err = b.svc.SetOptions(ctx, id, p, msg.Options.ToDomain())
 	case apidto.CmdStartGame:
-		_, err = b.svc.StartGame(ctx, id, p)
+		err = b.svc.StartGame(ctx, id, p)
 	case apidto.CmdChooseFirstPlayer:
 		if msg.PlayerID == "" {
 			return apidto.BadRequest("missing playerId")
 		}
-		_, err = b.svc.ChooseFirstPlayer(ctx, id, p, domain.PlayerID(msg.PlayerID))
+		err = b.svc.ChooseFirstPlayer(ctx, id, p, domain.PlayerID(msg.PlayerID))
 	case apidto.CmdPlayCard:
 		if msg.Card == nil || msg.Pile == nil {
 			return apidto.BadRequest("card and pile are required")
 		}
-		_, err = b.svc.PlayCard(ctx, id, p, *msg.Card, *msg.Pile)
+		err = b.svc.PlayCard(ctx, id, p, *msg.Card, *msg.Pile)
 	case apidto.CmdUndoPlay:
-		_, err = b.svc.UndoPlay(ctx, id, p)
+		err = b.svc.UndoPlay(ctx, id, p)
 	case apidto.CmdEndTurn:
-		_, err = b.svc.EndTurn(ctx, id, p)
+		err = b.svc.EndTurn(ctx, id, p)
 	case apidto.CmdGiveUp:
-		_, err = b.svc.GiveUp(ctx, id, p)
+		err = b.svc.GiveUp(ctx, id, p)
 	case apidto.CmdEndGame:
-		_, err = b.svc.EndGame(ctx, id, p)
+		err = b.svc.EndGame(ctx, id, p)
 	case apidto.CmdRematch:
-		_, err = b.svc.Rematch(ctx, id, p)
+		err = b.svc.Rematch(ctx, id, p)
 	default:
 		return apidto.BadRequest("unknown message type %q", msg.Type)
 	}
