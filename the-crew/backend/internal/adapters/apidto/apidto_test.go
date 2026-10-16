@@ -113,7 +113,7 @@ func TestFromViewEmptySlicesMarshalAsArrays(t *testing.T) {
 }
 
 func TestFromViewLobby(t *testing.T) {
-	g, err := domain.NewGame("K7MQ2", "p1", "Anna")
+	g, err := domain.NewGame("K7MQ2", "p1", "Anna", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestFromViewLobby(t *testing.T) {
 }
 
 func TestOptionsOnTheWire(t *testing.T) {
-	g, err := domain.NewGame("K7MQ2", "p1", "Anna")
+	g, err := domain.NewGame("K7MQ2", "p1", "Anna", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -628,7 +628,7 @@ func TestFromMissionAndCatalogue(t *testing.T) {
 		t.Errorf("mission 41 = %+v", x)
 	}
 	// The mission def in a view is the same row.
-	g, err := domain.NewGame("K7MQ2", "p1", "Anna")
+	g, err := domain.NewGame("K7MQ2", "p1", "Anna", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

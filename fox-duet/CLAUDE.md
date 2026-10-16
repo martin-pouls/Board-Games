@@ -4,7 +4,7 @@
 
 ## Intents and per-player view
 
-- **Intents:** start at level N, play a card, choose the Foxes player, swap the decree / keep it, give a gift card, choose a move, cover an end (host, round end), give up.
+- **Intents:** start at level N (the host picks it in the lobby; the last pick is remembered per device in `fox-duet:level`), play a card, choose the Foxes player, swap the decree / keep it, give a gift card, choose a move, cover an end (host, round end), give up.
 - **Per-player view:** own hand (with the playable cards), the teammate's hand *count*, the board (gems per location, pluses, covered spaces, traveller, forest tokens left), round, trick number, dealer, decree card, the current and the last completed trick, the pending decision with its options for the viewer, the viewer's own gift card, and the result with the score. Never the teammate's hand, their gift choice or the deck.
 
 ## Domain modelling

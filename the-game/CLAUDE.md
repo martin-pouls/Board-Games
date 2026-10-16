@@ -4,7 +4,7 @@
 
 ## Intents and per-player view
 
-- **Intents:** set options (host, lobby), start, choose first player (host, after the deal), play a card on a pile, undo the last play, end turn, give up.
+- **Intents:** set options (host, lobby; the host's last options are remembered per device in `the-game:lobby-options` and sent with `POST /api/games`), start, choose first player (host, after the deal), play a card on a pile, undo the last play, end turn, give up.
 - **Phases:** the extra `choosingFirstPlayer` sits between `lobby` and `playing`. A lost game records why (`stuck` at turn start, or `gaveUp`) and who; the score is the cards left.
 - **Per-player view:** own hand, piles (top card and count), draw-pile count, other players' hand *counts*, whose turn, the current turn's plays, active commands, stuck flag; after the game all hands. Never other hands or the deck order.
 - `frontend/src/lib/game/commands.ts` holds the Extreme command metadata (also used by `RulesHelp`).

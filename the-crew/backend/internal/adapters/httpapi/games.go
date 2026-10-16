@@ -79,7 +79,11 @@ func (a *gamesAPI) createGame(w http.ResponseWriter, r *http.Request) {
 		a.writeError(w, r, err)
 		return
 	}
-	s, err := a.svc.CreateGame(r.Context(), req.Name)
+	var opts domain.Options
+	if req.Options != nil {
+		opts = req.Options.ToDomain()
+	}
+	s, err := a.svc.CreateGame(r.Context(), req.Name, opts)
 	if err != nil {
 		a.writeError(w, r, err)
 		return

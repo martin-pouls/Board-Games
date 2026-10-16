@@ -72,7 +72,7 @@ func newFixture(t *testing.T, mod func(*Config)) *fixture {
 func (f *fixture) lobby(t *testing.T) (domain.GameID, []ports.Session) {
 	t.Helper()
 	ctx := context.Background()
-	host, err := f.svc.CreateGame(ctx, "P1")
+	host, err := f.svc.CreateGame(ctx, "P1", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func eventTypes(evs []domain.Event) []string {
 func TestLifecycle(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	host, err := f.svc.CreateGame(ctx, "Ann")
+	host, err := f.svc.CreateGame(ctx, "Ann", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestLifecycle(t *testing.T) {
 func TestLeaveGame(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	host, _ := f.svc.CreateGame(ctx, "Ann")
+	host, _ := f.svc.CreateGame(ctx, "Ann", domain.Options{})
 	bob, _ := f.svc.JoinGame(ctx, host.GameID, "Bob")
 	before := len(f.rec.all())
 
@@ -191,7 +191,7 @@ func TestLeaveGame(t *testing.T) {
 func TestAuthenticate(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	host, _ := f.svc.CreateGame(ctx, "Ann")
+	host, _ := f.svc.CreateGame(ctx, "Ann", domain.Options{})
 	bob, _ := f.svc.JoinGame(ctx, host.GameID, "Bob")
 
 	for _, s := range []ports.Session{host, bob} {
@@ -262,27 +262,27 @@ func TestCreateGameIDCollisionRetry(t *testing.T) {
 			return domain.GameID(fmt.Sprintf("NEW%d", n))
 		}
 	})
-	if _, err := f.svc.CreateGame(ctx, "Ann"); err != nil {
+	if _, err := f.svc.CreateGame(ctx, "Ann", domain.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	s, err := f.svc.CreateGame(ctx, "Bob")
+	s, err := f.svc.CreateGame(ctx, "Bob", domain.Options{})
 	if err != nil || s.GameID != "NEW3" {
 		t.Fatalf("expected retry to NEW3, got %v %v", s.GameID, err)
 	}
 
 	// Exhausted attempts.
 	f2 := newFixture(t, func(c *Config) { c.NewGameID = func() domain.GameID { return "SAME" } })
-	if _, err := f2.svc.CreateGame(ctx, "Ann"); err != nil {
+	if _, err := f2.svc.CreateGame(ctx, "Ann", domain.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f2.svc.CreateGame(ctx, "Bob"); !errors.Is(err, ports.ErrDuplicateGameID) {
+	if _, err := f2.svc.CreateGame(ctx, "Bob", domain.Options{}); !errors.Is(err, ports.ErrDuplicateGameID) {
 		t.Fatalf("expected duplicate error, got %v", err)
 	}
 }
 
 func TestCreateGameValidationError(t *testing.T) {
 	f := newFixture(t, nil)
-	if _, err := f.svc.CreateGame(context.Background(), "  "); !errors.Is(err, domain.ErrInvalidName) {
+	if _, err := f.svc.CreateGame(context.Background(), "  ", domain.Options{}); !errors.Is(err, domain.ErrInvalidName) {
 		t.Fatalf("got %v", err)
 	}
 	if got := f.rec.all(); len(got) != 0 {
@@ -293,7 +293,7 @@ func TestCreateGameValidationError(t *testing.T) {
 func TestEventsPublishedOncePerCommandInOrder(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	host, _ := f.svc.CreateGame(ctx, "Ann")
+	host, _ := f.svc.CreateGame(ctx, "Ann", domain.Options{})
 	if _, err := f.svc.JoinGame(ctx, host.GameID, "Bob"); err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestEventsPublishedOncePerCommandInOrder(t *testing.T) {
 func TestDomainErrorsNotSavedNorPublished(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	host, _ := f.svc.CreateGame(ctx, "Ann")
+	host, _ := f.svc.CreateGame(ctx, "Ann", domain.Options{})
 	bob, _ := f.svc.JoinGame(ctx, host.GameID, "Bob")
 	before := f.rec.all()
 	recBefore, _ := f.repo.Load(ctx, host.GameID)
@@ -412,7 +412,7 @@ func TestOCCRetry(t *testing.T) {
 		repo := &conflictRepo{GameRepository: memory.NewGameRepository()}
 		rec := &recorder{}
 		svc := New(repo, rec, Config{})
-		host, err := svc.CreateGame(ctx, "Ann")
+		host, err := svc.CreateGame(ctx, "Ann", domain.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -433,9 +433,9 @@ func TestPurgeInactive(t *testing.T) {
 	clock := now.Add(-48 * time.Hour)
 	repo := memory.NewGameRepository(memory.WithNow(func() time.Time { return clock }))
 	svc := New(repo, nil, Config{})
-	old, _ := svc.CreateGame(ctx, "Ann")
+	old, _ := svc.CreateGame(ctx, "Ann", domain.Options{})
 	clock = now
-	fresh, _ := svc.CreateGame(ctx, "Bob")
+	fresh, _ := svc.CreateGame(ctx, "Bob", domain.Options{})
 
 	n, err := svc.PurgeInactive(ctx, 24*time.Hour)
 	if err != nil || n != 1 {

@@ -99,11 +99,11 @@ func (s *Service) act(ctx context.Context, id domain.GameID, fn func(*domain.Gam
 }
 
 // CreateGame implements ports.GameService.
-func (s *Service) CreateGame(ctx context.Context, hostName string) (ports.Session, error) {
+func (s *Service) CreateGame(ctx context.Context, hostName string, opts domain.Options) (ports.Session, error) {
 	hostID := s.cfg.NewPlayerID()
 	token := s.cfg.NewToken()
 	for range maxIDAttempts {
-		g, err := domain.NewGame(s.cfg.NewGameID(), hostID, hostName)
+		g, err := domain.NewGame(s.cfg.NewGameID(), hostID, hostName, opts)
 		if err != nil {
 			return ports.Session{}, err
 		}

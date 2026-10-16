@@ -12,6 +12,7 @@
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
+	import { levelPref } from '#lib/game/levelPref.js';
 
 	import type { GameClient } from '#lib/game/client.js';
 	import { cn } from '#lib/utils.js';
@@ -32,7 +33,8 @@
 	const players = $derived([...view.players].sort((a, b) => a.seat - b.seat));
 	/** The host is still alone in the lobby. */
 	const alone = $derived(view.players.length === 1);
-	let level = $state(1);
+	/** Starts at the level this device last picked as host. */
+	let level = $state(levelPref.load() ?? 1);
 
 	const LEVELS = [
 		{ level: 1, text: 'Side A: 12 gems, 4 forest tokens. Learn the forest.' },
@@ -129,7 +131,10 @@
 						level === l.level ? 'border-fox bg-fox/10' : 'border-border',
 						!isHost && level !== l.level && 'opacity-60'
 					)}
-					onclick={() => (level = l.level)}
+					onclick={() => {
+						level = l.level;
+						levelPref.save(level);
+					}}
 				>
 					<span class="font-semibold">Level {l.level}</span>
 					<span class="text-sm text-muted-foreground">{l.text}</span>

@@ -4,6 +4,7 @@
 	import HomePage from '@board-games/shared/HomePage.svelte';
 	import { createGame, getSummary, joinGame } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
+	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 	import { sessions } from '#lib/session.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 </script>
@@ -14,7 +15,7 @@
 	statusLabels={{ choosingFirstPlayer: 'In progress' }}
 	gameHref={(code) => resolve('/g/[code]', { code })}
 	{goto}
-	{createGame}
+	createGame={(name) => createGame(name, lobbyOptions.load() ?? undefined)}
 	{joinGame}
 	{getSummary}
 	{sessions}

@@ -18,7 +18,7 @@ type Session struct {
 // (create, join, summary, view, leave); the gameplay commands run over the WebSocket only.
 // Gameplay commands return only an error and publish the new state to every connected client.
 type GameService interface {
-	CreateGame(ctx context.Context, hostName string) (Session, error)
+	CreateGame(ctx context.Context, hostName string, opts domain.Options) (Session, error)
 	JoinGame(ctx context.Context, id domain.GameID, name string) (Session, error)
 	// Authenticate returns ErrUnauthorized for an unknown token AND for a player no longer seated (left).
 	Authenticate(ctx context.Context, id domain.GameID, token string) (domain.PlayerID, error)

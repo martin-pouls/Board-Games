@@ -16,6 +16,7 @@
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { plural } from '#lib/game/format.js';
+	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 	import { cn } from '#lib/utils.js';
 	import type { GameOptions, PlayerView } from '#lib/types.js';
 	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
@@ -60,8 +61,13 @@
 		else await goto(resolve('/'));
 	}
 
+	/** Remembered on this device as the defaults for the next game this player hosts. */
 	const setOptions = (o: Partial<GameOptions>) =>
-		run(() => client.setOptions({ ...view.options, ...o }));
+		run(async () => {
+			const next = { ...view.options, ...o };
+			await client.setOptions(next);
+			lobbyOptions.save(next);
+		});
 	// Reduced hand size only exists together with Pro.
 	const setPro = (pro: boolean) => setOptions(pro ? { pro } : { pro, reducedHandSize: false });
 	const setReduced = (reducedHandSize: boolean) => setOptions({ reducedHandSize });

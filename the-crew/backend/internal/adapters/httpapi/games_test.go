@@ -32,6 +32,7 @@ type fakeService struct {
 
 	lastName string
 	lastID   domain.GameID
+	lastOpts domain.Options
 }
 
 var _ ports.GameService = (*fakeService)(nil)
@@ -75,10 +76,13 @@ func (f *fakeService) session(id domain.GameID, name string) (ports.Session, err
 	return ports.Session{GameID: id, PlayerID: "p_new", Token: "tok-new", View: fakeView(id, "p_new")}, nil
 }
 
-func (f *fakeService) CreateGame(_ context.Context, name string) (ports.Session, error) {
+func (f *fakeService) CreateGame(_ context.Context, name string, opts domain.Options) (ports.Session, error) {
 	if err := f.record("CreateGame", testGame); err != nil {
 		return ports.Session{}, err
 	}
+	f.mu.Lock()
+	f.lastOpts = opts
+	f.mu.Unlock()
 	return f.session(testGame, name)
 }
 
@@ -203,9 +207,25 @@ func TestCreateGame(t *testing.T) {
 	if svc.lastName != "Ann" {
 		t.Fatalf("service got name %q", svc.lastName)
 	}
+	if svc.lastOpts != (domain.Options{}) {
+		t.Fatalf("no options should mean the defaults, got %+v", svc.lastOpts)
+	}
 	// Slices are never null on the wire.
 	if !strings.Contains(w.Body.String(), `"players":[`) {
 		t.Fatalf("players should be an array in %s", w.Body.String())
+	}
+}
+
+func TestCreateGameWithOptions(t *testing.T) {
+	svc := &fakeService{}
+	h := newTestRouter(t, svc)
+
+	w := do(t, h, "POST", "/api/games", "", `{"name":"Ann","options":{"distress":true}}`)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body %s", w.Code, w.Body.String())
+	}
+	if !svc.lastOpts.Distress {
+		t.Fatalf("service got options %+v", svc.lastOpts)
 	}
 }
 

@@ -16,6 +16,7 @@
 	import { getMissions } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
+	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 
 	import type { GameClient } from '#lib/game/client.js';
 	import { cn } from '#lib/utils.js';
@@ -79,8 +80,13 @@
 		}
 	}
 
+	/** Remembered on this device as the defaults for the next game this player hosts. */
 	function setDistress(distress: boolean) {
-		return run(() => client.setOptions({ ...view.options, distress }));
+		return run(async () => {
+			const next = { ...view.options, distress };
+			await client.setOptions(next);
+			lobbyOptions.save(next);
+		});
 	}
 
 	/** Closes the lobby for everyone (host only); it moves to everyone's history. */

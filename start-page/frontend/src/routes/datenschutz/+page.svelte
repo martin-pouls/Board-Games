@@ -243,6 +243,10 @@
 		</li>
 		<li>den zuletzt verwendeten Spielernamen,</li>
 		<li>die gewählte Sortierung Ihrer Handkarten (Regicide),</li>
+		<li>
+			die zuletzt gewählten Spieleinstellungen als Gastgeber (The Game, The Crew) und den zuletzt
+			gewählten Schwierigkeitsgrad (Fox Duet),
+		</li>
 		<li>Ihre Wahl zwischen hellem und dunklem Design.</li>
 	</ul>
 	<p>

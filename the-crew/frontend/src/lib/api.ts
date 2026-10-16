@@ -5,6 +5,7 @@
 import { createRequest, lobbyApi } from '@board-games/shared/api.js';
 import type {
 	ApiErrorCode,
+	GameOptions,
 	GameSummary,
 	MissionCatalogue,
 	PlayerView,
@@ -15,11 +16,16 @@ export { ApiError } from '@board-games/shared/api.js';
 
 const request = createRequest<ApiErrorCode>(__BASE_PATH__);
 
-export const { getHealth, createGame, joinGame, getSummary, getView, leaveGame } = lobbyApi<
+export const { getHealth, joinGame, getSummary, getView, leaveGame } = lobbyApi<
 	SessionResponse,
 	GameSummary,
 	PlayerView
 >(request);
+
+/** Creates a game; without options the server uses the defaults. */
+export function createGame(name: string, options?: GameOptions): Promise<SessionResponse> {
+	return request('POST', '/api/games', { body: { name, options } });
+}
 
 /** The mission table, the same for every game; fetched once. */
 let catalogue: Promise<MissionCatalogue> | undefined;

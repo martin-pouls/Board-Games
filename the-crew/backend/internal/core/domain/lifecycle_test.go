@@ -7,19 +7,25 @@ import (
 )
 
 func TestNewGameAndJoin(t *testing.T) {
-	if _, err := NewGame("G", alice, "  "); !errors.Is(err, ErrInvalidName) {
+	if _, err := NewGame("G", alice, "  ", Options{}); !errors.Is(err, ErrInvalidName) {
 		t.Fatalf("empty name: %v", err)
 	}
-	if _, err := NewGame("G", alice, "abcdefghijklmnopqrstu"); !errors.Is(err, ErrInvalidName) {
+	if _, err := NewGame("G", alice, "abcdefghijklmnopqrstu", Options{}); !errors.Is(err, ErrInvalidName) {
 		t.Fatalf("long name: %v", err)
 	}
-	if _, err := NewGame("G", alice, "a\tb"); !errors.Is(err, ErrInvalidName) {
+	if _, err := NewGame("G", alice, "a\tb", Options{}); !errors.Is(err, ErrInvalidName) {
 		t.Fatalf("control char: %v", err)
 	}
-	g, err := NewGame("G", alice, " Alice ")
+	g, err := NewGame("G", alice, " Alice ", Options{})
 	must(t, err)
 	if g.Phase != PhaseLobby || g.Revision != 1 || g.Players[0].Name != "Alice" || !g.IsHost(alice) {
 		t.Fatalf("bad new game %+v", g)
+	}
+	if g.Options.Distress {
+		t.Fatalf("zero options should leave distress off")
+	}
+	if d, _ := NewGame("G", alice, "Alice", Options{Distress: true}); !d.Options.Distress {
+		t.Fatalf("NewGame should keep the options")
 	}
 	mustFail(t, g, ErrNameTaken, func(g *Game) error { return g.AddPlayer(bob, "alice") })
 	mustFail(t, g, ErrDuplicatePlayer, func(g *Game) error { return g.AddPlayer(alice, "Other") })

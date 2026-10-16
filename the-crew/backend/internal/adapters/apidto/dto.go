@@ -291,7 +291,8 @@ type Event struct {
 
 // CreateGameRequest is the body of POST /api/games.
 type CreateGameRequest struct {
-	Name string `json:"name"`
+	Name    string       `json:"name"`
+	Options *GameOptions `json:"options,omitempty"` // nil: the defaults
 }
 
 // JoinGameRequest is the body of POST /api/games/{code}/players.

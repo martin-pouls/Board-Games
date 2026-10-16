@@ -110,7 +110,7 @@ func (f *fakeService) callNames() []string {
 	return slices.Clone(f.calls)
 }
 
-func (f *fakeService) CreateGame(context.Context, string) (ports.Session, error) {
+func (f *fakeService) CreateGame(context.Context, string, domain.Options) (ports.Session, error) {
 	return ports.Session{}, errors.New("not used")
 }
 func (f *fakeService) JoinGame(context.Context, domain.GameID, string) (ports.Session, error) {

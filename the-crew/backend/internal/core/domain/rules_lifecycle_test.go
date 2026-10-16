@@ -265,7 +265,7 @@ func TestRulesLobbyMissions(t *testing.T) {
 			t.Fatalf("mission %d", g.Mission)
 		}
 	}
-	solo, err := NewGame("G", alice, "Alice")
+	solo, err := NewGame("G", alice, "Alice", Options{})
 	must(t, err)
 	mustFail(t, solo, ErrNotEnoughPlayers, func(g *Game) error { return g.StartMission(alice, noShuffle{}) })
 	if solo.Mission != 1 {
