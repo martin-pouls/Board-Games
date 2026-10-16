@@ -121,6 +121,16 @@ func BearerToken(r *http.Request) string {
 	return strings.TrimSpace(h[len(prefix):])
 }
 
+// Authenticate resolves the request's bearer token to a player of game id through auth.
+// A missing token returns missing without calling auth.
+func Authenticate[ID, P ~string](r *http.Request, id ID, missing error, auth func(ctx context.Context, id ID, token string) (P, error)) (P, error) {
+	tok := BearerToken(r)
+	if tok == "" {
+		return "", missing
+	}
+	return auth(r.Context(), id, tok)
+}
+
 // SPA serves static files from dir and falls back to index.html for client-side routes.
 // Hashed files under _app/immutable/ are cached for good; everything else (index.html,
 // _app/version.json, ...) must be revalidated, so a redeploy reaches the browser at once.

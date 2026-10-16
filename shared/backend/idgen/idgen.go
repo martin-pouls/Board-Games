@@ -70,3 +70,12 @@ func NewRNG() *rand.Rand {
 func NormalizeCode(code string) string {
 	return strings.ToUpper(strings.TrimSpace(code))
 }
+
+// GameCodeAs is GameCode as the game's own ID type.
+func GameCodeAs[T ~string]() T { return T(GameCode()) }
+
+// PlayerIDAs is PlayerID as the game's own ID type.
+func PlayerIDAs[T ~string]() T { return T(PlayerID()) }
+
+// NormalizeCodeAs is NormalizeCode on the game's own ID type.
+func NormalizeCodeAs[T ~string](code T) T { return T(NormalizeCode(string(code))) }

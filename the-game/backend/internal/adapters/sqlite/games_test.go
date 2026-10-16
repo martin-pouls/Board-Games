@@ -3,8 +3,10 @@ package sqlite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -77,17 +79,20 @@ func TestRoundTripEachPhase(t *testing.T) {
 	}
 
 	finished := baseGame("FINSH")
-	finished.Phase = domain.PhaseFinished
+	finished.Phase = domain.PhaseLost
 	finished.Revision = 40
 	finished.NextGameID = "NEXT1"
 	finished.Players[1].Hand = cards(50, 51)
 	finished.DrawPile = cards(70)
 	finished.Turn = domain.Turn{Number: 12, ActiveSeat: 1, StartHandSize: 6, Plays: nil}
-	finished.Result = &domain.Result{Outcome: domain.OutcomeLost, Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, StuckPlayerID: "p2"}
+	finished.Result = &domain.Result{Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, Reason: domain.LossStuck, PlayerID: "p2"}
 
 	won := baseGame("WONNN")
-	won.Phase = domain.PhaseFinished
-	won.Result = &domain.Result{Outcome: domain.OutcomeWon}
+	won.Phase = domain.PhaseWon
+	won.Result = &domain.Result{}
+
+	ended := baseGame("ENDED")
+	ended.Phase = domain.PhaseEnded
 
 	tests := []struct {
 		name   string
@@ -95,10 +100,11 @@ func TestRoundTripEachPhase(t *testing.T) {
 		status string
 	}{
 		{"lobby", baseGame("LOBBY"), "lobby"},
-		{"choosing", choosing, "running"},
-		{"playing", playing, "running"},
-		{"finished lost", finished, "lost"},
-		{"finished won", won, "won"},
+		{"choosing", choosing, "choosingFirstPlayer"},
+		{"playing", playing, "playing"},
+		{"lost", finished, "lost"},
+		{"won", won, "won"},
+		{"ended", ended, "ended"},
 	}
 	ctx := context.Background()
 	db := openTestDB(t)
@@ -246,8 +252,8 @@ func TestRoundTripExtreme(t *testing.T) {
 	if err := db.SQL().QueryRow(`SELECT status FROM games WHERE id = ?`, string(g.ID)).Scan(&status); err != nil {
 		t.Fatal(err)
 	}
-	if status != "running" {
-		t.Errorf("status = %s, want running", status)
+	if status != "playing" {
+		t.Errorf("status = %s, want playing", status)
 	}
 	after, err := got.Game.ViewFor("p1")
 	if err != nil {
@@ -308,5 +314,73 @@ func TestLoadSnapshotWithoutCreatedAt(t *testing.T) {
 	}
 	if !got.Game.CreatedAt.Equal(fresh.CreatedAt) {
 		t.Errorf("CreatedAt = %v, want %v", got.Game.CreatedAt, fresh.CreatedAt)
+	}
+}
+
+// TestLoadLegacyFinishedSnapshot: snapshots written while every game over had phase "finished"
+// plus an outcome still load, as won or lost.
+func TestLoadLegacyFinishedSnapshot(t *testing.T) {
+	tests := []struct {
+		name    string
+		result  string // the stored result JSON
+		phase   domain.Phase
+		want    domain.Result
+		summary domain.Phase
+	}{
+		{"won", `{"outcome":"won","score":0,"cardsLeftInHands":0,"cardsLeftInDrawPile":0,"stuckPlayerId":""}`,
+			domain.PhaseWon, domain.Result{}, domain.PhaseWon},
+		{"lost", `{"outcome":"lost","score":3,"cardsLeftInHands":2,"cardsLeftInDrawPile":1,"stuckPlayerId":"p2"}`,
+			domain.PhaseLost, domain.Result{Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, Reason: domain.LossStuck, PlayerID: "p2"}, domain.PhaseLost},
+		{"aborted", `{"outcome":"aborted","score":7,"cardsLeftInHands":5,"cardsLeftInDrawPile":2,"stuckPlayerId":""}`,
+			domain.PhaseLost, domain.Result{Score: 7, CardsLeftInHands: 5, CardsLeftInDrawPile: 2, Reason: domain.LossGaveUp}, domain.PhaseLost},
+	}
+	ctx := context.Background()
+	db := openTestDB(t)
+	repo := NewGameRepository(db)
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			id := domain.GameID(fmt.Sprintf("OLD%02d", i))
+			g := baseGame(string(id))
+			g.Phase = domain.PhasePlaying
+			if err := repo.Create(ctx, &ports.GameRecord{Game: g, TokenHashes: map[domain.PlayerID]string{"p1": "h"}}); err != nil {
+				t.Fatal(err)
+			}
+			var raw map[string]json.RawMessage
+			var state string
+			if err := db.SQL().QueryRow(`SELECT state FROM games WHERE id = ?`, string(id)).Scan(&state); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(state), &raw); err != nil {
+				t.Fatal(err)
+			}
+			raw["phase"] = json.RawMessage(`"finished"`)
+			raw["result"] = json.RawMessage(tt.result)
+			old, _ := json.Marshal(raw)
+			if _, err := db.SQL().Exec(`UPDATE games SET state = ?, status = 'finished' WHERE id = ?`, string(old), string(id)); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := repo.Load(ctx, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Game.Phase != tt.phase || got.Game.Result == nil || *got.Game.Result != tt.want {
+				t.Fatalf("phase %s result %+v, want %s %+v", got.Game.Phase, got.Game.Result, tt.phase, tt.want)
+			}
+			if s := got.Game.Summary(); s.Phase != tt.summary {
+				t.Fatalf("summary phase %s", s.Phase)
+			}
+			// Saving writes the new shape: no legacy fields, the status column is the phase.
+			if err := repo.Update(ctx, got); err != nil {
+				t.Fatal(err)
+			}
+			var status string
+			if err := db.SQL().QueryRow(`SELECT state, status FROM games WHERE id = ?`, string(id)).Scan(&state, &status); err != nil {
+				t.Fatal(err)
+			}
+			if status != string(tt.phase) || strings.Contains(state, `"outcome"`) || strings.Contains(state, `"finished"`) {
+				t.Fatalf("saved status %s state %s", status, state)
+			}
+		})
 	}
 }

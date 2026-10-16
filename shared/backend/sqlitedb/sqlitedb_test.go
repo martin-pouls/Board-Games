@@ -97,6 +97,9 @@ func TestStoreLifecycle(t *testing.T) {
 	if string(got.State) != `{"a":1}` || got.Status != "lobby" || got.Version != 1 || got.Tokens["p1"] != "h1" {
 		t.Fatalf("loaded %+v", got)
 	}
+	if d := time.Since(got.CreatedAt); got.CreatedAt.IsZero() || d < -time.Minute || d > time.Minute {
+		t.Fatalf("CreatedAt = %v, want about now", got.CreatedAt)
+	}
 
 	got.State = []byte(`{"a":2}`)
 	got.Status = "playing"

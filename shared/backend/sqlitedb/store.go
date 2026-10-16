@@ -23,7 +23,14 @@ type Record struct {
 	State   []byte            // JSON snapshot of the game aggregate
 	Tokens  map[string]string // player ID -> hex(sha256(token)); never the raw token
 	Version int64             // optimistic-concurrency version as loaded
+
+	// CreatedAt is the row's creation time, filled by Load (zero if the stored text is not in
+	// the default timestamp format). Create and Update ignore it.
+	CreatedAt time.Time
 }
+
+// timestampLayout is the format SQLite's CURRENT_TIMESTAMP writes (UTC).
+const timestampLayout = "2006-01-02 15:04:05"
 
 // Store persists Records in the games and player_tokens tables.
 type Store struct {
@@ -78,9 +85,9 @@ func (s *Store) Create(ctx context.Context, rec *Record) error {
 
 // Load returns the stored game and its token hashes. ErrNotFound.
 func (s *Store) Load(ctx context.Context, id string) (*Record, error) {
-	var status, state string
+	var status, state, createdAt string
 	var version int64
-	err := s.db.QueryRowContext(ctx, `SELECT status, state, version FROM games WHERE id = ?`, id).Scan(&status, &state, &version)
+	err := s.db.QueryRowContext(ctx, `SELECT status, state, version, created_at FROM games WHERE id = ?`, id).Scan(&status, &state, &version, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -104,7 +111,11 @@ func (s *Store) Load(ctx context.Context, id string) (*Record, error) {
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("load tokens: %w", err)
 	}
-	return &Record{ID: id, Status: status, State: []byte(state), Tokens: tokens, Version: version}, nil
+	rec := &Record{ID: id, Status: status, State: []byte(state), Tokens: tokens, Version: version}
+	if t, err := time.Parse(timestampLayout, createdAt); err == nil {
+		rec.CreatedAt = t.UTC()
+	}
+	return rec, nil
 }
 
 // Update saves rec if the stored version still equals rec.Version, then increments
@@ -151,7 +162,7 @@ func (s *Store) Update(ctx context.Context, rec *Record) error {
 // DeleteInactive deletes games last updated before olderThan (their tokens cascade) and
 // returns how many were deleted.
 func (s *Store) DeleteInactive(ctx context.Context, olderThan time.Time) (int, error) {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM games WHERE updated_at < ?`, olderThan.UTC().Format("2006-01-02 15:04:05"))
+	res, err := s.db.ExecContext(ctx, `DELETE FROM games WHERE updated_at < ?`, olderThan.UTC().Format(timestampLayout))
 	if err != nil {
 		return 0, fmt.Errorf("delete inactive: %w", err)
 	}

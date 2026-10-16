@@ -20,7 +20,7 @@ var (
 	ErrMinimumNotReached = errors.New("minimum not reached")
 	ErrRematchExists     = errors.New("rematch exists")
 	ErrNothingToUndo     = errors.New("nothing to undo") // UndoPlay: no card played this turn
-	ErrNotStuck          = errors.New("not stuck")       // GiveUp: a card fits or the turn can end
+	ErrCannotLeave       = errors.New("cannot leave")    // Leave: sole player in the lobby
 
 	// Extreme command vetoes (rules.md §2 Enforcement). None of them wraps
 	// ErrIllegalPlacement or ErrMinimumNotReached.

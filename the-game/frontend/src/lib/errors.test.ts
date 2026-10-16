@@ -21,6 +21,8 @@ const codes: ApiErrorCode[] = [
 	'illegal_placement',
 	'minimum_not_reached',
 	'rematch_exists',
+	'nothing_to_undo',
+	'cannot_leave',
 	'backwards_trick_blocked',
 	'single_pile_violation',
 	'exact_count_exceeded',

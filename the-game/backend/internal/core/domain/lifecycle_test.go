@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"reflect"
 	"slices"
@@ -387,7 +388,7 @@ func finishedGame(t *testing.T) *Game {
 	}.build(t)
 	g.HostID = pid(2)
 	g.checkStuck()
-	if g.Phase != PhaseFinished {
+	if g.Phase != PhaseLost {
 		t.Fatal("setup: game not finished")
 	}
 	g.Revision = 9
@@ -402,7 +403,7 @@ func TestRematch(t *testing.T) {
 			next, err := g.Rematch(by, "NEXT2")
 			mustOK(t, err)
 			// old game
-			if g.NextGameID != "NEXT2" || g.Revision != 10 || g.Phase != PhaseFinished {
+			if g.NextGameID != "NEXT2" || g.Revision != 10 || g.Phase != PhaseLost {
 				t.Fatalf("old game: next %q rev %d phase %s", g.NextGameID, g.Revision, g.Phase)
 			}
 			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{RematchCreated{GameID: "NEXT2"}}) {
@@ -457,6 +458,7 @@ func TestRematchErrors(t *testing.T) {
 		{"playing", playing, pid(0), ErrWrongPhase},
 		{"lobby", lobbyWith(t, 2, DefaultOptions()), pid(0), ErrWrongPhase},
 		{"exists", exists, pid(1), ErrRematchExists},
+		{"ended", endedGame(t), pid(0), ErrWrongPhase},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -471,61 +473,156 @@ func TestRematchErrors(t *testing.T) {
 	}
 }
 
-func TestEndGame(t *testing.T) {
-	playing := func() *Game {
-		return table{hands: [][]int{{10, 20}, {30}}, draw: []int{40, 50, 60}, seat: 1}.build(t)
+// choosingGame: a dealt 2-player classic game waiting for the host (p0) to pick who starts.
+func choosingGame(t *testing.T) *Game {
+	t.Helper()
+	g := lobbyWith(t, 2, DefaultOptions())
+	mustOK(t, g.Start(pid(0), noShuffle{}))
+	g.PullEvents()
+	return g
+}
+
+// wonGame: a solo game won with its last card.
+func wonGame(t *testing.T) *Game {
+	t.Helper()
+	g := table{hands: [][]int{{99}}}.build(t)
+	mustOK(t, g.PlayCard(pid(0), 99, 3))
+	if g.Phase != PhaseWon {
+		t.Fatal("setup: game not won")
 	}
-	choosing := func() *Game {
-		g := lobbyWith(t, 2, DefaultOptions())
-		mustOK(t, g.Start(pid(0), noShuffle{}))
-		g.PullEvents()
-		return g
-	}
+	g.PullEvents()
+	return g
+}
+
+// endedGame: a 2-player lobby closed by its host.
+func endedGame(t *testing.T) *Game {
+	t.Helper()
+	g := lobbyWith(t, 2, DefaultOptions())
+	mustOK(t, g.EndGame(pid(0)))
+	g.PullEvents()
+	return g
+}
+
+func TestLeave(t *testing.T) {
 	tests := []struct {
-		name        string
-		g           *Game
-		hands, draw int
+		name      string
+		n         int
+		by        PlayerID
+		wantSeats []PlayerID
+		wantHost  PlayerID
 	}{
-		{"playing", playing(), 3, 3},
-		{"choosing first player", choosing(), 14, 84},
-		{"lobby", lobbyWith(t, 2, DefaultOptions()), 0, 0},
+		{"guest leaves", 3, pid(1), []PlayerID{pid(0), pid(2)}, pid(0)},
+		{"last seat leaves", 3, pid(2), []PlayerID{pid(0), pid(1)}, pid(0)},
+		{"host leaves: next seat becomes host", 3, pid(0), []PlayerID{pid(1), pid(2)}, pid(1)},
+		{"host of two leaves: the other is host alone", 2, pid(0), []PlayerID{pid(1)}, pid(1)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := tt.g
+			g := lobbyWith(t, tt.n, DefaultOptions())
 			rev := g.Revision
-			mustOK(t, g.EndGame(pid(0)))
-			score := tt.hands + tt.draw
-			want := &Result{Outcome: OutcomeAborted, Score: score, CardsLeftInHands: tt.hands, CardsLeftInDrawPile: tt.draw}
-			if g.Phase != PhaseFinished || !reflect.DeepEqual(g.Result, want) || g.Revision != rev+1 {
-				t.Fatalf("phase %s result %+v rev %d", g.Phase, g.Result, g.Revision)
+			mustOK(t, g.Leave(tt.by))
+			var seats []PlayerID
+			for _, p := range g.Players {
+				seats = append(seats, p.ID)
 			}
-			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameFinished{Outcome: OutcomeAborted, Score: score}}) {
+			if !reflect.DeepEqual(seats, tt.wantSeats) || g.HostID != tt.wantHost || g.Revision != rev+1 || g.Phase != PhaseLobby {
+				t.Fatalf("seats %v host %s rev %d phase %s", seats, g.HostID, g.Revision, g.Phase)
+			}
+			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{PlayerLeft{PlayerID: tt.by, HostID: tt.wantHost}}) {
 				t.Fatalf("events = %#v", evs)
 			}
-			v, err := g.ViewFor(pid(1))
-			mustOK(t, err)
-			if v.Result == nil || v.Result.Outcome != OutcomeAborted || v.Players[0].RevealedHand == nil {
-				t.Fatalf("view after end: %+v", v)
+			// The leaver has no view any more (the publisher closes their sockets) ...
+			if _, err := g.ViewFor(tt.by); !errors.Is(err, ErrUnknownPlayer) {
+				t.Fatalf("ViewFor(leaver) err = %v, want ErrUnknownPlayer", err)
 			}
-			if _, err := g.Rematch(pid(1), "NEXT2"); err != nil {
-				t.Fatalf("rematch after end: %v", err)
+			// ... and the remaining players see the new host.
+			v, err := g.ViewFor(tt.wantSeats[0])
+			mustOK(t, err)
+			if v.HostID != tt.wantHost || len(v.Players) != tt.n-1 || !v.Players[0].IsHost {
+				t.Fatalf("view host %s players %+v", v.HostID, v.Players)
 			}
 		})
 	}
+
+	t.Run("the seat is free again", func(t *testing.T) {
+		g := lobbyWith(t, 5, DefaultOptions())
+		mustOK(t, g.Leave(pid(3)))
+		mustOK(t, g.AddPlayer("new", "Player 3"))
+	})
 }
 
-func TestEndGameErrors(t *testing.T) {
-	playing := func() *Game { return table{hands: [][]int{{10, 20}, {30}}, draw: []int{40}}.build(t) }
+func TestLeaveErrors(t *testing.T) {
 	tests := []struct {
 		name string
 		g    *Game
 		by   PlayerID
 		want error
 	}{
-		{"unknown", playing(), "zz", ErrUnknownPlayer},
-		{"not host", playing(), pid(1), ErrNotHost},
-		{"finished", finishedGame(t), pid(2), ErrWrongPhase},
+		{"sole player", lobbyWith(t, 1, DefaultOptions()), pid(0), ErrCannotLeave},
+		{"unknown", lobbyWith(t, 2, DefaultOptions()), "zz", ErrUnknownPlayer},
+		{"choosing first player", choosingGame(t), pid(1), ErrWrongPhase},
+		{"playing", table{hands: [][]int{{10, 20}, {30}}, draw: []int{40}}.build(t), pid(1), ErrWrongPhase},
+		{"won", wonGame(t), pid(0), ErrWrongPhase},
+		{"lost", finishedGame(t), pid(1), ErrWrongPhase},
+		{"ended", endedGame(t), pid(1), ErrWrongPhase},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectErr(t, tt.g, tt.want, func(g *Game) error { return g.Leave(tt.by) })
+		})
+	}
+}
+
+func TestEndGame(t *testing.T) {
+	for _, n := range []int{1, 3} {
+		t.Run(fmt.Sprintf("%d players", n), func(t *testing.T) {
+			g := lobbyWith(t, n, DefaultOptions())
+			rev := g.Revision
+			mustOK(t, g.EndGame(pid(0)))
+			if g.Phase != PhaseEnded || g.Result != nil || g.Revision != rev+1 {
+				t.Fatalf("phase %s result %+v rev %d", g.Phase, g.Result, g.Revision)
+			}
+			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameEnded{ByPlayerID: pid(0)}}) {
+				t.Fatalf("events = %#v", evs)
+			}
+			v, err := g.ViewFor(pid(n - 1))
+			mustOK(t, err)
+			if v.Phase != PhaseEnded || v.Result != nil || v.Turn != nil || v.Players[0].RevealedHand != nil {
+				t.Fatalf("view after end: %+v", v)
+			}
+			if s := g.Summary(); s.Phase != PhaseEnded || s.Joinable {
+				t.Fatalf("summary after end: %+v", s)
+			}
+		})
+	}
+
+	t.Run("nothing else is possible afterwards", func(t *testing.T) {
+		g := endedGame(t)
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.AddPlayer("new", "Neu") })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.SetOptions(pid(0), extreme) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.Start(pid(0), noShuffle{}) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error { return g.GiveUp(pid(1)) })
+		expectErr(t, g, ErrWrongPhase, func(g *Game) error {
+			_, err := g.Rematch(pid(1), "NEXT2")
+			return err
+		})
+	})
+}
+
+func TestEndGameErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		g    *Game
+		by   PlayerID
+		want error
+	}{
+		{"unknown", lobbyWith(t, 2, DefaultOptions()), "zz", ErrUnknownPlayer},
+		{"not host", lobbyWith(t, 2, DefaultOptions()), pid(1), ErrNotHost},
+		{"choosing first player", choosingGame(t), pid(0), ErrWrongPhase},
+		{"playing", table{hands: [][]int{{10, 20}, {30}}, draw: []int{40}}.build(t), pid(0), ErrWrongPhase},
+		{"won", wonGame(t), pid(0), ErrWrongPhase},
+		{"lost", finishedGame(t), pid(2), ErrWrongPhase},
+		{"ended", endedGame(t), pid(0), ErrWrongPhase},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -534,12 +631,81 @@ func TestEndGameErrors(t *testing.T) {
 	}
 }
 
+func TestGiveUp(t *testing.T) {
+	tests := []struct {
+		name        string
+		g           func() *Game
+		by          PlayerID
+		hands, draw int
+		turn        bool // the view still shows the last turn
+	}{
+		// p0 is active and has played one card; ending the turn is still possible later.
+		{"active player mid-turn, not stuck", func() *Game {
+			g := table{hands: [][]int{{10, 20, 30}, {40, 50}}, draw: []int{60, 70}}.build(t)
+			mustOK(t, g.PlayCard(pid(0), 10, 0))
+			g.PullEvents()
+			return g
+		}, pid(0), 4, 2, true},
+		{"active player at turn start", func() *Game {
+			return table{hands: [][]int{{10, 20}, {40}}, draw: []int{60}}.build(t)
+		}, pid(0), 3, 1, true},
+		{"non-active player", func() *Game {
+			return table{hands: [][]int{{10, 20}, {40}}, draw: []int{60}, seat: 1}.build(t)
+		}, pid(0), 3, 1, true},
+		{"choosing first player, by a guest", func() *Game { return choosingGame(t) }, pid(1), 14, 84, false},
+		{"choosing first player, by the host", func() *Game { return choosingGame(t) }, pid(0), 14, 84, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := tt.g()
+			rev := g.Revision
+			mustOK(t, g.GiveUp(tt.by))
+			score := tt.hands + tt.draw
+			want := &Result{Score: score, CardsLeftInHands: tt.hands, CardsLeftInDrawPile: tt.draw, Reason: LossGaveUp, PlayerID: tt.by}
+			if g.Phase != PhaseLost || !reflect.DeepEqual(g.Result, want) || g.Revision != rev+1 {
+				t.Fatalf("phase %s result %+v rev %d", g.Phase, g.Result, g.Revision)
+			}
+			if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameLost{Reason: LossGaveUp, PlayerID: tt.by, Score: score}}) {
+				t.Fatalf("events = %#v", evs)
+			}
+			v, err := g.ViewFor(pid(1))
+			mustOK(t, err)
+			wantView := &ResultView{Score: score, Excellent: score < 10, CardsLeftInHands: tt.hands, CardsLeftInDrawPile: tt.draw, Reason: LossGaveUp, PlayerID: tt.by}
+			if !reflect.DeepEqual(v.Result, wantView) || v.Players[0].RevealedHand == nil || (v.Turn != nil) != tt.turn {
+				t.Fatalf("view after giving up: result %+v turn %+v", v.Result, v.Turn)
+			}
+			if _, err := g.Rematch(pid(1), "NEXT2"); err != nil {
+				t.Fatalf("rematch after giving up: %v", err)
+			}
+		})
+	}
+}
+
+func TestGiveUpErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		g    *Game
+		by   PlayerID
+		want error
+	}{
+		{"unknown", table{hands: [][]int{{10, 20}, {40}}, draw: []int{60}}.build(t), "zz", ErrUnknownPlayer},
+		{"lobby", lobbyWith(t, 2, DefaultOptions()), pid(0), ErrWrongPhase},
+		{"won", wonGame(t), pid(0), ErrWrongPhase},
+		{"lost", finishedGame(t), pid(0), ErrWrongPhase},
+		{"ended", endedGame(t), pid(0), ErrWrongPhase},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectErr(t, tt.g, tt.want, func(g *Game) error { return g.GiveUp(tt.by) })
+		})
+	}
+}
+
 // TestRematchKeepsOptions: the new lobby inherits the variant, Pro and hand size of the old game.
 func TestRematchKeepsOptions(t *testing.T) {
 	for _, o := range []Options{classic, extreme, extremePro, extremeProReduced, {Variant: VariantClassic, Pro: true}} {
 		g := table{opts: o, hands: [][]int{{50}, {51}}, draw: []int{53}}.build(t)
-		g.Phase = PhaseFinished
-		g.Result = &Result{Outcome: OutcomeAborted}
+		mustOK(t, g.GiveUp(pid(1)))
 		next, err := g.Rematch(pid(0), "NEXT2")
 		mustOK(t, err)
 		if next.Options != o || next.Rules.Variant != o.Variant {

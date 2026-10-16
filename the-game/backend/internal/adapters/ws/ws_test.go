@@ -89,6 +89,9 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return stubView(&domain.Game{ID: id, Revision: rev}, p)
 }
 
+// LeaveGame is REST-only; the WebSocket never calls it.
+func (f *fakeService) LeaveGame(context.Context, domain.GameID, domain.PlayerID) error { return nil }
+
 func (f *fakeService) mutate(ctx context.Context, name string, id domain.GameID, evs ...domain.Event) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, name)

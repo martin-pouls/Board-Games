@@ -304,13 +304,13 @@ func TestWin(t *testing.T) {
 	}
 	g.PullEvents()
 	mustOK(t, g.PlayCard(pid(0), 20, 1))
-	if g.Phase != PhaseFinished || g.Revision != 3 {
+	if g.Phase != PhaseWon || g.Revision != 3 {
 		t.Fatalf("phase %s rev %d", g.Phase, g.Revision)
 	}
-	if want := (Result{Outcome: OutcomeWon}); *g.Result != want {
+	if want := (Result{}); *g.Result != want {
 		t.Fatalf("result %+v", *g.Result)
 	}
-	want := []Event{CardPlayed{PlayerID: pid(0), Card: NumberCard(20), Pile: 1}, GameFinished{Outcome: OutcomeWon}}
+	want := []Event{CardPlayed{PlayerID: pid(0), Card: NumberCard(20), Pile: 1}, GameWon{}}
 	if evs := g.PullEvents(); !reflect.DeepEqual(evs, want) {
 		t.Fatalf("events %#v", evs)
 	}
@@ -324,7 +324,7 @@ func TestWin(t *testing.T) {
 func TestWinSolo(t *testing.T) {
 	g := table{hands: [][]int{{99}}}.build(t)
 	mustOK(t, g.PlayCard(pid(0), 99, 3))
-	if g.Phase != PhaseFinished || g.Result.Outcome != OutcomeWon || g.Result.Score != 0 {
+	if g.Phase != PhaseWon || g.Result.Score != 0 {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 	}
 }
@@ -333,7 +333,7 @@ func TestAdvanceTurnNoCardsLeftWins(t *testing.T) {
 	// Defensive path: nobody has cards when the turn advances.
 	g := table{hands: [][]int{{}, {}}}.build(t)
 	g.advanceTurn()
-	if g.Phase != PhaseFinished || g.Result.Outcome != OutcomeWon {
+	if g.Phase != PhaseWon {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 	}
 }
@@ -352,17 +352,17 @@ func stuckTable(p1 []int) table {
 func TestStuckAtTurnStart(t *testing.T) {
 	g := stuckTable([]int{50, 51}).build(t)
 	mustOK(t, g.EndTurn(pid(0)))
-	if g.Phase != PhaseFinished || g.Revision != 2 {
+	if g.Phase != PhaseLost || g.Revision != 2 {
 		t.Fatalf("phase %s rev %d", g.Phase, g.Revision)
 	}
-	want := Result{Outcome: OutcomeLost, Score: 10, CardsLeftInHands: 9, CardsLeftInDrawPile: 1, StuckPlayerID: pid(1)}
+	want := Result{Score: 10, CardsLeftInHands: 9, CardsLeftInDrawPile: 1, Reason: LossStuck, PlayerID: pid(1)}
 	if *g.Result != want {
 		t.Fatalf("result %+v, want %+v", *g.Result, want)
 	}
 	wantEv := []Event{
 		TurnEnded{PlayerID: pid(0), CardsDrawn: 1},
 		TurnStarted{PlayerID: pid(1), Number: 2},
-		GameFinished{Outcome: OutcomeLost, Score: 10, StuckPlayerID: pid(1)},
+		GameLost{Reason: LossStuck, PlayerID: pid(1), Score: 10},
 	}
 	if evs := g.PullEvents(); !reflect.DeepEqual(evs, wantEv) {
 		t.Fatalf("events %#v", evs)
@@ -389,13 +389,13 @@ func TestNotStuckWhileACardFits(t *testing.T) {
 		t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
 	}
 	mustOK(t, g.GiveUp(pid(1)))
-	want := Result{Outcome: OutcomeLost, Score: 9, CardsLeftInHands: 8, CardsLeftInDrawPile: 1, StuckPlayerID: pid(1)}
-	if g.Phase != PhaseFinished || *g.Result != want {
+	want := Result{Score: 9, CardsLeftInHands: 8, CardsLeftInDrawPile: 1, Reason: LossGaveUp, PlayerID: pid(1)}
+	if g.Phase != PhaseLost || *g.Result != want {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 	}
 	wantEv := []Event{
 		CardPlayed{PlayerID: pid(1), Card: NumberCard(98), Pile: 1},
-		GameFinished{Outcome: OutcomeLost, Score: 9, StuckPlayerID: pid(1)},
+		GameLost{Reason: LossGaveUp, PlayerID: pid(1), Score: 9},
 	}
 	if evs := g.PullEvents(); !reflect.DeepEqual(evs, wantEv) {
 		t.Fatalf("events %#v", evs)
@@ -410,8 +410,8 @@ func TestStuckWhenHandEmptiesBelowMinimum(t *testing.T) {
 		t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
 	}
 	mustOK(t, g.GiveUp(pid(0)))
-	want := Result{Outcome: OutcomeLost, Score: 2, CardsLeftInHands: 1, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
-	if g.Phase != PhaseFinished || *g.Result != want {
+	want := Result{Score: 2, CardsLeftInHands: 1, CardsLeftInDrawPile: 1, Reason: LossGaveUp, PlayerID: pid(0)}
+	if g.Phase != PhaseLost || *g.Result != want {
 		t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 	}
 }
@@ -506,17 +506,6 @@ func TestUndoRevertsCommands(t *testing.T) {
 			tt.check(t, g)
 		})
 	}
-}
-
-func TestGiveUp(t *testing.T) {
-	g := table{hands: [][]int{{10, 20}, {40}}, draw: []int{81}}.build(t)
-	expectErr(t, g, ErrNotStuck, func(g *Game) error { return g.GiveUp(pid(0)) })
-	expectErr(t, g, ErrNotYourTurn, func(g *Game) error { return g.GiveUp(pid(1)) })
-	mustOK(t, g.PlayCard(pid(0), 10, 0))
-	mustOK(t, g.PlayCard(pid(0), 20, 0))
-	// The turn can end: no giving up.
-	expectErr(t, g, ErrNotStuck, func(g *Game) error { return g.GiveUp(pid(0)) })
-	expectErr(t, lobbyWith(t, 2, classic), ErrWrongPhase, func(g *Game) error { return g.GiveUp(pid(0)) })
 }
 
 func TestBackwardsTrickEnablesSequence(t *testing.T) {
@@ -657,14 +646,15 @@ func TestRandomGames(t *testing.T) {
 		if r == nil || r.Score != h+d || r.CardsLeftInHands != h || r.CardsLeftInDrawPile != d {
 			t.Fatalf("seed %d: result %+v vs %d+%d", seed, r, h, d)
 		}
-		switch r.Outcome {
-		case OutcomeWon:
+		switch g.Phase {
+		case PhaseWon:
 			won++
-			if r.Score != 0 || r.StuckPlayerID != "" {
+			if r.Score != 0 || r.Reason != "" || r.PlayerID != "" {
 				t.Fatalf("seed %d: won with %+v", seed, r)
 			}
-		case OutcomeLost:
-			if r.StuckPlayerID != g.Players[g.Turn.ActiveSeat].ID {
+		case PhaseLost:
+			// The bot gives up only when stuck mid-turn; otherwise it lost at a turn start.
+			if r.PlayerID != g.Players[g.Turn.ActiveSeat].ID || (r.Reason != LossStuck && r.Reason != LossGaveUp) {
 				t.Fatalf("seed %d: lost with %+v", seed, r)
 			}
 			// Score 0 only when the last card was an uncovered Skull.

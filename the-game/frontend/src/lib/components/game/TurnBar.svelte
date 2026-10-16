@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import Flag from '@lucide/svelte/icons/flag';
 	import Undo2 from '@lucide/svelte/icons/undo-2';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { commandInfo, targetCount, turnHints } from '#lib/game/commands.js';
@@ -23,7 +24,7 @@
 		pending?: boolean;
 		onundo?: () => void;
 		onendturn?: () => void;
-		/** Shown instead of End turn while the player is stuck. */
+		/** Shown instead of End turn while the player is stuck (opens the give-up confirmation). */
 		ongiveup?: () => void;
 	} = $props();
 
@@ -88,11 +89,13 @@
 					</Button>
 					{#if turn.stuck}
 						<Button
+							variant="outline"
 							size="lg"
-							class="h-12 min-w-28 bg-destructive px-5 text-base text-white hover:bg-destructive/90"
+							class="h-12 min-w-28 px-5 text-base"
 							disabled={disabled || pending}
 							onclick={ongiveup}
 						>
+							<Flag class="size-5" aria-hidden="true" />
 							Give up
 						</Button>
 					{:else}

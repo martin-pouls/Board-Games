@@ -55,3 +55,17 @@ func TestNewRNGIsSeeded(t *testing.T) {
 		t.Fatal("two generators produced the same sequence")
 	}
 }
+
+type testID string
+
+func TestTypedHelpers(t *testing.T) {
+	if c := GameCodeAs[testID](); len(c) != CodeLength || strings.Trim(string(c), CodeAlphabet) != "" {
+		t.Errorf("GameCodeAs = %q", c)
+	}
+	if p := PlayerIDAs[testID](); !strings.HasPrefix(string(p), "p_") || len(p) != 12 {
+		t.Errorf("PlayerIDAs = %q", p)
+	}
+	if got := NormalizeCodeAs(testID("  ab2cd ")); got != "AB2CD" {
+		t.Errorf("NormalizeCodeAs = %q, want AB2CD", got)
+	}
+}

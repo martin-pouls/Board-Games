@@ -53,7 +53,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 	in := domain.PlayerView{
 		GameID:   "K7MQ2",
 		Revision: 9,
-		Phase:    domain.PhaseFinished,
+		Phase:    domain.PhaseLost,
 		You:      "p2",
 		HostID:   "p1",
 		Options:  domain.Options{Variant: domain.VariantClassic, Pro: true, ReducedHandSize: true},
@@ -81,14 +81,14 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		CommunicationRestricted: true,
 		ActiveCommands:          []domain.ActiveCommand{{Command: domain.CommandNoBackwardsTrick, Pile: 2}},
 		Result: &domain.ResultView{
-			Outcome: domain.OutcomeLost, Score: 8, Excellent: true, CardsLeftInHands: 5, CardsLeftInDrawPile: 3, StuckPlayerID: "p1",
+			Score: 8, Excellent: true, CardsLeftInHands: 5, CardsLeftInDrawPile: 3, Reason: domain.LossStuck, PlayerID: "p1",
 		},
 	}
 	wantTop := Card{Value: 42, Kind: "number"}
 	wantNBT := Card{Value: 59, Kind: "number", Command: "noBackwardsTrick"}
 	wantExact, wantBound := 3, 1
 	want := PlayerView{
-		GameID: "K7MQ2", Revision: 9, Phase: "finished", You: "p2", HostID: "p1",
+		GameID: "K7MQ2", Revision: 9, Phase: "lost", You: "p2", HostID: "p1",
 		Options: GameOptions{Variant: "classic", Pro: true, ReducedHandSize: true},
 		Rules:   Rules{MinCardsPerTurn: 3, MinCardsDrawPileEmpty: 1, HandSize: 5, MinPlayers: 1, MaxPlayers: 5},
 		Players: []PlayerSummary{
@@ -114,7 +114,7 @@ func TestFromViewMapsEveryField(t *testing.T) {
 		CommunicationRestricted: true,
 		ActiveCommands:          []ActiveCommand{{Command: "noBackwardsTrick", Pile: 2}},
 		Result: &Result{
-			Outcome: "lost", Score: 8, Excellent: true, CardsLeftInHands: 5, CardsLeftInDrawPile: 3, StuckPlayerID: "p1",
+			Score: 8, Excellent: true, CardsLeftInHands: 5, CardsLeftInDrawPile: 3, Reason: "stuck", PlayerID: "p1",
 		},
 	}
 	got := FromView(in)
@@ -149,8 +149,8 @@ func TestFromSummary(t *testing.T) {
 		},
 		{
 			"created and finished",
-			domain.GameSummary{GameID: "ABCDE", Phase: domain.PhaseFinished, PlayerCount: 1, MaxPlayers: 5, CreatedAt: created.In(time.FixedZone("x", 3600)), Outcome: domain.OutcomeWon},
-			GameSummary{GameID: "ABCDE", Phase: "finished", PlayerCount: 1, MaxPlayers: 5, CreatedAt: "2026-10-10T12:30:05Z", Outcome: "won"},
+			domain.GameSummary{GameID: "ABCDE", Phase: domain.PhaseWon, PlayerCount: 1, MaxPlayers: 5, CreatedAt: created.In(time.FixedZone("x", 3600))},
+			GameSummary{GameID: "ABCDE", Phase: "won", PlayerCount: 1, MaxPlayers: 5, CreatedAt: "2026-10-10T12:30:05Z"},
 		},
 	}
 	for _, tt := range tests {
@@ -193,8 +193,11 @@ func TestFromEvents(t *testing.T) {
 		domain.PlayUndone{PlayerID: "p1", Card: domain.NumberCard(12), Pile: 0},
 		domain.TurnEnded{PlayerID: "p1", CardsDrawn: 0},
 		domain.PlayerSkipped{PlayerID: "p2"},
-		domain.GameFinished{Outcome: domain.OutcomeWon, Score: 0},
-		domain.GameFinished{Outcome: domain.OutcomeLost, Score: 12, StuckPlayerID: "p2"},
+		domain.PlayerLeft{PlayerID: "p1", HostID: "p2"},
+		domain.GameWon{},
+		domain.GameLost{Reason: domain.LossStuck, PlayerID: "p2", Score: 12},
+		domain.GameLost{Reason: domain.LossGaveUp, PlayerID: "p1", Score: 0},
+		domain.GameEnded{ByPlayerID: "p1"},
 	}
 	want := []string{
 		`{"type":"playerJoined","playerId":"p2","name":"Ben"}`,
@@ -206,8 +209,11 @@ func TestFromEvents(t *testing.T) {
 		`{"type":"playUndone","playerId":"p1","card":{"value":12,"kind":"number"},"pile":0}`,
 		`{"type":"turnEnded","playerId":"p1","cardsDrawn":0}`,
 		`{"type":"playerSkipped","playerId":"p2"}`,
-		`{"type":"gameFinished","outcome":"won","score":0}`,
-		`{"type":"gameFinished","outcome":"lost","score":12,"stuckPlayerId":"p2"}`,
+		`{"type":"playerLeft","playerId":"p1","hostId":"p2"}`,
+		`{"type":"gameWon"}`,
+		`{"type":"gameLost","playerId":"p2","reason":"stuck","score":12}`,
+		`{"type":"gameLost","playerId":"p1","reason":"gaveUp","score":0}`,
+		`{"type":"gameEnded","byPlayerId":"p1"}`,
 	}
 	got := FromEvents(evs)
 	if len(got) != len(want) {
@@ -309,7 +315,7 @@ func TestErrorFor(t *testing.T) {
 		{"minimum", domain.ErrMinimumNotReached, 422, "minimum_not_reached", ""},
 		{"rematch", domain.ErrRematchExists, 409, "rematch_exists", ""},
 		{"nothing to undo", domain.ErrNothingToUndo, 409, "nothing_to_undo", ""},
-		{"not stuck", domain.ErrNotStuck, 409, "not_stuck", ""},
+		{"cannot leave", fmt.Errorf("%w: last player", domain.ErrCannotLeave), 409, "cannot_leave", "last player"},
 		{"stop played", fmt.Errorf("%w: no card may follow", domain.ErrStopPlayed), 422, "stop_played", "no card may follow"},
 		{"backwards trick", domain.ErrBackwardsTrickBlocked, 422, "backwards_trick_blocked", ""},
 		{"single pile", fmt.Errorf("%w: pile 1", domain.ErrSinglePileViolation), 422, "single_pile_violation", "pile 1"},

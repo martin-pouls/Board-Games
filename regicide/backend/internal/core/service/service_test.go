@@ -274,14 +274,15 @@ func TestAuthenticate(t *testing.T) {
 	}
 	// Only hashes are stored.
 	rec, _ := f.repo.Load(ctx, host.GameID)
-	if rec.TokenHashes[host.PlayerID] != hashToken(host.Token) || rec.TokenHashes[host.PlayerID] == host.Token {
+	if rec.TokenHashes[host.PlayerID] != idgen.HashToken(host.Token) || rec.TokenHashes[host.PlayerID] == host.Token {
 		t.Errorf("token not stored hashed")
 	}
 }
 
 func TestDefaultGenerators(t *testing.T) {
+	cfg := New(nil, nil, Config{}).cfg
 	for range 200 {
-		id := defaultGameID()
+		id := cfg.NewGameID()
 		if len(id) != 5 {
 			t.Fatalf("bad id %q", id)
 		}
@@ -291,14 +292,14 @@ func TestDefaultGenerators(t *testing.T) {
 			}
 		}
 	}
-	pid := defaultPlayerID()
+	pid := cfg.NewPlayerID()
 	if len(pid) != 12 || pid[:2] != "p_" {
 		t.Errorf("bad player id %q", pid)
 	}
-	if a, b := defaultToken(), defaultToken(); a == b || len(a) != 43 {
+	if a, b := cfg.NewToken(), cfg.NewToken(); a == b || len(a) != 43 {
 		t.Errorf("bad tokens %q %q", a, b)
 	}
-	if defaultRNG() == nil {
+	if cfg.NewRNG() == nil {
 		t.Error("nil rng")
 	}
 }

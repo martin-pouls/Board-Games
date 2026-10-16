@@ -89,7 +89,7 @@ func (a *gamesAPI) joinGame(w http.ResponseWriter, r *http.Request) {
 // view answers with the caller's current view.
 func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
 	id := gameCode(r)
-	player, err := a.authenticate(r, id)
+	player, err := httpkit.Authenticate(r, id, ports.ErrUnauthorized, a.svc.Authenticate)
 	if err != nil {
 		a.writeError(w, r, err)
 		return
@@ -105,7 +105,7 @@ func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
 // leave removes the caller from a lobby; it answers 204 without a body.
 func (a *gamesAPI) leave(w http.ResponseWriter, r *http.Request) {
 	id := gameCode(r)
-	player, err := a.authenticate(r, id)
+	player, err := httpkit.Authenticate(r, id, ports.ErrUnauthorized, a.svc.Authenticate)
 	if err != nil {
 		a.writeError(w, r, err)
 		return

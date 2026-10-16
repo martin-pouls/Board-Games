@@ -65,11 +65,45 @@ type turnDTO struct {
 }
 
 type resultDTO struct {
-	Outcome             string `json:"outcome"`
 	Score               int    `json:"score"`
 	CardsLeftInHands    int    `json:"cardsLeftInHands"`
 	CardsLeftInDrawPile int    `json:"cardsLeftInDrawPile"`
-	StuckPlayerID       string `json:"stuckPlayerId"`
+	Reason              string `json:"reason,omitempty"`
+	PlayerID            string `json:"playerId,omitempty"`
+
+	// Read only, from snapshots written while a game over had phase "finished" plus an outcome.
+	LegacyOutcome       string `json:"outcome,omitempty"`
+	LegacyStuckPlayerID string `json:"stuckPlayerId,omitempty"`
+}
+
+// legacyPhaseFinished is the single phase old snapshots used for every game over.
+const legacyPhaseFinished = "finished"
+
+// migrateFinished maps an old "finished" snapshot onto the won / lost phases: outcome won → won,
+// lost → lost (stuck), aborted (ended early by the host) → lost (given up, by nobody in particular).
+// Other snapshots are returned unchanged.
+func migrateFinished(d gameDTO) gameDTO {
+	if d.Phase != legacyPhaseFinished {
+		return d
+	}
+	r := resultDTO{}
+	if d.Result != nil {
+		r = *d.Result
+	}
+	switch r.LegacyOutcome {
+	case "won":
+		d.Phase = string(domain.PhaseWon)
+		r.Reason, r.PlayerID = "", ""
+	case "aborted":
+		d.Phase = string(domain.PhaseLost)
+		r.Reason, r.PlayerID = string(domain.LossGaveUp), ""
+	default: // "lost"
+		d.Phase = string(domain.PhaseLost)
+		r.Reason, r.PlayerID = string(domain.LossStuck), r.LegacyStuckPlayerID
+	}
+	r.LegacyOutcome, r.LegacyStuckPlayerID = "", ""
+	d.Result = &r
+	return d
 }
 
 // gameDTO is the persisted JSON snapshot of a domain.Game (pending events excluded).
@@ -163,9 +197,9 @@ func toDTO(g *domain.Game) gameDTO {
 	}
 	if g.Result != nil {
 		d.Result = &resultDTO{
-			Outcome: string(g.Result.Outcome), Score: g.Result.Score,
+			Score:            g.Result.Score,
 			CardsLeftInHands: g.Result.CardsLeftInHands, CardsLeftInDrawPile: g.Result.CardsLeftInDrawPile,
-			StuckPlayerID: string(g.Result.StuckPlayerID),
+			Reason: string(g.Result.Reason), PlayerID: string(g.Result.PlayerID),
 		}
 	}
 	return d
@@ -175,6 +209,7 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 	if d.SchemaVersion != schemaVersion {
 		return nil, fmt.Errorf("unsupported game schema version %d (want %d)", d.SchemaVersion, schemaVersion)
 	}
+	d = migrateFinished(d)
 	r := d.Rules
 	g := &domain.Game{
 		ID:      domain.GameID(d.ID),
@@ -216,9 +251,9 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 	}
 	if d.Result != nil {
 		g.Result = &domain.Result{
-			Outcome: domain.Outcome(d.Result.Outcome), Score: d.Result.Score,
+			Score:            d.Result.Score,
 			CardsLeftInHands: d.Result.CardsLeftInHands, CardsLeftInDrawPile: d.Result.CardsLeftInDrawPile,
-			StuckPlayerID: domain.PlayerID(d.Result.StuckPlayerID),
+			Reason: domain.LossReason(d.Result.Reason), PlayerID: domain.PlayerID(d.Result.PlayerID),
 		}
 	}
 	return g, nil

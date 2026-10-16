@@ -458,7 +458,7 @@ func playToEnd(t *testing.T, clients map[string]*client) apidto.PlayerView {
 		break
 	}
 	for range 2000 {
-		if anyone.view.Phase == "finished" {
+		if over(anyone.view) {
 			return anyone.view
 		}
 		cl := clients[anyone.view.Turn.ActivePlayerID]
@@ -504,7 +504,7 @@ func (a *app) dialAll(t *testing.T, code string, sessions ...apidto.SessionRespo
 func checkFinished(t *testing.T, v apidto.PlayerView) {
 	t.Helper()
 	r := v.Result
-	if v.Phase != "finished" || r == nil {
+	if !over(v) || r == nil {
 		t.Fatalf("not finished: phase=%s result=%+v", v.Phase, r)
 	}
 	if r.Score != r.CardsLeftInHands+r.CardsLeftInDrawPile {
@@ -513,11 +513,11 @@ func checkFinished(t *testing.T, v apidto.PlayerView) {
 	// A won game always has score 0. A lost game has score 0 only when the last
 	// card played was an uncovered Skull (Extreme), i.e. a skull is on top of a pile.
 	skullOnTop := slices.ContainsFunc(v.Piles, func(p apidto.Pile) bool { return p.TopCard != nil && p.TopCard.Command == "skull" })
-	if r.Outcome == "won" && r.Score != 0 || r.Outcome == "lost" && r.Score == 0 && !skullOnTop || r.Excellent != (r.Score < 10) {
+	if v.Phase == "won" && r.Score != 0 || v.Phase == "lost" && r.Score == 0 && !skullOnTop || r.Excellent != (r.Score < 10) {
 		t.Fatalf("inconsistent result %+v", r)
 	}
-	if r.Outcome == "lost" && r.StuckPlayerID == "" {
-		t.Fatalf("lost without stuck player: %+v", r)
+	if v.Phase == "lost" && (r.PlayerID == "" || r.Reason != "stuck" && r.Reason != "gaveUp") || v.Phase == "won" && (r.PlayerID != "" || r.Reason != "") {
+		t.Fatalf("inconsistent loss reason: %s %+v", v.Phase, r)
 	}
 	revealed := 0
 	for _, p := range v.Players {
@@ -545,7 +545,7 @@ func TestSoloGameToCompletion(t *testing.T) {
 			}
 			v = playToEnd(t, clients)
 			checkFinished(t, v)
-			t.Logf("seed %d: %s, score %d", seed, v.Result.Outcome, v.Result.Score)
+			t.Logf("seed %d: %s, score %d", seed, v.Phase, v.Result.Score)
 			// Further actions are rejected once finished.
 			cl.reject(apidto.ClientMessage{Type: apidto.CmdEndTurn}, apidto.CodeWrongPhase)
 		})
@@ -571,7 +571,7 @@ func TestRematchKeepsGroupAndTokens(t *testing.T) {
 	bobWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
 	old := bobWS.view
 	next := old.NextGameID
-	if next == "" || next == code || old.Phase != "finished" {
+	if next == "" || next == code || !over(old) {
 		t.Fatalf("rematch: next=%q phase=%s", next, old.Phase)
 	}
 	// Ann's open socket learns about the next game.
@@ -718,9 +718,110 @@ func TestExtremeGamesToCompletion(t *testing.T) {
 					syncAll(clients)
 					v := playToEnd(t, clients)
 					checkFinished(t, v)
-					t.Logf("%s, score %d", v.Result.Outcome, v.Result.Score)
+					t.Logf("%s, score %d", v.Phase, v.Result.Score)
 				})
 			}
 		}
+	}
+}
+
+// over reports whether the game was won or lost.
+func over(v apidto.PlayerView) bool { return v.Phase == "won" || v.Phase == "lost" }
+
+// eventOf returns the first event of type typ, or nil.
+func eventOf(evs []apidto.Event, typ string) *apidto.Event {
+	for i := range evs {
+		if evs[i].Type == typ {
+			return &evs[i]
+		}
+	}
+	return nil
+}
+
+func TestLeaveAndEndLobby(t *testing.T) {
+	a := startApp(t, filepath.Join(t.TempDir(), "leave.db"), 3)
+	host := a.create(t, "Ann", nil)
+	code := host.GameID
+	guest := a.join(t, code, "Bob")
+	hostWS := a.dial(t, "host", code, host.Token)
+	guestWS := a.dial(t, "guest", code, guest.Token)
+	hostWS.presence(2)
+
+	a.call(t, http.MethodPost, "/api/games/"+code+"/leave", guest.Token, nil, nil, http.StatusNoContent)
+
+	// The guest's socket is closed with 4401.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for {
+		if _, _, err := guestWS.c.Read(ctx); err != nil {
+			if got := websocket.CloseStatus(err); got != 4401 {
+				t.Fatalf("guest close status = %d (err %v), want 4401", got, err)
+			}
+			break
+		}
+	}
+	// The guest's token no longer works.
+	a.call(t, http.MethodGet, "/api/games/"+code+"/view", guest.Token, nil, nil, http.StatusUnauthorized)
+	a.call(t, http.MethodPost, "/api/games/"+code+"/leave", guest.Token, nil, nil, http.StatusUnauthorized)
+
+	// The host sees one player and the playerLeft event.
+	m := hostWS.until("playerLeft", func(m wireMsg) bool {
+		return m.Type == apidto.MsgView && eventOf(m.Events, apidto.EventPlayerLeft) != nil
+	})
+	if ev := eventOf(m.Events, apidto.EventPlayerLeft); ev.PlayerID != guest.PlayerID || ev.HostID != host.PlayerID {
+		t.Fatalf("playerLeft = %+v", ev)
+	}
+	if len(m.View.Players) != 1 || m.View.Players[0].ID != host.PlayerID {
+		t.Fatalf("host players = %+v", m.View.Players)
+	}
+	// The sole remaining player cannot leave, but can close the lobby.
+	var e apidto.ErrorResponse
+	a.call(t, http.MethodPost, "/api/games/"+code+"/leave", host.Token, nil, &e, http.StatusConflict)
+	if e.Error.Code != apidto.CodeCannotLeave {
+		t.Fatalf("sole leave: %+v", e)
+	}
+	hostWS.send(apidto.ClientMessage{Type: apidto.CmdEndGame})
+	if hostWS.view.Phase != "ended" || hostWS.view.Result != nil || eventOf(hostWS.events, apidto.EventGameEnded) == nil {
+		t.Fatalf("after end game: phase %s events %+v", hostWS.view.Phase, hostWS.events)
+	}
+	var sum apidto.GameSummary
+	a.call(t, http.MethodGet, "/api/games/"+code, "", nil, &sum, http.StatusOK)
+	if sum.Phase != "ended" || sum.Joinable {
+		t.Fatalf("summary after end: %+v", sum)
+	}
+	hostWS.reject(apidto.ClientMessage{Type: apidto.CmdStartGame}, apidto.CodeWrongPhase)
+	hostWS.reject(apidto.ClientMessage{Type: apidto.CmdRematch}, apidto.CodeWrongPhase)
+}
+
+// TestGiveUpByAnyPlayer: a guest gives up while the host is still choosing who starts.
+func TestGiveUpByAnyPlayer(t *testing.T) {
+	a := startApp(t, filepath.Join(t.TempDir(), "giveup.db"), 4)
+	ann := a.create(t, "Ann", nil)
+	code := ann.GameID
+	bob := a.join(t, code, "Bob")
+	clients := a.dialAll(t, code, ann, bob)
+	annWS, bobWS := clients[ann.PlayerID], clients[bob.PlayerID]
+	bobWS.reject(apidto.ClientMessage{Type: apidto.CmdGiveUp}, apidto.CodeWrongPhase) // nothing to give up in the lobby
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdStartGame})
+	syncAll(clients)
+
+	bobWS.send(apidto.ClientMessage{Type: apidto.CmdGiveUp})
+	v := bobWS.view
+	if v.Phase != "lost" || v.Result == nil || v.Result.Reason != "gaveUp" || v.Result.PlayerID != bob.PlayerID ||
+		v.Result.Score != 98 || v.Turn != nil || !hasRevealedHands(v) {
+		t.Fatalf("after give up: phase %s result %+v turn %+v", v.Phase, v.Result, v.Turn)
+	}
+	m := annWS.until("gameLost", func(m wireMsg) bool {
+		return m.Type == apidto.MsgView && eventOf(m.Events, apidto.EventGameLost) != nil
+	})
+	if ev := eventOf(m.Events, apidto.EventGameLost); ev.PlayerID != bob.PlayerID || ev.Reason != "gaveUp" || ev.Score == nil || *ev.Score != 98 {
+		t.Fatalf("gameLost = %+v", ev)
+	}
+	checkFinished(t, v)
+	annWS.reject(apidto.ClientMessage{Type: apidto.CmdEndGame}, apidto.CodeWrongPhase)
+	annWS.reject(apidto.ClientMessage{Type: apidto.CmdGiveUp}, apidto.CodeWrongPhase)
+	annWS.send(apidto.ClientMessage{Type: apidto.CmdRematch})
+	if annWS.view.NextGameID == "" {
+		t.Fatal("no rematch after giving up")
 	}
 }

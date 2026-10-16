@@ -136,9 +136,6 @@
 				<HeaderButton
 					icon={Flag}
 					label="Give up"
-					showLabel
-					labelClass="max-[24rem]:sr-only"
-					destructive
 					disabled={!connected}
 					onclick={() => (confirmGiveUp = true)}
 				/>

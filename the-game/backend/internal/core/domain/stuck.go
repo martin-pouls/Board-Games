@@ -18,6 +18,6 @@ func (g *Game) ActivePlayerStuck() bool {
 // (at the start of a turn).
 func (g *Game) checkStuck() {
 	if len(g.Turn.Plays) == 0 && g.ActivePlayerStuck() {
-		g.finish(OutcomeLost, g.Players[g.Turn.ActiveSeat].ID)
+		g.lose(LossStuck, g.Players[g.Turn.ActiveSeat].ID)
 	}
 }

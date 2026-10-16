@@ -3,7 +3,6 @@ package sqlite
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -15,122 +14,72 @@ import (
 
 // GameRepository is the SQLite implementation of ports.GameRepository.
 type GameRepository struct {
-	db    *DB
-	store *sqlitedb.Store
+	repo *sqlitedb.Repository[*domain.Game, domain.PlayerID]
 }
 
 var _ ports.GameRepository = (*GameRepository)(nil)
 
 // NewGameRepository returns a repository backed by db.
 func NewGameRepository(db *DB) *GameRepository {
-	return &GameRepository{db: db, store: sqlitedb.NewStore(db)}
+	return &GameRepository{repo: sqlitedb.NewRepository[*domain.Game, domain.PlayerID](db, codec,
+		sqlitedb.Errors{NotFound: ports.ErrGameNotFound, Conflict: ports.ErrVersionConflict, Duplicate: ports.ErrDuplicateGameID})}
 }
 
-func statusOf(g *domain.Game) string {
-	switch g.Phase {
-	case domain.PhaseLobby:
-		return "lobby"
-	case domain.PhaseFinished:
-		if g.Result != nil {
-			return string(g.Result.Outcome)
+// statusOf is the informational status column: the game's phase.
+func statusOf(g *domain.Game) string { return string(g.Phase) }
+
+// codec stores a game as its JSON snapshot (gameDTO).
+var codec = sqlitedb.Codec[*domain.Game]{
+	ID:     func(g *domain.Game) string { return string(g.ID) },
+	Status: statusOf,
+	Encode: func(g *domain.Game) ([]byte, error) { return json.Marshal(toDTO(g)) },
+	Decode: func(state []byte, createdAt time.Time) (*domain.Game, error) {
+		var d gameDTO
+		if err := json.Unmarshal(state, &d); err != nil {
+			return nil, fmt.Errorf("unmarshal: %w", err)
 		}
-		return string(domain.OutcomeLost)
-	default:
-		return "running"
-	}
-}
-
-// portErr maps store errors to the port's sentinel errors.
-func portErr(err error) error {
-	switch {
-	case errors.Is(err, sqlitedb.ErrNotFound):
-		return ports.ErrGameNotFound
-	case errors.Is(err, sqlitedb.ErrConflict):
-		return ports.ErrVersionConflict
-	case errors.Is(err, sqlitedb.ErrDuplicate):
-		return ports.ErrDuplicateGameID
-	default:
-		return err
-	}
-}
-
-func toRecord(rec *ports.GameRecord) (*sqlitedb.Record, error) {
-	state, err := json.Marshal(toDTO(rec.Game))
-	if err != nil {
-		return nil, fmt.Errorf("marshal game: %w", err)
-	}
-	tokens := make(map[string]string, len(rec.TokenHashes))
-	for pid, h := range rec.TokenHashes {
-		tokens[string(pid)] = h
-	}
-	return &sqlitedb.Record{
-		ID:      string(rec.Game.ID),
-		Status:  statusOf(rec.Game),
-		State:   state,
-		Tokens:  tokens,
-		Version: rec.Version,
-	}, nil
+		g, err := fromDTO(d)
+		if err != nil {
+			return nil, err
+		}
+		if g.CreatedAt.IsZero() {
+			// Snapshots written before the game tracked its creation time: use the row's timestamp.
+			g.CreatedAt = createdAt
+		}
+		return g, nil
+	},
 }
 
 // Create implements ports.GameRepository.
 func (r *GameRepository) Create(ctx context.Context, rec *ports.GameRecord) error {
-	row, err := toRecord(rec)
+	v, err := r.repo.Create(ctx, rec.Game, rec.TokenHashes)
 	if err != nil {
 		return err
 	}
-	if err := r.store.Create(ctx, row); err != nil {
-		return portErr(err)
-	}
-	rec.Version = row.Version
+	rec.Version = v
 	return nil
 }
 
 // Load implements ports.GameRepository.
 func (r *GameRepository) Load(ctx context.Context, id domain.GameID) (*ports.GameRecord, error) {
-	row, err := r.store.Load(ctx, string(id))
+	g, hashes, version, err := r.repo.Load(ctx, string(id))
 	if err != nil {
-		return nil, portErr(err)
+		return nil, err
 	}
-	var d gameDTO
-	if err := json.Unmarshal(row.State, &d); err != nil {
-		return nil, fmt.Errorf("unmarshal game %s: %w", id, err)
-	}
-	g, err := fromDTO(d)
-	if err != nil {
-		return nil, fmt.Errorf("decode game %s: %w", id, err)
-	}
-	if g.CreatedAt.IsZero() {
-		// Snapshots written before the game tracked its creation time: use the row's timestamp.
-		var createdAt string
-		err := r.db.SQL().QueryRowContext(ctx, `SELECT created_at FROM games WHERE id = ?`, string(id)).Scan(&createdAt)
-		if err != nil {
-			return nil, fmt.Errorf("load created_at of game %s: %w", id, err)
-		}
-		if t, err := time.Parse("2006-01-02 15:04:05", createdAt); err == nil {
-			g.CreatedAt = t.UTC()
-		}
-	}
-	hashes := make(map[domain.PlayerID]string, len(row.Tokens))
-	for pid, h := range row.Tokens {
-		hashes[domain.PlayerID(pid)] = h
-	}
-	return &ports.GameRecord{Game: g, TokenHashes: hashes, Version: row.Version}, nil
+	return &ports.GameRecord{Game: g, TokenHashes: hashes, Version: version}, nil
 }
 
 // Update implements ports.GameRepository.
 func (r *GameRepository) Update(ctx context.Context, rec *ports.GameRecord) error {
-	row, err := toRecord(rec)
+	v, err := r.repo.Update(ctx, rec.Game, rec.TokenHashes, rec.Version)
 	if err != nil {
 		return err
 	}
-	if err := r.store.Update(ctx, row); err != nil {
-		return portErr(err)
-	}
-	rec.Version = row.Version
+	rec.Version = v
 	return nil
 }
 
 // DeleteInactive implements ports.GameRepository.
 func (r *GameRepository) DeleteInactive(ctx context.Context, olderThan time.Time) (int, error) {
-	return r.store.DeleteInactive(ctx, olderThan)
+	return r.repo.DeleteInactive(ctx, olderThan)
 }

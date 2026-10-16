@@ -67,8 +67,8 @@ func newFixture(t *testing.T, mod func(*Config)) *fixture {
 	return &fixture{svc: New(repo, rec, cfg), repo: repo, rec: rec}
 }
 
-// started creates a game with n players (host first), starts it and chooses the host to begin.
-func (f *fixture) started(t *testing.T, n int) (domain.GameID, []ports.Session) {
+// lobby creates a game with n players (host first) and leaves it in the lobby.
+func (f *fixture) lobby(t *testing.T, n int) (domain.GameID, []ports.Session) {
 	t.Helper()
 	ctx := context.Background()
 	host, err := f.svc.CreateGame(ctx, "P1", domain.DefaultOptions())
@@ -83,6 +83,15 @@ func (f *fixture) started(t *testing.T, n int) (domain.GameID, []ports.Session) 
 		}
 		sessions = append(sessions, s)
 	}
+	return host.GameID, sessions
+}
+
+// started creates a game with n players (host first), starts it and chooses the host to begin.
+func (f *fixture) started(t *testing.T, n int) (domain.GameID, []ports.Session) {
+	t.Helper()
+	ctx := context.Background()
+	_, sessions := f.lobby(t, n)
+	host := sessions[0]
 	if err := f.svc.StartGame(ctx, host.GameID, host.PlayerID); err != nil {
 		t.Fatal(err)
 	}
@@ -206,14 +215,15 @@ func TestAuthenticate(t *testing.T) {
 	}
 	// Only hashes are stored.
 	rec, _ := f.repo.Load(ctx, host.GameID)
-	if rec.TokenHashes[host.PlayerID] != hashToken(host.Token) || rec.TokenHashes[host.PlayerID] == host.Token {
+	if rec.TokenHashes[host.PlayerID] != idgen.HashToken(host.Token) || rec.TokenHashes[host.PlayerID] == host.Token {
 		t.Errorf("token not stored hashed")
 	}
 }
 
 func TestDefaultGenerators(t *testing.T) {
+	cfg := New(nil, nil, Config{}).cfg
 	for range 200 {
-		id := defaultGameID()
+		id := cfg.NewGameID()
 		if len(id) != 5 {
 			t.Fatalf("bad id %q", id)
 		}
@@ -223,14 +233,14 @@ func TestDefaultGenerators(t *testing.T) {
 			}
 		}
 	}
-	pid := defaultPlayerID()
+	pid := cfg.NewPlayerID()
 	if len(pid) != 12 || pid[:2] != "p_" {
 		t.Errorf("bad player id %q", pid)
 	}
-	if a, b := defaultToken(), defaultToken(); a == b || len(a) != 43 {
+	if a, b := cfg.NewToken(), cfg.NewToken(); a == b || len(a) != 43 {
 		t.Errorf("bad tokens %q %q", a, b)
 	}
-	if defaultRNG() == nil {
+	if cfg.NewRNG() == nil {
 		t.Error("nil rng")
 	}
 }
@@ -444,7 +454,7 @@ func TestOCCRetry(t *testing.T) {
 	}
 }
 
-// finish forces the stored game into the finished phase (the engine is covered by domain tests).
+// finish forces the stored game into the lost phase (the engine is covered by domain tests).
 func finish(t *testing.T, f *fixture, id domain.GameID) {
 	t.Helper()
 	ctx := context.Background()
@@ -452,8 +462,8 @@ func finish(t *testing.T, f *fixture, id domain.GameID) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rec.Game.Phase = domain.PhaseFinished
-	rec.Game.Result = &domain.Result{Outcome: domain.OutcomeLost}
+	rec.Game.Phase = domain.PhaseLost
+	rec.Game.Result = &domain.Result{Reason: domain.LossStuck, PlayerID: rec.Game.Players[0].ID}
 	if err := f.repo.Update(ctx, rec); err != nil {
 		t.Fatal(err)
 	}
@@ -581,7 +591,7 @@ func TestPurgeInactive(t *testing.T) {
 func TestEndGame(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t, nil)
-	id, sessions := f.started(t, 2)
+	id, sessions := f.lobby(t, 2)
 	host, bob := sessions[0], sessions[1]
 
 	if err := f.svc.EndGame(ctx, id, bob.PlayerID); !errors.Is(err, domain.ErrNotHost) {
@@ -591,16 +601,88 @@ func TestEndGame(t *testing.T) {
 	if err := f.svc.EndGame(ctx, id, host.PlayerID); err != nil {
 		t.Fatal(err)
 	}
-	v := f.view(t, id, host.PlayerID)
-	if v.Phase != domain.PhaseFinished || v.Result == nil || v.Result.Outcome != domain.OutcomeAborted {
+	v := f.view(t, id, bob.PlayerID)
+	if v.Phase != domain.PhaseEnded || v.Result != nil {
 		t.Fatalf("view after EndGame: phase=%s result=%+v", v.Phase, v.Result)
 	}
 	pubs := f.rec.all()[before:]
-	if len(pubs) != 1 || !reflect.DeepEqual(eventTypes(pubs[0].Events), []string{"GameFinished"}) {
+	if len(pubs) != 1 || !reflect.DeepEqual(eventTypes(pubs[0].Events), []string{"GameEnded"}) {
 		t.Fatalf("unexpected publishes: %+v", pubs)
 	}
-	if err := f.svc.Rematch(ctx, id, bob.PlayerID); err != nil {
+	if s, _ := f.svc.Summary(ctx, id); s.Phase != domain.PhaseEnded || s.Joinable {
+		t.Fatalf("summary after EndGame: %+v", s)
+	}
+	if err := f.svc.Rematch(ctx, id, bob.PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
 		t.Fatalf("rematch after EndGame: %v", err)
+	}
+
+	// A running game cannot be ended, only given up.
+	running, rs := f.started(t, 2)
+	if err := f.svc.EndGame(ctx, running, rs[0].PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
+		t.Fatalf("EndGame while playing: %v", err)
+	}
+}
+
+func TestLeaveGame(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, nil)
+	id, sessions := f.lobby(t, 3)
+	host, bob := sessions[0], sessions[1]
+
+	before := len(f.rec.all())
+	if err := f.svc.LeaveGame(ctx, id, host.PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	pubs := f.rec.all()[before:]
+	if len(pubs) != 1 || !reflect.DeepEqual(eventTypes(pubs[0].Events), []string{"PlayerLeft"}) {
+		t.Fatalf("unexpected publishes: %+v", pubs)
+	}
+	v := f.view(t, id, bob.PlayerID)
+	if v.HostID != bob.PlayerID || len(v.Players) != 2 {
+		t.Fatalf("after host left: host %s players %+v", v.HostID, v.Players)
+	}
+	// The leaver's token no longer works and they have no view.
+	if _, err := f.svc.Authenticate(ctx, id, host.Token); !errors.Is(err, ports.ErrUnauthorized) {
+		t.Fatalf("Authenticate after leaving: %v", err)
+	}
+	if _, err := f.svc.View(ctx, id, host.PlayerID); !errors.Is(err, domain.ErrUnknownPlayer) {
+		t.Fatalf("View after leaving: %v", err)
+	}
+	if p, err := f.svc.Authenticate(ctx, id, bob.Token); err != nil || p != bob.PlayerID {
+		t.Fatalf("Authenticate of a seated player: %s %v", p, err)
+	}
+
+	// Leaving is lobby-only.
+	running, rs := f.started(t, 2)
+	if err := f.svc.LeaveGame(ctx, running, rs[1].PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
+		t.Fatalf("LeaveGame while playing: %v", err)
+	}
+}
+
+func TestGiveUp(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, nil)
+	id, sessions := f.started(t, 2) // the host is active
+	bob := sessions[1]
+
+	before := len(f.rec.all())
+	if err := f.svc.GiveUp(ctx, id, bob.PlayerID); err != nil {
+		t.Fatal(err)
+	}
+	pubs := f.rec.all()[before:]
+	if len(pubs) != 1 || !reflect.DeepEqual(eventTypes(pubs[0].Events), []string{"GameLost"}) {
+		t.Fatalf("unexpected publishes: %+v", pubs)
+	}
+	v := f.view(t, id, sessions[0].PlayerID)
+	if v.Phase != domain.PhaseLost || v.Result == nil || v.Result.Reason != domain.LossGaveUp ||
+		v.Result.PlayerID != bob.PlayerID || v.Result.Score != 98 {
+		t.Fatalf("view after GiveUp: phase=%s result=%+v", v.Phase, v.Result)
+	}
+	if err := f.svc.GiveUp(ctx, id, bob.PlayerID); !errors.Is(err, domain.ErrWrongPhase) {
+		t.Fatalf("second GiveUp: %v", err)
+	}
+	if err := f.svc.Rematch(ctx, id, bob.PlayerID); err != nil {
+		t.Fatalf("rematch after GiveUp: %v", err)
 	}
 }
 
@@ -663,9 +745,6 @@ func TestExtremeGame(t *testing.T) {
 	}
 	if v.Turn.CardsPlayed != 0 || v.Piles[0].TopCard != nil || len(v.Hand) != 8 {
 		t.Fatalf("after undo: turn %+v pile %+v hand %d", v.Turn, v.Piles[0], len(v.Hand))
-	}
-	if err := f.svc.GiveUp(ctx, host.GameID, host.PlayerID); !errors.Is(err, domain.ErrNotStuck) {
-		t.Fatalf("give up while not stuck: %v", err)
 	}
 	if err := f.svc.PlayCard(ctx, host.GameID, host.PlayerID, 95, 0); err != nil {
 		t.Fatal(err)

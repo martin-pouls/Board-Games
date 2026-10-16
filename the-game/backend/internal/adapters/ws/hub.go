@@ -2,8 +2,6 @@ package ws
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"log/slog"
 
 	"github.com/martin-pouls/shared/backend/wskit"
@@ -37,35 +35,16 @@ func (h *Hub) Publish(_ context.Context, u ports.GameUpdate) {
 		return
 	}
 	events := apidto.FromEvents(u.Events)
-	h.Broadcast(string(u.Game.ID), func(pid string) ([]byte, bool) {
-		return h.buildView(u.Game, domain.PlayerID(pid), events)
+	h.PublishViews(string(u.Game.ID), domain.ErrUnknownPlayer, func(pid string) (any, error) {
+		v, err := h.viewFor(u.Game, domain.PlayerID(pid))
+		if err != nil {
+			return nil, err
+		}
+		return apidto.ViewMessage(apidto.FromView(v), events), nil
 	})
-}
-
-// buildView returns the marshalled view message for pid. gone reports that pid
-// is no longer seated in the game (they left).
-func (h *Hub) buildView(g *domain.Game, pid domain.PlayerID, events []apidto.Event) (payload []byte, gone bool) {
-	v, err := h.viewFor(g, pid)
-	if errors.Is(err, domain.ErrUnknownPlayer) {
-		return nil, true
-	}
-	if err != nil {
-		h.Logger().Error("ws: build view", "game", g.ID, "player", pid, "err", err)
-		return nil, false
-	}
-	b, err := json.Marshal(apidto.ViewMessage(apidto.FromView(v), events))
-	if err != nil {
-		h.Logger().Error("ws: marshal view", "game", g.ID, "player", pid, "err", err)
-		return nil, false
-	}
-	return b, false
 }
 
 // Online returns the sorted IDs of players with at least one connection.
 func (h *Hub) Online(id domain.GameID) []domain.PlayerID {
-	var out []domain.PlayerID
-	for _, p := range h.Hub.Online(string(id)) {
-		out = append(out, domain.PlayerID(p))
-	}
-	return out
+	return wskit.OnlineAs[domain.PlayerID](h.Hub, string(id))
 }

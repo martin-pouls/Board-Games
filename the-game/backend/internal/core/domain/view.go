@@ -19,9 +19,9 @@ type PlayerView struct {
 	Hand                    []HandCard      // ONLY the viewer's hand, sorted ascending; empty in lobby
 	Piles                   []PileView
 	DrawPileCount           int
-	Turn                    *TurnView // nil in lobby / choosingFirstPlayer
+	Turn                    *TurnView // nil in lobby / choosingFirstPlayer / ended, and when given up before the first turn
 	CommunicationRestricted bool
-	Result                  *ResultView     // nil unless finished
+	Result                  *ResultView     // nil unless won or lost
 	NextGameID              GameID          // empty until a rematch exists
 	ActiveCommands          []ActiveCommand // visible Infinity commands, pile order; nil if none
 }
@@ -40,7 +40,7 @@ type PlayerSummary struct {
 	Seat                    int
 	HandCount               int
 	IsHost, IsYou, IsActive bool
-	RevealedHand            []Card // sorted; filled for every player only when Phase == finished, else nil
+	RevealedHand            []Card // sorted; filled for every player only once won or lost, else nil
 }
 
 // HandCard is a card in the viewer's hand plus where it may legally go now.
@@ -92,14 +92,14 @@ type TurnConstraints struct {
 	StopPlayed bool  // a STOP was played this turn: no further card, only End turn (or undo)
 }
 
-// ResultView is the public final result.
+// ResultView is the public final result (the phase says won or lost).
 type ResultView struct {
-	Outcome             Outcome
 	Score               int
 	Excellent           bool // Score < 10
 	CardsLeftInHands    int
 	CardsLeftInDrawPile int
-	StuckPlayerID       PlayerID
+	Reason              LossReason // "" when won
+	PlayerID            PlayerID   // the stuck player or the one who gave up
 }
 
 // GameSummary is public, pre-join information about a game.
@@ -111,7 +111,6 @@ type GameSummary struct {
 	MaxPlayers  int
 	Joinable    bool      // Phase == lobby && PlayerCount < MaxPlayers
 	CreatedAt   time.Time // zero when unknown (old snapshot)
-	Outcome     Outcome   // empty unless finished
 }
 
 // excellentScoreBelow: a score below this is "excellent" (rules.md, End of game).
@@ -124,7 +123,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		return PlayerView{}, fmt.Errorf("%w: %s", ErrUnknownPlayer, id)
 	}
 	playing := g.Phase == PhasePlaying
-	finished := g.Phase == PhaseFinished
+	over := g.IsOver()
 	cs := g.commands()
 
 	v := PlayerView{
@@ -160,7 +159,7 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 			IsYou:     p.ID == id,
 			IsActive:  playing && seat == g.Turn.ActiveSeat,
 		}
-		if finished {
+		if over {
 			s.RevealedHand = make([]Card, len(p.Hand))
 			copy(s.RevealedHand, p.Hand)
 			sortCards(s.RevealedHand)
@@ -200,7 +199,8 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		v.Piles[i] = pv
 	}
 
-	if playing || finished {
+	// A game given up while choosing the first player never had a turn.
+	if playing || (over && g.Turn.Number > 0) {
 		v.Turn = &TurnView{
 			Number:          g.Turn.Number,
 			ActivePlayerID:  g.Players[g.Turn.ActiveSeat].ID,
@@ -222,15 +222,15 @@ func (g *Game) ViewFor(id PlayerID) (PlayerView, error) {
 		}
 	}
 
-	if finished && g.Result != nil {
+	if over && g.Result != nil {
 		r := g.Result
 		v.Result = &ResultView{
-			Outcome:             r.Outcome,
 			Score:               r.Score,
 			Excellent:           r.Score < excellentScoreBelow,
 			CardsLeftInHands:    r.CardsLeftInHands,
 			CardsLeftInDrawPile: r.CardsLeftInDrawPile,
-			StuckPlayerID:       r.StuckPlayerID,
+			Reason:              r.Reason,
+			PlayerID:            r.PlayerID,
 		}
 	}
 	return v, nil

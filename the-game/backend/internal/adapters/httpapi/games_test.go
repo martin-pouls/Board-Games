@@ -126,6 +126,10 @@ func (f *fakeService) View(_ context.Context, id domain.GameID, p domain.PlayerI
 	return f.viewCall("View", id, p)
 }
 
+func (f *fakeService) LeaveGame(_ context.Context, id domain.GameID, _ domain.PlayerID) error {
+	return f.record("LeaveGame", id)
+}
+
 // The gameplay calls are WebSocket-only; the REST tests never reach them.
 
 func (f *fakeService) SetOptions(context.Context, domain.GameID, domain.PlayerID, domain.Options) error {
@@ -348,6 +352,24 @@ func TestView(t *testing.T) {
 	}
 }
 
+func TestLeave204(t *testing.T) {
+	svc := &fakeService{}
+	h := newTestRouter(t, svc)
+	wantError(t, do(t, h, "POST", "/api/games/ABCDE/leave", "", ""), http.StatusUnauthorized, apidto.CodeUnauthorized)
+	if c := svc.lastCall(); c != "" {
+		t.Fatalf("service %s called despite failed auth", c)
+	}
+	w := do(t, h, "POST", "/api/games/abcde/leave", "tok-guest", "")
+	if w.Code != http.StatusNoContent || w.Body.Len() != 0 {
+		t.Fatalf("leave = %d %q", w.Code, w.Body.String())
+	}
+	if svc.lastCall() != "LeaveGame" || svc.lastID != "ABCDE" {
+		t.Fatalf("last call = %s on %s", svc.lastCall(), svc.lastID)
+	}
+	svc.err = domain.ErrCannotLeave
+	wantError(t, do(t, h, "POST", "/api/games/ABCDE/leave", "tok-host", ""), http.StatusConflict, apidto.CodeCannotLeave)
+}
+
 // Gameplay is WebSocket-only: its former REST routes do not exist.
 func TestGameplayRoutesAreGone(t *testing.T) {
 	svc := &fakeService{}
@@ -379,6 +401,8 @@ func TestErrorTable(t *testing.T) {
 		{domain.ErrNameTaken, 409, apidto.CodeNameTaken},
 		{domain.ErrNotYourTurn, 409, apidto.CodeNotYourTurn},
 		{domain.ErrRematchExists, 409, apidto.CodeRematchExists},
+		{domain.ErrCannotLeave, 409, apidto.CodeCannotLeave},
+		{domain.ErrNothingToUndo, 409, apidto.CodeNothingToUndo},
 		{ports.ErrVersionConflict, 409, apidto.CodeConflict},
 		{domain.ErrInvalidName, 422, apidto.CodeInvalidName},
 		{domain.ErrInvalidOptions, 422, apidto.CodeInvalidOptions},

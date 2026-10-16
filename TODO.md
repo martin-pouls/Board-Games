@@ -11,4 +11,5 @@
 ## The Crew
 
 # General
-- implement the suggestions from [review.md](review.md) (order in its last section)
+- save lobby settings in storage (so stuff like the game extreme, pro, etc). maybe this only makes sense for "the game"
+- the game piles resizing

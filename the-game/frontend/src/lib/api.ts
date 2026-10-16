@@ -14,7 +14,7 @@ export { ApiError } from '@board-games/shared/api.js';
 
 const request = createRequest<ApiErrorCode>(__BASE_PATH__);
 
-export const { getHealth, joinGame, getSummary, getView } = lobbyApi<
+export const { getHealth, joinGame, getSummary, getView, leaveGame } = lobbyApi<
 	SessionResponse,
 	GameSummary,
 	PlayerView

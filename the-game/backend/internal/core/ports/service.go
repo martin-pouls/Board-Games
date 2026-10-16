@@ -23,6 +23,8 @@ type GameService interface {
 	Authenticate(ctx context.Context, id domain.GameID, token string) (domain.PlayerID, error) // ErrUnauthorized / ErrGameNotFound
 	Summary(ctx context.Context, id domain.GameID) (domain.GameSummary, error)
 	View(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error)
+	// LeaveGame removes the player from the lobby (REST); their token stops working for this game.
+	LeaveGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error
 	// The gameplay calls below are used by the WebSocket adapter only. They return no view:
 	// the service publishes the new state to every connected client, the actor included.
 	SetOptions(ctx context.Context, id domain.GameID, player domain.PlayerID, opts domain.Options) error
@@ -32,9 +34,9 @@ type GameService interface {
 	// UndoPlay takes back the active player's last card of the current turn.
 	UndoPlay(ctx context.Context, id domain.GameID, player domain.PlayerID) error
 	EndTurn(ctx context.Context, id domain.GameID, player domain.PlayerID) error
-	// GiveUp loses the game for a player stuck mid-turn (instead of undoing).
+	// GiveUp lets any seated player end a running game as lost.
 	GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) error
-	// EndGame lets the host end a game early, from the lobby on (outcome "aborted").
+	// EndGame lets the host close the lobby (phase "ended"); a running game is given up instead.
 	EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error
 	// Rematch creates the next lobby game; the old game then carries NextGameID. It is idempotent.
 	Rematch(ctx context.Context, id domain.GameID, player domain.PlayerID) error

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError } from '#lib/api.js';
-import type { GameSummary, Outcome, Phase } from '#lib/types.js';
+import { ApiError } from './api.js';
 import {
 	MAX_CONTINUE,
+	type RecentSummary,
 	fromSummary,
 	isContinuable,
 	loadRecentGames,
@@ -12,25 +12,23 @@ import {
 	type RecentGame
 } from './recent.js';
 
-const game = (code: string, phase: Phase | null, createdAt: number, outcome?: Outcome) =>
-	({ code, name: 'Anna', phase, outcome, createdAt }) satisfies RecentGame;
+const game = (code: string, phase: string | null, createdAt: number) =>
+	({ code, name: 'Anna', phase, createdAt }) satisfies RecentGame;
 
-const summary = (over: Partial<GameSummary> = {}): GameSummary => ({
-	gameId: 'K7MQ2',
+const summary = (over: Partial<RecentSummary> = {}): RecentSummary => ({
 	phase: 'lobby',
-	hostName: 'Anna',
-	playerCount: 1,
-	maxPlayers: 5,
-	joinable: true,
 	...over
 });
 
 describe('isContinuable', () => {
 	it.each([
 		['lobby', true],
-		['choosingFirstPlayer', true],
 		['playing', true],
-		['finished', false],
+		['won', false],
+		['lost', false],
+		['ended', false],
+		['debrief', true],
+		['choosingFirstPlayer', true],
 		[null, true]
 	] as const)('%s -> %s', (phase, want) => {
 		expect(isContinuable({ phase })).toBe(want);
@@ -41,10 +39,10 @@ describe('partitionGames', () => {
 	it('splits finished games into history and sorts both newest first', () => {
 		const { continuable, history } = partitionGames([
 			game('AAAAA', 'playing', 100),
-			game('BBBBB', 'finished', 500, 'won'),
+			game('BBBBB', 'won', 500),
 			game('CCCCC', 'lobby', 300),
-			game('DDDDD', 'finished', 400, 'lost'),
-			game('EEEEE', 'finished', 50, 'aborted')
+			game('DDDDD', 'lost', 400),
+			game('EEEEE', 'lost', 50)
 		]);
 		expect(continuable.map((g) => g.code)).toEqual(['CCCCC', 'AAAAA']);
 		expect(history.map((g) => g.code)).toEqual(['BBBBB', 'DDDDD', 'EEEEE']);
@@ -88,13 +86,12 @@ describe('parseCreatedAt / fromSummary', () => {
 		const g = fromSummary(
 			'K7MQ2',
 			'Anna',
-			summary({ phase: 'finished', outcome: 'won', createdAt: '2026-10-10T12:30:05Z' })
+			summary({ phase: 'won', createdAt: '2026-10-10T12:30:05Z' })
 		);
 		expect(g).toEqual({
 			code: 'K7MQ2',
 			name: 'Anna',
-			phase: 'finished',
-			outcome: 'won',
+			phase: 'won',
 			createdAt: Date.UTC(2026, 9, 10, 12, 30, 5)
 		});
 	});
@@ -103,15 +100,28 @@ describe('parseCreatedAt / fromSummary', () => {
 describe('statusLabel', () => {
 	it.each([
 		[game('A', 'lobby', 0), 'Lobby'],
-		[game('A', 'choosingFirstPlayer', 0), 'In progress'],
 		[game('A', 'playing', 0), 'In progress'],
-		[game('A', 'finished', 0, 'won'), 'Won'],
-		[game('A', 'finished', 0, 'lost'), 'Lost'],
-		[game('A', 'finished', 0, 'aborted'), 'Ended'],
-		[game('A', 'finished', 0), 'Finished'],
-		[game('A', null, 0), '']
+		[game('A', 'won', 0), 'Won'],
+		[game('A', 'lost', 0), 'Lost'],
+		[game('A', 'ended', 0), 'Ended'],
+		[game('A', null, 0), ''],
+		[game('A', 'debrief', 0), ''],
+		[game('A', 'toString', 0), '']
 	])('%o -> %s', (g, label) => {
 		expect(statusLabel(g)).toBe(label);
+	});
+
+	it('adds the phases of a game through the label map', () => {
+		const labels = { debrief: 'Debrief' };
+		expect(statusLabel(game('A', 'debrief', 0), labels)).toBe('Debrief');
+		expect(statusLabel(game('A', 'playing', 0), labels)).toBe('In progress');
+		expect(statusLabel(game('A', 'ended', 0), labels)).toBe('Ended');
+		expect(statusLabel(game('A', null, 0), labels)).toBe('');
+		expect(statusLabel(game('A', 'toString', 0), labels)).toBe('');
+	});
+
+	it('lets the label map override a common label', () => {
+		expect(statusLabel(game('A', 'ended', 0), { ended: 'Closed' })).toBe('Closed');
 	});
 });
 
@@ -124,11 +134,11 @@ describe('loadRecentGames', () => {
 	];
 
 	it('drops games the server no longer has, keeps failed ones with an unknown phase', async () => {
-		const fetchSummary = vi.fn(async (code: string): Promise<GameSummary> => {
+		const fetchSummary = vi.fn(async (code: string): Promise<RecentSummary> => {
 			if (code === 'BBBBB') throw new ApiError(404, 'game_not_found', 'gone');
 			if (code === 'CCCCC') throw new TypeError('network down');
 			if (code === 'DDDDD') throw new ApiError(500, 'internal', 'boom');
-			return summary({ gameId: code, phase: 'playing', createdAt: '2026-10-10T00:00:00Z' });
+			return summary({ phase: 'playing', createdAt: '2026-10-10T00:00:00Z' });
 		});
 		const gone: string[] = [];
 		const games = await loadRecentGames(stored, fetchSummary, (c) => gone.push(c));
@@ -145,7 +155,7 @@ describe('loadRecentGames', () => {
 	it('requests all summaries in parallel', async () => {
 		let inFlight = 0;
 		let peak = 0;
-		const fetchSummary = async (): Promise<GameSummary> => {
+		const fetchSummary = async (): Promise<RecentSummary> => {
 			peak = Math.max(peak, ++inFlight);
 			await new Promise((r) => setTimeout(r, 5));
 			inFlight--;

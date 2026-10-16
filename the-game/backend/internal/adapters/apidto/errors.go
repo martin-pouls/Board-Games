@@ -32,7 +32,7 @@ const (
 	CodeMinimumNotReached = "minimum_not_reached"
 	CodeRematchExists     = "rematch_exists"
 	CodeNothingToUndo     = "nothing_to_undo"
-	CodeNotStuck          = "not_stuck"
+	CodeCannotLeave       = "cannot_leave"
 
 	// Extreme command vetoes (all 422).
 	CodeStopPlayed            = "stop_played"
@@ -73,7 +73,7 @@ var Errors = append(httpkit.ErrorMapper{
 	{Err: domain.ErrNameTaken, Code: CodeNameTaken, Status: http.StatusConflict},
 	{Err: domain.ErrNotYourTurn, Code: CodeNotYourTurn, Status: http.StatusConflict},
 	{Err: domain.ErrNothingToUndo, Code: CodeNothingToUndo, Status: http.StatusConflict},
-	{Err: domain.ErrNotStuck, Code: CodeNotStuck, Status: http.StatusConflict},
+	{Err: domain.ErrCannotLeave, Code: CodeCannotLeave, Status: http.StatusConflict},
 	{Err: ports.ErrVersionConflict, Code: CodeConflict, Status: http.StatusConflict},
 	{Err: domain.ErrInvalidName, Code: CodeInvalidName, Status: http.StatusUnprocessableEntity},
 	{Err: domain.ErrInvalidOptions, Code: CodeInvalidOptions, Status: http.StatusUnprocessableEntity},

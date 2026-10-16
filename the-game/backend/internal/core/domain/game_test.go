@@ -24,7 +24,7 @@ func sampleGame(t *testing.T) *Game {
 		DrawPile: []Card{NumberCard(70), NumberCard(80), NumberCard(90)},
 		Piles:    piles,
 		Turn:     Turn{Number: 2, ActiveSeat: 0, Plays: []Play{{Card: NumberCard(10), Pile: 0}}, StartHandSize: 3},
-		Result:   &Result{Outcome: OutcomeLost, Score: 5},
+		Result:   &Result{Score: 5, Reason: LossStuck, PlayerID: "p2"},
 		Revision: 7,
 		events:   []Event{CardPlayed{PlayerID: "p1", Card: NumberCard(10), Pile: 0}},
 	}
@@ -178,15 +178,14 @@ func TestSummary(t *testing.T) {
 	}
 }
 
-func TestSummaryOutcome(t *testing.T) {
+// TestSummaryPhase: the summary carries the phase, which says how a game ended; only a lobby is joinable.
+func TestSummaryPhase(t *testing.T) {
 	r, _ := NewRuleset(DefaultOptions())
-	for _, o := range []Outcome{OutcomeWon, OutcomeLost, OutcomeAborted} {
-		g := &Game{ID: "K7MQ2", Phase: PhaseFinished, Rules: r, Result: &Result{Outcome: o}}
-		if got := g.Summary().Outcome; got != o {
-			t.Errorf("Summary().Outcome = %q, want %q", got, o)
+	for _, ph := range []Phase{PhaseLobby, PhaseChoosingFirstPlayer, PhasePlaying, PhaseWon, PhaseLost, PhaseEnded} {
+		g := &Game{ID: "K7MQ2", Phase: ph, Rules: r, HostID: "p1", Players: []Player{{ID: "p1", Name: "Anna"}}}
+		s := g.Summary()
+		if s.Phase != ph || s.Joinable != (ph == PhaseLobby) {
+			t.Errorf("Summary() in %s = %+v", ph, s)
 		}
-	}
-	if got := (&Game{Phase: PhasePlaying, Rules: r}).Summary().Outcome; got != "" {
-		t.Errorf("running game Outcome = %q, want empty", got)
 	}
 }

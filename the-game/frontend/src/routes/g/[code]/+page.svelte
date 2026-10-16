@@ -11,7 +11,10 @@
 	import GameOver from '#lib/components/game/GameOver.svelte';
 	import Lobby from '#lib/components/game/Lobby.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';
+	import { ApiError, leaveGame } from '#lib/api.js';
+	import { errorText } from '#lib/errors.js';
 	import { sessions } from '#lib/session.js';
+	import { toast } from 'svelte-sonner';
 
 	const code = $derived((page.params.code ?? '').toUpperCase());
 
@@ -47,6 +50,21 @@
 	});
 
 	const view = $derived(conn?.view ?? null);
+
+	async function leave() {
+		const c = conn;
+		const session = sessions.get(code);
+		if (!c || !session) return;
+		c.close();
+		try {
+			await leaveGame(code, session.token);
+		} catch (e) {
+			toast.error(errorText(e instanceof ApiError ? e.code : 'internal'));
+			return;
+		}
+		sessions.clear(code);
+		await goto(resolve('/'));
+	}
 </script>
 
 <svelte:head>
@@ -73,13 +91,28 @@
 	</div>
 {:else if conn && view}
 	{#if view.phase === 'lobby'}
-		<Lobby client={conn} {view} />
+		<Lobby client={conn} {view} onleave={leave} />
 	{:else if view.phase === 'choosingFirstPlayer'}
 		<ChooseFirstPlayer client={conn} {view} />
-	{:else if view.phase === 'finished'}
-		<GameOver client={conn} {view} />
-	{:else}
+	{:else if view.phase === 'playing'}
 		<Board client={conn} {view} />
+	{:else if view.phase === 'ended'}
+		{@const host = view.players.find((p) => p.id === view.hostId)}
+		<div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-2xl">Lobby closed</Card.Title>
+					<Card.Description>
+						{host?.isYou ? 'You' : (host?.name ?? 'The host')} closed this lobby before the game started.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<Button class="h-12 w-full text-base" href={resolve('/')}>Back to home</Button>
+				</Card.Content>
+			</Card.Root>
+		</div>
+	{:else}
+		<GameOver client={conn} {view} />
 	{/if}
 {:else}
 	<div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3" aria-busy="true">

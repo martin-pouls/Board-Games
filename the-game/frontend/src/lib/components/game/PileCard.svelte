@@ -3,9 +3,9 @@
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Skull from '@lucide/svelte/icons/skull';
-	import { scale } from 'svelte/transition';
-	import { prefersReducedMotion } from 'svelte/motion';
+	import { getCardMotion, type CardMotionParams } from '@board-games/shared/cardMotion.js';
 	import { commandInfo } from '#lib/game/commands.js';
+	import { pileTopKey } from '#lib/game/motion.js';
 	import { cn } from '#lib/utils.js';
 	import type { Pile } from '#lib/types.js';
 	import CommandChip from './CommandChip.svelte';
@@ -32,6 +32,26 @@
 		skull?: boolean;
 		onclick?: () => void;
 	} = $props();
+
+	// Card motion: your own card flies in from your hand (same key there) and back on undo; other
+	// players' cards come in from their hidden hands above (and go back up on their undo). A top
+	// that gets covered just goes; one uncovered by an undo fades back in place.
+	const { send, receive } = getCardMotion();
+	// The cards on the pile before the latest update (bookkeeping, not rendered).
+	let lastCount = -1;
+	// A keyed each of one, so a leaving top keeps its own key and count (a $derived would move on).
+	const tops = $derived.by(() => {
+		const count = pile.cardCount;
+		const uncovered = count < lastCount;
+		lastCount = count;
+		return [
+			{ key: pileTopKey(pile), value: pile.topValue, start: !pile.topCard, count, uncovered }
+		];
+	});
+	/** A leaving top flies only when an undo took it back; a covered one goes at once. */
+	function leave(node: Element, params: CardMotionParams & { taken: boolean }) {
+		return params.taken ? send(node, params) : () => ({ duration: 0 });
+	}
 
 	const up = $derived(pile.direction === 'up');
 	const empty = $derived(pile.topCard === null);
@@ -95,20 +115,22 @@
 		</span>
 	</span>
 
-	<span class="flex flex-1 items-center justify-center">
-		{#key pile.topValue}
+	<!-- One grid cell, so a top flying back to a hand doesn't push the uncovered one aside. -->
+	<span class="grid flex-1 place-items-center">
+		{#each tops as t (t.key)}
 			<span
-				in:scale={{ start: 0.6, duration: prefersReducedMotion.current ? 0 : 220 }}
+				in:receive={{ key: t.key, offstage: t.uncovered ? 'none' : 'top' }}
+				out:leave={{ key: t.key, offstage: 'top', taken: pile.cardCount < t.count }}
 				class={cn(
-					'leading-none font-bold tracking-tight tabular-nums',
+					'block leading-none font-bold tracking-tight tabular-nums [grid-area:1/1]',
 					up ? 'text-sky-700 dark:text-sky-300' : 'text-amber-700 dark:text-amber-300',
-					empty && 'opacity-40'
+					t.start && 'opacity-40'
 				)}
 				style="font-size: clamp(1.75rem, min(34cqw, 48cqh), 5.5rem)"
 			>
-				{pile.topValue}
+				{t.value}
 			</span>
-		{/key}
+		{/each}
 	</span>
 
 	{#if command}

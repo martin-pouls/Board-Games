@@ -1,30 +1,22 @@
-# Regicide — online multiplayer
+# Regicide
 
-A web implementation of the cooperative card game **Regicide** (Badgers From Mars), played live by 1–4 players in the browser. Includes solo mode with Jester powers and Gold/Silver/Bronze victories. Served at `/regicide/`.
+**Regicide** (Badgers From Mars), cooperative for 1–4 players, incl. solo mode with Jester powers and Gold/Silver/Bronze victories. Common rules: root [CLAUDE.md](../CLAUDE.md). Rules: [docs/rules.md](docs/rules.md) (rules summary, App decisions).
 
-The shared stack, architecture, conventions, commands and deployment are in the [root CLAUDE.md](../CLAUDE.md). This file covers what is specific to Regicide. Its lobby, session, WebSocket and persistence plumbing comes from [shared/](../shared/README.md), like The Game's; when in doubt about a convention, look at how [the-game/](../the-game/) does it.
+## Intents and per-player view
 
-**Rules:** [docs/rules.md](docs/rules.md) is the source of truth. It contains the English rules summary and the interpretations we chose for ambiguities (marked **App decision**). Read it before touching game logic. Do not re-read the PDF. If a rule question is not answered there, ask, then record the answer in that file.
+- **Intents:** play these cards, yield, discard these cards, choose next player, use solo Jester, set Jester signal, give up.
+- **Per-player view:** own hand, other players' hand *counts*, current enemy (suit, rank, health, accumulated damage, shield, effective attack, immunity status), cards played against the enemy, the last turn (who, the cards played or a yield, the enemy it defeated and whether exactly, the cards discarded), Tavern/Castle/discard counts, whose turn, yield flags, Jester signals, solo Jesters left. Never the order of the Tavern or Castle deck.
 
-## App specifics
+## Domain modelling
 
-- Go module `github.com/martin-pouls/regicide/backend`. Default DB `data/regicide.db`.
-- `frontend/src/lib/game/` also holds the play/discard helpers. Game screen components: Lobby, Table, Hand, EnemyCard, ...
-- **Intents:** "play these cards", "yield", "discard these cards", "choose next player", "use solo Jester".
-- **Per-player view:** own hand, other players' hand *counts*, current enemy (suit, rank, health, accumulated damage, shield, effective attack, immunity status), cards played against the enemy, the last turn (who, the cards played or a yield, the enemy it defeated and whether exactly, the cards discarded), Tavern/Castle/discard counts, phase, whose turn, yield flags, Jester signals, solo Jesters left. Never send the order of the Tavern or Castle deck.
-- **Deployment:** container `regicide`, SQLite in the volume `regicide_data`, Caddy snippet [deploy/regicide.caddy](deploy/regicide.caddy).
-
-## Domain modelling rules
-
-- **Cards are structs** (`Card{Suit, Rank}`), with Jester as its own rank/kind. Values are derived by functions (attack value in hand, discard value, enemy attack/health), never stored redundantly.
-- **The RNG is injected** (seedable), so shuffles are deterministic in tests.
-- **Phases are explicit:** `lobby → playing{step: play | discard | chooseNext} → won | lost`, plus `lobby → ended` when the host closes the lobby. Every action checks the phase and the active player first.
-- **Derived values are computed, not cached:** shield, effective attack, immunity cancellation and damage are derived from the cards played against the current enemy plus a "Jester played against this enemy" flag, so the snapshot stays minimal and consistent. The exception is `LastTurn`, a record for the table's Played and Discarded piles: every play or yield replaces it and the discard fills it in, so it survives a defeat (the killing play stays visible) and its discard is empty then (no damage is taken after a defeat).
-- **The game is lost only by the rules in docs/rules.md §9** (or by give-up).
-- Player count 1–4; ruleset values (hand size, Jester count) come from a table keyed by player count, not scattered constants.
+- **Cards are structs** (`Card{Suit, Rank}`), with Jester as its own rank. Values are derived by functions (attack value, discard value, enemy attack/health), never stored.
+- **The RNG is injected** (seedable).
+- **Steps while playing:** `play | discard | chooseNext`. Every action checks phase, step and active player.
+- **Derived, not cached:** shield, effective attack, immunity cancellation and damage come from the cards played against the current enemy plus a "Jester played against this enemy" flag. The exception is `LastTurn`, the record behind the table's Played and Discarded piles: every play or yield replaces it and the discard fills it in, so it survives a defeat (the killing play stays visible, its discard empty).
+- Lost only by rules §9 (or give-up). Ruleset values (hand size, Jester count) come from a table keyed by player count.
 
 ## Look and feel
 
-Same stack and component library as The Game, but a distinct identity: a medieval "castle" theme in light (parchment and ink) and dark (deep colours), both with gold accents; Cinzel as the serif display font for headings and card ranks, EB Garamond for text; rendered cards with suit glyphs (♥ ♦ ♣ ♠; hearts/diamonds red), and a prominent **enemy card** showing health bar, accumulated damage, attack, shield and immunity. The hand supports multi-select so combos, Animal Companion pairs and discard sets can be composed, with a live preview of attack value and which suit powers will trigger. At the table the enemy panel is compact (small card, HP numbers on the bar, attack − shield = damage as symbols, one overlapping stack per player), a Played/Discarded row shows the last turn with icons instead of labels, and the action area is one slim bar above the hand (badges for the suit powers, no damage arithmetic: that shows on the enemy). Light/dark toggle via mode-watcher, as in The Game; theme tokens live in `src/routes/layout.css` (`:root` light, `.dark` dark), so components use tokens, not raw colours.
+A medieval "castle" theme: parchment and ink in light mode, deep colours in dark mode, both with gold accents; Cinzel for headings and card ranks, EB Garamond for text; cards with suit glyphs (hearts/diamonds red). The hand supports multi-select to compose combos, Animal Companion pairs and discard sets, with a live preview of attack value and triggered suit powers. At the table the enemy panel is compact (small card, HP on the bar, attack − shield = damage as symbols, one overlapping stack per player), a Played/Discarded row shows the last turn with icons, and the action area is one slim bar above the hand (suit-power badges, no damage arithmetic). The hand sort menu sits in the table header. Card motion: plays and discards fly from the hand to the Played/Discarded piles (other players' from the top edge), a defeated enemy to its slot, drawn cards into the hand.
 
-The bits-ui `AlertDialog.Action` gotcha (root CLAUDE.md) bites the solo "Use Jester" confirm: without closing it explicitly, the overlay blocks the hand.
+The `AlertDialog.Action` gotcha bites the solo "Use Jester" confirm: without closing it explicitly, the overlay blocks the hand.

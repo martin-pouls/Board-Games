@@ -4,7 +4,13 @@ Plumbing every game shares. It knows nothing about any game: no rules, no domain
 
 ## backend (`github.com/martin-pouls/shared/backend`)
 
-A Go module of its own (overview in [backend/doc.go](backend/doc.go)): `wire`, `httpkit` (incl. rate limits), `wskit`, `sqlitedb`, `idgen`, `lockmap`, `serverkit`.
+A Go module of its own (overview in [backend/doc.go](backend/doc.go)):
+
+- `wire`: error codes and message envelopes shared by REST and WS.
+- `httpkit`: JSON, error mapping, the router skeleton, SPA handler, abuse limits, `Authenticate` (bearer token → player).
+- `wskit`: the WebSocket handler and hub; `PublishViews` sends each connected player their own view and kicks players who left.
+- `sqlitedb`: connection, migration runner, snapshot store and the generic `Repository` (a game supplies a `Codec` and its port errors).
+- `idgen` (codes, IDs, tokens, RNG; `...As` variants return the game's own ID types), `lockmap` (per-game locks), `serverkit` (startup, shutdown, janitor).
 
 A game uses it with a local replace in its `go.mod`:
 
@@ -17,9 +23,15 @@ Adapters and `cmd/server` may use any package. `core/service` may use `idgen` an
 
 ## frontend (`@board-games/shared`)
 
-Svelte/TS source compiled by each app as part of its own build, not a built package: wire and protocol helpers, `GameSocket` (WS connection with reconnect), the lobby REST client, `login.ts` (reloads the page when the access gate answers 401 `login_required`, so the browser hits the login redirect), the session store, the page frame (`PageFrame`: `TopBar` with optional All games link and the theme toggle, a centred column with a `wide` option, the imprint and privacy footer; `AppFrame` wires it up for a game, and its `topBar={false}` hides the top bar on the game screen, where `HeaderThemeToggle` puts the toggle into the game's own header row to save a row on phones; the start page and the gate's login page use `PageFrame` directly and handle the toggle in their no-JS theme script), `ShareInvite`, `ConnectionBanner`, `cardMotion` (headless card flights between hand, table and off-screen, presentation only), new-card marks (`trackNewCards` in `newCards.svelte.ts` remembers which cards just came into a hand for a few seconds, `NewCardMark` draws the dot and glow in the app's `--new-card` colour), and copies of the shadcn `button`/`input` it needs.
+Svelte/TS source compiled by each app as part of its own build, not a built package:
 
-An app wires it up in four places (see `regicide/frontend`):
+- **Plumbing:** wire and protocol helpers, `GameSocket` (WS with reconnect), the lobby REST client (`api.ts`), the session store, `login.ts` (reloads the page when the gate answers 401 `login_required`).
+- **Page frame:** `PageFrame` (`TopBar` with optional All games link and theme toggle, centred column with a `wide` option, imprint and privacy footer). `AppFrame` wires it up for a game; on the game screen `topBar={false}` hides the bar and `HeaderThemeToggle` goes into the game's own header row. The start page and the gate use `PageFrame` directly.
+- **Lobby pages:** `HomePage` (host, join by code, continue and history; a `hero` snippet for the game's title card) and `JoinPage` (invite link). They take the game's REST calls, session store, error texts and navigation as props. `recent.ts` holds the remembered games and their status labels (`lobby`, `playing`, `won`, `lost`, `ended`, plus labels for a game's own phases).
+- **Lobby and table:** `LobbyActions` (close / leave / end game with confirmations), `HeaderButton` (the icon and colour conventions are in its header comment), `ShareInvite`, `ConnectionBanner`, `cardMotion` (headless card flights, presentation only; a leaving card must take its key from its own list item, not from a recomputed value, or it fades instead of flying), new-card marks (`trackNewCards`, `NewCardMark` in the app's `--new-card` colour).
+- Copies of the shadcn components it needs (`src/ui/`).
+
+An app wires it up in four places (see `fox-duet/frontend`):
 
 - `vite.config.ts`: `resolve.alias` `{ [sharedAlias]: sharedSrc }`, `resolve.dedupe: sharedDedupe`, `server.fs.allow: [sharedRoot]`, and a `server.warmup` entry for `../../shared/frontend/src/**/*.{svelte,ts}`, all from [frontend/vite.ts](frontend/vite.ts).
 - `tsconfig.json`: `"paths": { "@board-games/shared/*": ["../../shared/frontend/src/*"] }`.

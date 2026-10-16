@@ -114,12 +114,12 @@ func FromView(v domain.PlayerView) PlayerView {
 	}
 	if r := v.Result; r != nil {
 		out.Result = &Result{
-			Outcome:             string(r.Outcome),
 			Score:               r.Score,
 			Excellent:           r.Excellent,
 			CardsLeftInHands:    r.CardsLeftInHands,
 			CardsLeftInDrawPile: r.CardsLeftInDrawPile,
-			StuckPlayerID:       string(r.StuckPlayerID),
+			Reason:              string(r.Reason),
+			PlayerID:            string(r.PlayerID),
 		}
 	}
 	return out
@@ -139,7 +139,6 @@ func FromSummary(s domain.GameSummary) GameSummary {
 		MaxPlayers:  s.MaxPlayers,
 		Joinable:    s.Joinable,
 		CreatedAt:   createdAt,
-		Outcome:     string(s.Outcome),
 	}
 }
 
@@ -159,6 +158,8 @@ func FromEvent(e domain.Event) (Event, bool) {
 	switch e := e.(type) {
 	case domain.PlayerJoined:
 		return Event{Type: EventPlayerJoined, PlayerID: string(e.PlayerID), Name: e.Name}, true
+	case domain.PlayerLeft:
+		return Event{Type: EventPlayerLeft, PlayerID: string(e.PlayerID), HostID: string(e.HostID)}, true
 	case domain.OptionsChanged:
 		return Event{Type: EventOptionsChanged}, true
 	case domain.GameStarted:
@@ -177,13 +178,12 @@ func FromEvent(e domain.Event) (Event, bool) {
 		return Event{Type: EventTurnEnded, PlayerID: string(e.PlayerID), CardsDrawn: ptr(e.CardsDrawn)}, true
 	case domain.PlayerSkipped:
 		return Event{Type: EventPlayerSkipped, PlayerID: string(e.PlayerID)}, true
-	case domain.GameFinished:
-		return Event{
-			Type:          EventGameFinished,
-			Outcome:       string(e.Outcome),
-			Score:         ptr(e.Score),
-			StuckPlayerID: string(e.StuckPlayerID),
-		}, true
+	case domain.GameWon:
+		return Event{Type: EventGameWon}, true
+	case domain.GameLost:
+		return Event{Type: EventGameLost, Reason: string(e.Reason), PlayerID: string(e.PlayerID), Score: ptr(e.Score)}, true
+	case domain.GameEnded:
+		return Event{Type: EventGameEnded, ByPlayerID: string(e.ByPlayerID)}, true
 	case domain.RematchCreated:
 		return Event{Type: EventRematchCreated, GameID: string(e.GameID)}, true
 	default:

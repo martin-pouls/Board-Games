@@ -1,6 +1,8 @@
 package wskit
 
 import (
+	"encoding/json"
+	"errors"
 	"log/slog"
 	"slices"
 	"sync"
@@ -61,6 +63,29 @@ func (h *Hub) Broadcast(gameID string, build func(playerID string) (payload []by
 			c.enqueue(p)
 		}
 	}
+}
+
+// PublishViews sends every connected player of gameID the JSON of the message view builds for
+// them. view runs once per distinct connected player. An error matching gone (errors.Is) means
+// the player is no longer seated: their sockets are closed with CloseUnauthorized. Other errors
+// and marshal failures are logged and that player gets nothing.
+func (h *Hub) PublishViews(gameID string, gone error, view func(playerID string) (any, error)) {
+	h.Broadcast(gameID, func(pid string) ([]byte, bool) {
+		msg, err := view(pid)
+		if gone != nil && errors.Is(err, gone) {
+			return nil, true
+		}
+		if err != nil {
+			h.logger.Error("ws: build view", "game", gameID, "player", pid, "err", err)
+			return nil, false
+		}
+		b, err := json.Marshal(msg)
+		if err != nil {
+			h.logger.Error("ws: marshal view", "game", gameID, "player", pid, "err", err)
+			return nil, false
+		}
+		return b, false
+	})
 }
 
 // snapshot copies the room's conns so callers can work without the lock.
@@ -145,5 +170,14 @@ func (h *Hub) Online(gameID string) []string {
 		}
 	}
 	slices.Sort(out)
+	return out
+}
+
+// OnlineAs is Online with the game's own player ID type.
+func OnlineAs[P ~string](h *Hub, gameID string) []P {
+	var out []P
+	for _, id := range h.Online(gameID) {
+		out = append(out, P(id))
+	}
 	return out
 }

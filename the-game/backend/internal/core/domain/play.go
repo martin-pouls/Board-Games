@@ -117,7 +117,7 @@ func (g *Game) PlayCard(by PlayerID, value int, pile int) error {
 	// No stuck check here: a player stuck mid-turn may still undo or give up. An
 	// uncovered Skull as the very last card of the game is such a case (rules.md §2).
 	if g.noCardsLeft() && g.CanEndTurn() == nil {
-		g.finish(OutcomeWon, "")
+		g.win()
 	}
 	g.commit()
 	return nil
@@ -148,20 +148,6 @@ func (g *Game) UndoPlay(by PlayerID) error {
 		g.Turn.Plays = nil // as at turn start
 	}
 	g.emit(PlayUndone{PlayerID: by, Card: last.Card, Pile: last.Pile})
-	g.commit()
-	return nil
-}
-
-// GiveUp ends the game as lost when the active player is stuck mid-turn and does not
-// want to undo their cards. Errors: ErrUnknownPlayer, ErrWrongPhase, ErrNotYourTurn, ErrNotStuck.
-func (g *Game) GiveUp(by PlayerID) error {
-	if _, err := g.requireActive(by); err != nil {
-		return err
-	}
-	if !g.ActivePlayerStuck() {
-		return fmt.Errorf("%w: a card can still be played or the turn ended", ErrNotStuck)
-	}
-	g.finish(OutcomeLost, by)
 	g.commit()
 	return nil
 }
@@ -216,7 +202,7 @@ func (g *Game) advanceTurn() {
 		g.emit(PlayerSkipped{PlayerID: g.Players[seat].ID})
 	}
 	// Defensive: PlayCard normally detects that every card was played.
-	g.finish(OutcomeWon, "")
+	g.win()
 }
 
 // beginTurn starts the next turn for seat and checks whether the player is stuck.
@@ -230,18 +216,26 @@ func (g *Game) beginTurn(seat int) {
 	g.checkStuck()
 }
 
-// finish ends the game with the given outcome and the score at this moment.
-func (g *Game) finish(o Outcome, stuck PlayerID) {
+// win ends the game as won: every card was played.
+func (g *Game) win() {
+	g.Phase = PhaseWon
+	g.Result = &Result{}
+	g.emit(GameWon{})
+}
+
+// lose ends the game as lost with the score at this moment; p is the stuck player or the
+// one who gave up.
+func (g *Game) lose(r LossReason, p PlayerID) {
 	hands, draw := g.Score()
-	g.Phase = PhaseFinished
+	g.Phase = PhaseLost
 	g.Result = &Result{
-		Outcome:             o,
 		Score:               hands + draw,
 		CardsLeftInHands:    hands,
 		CardsLeftInDrawPile: draw,
-		StuckPlayerID:       stuck,
+		Reason:              r,
+		PlayerID:            p,
 	}
-	g.emit(GameFinished{Outcome: o, Score: hands + draw, StuckPlayerID: stuck})
+	g.emit(GameLost{Reason: r, PlayerID: p, Score: hands + draw})
 }
 
 // LegalMoves returns every legal (card, pile) for by; nil unless playing and by is active.

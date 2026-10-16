@@ -5,7 +5,7 @@ import {
 	extremeMyTurn,
 	extremeOthersNoComm,
 	extremeSkull,
-	finishedLostSkull,
+	lostSkull,
 	fixtures,
 	noConstraints,
 	playingMyTurn,
@@ -81,7 +81,7 @@ describe('turnHints', () => {
 		const v = structuredClone(extremeSkull);
 		v.turn!.activePlayerId = 'p_ben';
 		expect(texts(v, false)).toEqual(['Ben must cover the skull', '3!: exactly 3 cards this turn']);
-		expect(texts(finishedLostSkull, false)).toEqual(['Dan must cover the skull']);
+		expect(texts(lostSkull, false)).toEqual(['Dan must cover the skull']);
 	});
 	it('falls back to "Someone" for an unknown active player', () => {
 		const v = structuredClone(extremeSkull);

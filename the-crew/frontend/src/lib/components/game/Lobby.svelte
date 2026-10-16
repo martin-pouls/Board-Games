@@ -1,17 +1,14 @@
 <script lang="ts">
 	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
+	import LobbyActions from '@board-games/shared/LobbyActions.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Bot from '@lucide/svelte/icons/bot';
 	import Crown from '@lucide/svelte/icons/crown';
-	import DoorOpen from '@lucide/svelte/icons/door-open';
-	import Flag from '@lucide/svelte/icons/flag';
 	import House from '@lucide/svelte/icons/house';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import X from '@lucide/svelte/icons/x';
-	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -34,8 +31,6 @@
 	}: { client: GameClient; view: PlayerView; onleave?: () => Promise<void> | void } = $props();
 
 	let busy = $state(false);
-	let confirmLeave = $state(false);
-	let confirmEnd = $state(false);
 
 	const isHost = $derived(view.hostId === view.you);
 	const host = $derived(view.players.find((p) => p.id === view.hostId));
@@ -92,21 +87,13 @@
 	function endGame() {
 		return run(async () => {
 			await client.endGame();
-			confirmEnd = false;
 			await goto(resolve('/'));
 		});
 	}
 
 	async function leave() {
-		if (busy) return;
-		busy = true;
-		try {
-			if (onleave) await onleave();
-			else await goto(resolve('/'));
-		} finally {
-			busy = false;
-			confirmLeave = false;
-		}
+		if (onleave) await onleave();
+		else await goto(resolve('/'));
 	}
 </script>
 
@@ -115,36 +102,7 @@
 		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<h1 class="text-lg font-semibold">Lobby</h1>
 		<div class="ml-auto flex items-center gap-1.5">
-			{#if alone}
-				<!-- A sole player cannot leave; closing affects nobody else, so no confirmation. -->
-				<HeaderButton
-					icon={X}
-					label="Close lobby"
-					showLabel
-					destructive
-					disabled={!connected || busy}
-					onclick={endGame}
-				/>
-			{:else}
-				<HeaderButton
-					icon={DoorOpen}
-					label="Leave"
-					showLabel
-					destructive
-					disabled={busy}
-					onclick={() => (confirmLeave = true)}
-				/>
-				{#if isHost}
-					<HeaderButton
-						icon={Flag}
-						label="End game"
-						showLabel
-						destructive
-						disabled={!connected || busy}
-						onclick={() => (confirmEnd = true)}
-					/>
-				{/if}
-			{/if}
+			<LobbyActions {alone} {isHost} {connected} {busy} onend={endGame} onleave={leave} />
 			<HeaderThemeToggle />
 		</div>
 	</header>
@@ -271,45 +229,3 @@
 		{/if}
 	</div>
 </div>
-
-<AlertDialog.Root bind:open={confirmLeave}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Leave this game?</AlertDialog.Title>
-			<AlertDialog.Description>
-				You will be removed from the lobby. You can rejoin with the code while it is still open.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={busy}>Stay</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class="bg-destructive text-white hover:bg-destructive/90"
-				disabled={busy}
-				onclick={leave}
-			>
-				Leave
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
-
-<AlertDialog.Root bind:open={confirmEnd}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>End this game for everyone?</AlertDialog.Title>
-			<AlertDialog.Description>
-				The lobby closes before the game starts and moves to everyone's history.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={busy}>Keep lobby</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class="bg-destructive text-white hover:bg-destructive/90"
-				disabled={busy || !connected}
-				onclick={endGame}
-			>
-				End game
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>

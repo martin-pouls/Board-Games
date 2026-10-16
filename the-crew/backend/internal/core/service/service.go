@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/martin-pouls/shared/backend/idgen"
 	"github.com/martin-pouls/shared/backend/lockmap"
 
 	"github.com/martin-pouls/the-crew/backend/internal/core/domain"
@@ -44,16 +45,16 @@ var _ ports.GameService = (*Service)(nil)
 // New builds a Service.
 func New(repo ports.GameRepository, pub ports.EventPublisher, cfg Config) *Service {
 	if cfg.NewGameID == nil {
-		cfg.NewGameID = defaultGameID
+		cfg.NewGameID = idgen.GameCodeAs[domain.GameID]
 	}
 	if cfg.NewPlayerID == nil {
-		cfg.NewPlayerID = defaultPlayerID
+		cfg.NewPlayerID = idgen.PlayerIDAs[domain.PlayerID]
 	}
 	if cfg.NewToken == nil {
-		cfg.NewToken = defaultToken
+		cfg.NewToken = idgen.Token
 	}
 	if cfg.NewRNG == nil {
-		cfg.NewRNG = defaultRNG
+		cfg.NewRNG = func() domain.RNG { return idgen.NewRNG() }
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
@@ -93,7 +94,7 @@ func (s *Service) mutate(ctx context.Context, id domain.GameID, fn func(*ports.G
 
 // act runs a domain mutator on the game under the per-game lock and publishes the result.
 func (s *Service) act(ctx context.Context, id domain.GameID, fn func(*domain.Game) error) error {
-	_, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
+	_, err := s.mutate(ctx, idgen.NormalizeCodeAs(id), func(rec *ports.GameRecord) error { return fn(rec.Game) })
 	return err
 }
 
@@ -106,7 +107,7 @@ func (s *Service) CreateGame(ctx context.Context, hostName string) (ports.Sessio
 		if err != nil {
 			return ports.Session{}, err
 		}
-		rec := &ports.GameRecord{Game: g, TokenHashes: map[domain.PlayerID]string{hostID: hashToken(token)}}
+		rec := &ports.GameRecord{Game: g, TokenHashes: map[domain.PlayerID]string{hostID: idgen.HashToken(token)}}
 		err = s.repo.Create(ctx, rec)
 		if errors.Is(err, ports.ErrDuplicateGameID) {
 			continue
@@ -131,11 +132,11 @@ func newSession(g *domain.Game, player domain.PlayerID, token string) (ports.Ses
 func (s *Service) JoinGame(ctx context.Context, id domain.GameID, name string) (ports.Session, error) {
 	pid := s.cfg.NewPlayerID()
 	token := s.cfg.NewToken()
-	rec, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error {
+	rec, err := s.mutate(ctx, idgen.NormalizeCodeAs(id), func(rec *ports.GameRecord) error {
 		if err := rec.Game.AddPlayer(pid, name); err != nil {
 			return err
 		}
-		rec.TokenHashes[pid] = hashToken(token)
+		rec.TokenHashes[pid] = idgen.HashToken(token)
 		return nil
 	})
 	if err != nil {
@@ -146,11 +147,11 @@ func (s *Service) JoinGame(ctx context.Context, id domain.GameID, name string) (
 
 // Authenticate implements ports.GameService.
 func (s *Service) Authenticate(ctx context.Context, id domain.GameID, token string) (domain.PlayerID, error) {
-	rec, err := s.repo.Load(ctx, normalizeID(id))
+	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return "", err
 	}
-	got := []byte(hashToken(token))
+	got := []byte(idgen.HashToken(token))
 	var found domain.PlayerID
 	for pid, h := range rec.TokenHashes {
 		if subtle.ConstantTimeCompare(got, []byte(h)) == 1 {
@@ -168,7 +169,7 @@ func (s *Service) Authenticate(ctx context.Context, id domain.GameID, token stri
 
 // Summary implements ports.GameService.
 func (s *Service) Summary(ctx context.Context, id domain.GameID) (domain.GameSummary, error) {
-	rec, err := s.repo.Load(ctx, normalizeID(id))
+	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return domain.GameSummary{}, err
 	}
@@ -177,7 +178,7 @@ func (s *Service) Summary(ctx context.Context, id domain.GameID) (domain.GameSum
 
 // View implements ports.GameService.
 func (s *Service) View(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	rec, err := s.repo.Load(ctx, normalizeID(id))
+	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return domain.PlayerView{}, err
 	}
@@ -186,7 +187,7 @@ func (s *Service) View(ctx context.Context, id domain.GameID, player domain.Play
 
 // LeaveGame implements ports.GameService.
 func (s *Service) LeaveGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
-	_, err := s.mutate(ctx, normalizeID(id), func(rec *ports.GameRecord) error { return rec.Game.Leave(player) })
+	_, err := s.mutate(ctx, idgen.NormalizeCodeAs(id), func(rec *ports.GameRecord) error { return rec.Game.Leave(player) })
 	return err
 }
 

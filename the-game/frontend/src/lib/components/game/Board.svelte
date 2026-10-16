@@ -1,12 +1,14 @@
 <script lang="ts">
 	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
+	import { setCardMotion } from '@board-games/shared/cardMotion.js';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import House from '@lucide/svelte/icons/house';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Flag from '@lucide/svelte/icons/flag';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
@@ -19,6 +21,7 @@
 	import TurnBar from './TurnBar.svelte';
 	import ActiveCommands from './ActiveCommands.svelte';
 	import NoCommunicationFrame from './NoCommunicationFrame.svelte';
+	import RulesHelp from './RulesHelp.svelte';
 
 	let {
 		client,
@@ -34,11 +37,13 @@
 		controls?: Snippet;
 	} = $props();
 
+	// One card motion for the board: cards fly between the hand and the piles.
+	setCardMotion();
+
 	let selected = $state<number | null>(null);
 	let pending = $state(false);
-	let confirmEnd = $state(false);
-	let ending = $state(false);
 	let confirmGiveUp = $state(false);
+	let rulesOpen = $state(false);
 
 	const connected = $derived(client.status === 'open');
 	const extreme = $derived(view.options.variant === 'extreme');
@@ -48,9 +53,9 @@
 		!readonly && view.phase === 'playing' && view.turn?.activePlayerId === view.you
 	);
 	const interactive = $derived(myTurn && connected && !pending);
-	const canEndGame = $derived(
-		view.hostId === view.you && (view.phase === 'playing' || view.phase === 'choosingFirstPlayer')
-	);
+	// Anyone may give up while the game runs, whoever's turn it is.
+	const running = $derived(view.phase === 'playing' || view.phase === 'choosingFirstPlayer');
+	const stuck = $derived(myTurn && !!view.turn?.stuck);
 	const selectedCard = $derived(
 		selected === null ? undefined : view.hand.find((c) => c.value === selected)
 	);
@@ -72,9 +77,9 @@
 		if (selected !== null && (!myTurn || !selectedCard)) selected = null;
 	});
 
-	// Close the give-up dialog once giving up is no option any more (undone elsewhere, game over).
+	// Close the give-up dialog once the game is over (someone else gave up, or it ended).
 	$effect(() => {
-		if (confirmGiveUp && !(myTurn && view.turn?.stuck)) confirmGiveUp = false;
+		if (confirmGiveUp && !running) confirmGiveUp = false;
 	});
 
 	// A short buzz when it becomes your turn (phones only; ignored elsewhere).
@@ -130,19 +135,6 @@
 		}
 	}
 
-	async function endGame() {
-		if (ending) return;
-		ending = true;
-		try {
-			await client.endGame();
-			confirmEnd = false;
-		} catch (e) {
-			fail(e);
-		} finally {
-			ending = false;
-		}
-	}
-
 	/** Runs one turn action (undo, end turn, give up) with the board locked meanwhile. */
 	async function turnAction(action: () => Promise<void>) {
 		if (pending) return;
@@ -167,7 +159,7 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2">
-	<header class={cn(headerRow, 'text-sm')}>
+	<header class={cn(headerRow, 'gap-1 text-sm sm:gap-1.5')}>
 		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 		<span
@@ -178,8 +170,14 @@
 			<span class="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold">PRO</span>
 		{/if}
 		{#if extreme}
-			<span class="rounded bg-violet-600 px-1.5 py-0.5 text-xs font-semibold text-white">
-				EXTREME
+			<span
+				class="rounded bg-violet-600 px-1.5 py-0.5 text-xs font-semibold text-white"
+				title="Extreme"
+			>
+				<!-- Abbreviated on phones, where the header row has room for nothing more. -->
+				<span class="sm:hidden" aria-hidden="true">EXT</span><span class="max-sm:sr-only"
+					>EXTREME</span
+				>
 			</span>
 		{/if}
 		<span
@@ -190,13 +188,13 @@
 			<span class="sr-only">Deck</span>
 			{view.drawPileCount}
 		</span>
-		{#if canEndGame}
+		<HeaderButton icon={BookOpen} label="Rules" onclick={() => (rulesOpen = true)} />
+		{#if running}
 			<HeaderButton
 				icon={Flag}
-				label="End game"
-				destructive
+				label="Give up"
 				disabled={!connected}
-				onclick={() => (confirmEnd = true)}
+				onclick={() => (confirmGiveUp = true)}
 			/>
 		{/if}
 		<HeaderThemeToggle />
@@ -252,39 +250,26 @@
 	</div>
 </div>
 
-<AlertDialog.Root bind:open={confirmEnd}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>End the game for everyone?</AlertDialog.Title>
-			<AlertDialog.Description>
-				The round stops now and the cards left are counted. You can start a new game from the
-				results screen.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={ending}>Keep playing</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class="bg-destructive text-white hover:bg-destructive/90"
-				disabled={ending || !connected}
-				onclick={endGame}
-			>
-				End game
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<RulesHelp bind:open={rulesOpen} {extreme} />
 
 <AlertDialog.Root bind:open={confirmGiveUp}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
 			<AlertDialog.Title>Give up and lose the game?</AlertDialog.Title>
 			<AlertDialog.Description>
-				No card fits and your turn can't end. You can still undo your cards from this turn and try
-				another way.
+				{#if stuck}
+					No card fits and your turn can't end. You can still undo your cards from this turn and try
+					another way.
+				{:else}
+					The game ends as a defeat for everyone and the cards left are counted. You can start a new
+					game from the results screen.
+				{/if}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={pending}>Keep trying</AlertDialog.Cancel>
+			<AlertDialog.Cancel disabled={pending}
+				>{stuck ? 'Keep trying' : 'Keep playing'}</AlertDialog.Cancel
+			>
 			<AlertDialog.Action
 				class="bg-destructive text-white hover:bg-destructive/90"
 				disabled={pending || !connected}

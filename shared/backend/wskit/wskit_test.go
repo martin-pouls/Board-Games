@@ -580,3 +580,117 @@ func TestOnline(t *testing.T) {
 		t.Fatalf("Online = %v", got)
 	}
 }
+
+// recordingHub returns a hub and the text of everything it logs.
+func recordingHub() (*Hub, *strings.Builder) {
+	var sb strings.Builder
+	return NewHub(slog.New(slog.NewTextHandler(&sb, nil))), &sb
+}
+
+func TestPublishViewsSendsEachPlayerTheirView(t *testing.T) {
+	h := NewHub(nil)
+	var calls atomic.Int32
+	host1, host2, guest := fakeConn(h, testGame, "p_host"), fakeConn(h, testGame, "p_host"), fakeConn(h, testGame, "p_guest")
+	other := fakeConn(h, "OTHER", "p_host")
+
+	h.PublishViews(testGame, errIllegal, func(p string) (any, error) {
+		calls.Add(1)
+		return wire.ViewMessage(testView{You: p, Hand: handValue(p), Revision: 4}, []testEvent{{Type: "played"}}), nil
+	})
+
+	if n := calls.Load(); n != 2 {
+		t.Fatalf("view called %d times, want 2", n)
+	}
+	for _, tc := range []struct {
+		c    *conn
+		hand int
+	}{{host1, 3}, {host2, 3}, {guest, 7}} {
+		ms := drain(tc.c)
+		if len(ms) != 1 || ms[0].Type != wire.MsgView || ms[0].View.You != tc.c.playerID || ms[0].View.Hand != tc.hand || ms[0].View.Revision != 4 {
+			t.Fatalf("conn %s got %+v", tc.c.playerID, ms)
+		}
+		if len(ms[0].Events) != 1 || ms[0].Events[0].Type != "played" {
+			t.Fatalf("events = %+v", ms[0].Events)
+		}
+	}
+	if ms := drain(other); len(ms) != 0 {
+		t.Fatalf("other room got %d messages", len(ms))
+	}
+}
+
+func TestPublishViewsKicksGonePlayer(t *testing.T) {
+	h := NewHub(nil)
+	left, host := fakeConn(h, testGame, "p_stranger"), fakeConn(h, testGame, "p_host")
+
+	h.PublishViews(testGame, errNotFound, func(p string) (any, error) {
+		if p == "p_stranger" {
+			return nil, fmt.Errorf("view of %s: %w", p, errNotFound)
+		}
+		return wire.ViewMessage(testView{You: p}, []testEvent(nil)), nil
+	})
+
+	select {
+	case <-left.closing:
+	default:
+		t.Fatal("conn of the player who left was not kicked")
+	}
+	if left.closeCode != CloseUnauthorized || left.closeReason != wire.CodeUnauthorized {
+		t.Fatalf("close = %d %q, want 4401 unauthorized", left.closeCode, left.closeReason)
+	}
+	if ms := drain(left); len(ms) != 0 {
+		t.Fatalf("leaver received %+v", ms)
+	}
+	if ms := drain(host); len(ms) != 1 || ms[0].Type != wire.MsgView {
+		t.Fatalf("host got %+v", ms)
+	}
+	select {
+	case <-host.closing:
+		t.Fatal("remaining player was kicked")
+	default:
+	}
+}
+
+func TestPublishViewsLogsErrorsAndSkipsThatPlayer(t *testing.T) {
+	for name, tc := range map[string]struct {
+		gone error
+		view func(string) (any, error)
+		log  string
+	}{
+		"view error":    {errNotFound, func(string) (any, error) { return nil, errIllegal }, "build view"},
+		"nil gone":      {nil, func(string) (any, error) { return nil, errNotFound }, "build view"},
+		"marshal error": {errNotFound, func(string) (any, error) { return make(chan int), nil }, "marshal view"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h, logs := recordingHub()
+			c := fakeConn(h, testGame, "p_host")
+
+			h.PublishViews(testGame, tc.gone, tc.view)
+
+			if ms := drain(c); len(ms) != 0 {
+				t.Fatalf("got %+v", ms)
+			}
+			select {
+			case <-c.closing:
+				t.Fatal("conn was kicked")
+			default:
+			}
+			if !strings.Contains(logs.String(), tc.log) || !strings.Contains(logs.String(), "p_host") {
+				t.Fatalf("log = %q, want %q for p_host", logs.String(), tc.log)
+			}
+		})
+	}
+}
+
+type playerID string
+
+func TestOnlineAs(t *testing.T) {
+	h := NewHub(nil)
+	fakeConn(h, testGame, "p_b")
+	fakeConn(h, testGame, "p_a")
+	if got := OnlineAs[playerID](h, testGame); !slices.Equal(got, []playerID{"p_a", "p_b"}) {
+		t.Fatalf("OnlineAs = %v", got)
+	}
+	if got := OnlineAs[playerID](h, "EMPTY"); got != nil {
+		t.Fatalf("OnlineAs of an empty room = %v", got)
+	}
+}

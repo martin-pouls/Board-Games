@@ -183,7 +183,6 @@
 				icon={Flag}
 				label="Give up"
 				title="Give up this attempt"
-				destructive
 				disabled={!connected}
 				onclick={() => (confirmGiveUp = true)}
 			/>

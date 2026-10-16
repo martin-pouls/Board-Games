@@ -1,6 +1,7 @@
 package httpkit
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -135,5 +136,46 @@ func TestSPACacheControl(t *testing.T) {
 		if w.Code != 200 || w.Header().Get("Cache-Control") != tt.want {
 			t.Errorf("%s: %d Cache-Control %q, want %q", tt.path, w.Code, w.Header().Get("Cache-Control"), tt.want)
 		}
+	}
+}
+
+type testGameID string
+
+type testPlayerID string
+
+func TestAuthenticate(t *testing.T) {
+	errMissing := errors.New("missing token")
+	errBad := errors.New("bad token")
+	var gotID testGameID
+	var gotToken string
+	calls := 0
+	auth := func(_ context.Context, id testGameID, token string) (testPlayerID, error) {
+		calls++
+		gotID, gotToken = id, token
+		if token != "good" {
+			return "", errBad
+		}
+		return "p1", nil
+	}
+	req := func(header string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		if header != "" {
+			r.Header.Set("Authorization", header)
+		}
+		return r
+	}
+
+	if p, err := Authenticate(req(""), testGameID("ABCDE"), errMissing, auth); !errors.Is(err, errMissing) || p != "" || calls != 0 {
+		t.Fatalf("no token: %q, %v, %d calls; want errMissing without calling auth", p, err, calls)
+	}
+	if p, err := Authenticate(req("Basic good"), testGameID("ABCDE"), errMissing, auth); !errors.Is(err, errMissing) || p != "" || calls != 0 {
+		t.Fatalf("not a bearer token: %q, %v, %d calls", p, err, calls)
+	}
+	if p, err := Authenticate(req("Bearer nope"), testGameID("ABCDE"), errMissing, auth); !errors.Is(err, errBad) || p != "" {
+		t.Fatalf("bad token: %q, %v", p, err)
+	}
+	p, err := Authenticate(req("Bearer good"), testGameID("ABCDE"), errMissing, auth)
+	if err != nil || p != "p1" || gotID != "ABCDE" || gotToken != "good" {
+		t.Fatalf("good token: %q, %v (id %q, token %q)", p, err, gotID, gotToken)
 	}
 }

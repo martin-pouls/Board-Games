@@ -17,7 +17,7 @@ const messages: Record<ApiErrorCode, string> = {
 	minimum_not_reached: 'Play the minimum number of cards first.',
 	rematch_exists: 'A new game was already created.',
 	nothing_to_undo: 'No card to undo this turn.',
-	not_stuck: 'You can still play a card or end your turn.',
+	cannot_leave: "You're the only player; just head home.",
 	stop_played: 'STOP: no more cards this turn. End your turn.',
 	backwards_trick_blocked: 'No backwards trick while that card is visible.',
 	single_pile_violation: 'Single pile: all your cards this turn go on the same pile.',

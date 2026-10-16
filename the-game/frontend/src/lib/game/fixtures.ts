@@ -238,17 +238,16 @@ export const playingOthersTurn: PlayerView = {
 
 const endPiles = [pile(0, 97, 30), pile(1, 99, 22), pile(2, 2, 25), pile(3, 5, 21)];
 
-export const finishedWon: PlayerView = {
+export const wonGame: PlayerView = {
 	...base,
 	revision: 210,
-	phase: 'finished',
+	phase: 'won',
 	players: players({ counts: [0, 0, 0, 0] }),
 	hand: [],
 	piles: endPiles,
 	drawPileCount: 0,
 	turn: null,
 	result: {
-		outcome: 'won',
 		score: 0,
 		excellent: true,
 		cardsLeftInHands: 0,
@@ -258,10 +257,10 @@ export const finishedWon: PlayerView = {
 
 const lostPiles = [pile(0, 88, 20), pile(1, 93, 18), pile(2, 9, 17), pile(3, 14, 15)];
 
-export const finishedLost: PlayerView = {
+export const lostGame: PlayerView = {
 	...base,
 	revision: 180,
-	phase: 'finished',
+	phase: 'lost',
 	players: players({
 		counts: [2, 4, 3, 0],
 		reveal: [[45, 67], [30, 52, 60, 75], [19, 33, 48], []]
@@ -271,14 +270,29 @@ export const finishedLost: PlayerView = {
 	drawPileCount: 8,
 	turn: null,
 	result: {
-		outcome: 'lost',
 		score: 17,
 		excellent: false,
 		cardsLeftInHands: 9,
 		cardsLeftInDrawPile: 8,
-		stuckPlayerId: 'p_ben'
+		reason: 'stuck',
+		playerId: 'p_ben'
 	},
 	nextGameId: 'R3MAT'
+};
+
+/** Anna (not on turn) gave up mid-game; the cards left count as the score. */
+export const givenUp: PlayerView = {
+	...lostGame,
+	revision: 181,
+	result: { ...lostGame.result!, reason: 'gaveUp', playerId: 'p_anna' },
+	nextGameId: undefined
+};
+
+/** The host closed the lobby before the game started. */
+export const endedLobby: PlayerView = {
+	...lobbyGuest,
+	revision: 4,
+	phase: 'ended'
 };
 
 // ---- The Game Extreme -------------------------------------------------------
@@ -433,11 +447,11 @@ export const extremeEightCommands: PlayerView = {
 	]
 };
 
-/** Lost with score 0: Dan's last card was a Skull (87 on pile 1) that nobody could cover. */
-export const finishedLostSkull: PlayerView = {
+/** Lost with score 0: Dan's last card was a Skull (87 on pile 1) that nobody could cover, so Dan gave up. */
+export const lostSkull: PlayerView = {
 	...extremeBase,
 	revision: 230,
-	phase: 'finished',
+	phase: 'lost',
 	players: players({ counts: [0, 0, 0, 0], extreme: true }),
 	hand: [],
 	piles: [
@@ -461,12 +475,12 @@ export const finishedLostSkull: PlayerView = {
 		constraints: { ...noConstraints, skullPiles: [1] }
 	},
 	result: {
-		outcome: 'lost',
 		score: 0,
 		excellent: true,
 		cardsLeftInHands: 0,
 		cardsLeftInDrawPile: 0,
-		stuckPlayerId: 'p_dan'
+		reason: 'gaveUp',
+		playerId: 'p_dan'
 	}
 };
 
@@ -479,11 +493,13 @@ export const fixtures = {
 	playingMyTurn,
 	playingEightCards,
 	playingOthersTurn,
-	finishedWon,
-	finishedLost,
+	wonGame,
+	lostGame,
+	givenUp,
+	endedLobby,
 	extremeMyTurn,
 	extremeSkull,
 	extremeOthersNoComm,
 	extremeEightCommands,
-	finishedLostSkull
+	lostSkull
 } satisfies Record<string, PlayerView>;

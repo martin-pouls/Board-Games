@@ -87,14 +87,48 @@ func (g *Game) AddPlayer(id PlayerID, name string) error {
 	return nil
 }
 
+// requireSeated returns the seat of by. Errors: ErrUnknownPlayer.
+func (g *Game) requireSeated(by PlayerID) (int, error) {
+	_, seat, ok := g.PlayerByID(by)
+	if !ok {
+		return -1, fmt.Errorf("%w: %s", ErrUnknownPlayer, by)
+	}
+	return seat, nil
+}
+
 // requireHost checks that by is seated and is the host.
 func (g *Game) requireHost(by PlayerID) error {
-	if _, _, ok := g.PlayerByID(by); !ok {
-		return fmt.Errorf("%w: %s", ErrUnknownPlayer, by)
+	if _, err := g.requireSeated(by); err != nil {
+		return err
 	}
 	if !g.IsHost(by) {
 		return fmt.Errorf("%w: only the host may do this", ErrNotHost)
 	}
+	return nil
+}
+
+// Leave removes a player from the lobby. If the host leaves, the player now in seat 0 becomes host.
+// Errors: ErrUnknownPlayer, ErrWrongPhase (not in the lobby), ErrCannotLeave (sole player).
+// Emits PlayerLeft.
+func (g *Game) Leave(by PlayerID) error {
+	seat, err := g.requireSeated(by)
+	if err != nil {
+		return err
+	}
+	if g.Phase != PhaseLobby {
+		return fmt.Errorf("%w: players can only leave in the lobby", ErrWrongPhase)
+	}
+	if len(g.Players) == 1 {
+		return fmt.Errorf("%w: the last player cannot leave", ErrCannotLeave)
+	}
+	players := make([]Player, 0, len(g.Players)-1)
+	players = append(players, g.Players[:seat]...)
+	g.Players = append(players, g.Players[seat+1:]...)
+	if g.HostID == by {
+		g.HostID = g.Players[0].ID
+	}
+	g.emit(PlayerLeft{PlayerID: by, HostID: g.HostID})
+	g.commit()
 	return nil
 }
 
@@ -198,31 +232,46 @@ func (g *Game) chooseFirst(seat int) {
 	g.beginTurn(seat)
 }
 
-// EndGame ends a game early (host only): in the lobby, while choosing the first player or playing.
-// The game finishes with OutcomeAborted and the cards left at this moment as the score (0 in the
-// lobby, where nothing was dealt), so the result screen and Rematch work as after a regular end.
-// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase. Emits GameFinished.
+// GiveUp ends a running game (choosing the first player or playing) as lost for everyone.
+// Any seated player may give up at any time; the score counts the cards left at this moment.
+// Errors: ErrUnknownPlayer, ErrWrongPhase. Emits GameLost.
+func (g *Game) GiveUp(by PlayerID) error {
+	if _, err := g.requireSeated(by); err != nil {
+		return err
+	}
+	if g.Phase != PhaseChoosingFirstPlayer && g.Phase != PhasePlaying {
+		return fmt.Errorf("%w: only a running game can be given up", ErrWrongPhase)
+	}
+	g.lose(LossGaveUp, by)
+	g.commit()
+	return nil
+}
+
+// EndGame closes the lobby for everyone (host only), so it no longer waits to be continued; a
+// sole player cannot Leave, so this is how they get rid of it. A running game is given up instead.
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase (not in the lobby). Emits GameEnded.
 func (g *Game) EndGame(by PlayerID) error {
 	if err := g.requireHost(by); err != nil {
 		return err
 	}
-	if g.Phase == PhaseFinished {
-		return fmt.Errorf("%w: the game is already over", ErrWrongPhase)
+	if g.Phase != PhaseLobby {
+		return fmt.Errorf("%w: only a lobby can be ended", ErrWrongPhase)
 	}
-	g.finish(OutcomeAborted, "")
+	g.Phase = PhaseEnded
+	g.emit(GameEnded{ByPlayerID: by})
 	g.commit()
 	return nil
 }
 
 // Rematch creates the lobby for a new game with the same players (same IDs, names, seat order),
-// Options and an empty table; by becomes host. Any player may call it once the game is finished.
-// Errors: ErrUnknownPlayer, ErrWrongPhase (not finished), ErrRematchExists (NextGameID already set).
+// Options and an empty table; by becomes host. Any player may call it once the game is over.
+// Errors: ErrUnknownPlayer, ErrWrongPhase (not won/lost), ErrRematchExists (NextGameID already set).
 // On success sets g.NextGameID = newID, emits RematchCreated, commits and returns the new game.
 func (g *Game) Rematch(by PlayerID, newID GameID) (*Game, error) {
-	if _, _, ok := g.PlayerByID(by); !ok {
-		return nil, fmt.Errorf("%w: %s", ErrUnknownPlayer, by)
+	if _, err := g.requireSeated(by); err != nil {
+		return nil, err
 	}
-	if g.Phase != PhaseFinished {
+	if !g.IsOver() {
 		return nil, fmt.Errorf("%w: rematch needs a finished game", ErrWrongPhase)
 	}
 	if g.NextGameID != "" {

@@ -22,6 +22,7 @@ func registerGameRoutes(mux *http.ServeMux, a *gamesAPI) {
 	mux.HandleFunc("GET /api/games/{code}", a.summary)
 	mux.HandleFunc("POST /api/games/{code}/players", a.joinGame)
 	mux.HandleFunc("GET /api/games/{code}/view", a.view)
+	mux.HandleFunc("POST /api/games/{code}/leave", a.leave)
 }
 
 // gameCode returns the {code} path value, normalised to upper case.
@@ -92,7 +93,7 @@ func (a *gamesAPI) joinGame(w http.ResponseWriter, r *http.Request) {
 // view returns the caller's current view; the bearer token identifies the player.
 func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
 	id := gameCode(r)
-	player, err := a.authenticate(r, id)
+	player, err := httpkit.Authenticate(r, id, ports.ErrUnauthorized, a.svc.Authenticate)
 	if err != nil {
 		a.writeError(w, r, err)
 		return
@@ -103,4 +104,19 @@ func (a *gamesAPI) view(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, apidto.FromView(v))
+}
+
+// leave removes the caller from a lobby; it answers 204 without a body.
+func (a *gamesAPI) leave(w http.ResponseWriter, r *http.Request) {
+	id := gameCode(r)
+	player, err := httpkit.Authenticate(r, id, ports.ErrUnauthorized, a.svc.Authenticate)
+	if err != nil {
+		a.writeError(w, r, err)
+		return
+	}
+	if err := a.svc.LeaveGame(r.Context(), id, player); err != nil {
+		a.writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -1,6 +1,7 @@
 // Package sqlitedb opens a game's embedded SQLite database, applies the game's migrations and
-// stores games as JSON snapshots with optimistic concurrency (Store). It uses the pure-Go
-// modernc.org/sqlite driver, so no CGO or C toolchain is required.
+// stores games as JSON snapshots with optimistic concurrency (Store, and Repository on top of it
+// for a game's own types). It uses the pure-Go modernc.org/sqlite
+// driver, so no CGO or C toolchain is required.
 //
 // The migrations belong to each game (its database, its history). Store needs the schema every
 // game shares:

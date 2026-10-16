@@ -5,9 +5,9 @@ import type {
 	ServerMessage as SharedServerMessage
 } from '@board-games/shared/wire.js';
 
-export type Phase = 'lobby' | 'choosingFirstPlayer' | 'playing' | 'finished';
+export type Phase = 'lobby' | 'choosingFirstPlayer' | 'playing' | 'won' | 'lost' | 'ended';
 export type Direction = 'up' | 'down';
-export type Outcome = 'won' | 'lost' | 'aborted';
+export type LossReason = 'stuck' | 'gaveUp';
 export type Variant = 'classic' | 'extreme';
 export type CommandName =
 	| 'stop'
@@ -93,13 +93,16 @@ export interface Turn {
 	plays: Play[];
 	constraints: TurnConstraints;
 }
+/** The result of a game that was won or lost (the view's phase says which). */
 export interface Result {
-	outcome: Outcome;
 	score: number;
 	excellent: boolean;
 	cardsLeftInHands: number;
 	cardsLeftInDrawPile: number;
-	stuckPlayerId?: string;
+	/** Why the game was lost; absent when won. */
+	reason?: LossReason;
+	/** The stuck player or the one who gave up; absent when won. */
+	playerId?: string;
 }
 export interface PlayerView {
 	gameId: string;
@@ -129,8 +132,6 @@ export interface GameSummary {
 	joinable: boolean;
 	/** RFC3339 UTC creation time; absent for very old games. */
 	createdAt?: string;
-	/** Result of a finished game; absent until then. */
-	outcome?: Outcome;
 }
 export interface SessionResponse {
 	gameId: string;
@@ -140,6 +141,7 @@ export interface SessionResponse {
 }
 export type GameEvent =
 	| { type: 'playerJoined'; playerId: string; name: string }
+	| { type: 'playerLeft'; playerId: string; hostId: string }
 	| { type: 'optionsChanged' }
 	| { type: 'rematchCreated'; gameId: string }
 	| { type: 'gameStarted' }
@@ -149,7 +151,9 @@ export type GameEvent =
 	| { type: 'playUndone'; playerId: string; card: Card; pile: number }
 	| { type: 'turnEnded'; playerId: string; cardsDrawn: number }
 	| { type: 'playerSkipped'; playerId: string }
-	| { type: 'gameFinished'; outcome: Outcome; score: number; stuckPlayerId?: string };
+	| { type: 'gameWon' }
+	| { type: 'gameLost'; reason: LossReason; playerId: string; score: number }
+	| { type: 'gameEnded'; byPlayerId: string };
 /** The Game's own error codes, next to the ones every game shares (shared/frontend wire.ts). */
 export type GameErrorCode =
 	| 'not_host'
@@ -166,7 +170,7 @@ export type GameErrorCode =
 	| 'minimum_not_reached'
 	| 'rematch_exists'
 	| 'nothing_to_undo'
-	| 'not_stuck'
+	| 'cannot_leave'
 	| 'stop_played'
 	| 'backwards_trick_blocked'
 	| 'single_pile_violation'

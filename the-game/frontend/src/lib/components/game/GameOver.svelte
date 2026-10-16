@@ -13,7 +13,7 @@
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { endedLine, resultHeadline, stuckLine } from '#lib/game/format.js';
+	import { lossLine, resultHeadline } from '#lib/game/format.js';
 	import { sessions } from '#lib/session.js';
 	import { cn } from '#lib/utils.js';
 	import type { PlayerView } from '#lib/types.js';
@@ -29,8 +29,8 @@
 	let follow = $state(false);
 
 	const result = $derived(view.result);
-	const won = $derived(result?.outcome === 'won');
-	const stuck = $derived(stuckLine(view) ?? endedLine(view));
+	const won = $derived(view.phase === 'won');
+	const reason = $derived(lossLine(view));
 	const players = $derived([...view.players].sort((a, b) => a.seat - b.seat));
 	const connected = $derived(client.status === 'open');
 
@@ -66,7 +66,7 @@
 	{#snippet controls()}
 		<div class="flex min-h-14 items-center gap-3 rounded-xl bg-muted/60 px-3 py-1.5">
 			<p class="min-w-0 flex-1 leading-snug font-semibold">
-				{result ? resultHeadline(result) : 'Game over'}
+				{resultHeadline(view)}
 			</p>
 			<Button size="lg" class="h-12 px-4 text-base" onclick={() => (hidden = false)}>
 				<ChevronUp />
@@ -89,11 +89,11 @@
 				class="flex w-full max-w-md flex-col gap-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-xl"
 			>
 				<div class="flex flex-col items-center gap-1 text-center">
-					{#if won || (result.excellent && result.outcome !== 'aborted')}
+					{#if won || result.excellent}
 						<Trophy class={cn('size-10', won ? 'text-amber-500' : 'text-sky-500')} />
 					{/if}
-					<h2 id="game-over-title" class="text-2xl font-bold">{resultHeadline(result)}</h2>
-					{#if stuck}<p class="text-muted-foreground">{stuck}</p>{/if}
+					<h2 id="game-over-title" class="text-2xl font-bold">{resultHeadline(view)}</h2>
+					{#if reason}<p class="text-muted-foreground">{reason}</p>{/if}
 				</div>
 
 				<!-- Lost with score 0 (uncovered skull as the last card): nothing left to count. -->

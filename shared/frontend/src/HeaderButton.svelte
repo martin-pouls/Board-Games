@@ -3,6 +3,11 @@
 	table headers (home, rules, end game, ...). Every header item has the same size (32px high, 16px
 	icon, small muted text), so the headers look alike across screens and games. Rows of them use
 	headerRow, which also pulls the first and last button out so their icons line up with the content.
+
+	Conventions: icons are X (close the lobby, host alone), DoorOpen (leave) and Flag (give up, or
+	end something for everyone). The lobby header shows the label; the table header has no room on
+	phones and shows only the icon with a tooltip. Header buttons are never red (phones have no
+	hover): red is only for the confirm button inside the dialog that follows.
 -->
 <script lang="ts" module>
 	/** The classes of a header row: same height and spacing as the shared top bar. */
@@ -21,7 +26,6 @@
 		showLabel = false,
 		labelClass,
 		title = label,
-		destructive = false,
 		href,
 		rel,
 		disabled,
@@ -37,8 +41,6 @@
 		labelClass?: string;
 		/** The tooltip, when it should say more than the label. */
 		title?: string;
-		/** Turns red on hover: for actions that end or leave something. */
-		destructive?: boolean;
 		href?: string;
 		rel?: HTMLAnchorAttributes['rel'];
 		disabled?: boolean;
@@ -50,7 +52,7 @@
 <Button
 	variant="ghost"
 	size={showLabel ? 'sm' : 'icon-sm'}
-	class={cn('text-muted-foreground', destructive && 'hover:text-destructive', className)}
+	class={cn('text-muted-foreground', className)}
 	{href}
 	{rel}
 	{disabled}

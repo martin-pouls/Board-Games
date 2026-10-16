@@ -100,21 +100,21 @@ type Turn struct {
 	Constraints     TurnConstraints `json:"constraints"`
 }
 
-// Result is the final result of a finished game.
+// Result is the final result of a game that was won or lost (the view's phase says which).
 type Result struct {
-	Outcome             string `json:"outcome"` // "won" | "lost" | "aborted"
 	Score               int    `json:"score"`
 	Excellent           bool   `json:"excellent"`
 	CardsLeftInHands    int    `json:"cardsLeftInHands"`
 	CardsLeftInDrawPile int    `json:"cardsLeftInDrawPile"`
-	StuckPlayerID       string `json:"stuckPlayerId,omitempty"`
+	Reason              string `json:"reason,omitempty"`   // "stuck" | "gaveUp"; omitted when won
+	PlayerID            string `json:"playerId,omitempty"` // the stuck player or the one who gave up
 }
 
 // PlayerView is the per-player projection.
 type PlayerView struct {
 	GameID                  string          `json:"gameId"`
 	Revision                int64           `json:"revision"`
-	Phase                   string          `json:"phase"`
+	Phase                   string          `json:"phase"` // "lobby" | "choosingFirstPlayer" | "playing" | "won" | "lost" | "ended"
 	You                     string          `json:"you"`
 	HostID                  string          `json:"hostId"`
 	Options                 GameOptions     `json:"options"`
@@ -139,12 +139,12 @@ type GameSummary struct {
 	MaxPlayers  int    `json:"maxPlayers"`
 	Joinable    bool   `json:"joinable"`
 	CreatedAt   string `json:"createdAt,omitempty"` // RFC3339 UTC; omitted when unknown
-	Outcome     string `json:"outcome,omitempty"`   // won/lost/aborted once finished
 }
 
 // Event type strings.
 const (
 	EventPlayerJoined      = "playerJoined"
+	EventPlayerLeft        = "playerLeft"
 	EventOptionsChanged    = "optionsChanged"
 	EventGameStarted       = "gameStarted"
 	EventFirstPlayerChosen = "firstPlayerChosen"
@@ -153,23 +153,26 @@ const (
 	EventPlayUndone        = "playUndone"
 	EventTurnEnded         = "turnEnded"
 	EventPlayerSkipped     = "playerSkipped"
-	EventGameFinished      = "gameFinished"
+	EventGameWon           = "gameWon"
+	EventGameLost          = "gameLost"
+	EventGameEnded         = "gameEnded"
 	EventRematchCreated    = "rematchCreated"
 )
 
 // Event is a flattened union of domain events; Type is one of the Event* constants.
 type Event struct {
-	Type          string `json:"type"`
-	PlayerID      string `json:"playerId,omitempty"`
-	Name          string `json:"name,omitempty"`
-	Card          *Card  `json:"card,omitempty"`
-	Pile          *int   `json:"pile,omitempty"`
-	Number        *int   `json:"number,omitempty"`
-	CardsDrawn    *int   `json:"cardsDrawn,omitempty"`
-	Outcome       string `json:"outcome,omitempty"`
-	Score         *int   `json:"score,omitempty"`
-	StuckPlayerID string `json:"stuckPlayerId,omitempty"`
-	GameID        string `json:"gameId,omitempty"`
+	Type       string `json:"type"`
+	PlayerID   string `json:"playerId,omitempty"`
+	ByPlayerID string `json:"byPlayerId,omitempty"`
+	HostID     string `json:"hostId,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Card       *Card  `json:"card,omitempty"`
+	Pile       *int   `json:"pile,omitempty"`
+	Number     *int   `json:"number,omitempty"`
+	CardsDrawn *int   `json:"cardsDrawn,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+	Score      *int   `json:"score,omitempty"`
+	GameID     string `json:"gameId,omitempty"`
 }
 
 // CreateGameRequest is the body of POST /api/games.

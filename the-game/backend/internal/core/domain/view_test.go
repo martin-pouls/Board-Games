@@ -145,7 +145,7 @@ func TestViewForFinished(t *testing.T) {
 				t.Fatalf("active player in finished game: %+v", p)
 			}
 		}
-		wantRes := &ResultView{Outcome: OutcomeLost, Score: 4, Excellent: true, CardsLeftInHands: 3, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
+		wantRes := &ResultView{Score: 4, Excellent: true, CardsLeftInHands: 3, CardsLeftInDrawPile: 1, Reason: LossStuck, PlayerID: pid(0)}
 		if !reflect.DeepEqual(v.Result, wantRes) {
 			t.Fatalf("result %+v", v.Result)
 		}
@@ -211,7 +211,7 @@ func TestViewNeverRevealsHandsBeforeFinished(t *testing.T) {
 					}
 				}
 				for _, s := range v.Players {
-					if (g.Phase == PhaseFinished) != (s.RevealedHand != nil) {
+					if (g.IsOver()) != (s.RevealedHand != nil) {
 						t.Fatalf("seed %d phase %s: revealed hand %v", seed, g.Phase, s.RevealedHand)
 					}
 					if s.HandCount != len(g.Players[s.Seat].Hand) {
@@ -427,7 +427,7 @@ func TestViewForExtremeFinished(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{95}, {}}}.build(t)
 		mustOK(t, g.PlayCard(pid(0), 95, 0))
 		v, _ := g.ViewFor(pid(1))
-		if v.Result.Outcome != OutcomeWon || !reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{StopPlayed: true}) ||
+		if v.Phase != PhaseWon || v.Result == nil || !reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{StopPlayed: true}) ||
 			!v.Piles[0].CommandActive || v.CommunicationRestricted {
 			t.Fatalf("view %+v turn %+v", v, v.Turn)
 		}
@@ -440,7 +440,7 @@ func TestViewForExtremeFinished(t *testing.T) {
 		}
 		mustOK(t, g.GiveUp(pid(0)))
 		v, _ := g.ViewFor(pid(0))
-		if v.Result.Outcome != OutcomeLost || v.Result.Score != 0 || v.Result.StuckPlayerID != pid(0) ||
+		if v.Phase != PhaseLost || v.Result.Score != 0 || v.Result.Reason != LossGaveUp || v.Result.PlayerID != pid(0) ||
 			!reflect.DeepEqual(v.Turn.Constraints, TurnConstraints{SkullPiles: []int{3}}) || v.CommunicationRestricted {
 			t.Fatalf("view %+v turn %+v", v.Result, v.Turn)
 		}

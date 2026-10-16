@@ -13,16 +13,17 @@ const (
 	PhaseLobby               Phase = "lobby"
 	PhaseChoosingFirstPlayer Phase = "choosingFirstPlayer"
 	PhasePlaying             Phase = "playing"
-	PhaseFinished            Phase = "finished"
+	PhaseWon                 Phase = "won"   // every card played; score 0
+	PhaseLost                Phase = "lost"  // stuck or given up; score ≥ 0 (0 only when the last card was an uncovered Skull)
+	PhaseEnded               Phase = "ended" // closed by the host in the lobby, before it started
 )
 
-// Outcome is the result of a finished game.
-type Outcome string
+// LossReason says why a game was lost.
+type LossReason string
 
 const (
-	OutcomeWon     Outcome = "won"     // score 0
-	OutcomeLost    Outcome = "lost"    // active player stuck; score ≥ 0 (0 only when the last card was an uncovered Skull)
-	OutcomeAborted Outcome = "aborted" // ended early by the host; score counts the cards left
+	LossStuck  LossReason = "stuck"  // the active player could neither play nor end the turn at its start
+	LossGaveUp LossReason = "gaveUp" // a player gave up
 )
 
 // Player is a seated player.
@@ -58,13 +59,13 @@ func (t Turn) PilesTouched() []int {
 	return out
 }
 
-// Result is the final result of a finished game.
+// Result is the final result of a game that was won or lost (the phase says which).
 type Result struct {
-	Outcome             Outcome
 	Score               int // CardsLeftInHands + CardsLeftInDrawPile
 	CardsLeftInHands    int
 	CardsLeftInDrawPile int
-	StuckPlayerID       PlayerID // "" unless lost
+	Reason              LossReason // "" when won
+	PlayerID            PlayerID   // the stuck player or the one who gave up; "" when won
 }
 
 // Move is a legal (card value, pile index) pair.
@@ -82,7 +83,7 @@ type Game struct {
 	DrawPile   []Card   // last element = top
 	Piles      []Pile
 	Turn       Turn
-	Result     *Result   // non-nil iff Phase == finished
+	Result     *Result   // non-nil iff Phase is won or lost
 	NextGameID GameID    // set when a rematch was created; empty otherwise
 	Revision   int64     // starts at 1 in NewGame; +1 exactly once per successful mutating method
 	CreatedAt  time.Time // UTC, second precision; zero for games persisted before it was tracked
@@ -146,6 +147,9 @@ func (g *Game) PlayerByID(id PlayerID) (Player, int, bool) {
 	return Player{}, -1, false
 }
 
+// IsOver reports whether the game was won or lost.
+func (g *Game) IsOver() bool { return g.Phase == PhaseWon || g.Phase == PhaseLost }
+
 // IsHost reports whether id is the host.
 func (g *Game) IsHost(id PlayerID) bool {
 	return id != "" && id == g.HostID
@@ -164,10 +168,6 @@ func (g *Game) Summary() GameSummary {
 		hostName = host.Name
 	}
 	n := len(g.Players)
-	var outcome Outcome
-	if g.Result != nil {
-		outcome = g.Result.Outcome
-	}
 	return GameSummary{
 		GameID:      g.ID,
 		Phase:       g.Phase,
@@ -176,7 +176,6 @@ func (g *Game) Summary() GameSummary {
 		MaxPlayers:  g.Rules.MaxPlayers,
 		Joinable:    g.Phase == PhaseLobby && n < g.Rules.MaxPlayers,
 		CreatedAt:   g.CreatedAt,
-		Outcome:     outcome,
 	}
 }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
+	import { setCardMotion } from '@board-games/shared/cardMotion.js';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import BookOpen from '@lucide/svelte/icons/book-open';
@@ -38,6 +39,9 @@
 		/** Replaces the action panel above the hand. */
 		controls?: Snippet;
 	} = $props();
+
+	// Cards fly between the hand, the enemy panel and the last turn's piles.
+	setCardMotion();
 
 	let selected = $state<number[]>([]);
 	let busy = $state(false);
@@ -123,7 +127,6 @@
 				<HeaderButton
 					icon={Flag}
 					label="Give up"
-					destructive
 					disabled={!connected}
 					onclick={() => (confirmGiveUp = true)}
 				/>

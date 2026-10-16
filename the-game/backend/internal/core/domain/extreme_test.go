@@ -316,14 +316,14 @@ func TestExactlyThreeEndTurn(t *testing.T) {
 		// p0 ends the turn; p1 starts with only a 3! (start hand 1) and the draw pile is empty.
 		g := table{opts: extreme, hands: [][]int{{30}, {81}}, piles: [][]int{{20}}, plays: []Play{play(20, 0)}}.build(t)
 		mustOK(t, g.EndTurn(pid(0)))
-		want := Result{Outcome: OutcomeLost, Score: 2, CardsLeftInHands: 2, StuckPlayerID: pid(1)}
-		if g.Phase != PhaseFinished || *g.Result != want {
+		want := Result{Score: 2, CardsLeftInHands: 2, Reason: LossStuck, PlayerID: pid(1)}
+		if g.Phase != PhaseLost || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
 		wantEv := []Event{
 			TurnEnded{PlayerID: pid(0)},
 			TurnStarted{PlayerID: pid(1), Number: 2},
-			GameFinished{Outcome: OutcomeLost, Score: 2, StuckPlayerID: pid(1)},
+			GameLost{Reason: LossStuck, PlayerID: pid(1), Score: 2},
 		}
 		if evs := g.PullEvents(); !reflect.DeepEqual(evs, wantEv) {
 			t.Fatalf("events %#v", evs)
@@ -398,10 +398,10 @@ func TestStop(t *testing.T) {
 	t.Run("STOP as the last card overall: won, score 0", func(t *testing.T) {
 		g := table{opts: extreme, hands: [][]int{{95}, {}}}.build(t)
 		playOK(t, g, 95, 0)
-		if g.Phase != PhaseFinished || *g.Result != (Result{Outcome: OutcomeWon}) {
+		if g.Phase != PhaseWon || *g.Result != (Result{}) {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
-		want := []Event{CardPlayed{PlayerID: pid(0), Card: xcard(95), Pile: 0}, GameFinished{Outcome: OutcomeWon}}
+		want := []Event{CardPlayed{PlayerID: pid(0), Card: xcard(95), Pile: 0}, GameWon{}}
 		if evs := g.PullEvents(); !reflect.DeepEqual(evs, want) {
 			t.Fatalf("events %#v", evs)
 		}
@@ -522,11 +522,11 @@ func TestSkull(t *testing.T) {
 		// ... or giving up loses the game.
 		g.PullEvents()
 		mustOK(t, g.GiveUp(pid(0)))
-		want := Result{Outcome: OutcomeLost, Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
-		if g.Phase != PhaseFinished || *g.Result != want {
+		want := Result{Score: 3, CardsLeftInHands: 2, CardsLeftInDrawPile: 1, Reason: LossGaveUp, PlayerID: pid(0)}
+		if g.Phase != PhaseLost || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
-		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameFinished{Outcome: OutcomeLost, Score: 3, StuckPlayerID: pid(0)}}) {
+		if evs := g.PullEvents(); !reflect.DeepEqual(evs, []Event{GameLost{Reason: LossGaveUp, PlayerID: pid(0), Score: 3}}) {
 			t.Fatalf("events %#v", evs)
 		}
 	})
@@ -538,7 +538,7 @@ func TestSkull(t *testing.T) {
 			t.Fatalf("phase %s stuck %v", g.Phase, g.ActivePlayerStuck())
 		}
 		mustOK(t, g.GiveUp(pid(0)))
-		if want := (Result{Outcome: OutcomeLost, StuckPlayerID: pid(0)}); g.Phase != PhaseFinished || *g.Result != want {
+		if want := (Result{Reason: LossGaveUp, PlayerID: pid(0)}); g.Phase != PhaseLost || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
 	})
@@ -550,7 +550,7 @@ func TestSkull(t *testing.T) {
 			t.Fatalf("phase %s turn %+v", g.Phase, g.Turn)
 		}
 		mustOK(t, g.GiveUp(pid(0)))
-		if want := (Result{Outcome: OutcomeLost, Score: 1, CardsLeftInHands: 1, StuckPlayerID: pid(0)}); *g.Result != want {
+		if want := (Result{Score: 1, CardsLeftInHands: 1, Reason: LossGaveUp, PlayerID: pid(0)}); *g.Result != want {
 			t.Fatalf("result %+v", g.Result)
 		}
 	})
@@ -658,8 +658,8 @@ func TestDrawOnlyOne(t *testing.T) {
 		}
 		playOK(t, g, 40, 0)
 		mustOK(t, g.GiveUp(pid(0)))
-		want := Result{Outcome: OutcomeLost, Score: 1, CardsLeftInDrawPile: 1, StuckPlayerID: pid(0)}
-		if g.Phase != PhaseFinished || *g.Result != want {
+		want := Result{Score: 1, CardsLeftInDrawPile: 1, Reason: LossGaveUp, PlayerID: pid(0)}
+		if g.Phase != PhaseLost || *g.Result != want {
 			t.Fatalf("phase %s result %+v", g.Phase, g.Result)
 		}
 	})
@@ -686,12 +686,12 @@ func TestCommunicationRestricted(t *testing.T) {
 		}
 	})
 
-	for _, ph := range []Phase{PhaseLobby, PhaseChoosingFirstPlayer, PhaseFinished} {
+	for _, ph := range []Phase{PhaseLobby, PhaseChoosingFirstPlayer, PhaseLost, PhaseEnded} {
 		t.Run(string(ph), func(t *testing.T) {
 			g := table{opts: extreme, hands: [][]int{{99}}, piles: [][]int{nil, nil, nil, {92}}}.build(t)
 			g.Phase = ph
-			if ph == PhaseFinished {
-				g.Result = &Result{Outcome: OutcomeAborted, Score: 1, CardsLeftInHands: 1}
+			if ph == PhaseLost {
+				g.Result = &Result{Score: 1, CardsLeftInHands: 1, Reason: LossGaveUp, PlayerID: pid(0)}
 			}
 			if g.CommunicationRestricted() {
 				t.Fatalf("restricted in %s", ph)

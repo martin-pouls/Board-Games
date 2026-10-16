@@ -1,13 +1,13 @@
 <script lang="ts">
 	import HeaderButton, { headerRow } from '@board-games/shared/HeaderButton.svelte';
 	import HeaderThemeToggle from '@board-games/shared/HeaderThemeToggle.svelte';
+	import LobbyActions from '@board-games/shared/LobbyActions.svelte';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Crown from '@lucide/svelte/icons/crown';
-	import Flag from '@lucide/svelte/icons/flag';
 	import House from '@lucide/svelte/icons/house';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -20,15 +20,19 @@
 	import type { GameOptions, PlayerView } from '#lib/types.js';
 	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
 
-	let { client, view }: { client: GameClient; view: PlayerView } = $props();
+	let {
+		client,
+		view,
+		onleave
+	}: { client: GameClient; view: PlayerView; onleave?: () => Promise<void> | void } = $props();
 
 	let busy = $state(false);
-	let confirmEnd = $state(false);
 
 	const isHost = $derived(view.hostId === view.you);
 	const host = $derived(view.players.find((p) => p.id === view.hostId));
 	const connected = $derived(client.status === 'open');
 	const players = $derived([...view.players].sort((a, b) => a.seat - b.seat));
+	const solo = $derived(view.players.length === 1);
 	const canEdit = $derived(isHost && connected && !busy);
 
 	async function run(action: () => Promise<void>) {
@@ -41,6 +45,19 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	/** Closes the lobby for everyone (host only); it moves to everyone's history. */
+	function endGame() {
+		return run(async () => {
+			await client.endGame();
+			await goto(resolve('/'));
+		});
+	}
+
+	async function leave() {
+		if (onleave) await onleave();
+		else await goto(resolve('/'));
 	}
 
 	const setOptions = (o: Partial<GameOptions>) =>
@@ -58,16 +75,7 @@
 		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<h1 class="text-lg font-semibold">Lobby</h1>
 		<div class="ml-auto flex items-center gap-1.5">
-			{#if isHost}
-				<HeaderButton
-					icon={Flag}
-					label="End game"
-					showLabel
-					destructive
-					disabled={!connected}
-					onclick={() => (confirmEnd = true)}
-				/>
-			{/if}
+			<LobbyActions alone={solo} {isHost} {connected} {busy} onend={endGame} onleave={leave} />
 			<HeaderThemeToggle />
 		</div>
 	</header>
@@ -168,28 +176,3 @@
 		{/if}
 	</div>
 </div>
-
-<AlertDialog.Root bind:open={confirmEnd}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>End this game for everyone?</AlertDialog.Title>
-			<AlertDialog.Description>
-				The game closes before it starts and moves to everyone's history.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={busy}>Keep lobby</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class="bg-destructive text-white hover:bg-destructive/90"
-				disabled={busy || !connected}
-				onclick={() =>
-					run(async () => {
-						await client.endGame();
-						confirmEnd = false;
-					})}
-			>
-				End game
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
