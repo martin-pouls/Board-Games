@@ -17,36 +17,7 @@ This file holds the rules common to all apps. Each game's CLAUDE.md adds its dom
 
 ## Repository layout
 
-```
-.github/        CD: workflows/deploy.yml, scripts/plan-deploy.sh, dependabot.yml, workflows/cleanup-images.yml
-deploy/         shared Caddy proxy, server bootstrap and deploy scripts, local prod-like stack (README.md)
-shared/         plumbing every game uses: backend (Go module), frontend (Svelte/TS source)
-start-page/     static start page (SvelteKit, prerendered, no JS)
-gate/           password gate: Go server + prerendered login page
-<game>/         one app per game: the-game, regicide, fox-duet, the-crew
-```
-
-Every game app has the same shape:
-
-```
-<game>/
-  backend/                    Go module (cmd/server + internal/...)
-    cmd/server/               main: config from env, wiring, graceful shutdown, janitor
-    internal/core/            the hexagon — no imports of adapters, net/http or database/sql
-      domain/                 pure game model + rule engine (stdlib only)
-      ports/                  interfaces: driving (use cases) + driven (repo, publisher)
-      service/                use-case implementations of driving ports
-    internal/adapters/        apidto (JSON wire contract), httpapi, ws, sqlite (+ migrations),
-                              memory (test repo), repotest (repo contract suite)
-    internal/e2e/             end-to-end test: sqlite + service + REST + WS over httptest
-  frontend/                   SvelteKit SPA
-    src/lib/api.ts, types.ts  REST client; TS mirror of the Go DTOs in apidto
-    src/lib/game/             WS protocol + GameConnection (runes), formatting helpers, fixtures
-    src/lib/components/game/  game screen components (Lobby, Table, GameOver, RulesHelp, ...)
-    src/lib/components/ui/    shadcn-svelte components (generated — don't hand-edit heavily)
-  docs/rules.md               rules reference (authoritative), including app decisions
-  Dockerfile, Dockerfile.dockerignore, deploy/compose.yaml, deploy/<game>.caddy
-```
+Top level: `.github/` (CD), `deploy/` (shared Caddy proxy, server scripts, local prod-like stack), `shared/`, `start-page/`, `gate/`, and one directory per game. Every game has the same shape: `backend/` (Go, hexagonal, see Architecture), `frontend/` (SvelteKit SPA; `src/lib/components/ui/` is generated shadcn-svelte, don't hand-edit heavily), `docs/rules.md`, `Dockerfile`, `deploy/`.
 
 The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS mirror). API JSON uses camelCase.
 
@@ -60,15 +31,7 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 
 ## Tech stack (all games)
 
-| Area | Choice | Notes |
-|---|---|---|
-| Backend | Go 1.27, `net/http` `ServeMux` | stdlib-first, minimal dependencies, no web framework |
-| Realtime | `github.com/coder/websocket` | live gameplay; compressed from 512 bytes, no delta updates |
-| Persistence | SQLite via `modernc.org/sqlite` | pure Go, **no CGO**; embedded `migrations/NNNN_name.sql`, applied at startup |
-| Logging | `log/slog` | |
-| Frontend | SvelteKit 3 + Svelte 5 (runes) + TypeScript | SPA via `adapter-static` (`ssr = false`, fallback `index.html`) |
-| UI | Tailwind CSS 4 + **shadcn-svelte** (bits-ui, lucide icons) | style `vega`; each game has its own theme (tokens in `src/routes/layout.css`, `:root` light, `.dark` dark) |
-| Frontend tooling | Vite, Vitest, ESLint, Prettier, svelte-check | |
+Stdlib-first Go (`net/http` `ServeMux`, no web framework, minimal dependencies); WebSocket messages compressed from 512 bytes, no delta updates; pure-Go SQLite, **no CGO**, embedded `migrations/NNNN_name.sql` applied at startup. Frontend: SvelteKit SPA via `adapter-static` (`ssr = false`, fallback `index.html`); shadcn-svelte style `vega`, and each game has its own theme (tokens in `src/routes/layout.css`, `:root` light, `.dark` dark).
 
 The start page and the gate's login page use the same stack, fully prerendered with `csr = false` (HTML and CSS, plus an inline theme script in `src/app.html`).
 
@@ -98,10 +61,8 @@ The start page and the gate's login page use the same stack, fully prerendered w
 
 The toolchain was installed via winget: Go at `C:\Program Files\Go\bin`, Node at `C:\Program Files\nodejs`; a shell opened before the install may need its PATH refreshed.
 
-Backend (from `<game>/backend/`): `go run ./cmd/server`, `go test ./...`, `go vet ./...`, `go build -o bin/server.exe ./cmd/server`.
-Env vars: `ADDR` (default: the game's backend port below; the images set `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: idle games are deleted), `CLEANUP_INTERVAL` (default `1h`).
-
-Frontend (from `<app>/frontend/`): `npm run dev` (Vite on the app's port; game frontends proxy `/api` and `/ws` to `BACKEND_URL`, default the game's backend port), `npm run check`, `npm run lint`, `npm run format`, `npm test`, `npm run build`.
+Backend scripts run from `<game>/backend/`, frontend scripts from `<app>/frontend/` (game frontends proxy `/api` and `/ws` to `BACKEND_URL`, default the game's backend port).
+Backend env vars: `ADDR` (default: the game's backend port below; the images set `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: idle games are deleted), `CLEANUP_INTERVAL` (default `1h`).
 
 **Local ports** are fixed, so all apps run side by side:
 
@@ -125,7 +86,7 @@ Hetzner arm64 Ubuntu box (root via `~/.ssh/hetzner_ed25519`), one container per 
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (build arg in `<app>/deploy/compose.yaml`). Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`, never a bare `/api` or `/ws`. Links between apps are absolute paths with `rel="external"`.
 - **Each app ships a Caddy snippet** `<app>/deploy/<app>.caddy` (`handle_path`, prefix stripped, so servers stay path-agnostic). A game's snippet has `import gate`, which puts it behind the password gate.
 - **The deploy script trusts nothing from the caller** ([deploy/server/board-games-deploy](deploy/server/board-games-deploy)): only a commit SHA on `main` and app names; config comes from its own clone of `main`. Keep it that way. After changing `deploy/server/` or `deploy/setup-server.sh`, re-run `deploy/setup-server.sh`.
-- **Adding an app:** a top-level directory with `Dockerfile`, `Dockerfile.dockerignore`, `deploy/compose.yaml` (unique `name:` and `container_name:`, network `web`, repo root as build context) and `deploy/<dir-name>.caddy`. CI picks it up. Add a tile in `start-page/frontend/src/lib/games.ts`. For a game, copy Fox Duet's files and shared wiring (`go.mod` replace; `vite.config.ts`, `tsconfig.json`, `layout.css`, see [shared/README.md](shared/README.md)).
+- **Adding an app:** use the `add-app` skill (`.claude/skills/add-app/`). CI picks up any top-level directory with a Dockerfile and `deploy/`.
 - **Git Bash gotcha:** it rewrites `/regicide`-like env values into Windows paths. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/regicide npm run build`.
 
 ## Conventions and gotchas

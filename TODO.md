@@ -11,5 +11,4 @@
 ## The Crew
 
 # General
-- save lobby settings in storage (so stuff like the game extreme, pro, etc). maybe this only makes sense for "the game"
-- the game piles resizing
+- Make waiting for other players turn more consistent, e.g. spinner vs not. Some stuff needs to be game specific, but more conistency would be nice
