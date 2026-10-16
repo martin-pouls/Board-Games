@@ -3,24 +3,29 @@
 # the forced command of the CI key in ~deploy/.ssh/authorized_keys, so that key can run this and
 # nothing else (no shell, no port forwarding). .github/workflows/deploy.yml calls it as
 #
-#   ssh deploy@<host> deploy <commit sha> <app>...
+#   ssh deploy@<host> deploy <commit sha> <app|caddy>...
 #
 # stdin: one line "<user> <token>" that may pull from ghcr.io.
 #
-# The caller only chooses a commit and apps. The deploy files (compose.yaml, Caddy snippet) come
-# from the server's own clone of main ($ROOT/.repo, fetched from GitHub), never from the caller,
-# and the commit must be on main. The deploy user is root-equivalent (docker group), so this is
-# what keeps a stolen key from running a compose file of its choice: it can at most redeploy an
-# older commit of main.
+# The caller only chooses a commit and what to deploy. The deploy files (compose.yaml, Caddy
+# config) come from the server's own clone of main ($ROOT/.repo, fetched from GitHub), never from
+# the caller, and the commit must be on main. The deploy user is root-equivalent (docker group), so
+# this is what keeps a stolen key from running a compose file of its choice: it can at most
+# redeploy an older commit of main.
 #
-# For each app it pulls the image CI built from that commit, installs <app>/deploy of that commit
-# as /opt/board-games/<app>/deploy with TAG=<sha> in its .env, restarts the container and installs
-# the Caddy snippet; then it reloads Caddy once. Every image is pulled before anything is changed,
-# so a failed pull leaves the running apps alone.
+# For each app it pulls the image CI built from that commit and installs <app>/deploy of that
+# commit as /opt/board-games/<app>/deploy with TAG=<sha> in its .env. "caddy" installs the shared
+# proxy from deploy/caddy/ of that commit into /opt/caddy (compose file, Caddyfile, common.caddy;
+# the app snippets in conf/sites stay). The Caddy config that results (with the new snippets) is
+# validated with the Caddy image that will run it before anything is changed, and every image is
+# pulled first, so a bad config or a failed pull leaves the site alone. Then it starts Caddy (a new
+# image recreates the container), restarts the apps and reloads Caddy once.
 set -euo pipefail
+shopt -s nullglob
 
 ROOT=${BOARD_GAMES_ROOT:-/opt/board-games}
-SITES=${CADDY_SITES:-/opt/caddy/conf/sites}
+CADDY=${CADDY_DIR:-/opt/caddy}
+SITES=$CADDY/conf/sites
 REPO_URL=${BOARD_GAMES_REPO:-https://github.com/martin-pouls/Board-Games.git}
 LABEL=org.opencontainers.image.source=https://github.com/martin-pouls/Board-Games
 
@@ -30,12 +35,14 @@ die() {
 }
 
 read -r -a args <<<"${SSH_ORIGINAL_COMMAND:-}"
-{ [ "${#args[@]}" -ge 3 ] && [ "${args[0]}" = deploy ]; } || die "usage: deploy <commit sha> <app>..."
+{ [ "${#args[@]}" -ge 3 ] && [ "${args[0]}" = deploy ]; } || die "usage: deploy <commit sha> <app|caddy>..."
 tag=${args[1]}
-apps=("${args[@]:2}")
 [[ $tag =~ ^[0-9a-f]{40}$ ]] || die "not a full commit sha: $tag"
-for app in "${apps[@]}"; do
+apps=()
+caddy=
+for app in "${args[@]:2}"; do
 	[[ $app =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "bad app name: $app"
+	if [ "$app" = caddy ]; then caddy=1; else apps+=("$app"); fi
 done
 
 # One deploy at a time (CI serialises runs too; this also covers a manual run).
@@ -53,6 +60,7 @@ git -C "$repo" fetch --quiet --no-tags "$REPO_URL" +refs/heads/main:refs/heads/m
 git -C "$repo" merge-base --is-ancestor "$tag" main 2>/dev/null || die "$tag is not a commit on main"
 dirs=()
 for app in "${apps[@]}"; do dirs+=("$app/deploy"); done
+[ -z "$caddy" ] || dirs+=(deploy/caddy)
 git -C "$repo" archive --format=tar "$tag" "${dirs[@]}" | tar -x -C "$tmp"
 
 # Registry credentials only for this run: they live in $tmp and are deleted with it.
@@ -61,19 +69,52 @@ if [ -n "$token" ]; then
 	printf "%s" "$token" | registry login ghcr.io -u "$user" --password-stdin >/dev/null
 fi
 
+pull() { # name, compose file
+	local images image
+	images=$(docker compose -f "$2" config --images)
+	[ -n "$images" ] || die "$1: compose.yaml names no image"
+	for image in $images; do
+		echo "==> $1: pulling $image"
+		registry pull --quiet "$image" >/dev/null
+	done
+}
+
+if [ -n "$caddy" ]; then
+	new_caddy=$tmp/deploy/caddy
+	{ [ -f "$new_caddy/compose.yaml" ] && [ -f "$new_caddy/conf/Caddyfile" ]; } ||
+		die "caddy: missing deploy/caddy/compose.yaml or conf/Caddyfile"
+	pull caddy "$new_caddy/compose.yaml"
+else
+	new_caddy=$CADDY
+	[ -f "$CADDY/compose.yaml" ] || die "Caddy is not installed yet: deploy caddy too"
+fi
 for app in "${apps[@]}"; do
 	src=$tmp/$app/deploy
 	{ [ -f "$src/compose.yaml" ] && [ -f "$src/$app.caddy" ]; } ||
 		die "$app: missing deploy/compose.yaml or deploy/$app.caddy"
 	printf 'TAG=%s\n' "$tag" >"$src/.env"
-	images=$(docker compose -f "$src/compose.yaml" config --images)
-	[ -n "$images" ] || die "$app: compose.yaml names no image"
-	for image in $images; do
-		echo "==> $app: pulling $image"
-		registry pull --quiet "$image" >/dev/null
-	done
+	pull "$app" "$src/compose.yaml"
 done
 
+# The config Caddy will run: the new or current Caddyfile and common.caddy, the installed snippets
+# and the new ones. Checked by the image that will run it, without network (nothing is fetched).
+stage=$tmp/caddy-conf
+mkdir -p "$stage/sites"
+cp "$new_caddy"/conf/*.caddy "$new_caddy/conf/Caddyfile" "$stage/"
+for f in "$SITES"/*.caddy; do cp "$f" "$stage/sites/"; done
+for app in "${apps[@]}"; do cp "$tmp/$app/deploy/$app.caddy" "$stage/sites/"; done
+caddy_image=$(docker compose -f "$new_caddy/compose.yaml" config --images | head -n1)
+out=$(docker run --rm --network none -v "$stage:/etc/caddy:ro" "$caddy_image" \
+	caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1) ||
+	{ echo "$out" >&2; die "the new Caddy config is invalid; nothing was changed"; }
+echo "==> caddy: config valid"
+
+if [ -n "$caddy" ]; then
+	mkdir -p "$SITES"
+	cp "$new_caddy/compose.yaml" "$CADDY/compose.yaml"
+	cp "$new_caddy"/conf/*.caddy "$new_caddy/conf/Caddyfile" "$CADDY/conf/"
+	echo "$tag" >"$CADDY/REVISION"
+fi
 for app in "${apps[@]}"; do
 	dir=$ROOT/$app
 	mkdir -p "$dir"
@@ -82,8 +123,17 @@ for app in "${apps[@]}"; do
 	rm -rf "$dir/deploy"
 	mv "$dir/deploy.new" "$dir/deploy"
 	echo "$tag" >"$dir/REVISION"
-	docker compose -f "$dir/deploy/compose.yaml" up -d --no-build
 	cp "$dir/deploy/$app.caddy" "$SITES/$app.caddy"
+done
+
+# Caddy first: it creates the "web" network the apps join. A new image recreates the container,
+# which then starts with the new config.
+if [ -n "$caddy" ]; then
+	docker compose -f "$CADDY/compose.yaml" up -d
+	echo "==> caddy: running $tag"
+fi
+for app in "${apps[@]}"; do
+	docker compose -f "$ROOT/$app/deploy/compose.yaml" up -d --no-build
 	echo "==> $app: running $tag"
 done
 

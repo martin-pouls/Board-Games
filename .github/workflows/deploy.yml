@@ -1,7 +1,8 @@
 # Continuous deployment to https://yoshi-und-kruemli.de. On every push to main: find the apps that
 # changed, test them and meanwhile build their arm64 images and push them to ghcr.io tagged with the
-# commit SHA, then deploy them over SSH. The deploy key can only run deploy/server/board-games-deploy
-# on the server (forced command), which deploys only commits of main, from its own clone of the repo.
+# commit SHA, then deploy them over SSH, together with the shared Caddy proxy when deploy/caddy/
+# changed. The deploy key can only run deploy/server/board-games-deploy on the server (forced
+# command), which deploys only commits of main, from its own clone of the repo.
 # Setup and rollback: deploy/README.md.
 name: Deploy
 
@@ -11,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       apps:
-        description: 'Apps to deploy: "all" or space-separated names (e.g. "regicide start-page")'
+        description: 'What to deploy: "all" or space-separated names (e.g. "regicide start-page caddy")'
         required: true
         default: all
 
@@ -38,6 +39,7 @@ jobs:
       actions: read # last successful run
     outputs:
       apps: ${{ steps.plan.outputs.apps }}
+      caddy: ${{ steps.plan.outputs.caddy }}
       shared_backend: ${{ steps.plan.outputs.shared_backend }}
       shared_frontend: ${{ steps.plan.outputs.shared_frontend }}
     steps:
@@ -195,13 +197,13 @@ jobs:
             *.cache-from=type=gha,scope=${{ matrix.app }}
             *.cache-to=type=gha,mode=max,scope=${{ matrix.app }}
 
-  # test-shared is skipped when shared/ didn't change; that still counts as passed.
+  # Skipped jobs count as passed: test-shared when shared/ didn't change, test and build when only
+  # Caddy is deployed.
   deploy:
     needs: [plan, test-shared, test, build]
     if: >-
-      github.ref == 'refs/heads/main' && !cancelled() &&
-      needs.test.result == 'success' && needs.build.result == 'success' &&
-      (needs.test-shared.result == 'success' || needs.test-shared.result == 'skipped')
+      github.ref == 'refs/heads/main' && !cancelled() && !failure() &&
+      (needs.plan.outputs.apps != '[]' || needs.plan.outputs.caddy == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Holds the SSH key. Restrict it to the main branch in the repository settings.
@@ -226,22 +228,30 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" >~/.ssh/known_hosts
           printf '%s\n' "$SSH_KEY" >~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
-      # Only the commit, the apps and the pull token travel: the server reads <app>/deploy of that
-      # commit from its own clone of main.
+      # Only the commit, the names and the pull token travel: the server reads <app>/deploy and
+      # deploy/caddy of that commit from its own clone of main.
       - name: Deploy
         env:
           APPS: ${{ needs.plan.outputs.apps }}
+          CADDY: ${{ needs.plan.outputs.caddy }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         run: |
           read -r -a apps <<<"$(jq -r 'join(" ")' <<<"$APPS")"
+          [ "$CADDY" != true ] || apps+=(caddy)
           printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" |
             ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
               "deploy@$DEPLOY_HOST" deploy "$GITHUB_SHA" "${apps[@]}"
       - name: Smoke test
         env:
           APPS: ${{ needs.plan.outputs.apps }}
+          CADDY: ${{ needs.plan.outputs.caddy }}
         run: |
+          if [ "$CADDY" = true ]; then
+            # The root redirects to the start page: Caddy is up with the new config.
+            curl -fsS -o /dev/null --retry 10 --retry-delay 3 --retry-all-errors "$SITE/"
+            echo "caddy is up at $SITE/"
+          fi
           for app in $(jq -r '.[]' <<<"$APPS"); do
             # The first handle_path is the app's own (later ones may redirect old paths). Protected
             # apps answer page loads (Accept: text/html; API calls get 401) with the gate's redirect

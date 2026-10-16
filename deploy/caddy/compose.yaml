@@ -1,4 +1,5 @@
-# Shared Caddy reverse proxy (the only container with public ports). Runs from /opt/caddy.
+# Shared Caddy reverse proxy (the only container with public ports). Runs from /opt/caddy, deployed
+# by CI (deploy/server/board-games-deploy) whenever this directory changes.
 # App stacks join the "web" network created here and are proxied by container name.
 name: caddy
 

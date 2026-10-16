@@ -2,12 +2,14 @@
 # Decides which apps a run of .github/workflows/deploy.yml tests, builds and deploys, and writes
 # them as a JSON array to $GITHUB_OUTPUT ("apps=[...]"). Run from the repo root. It also writes
 # whether the run checks shared/backend and shared/frontend ("shared_backend=true|false", same for
-# frontend), once for all apps.
+# frontend), once for all apps, and whether it deploys the shared Caddy proxy ("caddy=true|false").
 #
-#   REQUESTED  set (manual run): "all" or space-separated app names; exactly those.
+#   REQUESTED  set (manual run): "all" or space-separated app names, "caddy" among them for the
+#              proxy; exactly those ("all" includes caddy).
 #   BASE       otherwise (push): the commit the last successful push run deployed. The apps with
-#              changes since then: a cancelled or failed run is caught up by the next one. Every
-#              app when BASE is empty or not an ancestor of HEAD (first run, rewritten history).
+#              changes since then, and caddy when deploy/caddy/ changed: a cancelled or failed run
+#              is caught up by the next one. Everything when BASE is empty or not an ancestor of
+#              HEAD (first run, rewritten history).
 #
 # An app is a top-level directory with deploy/compose.yaml (the same rule as deploy/deploy.sh).
 # An app uses shared/ when its Dockerfile copies it; a change in shared/ counts for each of them.
@@ -37,12 +39,18 @@ apps=()
 # Set on push runs with BASE; changed_shared then lists the files in shared/ changed since BASE.
 compared=
 changed_shared=
+caddy=false
 if [ -n "${REQUESTED:-}" ]; then
 	if [ "$REQUESTED" = all ]; then
 		apps=("${all[@]}")
+		caddy=true
 	else
 		for a in $REQUESTED; do
-			is_app "$a" || { echo "unknown app '$a'; apps: ${all[*]}" >&2; exit 1; }
+			if [ "$a" = caddy ]; then
+				caddy=true
+				continue
+			fi
+			is_app "$a" || { echo "unknown app '$a'; apps: ${all[*]} caddy" >&2; exit 1; }
 			apps+=("$a")
 		done
 	fi
@@ -58,10 +66,12 @@ elif [ -n "${BASE:-}" ] && git merge-base --is-ancestor "$BASE" HEAD 2>/dev/null
 		fi
 	done < <(git diff --name-only "$BASE" HEAD | cut -d/ -f1 | sort -u)
 	changed_shared=$(git diff --name-only "$BASE" HEAD -- shared/)
+	[ -z "$(git diff --name-only "$BASE" HEAD -- deploy/caddy/)" ] || caddy=true
 	compared=1
 else
-	echo "no previous deploy to compare with: every app"
+	echo "no previous deploy to compare with: every app and caddy"
 	apps=("${all[@]}")
+	caddy=true
 fi
 
 json=$(printf '"%s",' "${apps[@]}")
@@ -69,6 +79,8 @@ json="[${json%,}]"
 [ ${#apps[@]} -gt 0 ] || json='[]'
 echo "apps: $json"
 echo "apps=$json" >>"${GITHUB_OUTPUT:-/dev/null}"
+echo "caddy: $caddy"
+echo "caddy=$caddy" >>"${GITHUB_OUTPUT:-/dev/null}"
 
 for part in backend frontend; do
 	check=false

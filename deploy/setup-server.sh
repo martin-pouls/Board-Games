@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Idempotent server bootstrap: Docker, firewall, automatic security updates, SSH hardening, the
-# shared Caddy proxy in /opt/caddy and the "deploy" user that GitHub Actions deploys as. Run from
-# Git Bash on your PC (as root over your own key). Setup of the CI deploy: deploy/README.md.
+# Idempotent server bootstrap: Docker, firewall, automatic security updates, SSH hardening, log
+# retention, the gate's secret and passwords and the "deploy" user that GitHub Actions deploys as.
+# Run from Git Bash on your PC (as root over your own key). Setup of the CI deploy: deploy/README.md.
+# The apps and the shared Caddy proxy (deploy/caddy/, in /opt/caddy) are deployed by CI.
 #
 #   deploy/setup-server.sh                                    # keeps the deploy user's key as is
 #   CI_PUBKEY=~/.ssh/board-games-ci.pub deploy/setup-server.sh # installs (or rotates) the CI key
@@ -13,8 +14,7 @@
 # The passwords travel inside the tar stream, never on a command line. Without GATE_PASSWORDS an
 # installed file is kept; on a first run the script fails without it.
 #
-# Re-run it after changing deploy/caddy/ or deploy/server/ (it ships the committed HEAD): the repo
-# owns the Caddyfile and common.caddy; a server copy that differs is kept as .bak before it is replaced.
+# Re-run it after changing deploy/server/ (it ships the committed HEAD).
 set -euo pipefail
 
 HOST=${DEPLOY_HOST:-root@yoshi-und-kruemli.de}
@@ -79,19 +79,8 @@ ufw allow 443 >/dev/null # TCP + UDP (HTTP/3)
 ufw logging off >/dev/null
 ufw --force enable >/dev/null
 
-mkdir -p /opt/caddy/conf/sites
-cp "$tmp/caddy/compose.yaml" /opt/caddy/compose.yaml
-for f in Caddyfile common.caddy; do
-	if [ -f "/opt/caddy/conf/$f" ] && ! cmp -s "$tmp/caddy/conf/$f" "/opt/caddy/conf/$f"; then
-		cp "/opt/caddy/conf/$f" "/opt/caddy/conf/$f.bak"
-		echo "replaced a differing $f; the previous one is /opt/caddy/conf/$f.bak"
-	fi
-	cp "$tmp/caddy/conf/$f" "/opt/caddy/conf/$f"
-done
-docker compose -f /opt/caddy/compose.yaml up -d ${recreate:+--force-recreate}
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 if [ -n "$recreate" ]; then
-	for f in /opt/board-games/*/deploy/compose.yaml; do
+	for f in /opt/caddy/compose.yaml /opt/board-games/*/deploy/compose.yaml; do
 		if [ -f "$f" ]; then docker compose -f "$f" up -d --no-build --force-recreate; fi
 	done
 	echo "recreated the containers: they log to journald now"
@@ -103,16 +92,9 @@ fi
 # account sshd still accepts its key.
 id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
 usermod -p '*' -aG docker deploy
-# The repo used to be Card-Games: move its deploy root (compose project names stay, so the running
-# containers and their volumes carry over) and drop the old script.
-if [ -d /opt/card-games ] && [ ! -e /opt/board-games ]; then
-	mv /opt/card-games /opt/board-games
-	echo "moved /opt/card-games to /opt/board-games"
-fi
-rm -f /usr/local/bin/card-games-deploy
 install -m 755 "$tmp/server/board-games-deploy" /usr/local/bin/board-games-deploy
-install -d -o deploy -g deploy /opt/board-games
-chown -R deploy:deploy /opt/board-games /opt/caddy/conf/sites
+install -d -o deploy -g deploy /opt/board-games /opt/caddy /opt/caddy/conf /opt/caddy/conf/sites
+chown -R deploy:deploy /opt/board-games /opt/caddy
 
 # The deploy key lives in a root-owned file, not in ~deploy/.ssh, so the account cannot change its
 # own keys. Password logins are off for everyone (root already allowed keys only).
@@ -145,7 +127,6 @@ if ! sshd -t; then
 	echo "sshd rejected $dropin; removed it again" >&2
 	exit 1
 fi
-rm -f /etc/ssh/sshd_config.d/10-card-games.conf # its name before the rename, same content
 systemctl try-reload-or-restart ssh
 
 # The gate's secret and passwords, readable only by the gate container's user (distroless nonroot)
@@ -170,11 +151,11 @@ EOF
 )
 
 {
-	git -c core.autocrlf=false archive --format=tar HEAD:deploy
+	git -c core.autocrlf=false archive --format=tar HEAD:deploy server
 	if [ -n "${GATE_PASSWORDS:-}" ]; then
 		tar -c -C "$(dirname "$GATE_PASSWORDS")" --transform 's|.*|gate-passwords|' "$(basename "$GATE_PASSWORDS")"
 	fi
 } |
 	ssh -i "$KEY" "$HOST" "CI_PUBKEY_B64='$pubkey'
 $remote"
-echo "server ready; deploys run from GitHub Actions (or deploy/deploy.sh as a fallback)"
+echo "server ready; deploys (the apps and caddy) run from GitHub Actions (or deploy/deploy.sh as a fallback)"

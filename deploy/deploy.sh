@@ -2,13 +2,14 @@
 # Fallback deploy, for when GitHub Actions (.github/workflows/deploy.yml, the normal way) is not
 # available. Deploys apps of the committed HEAD as root over your own key: for each app upload its
 # subtree and shared/, build its image on the server (native arm64, tagged local-<rev>), restart
-# its container and install its Caddy snippet; then reload Caddy once. Uncommitted changes are not
-# deployed. The next CI deploy replaces it again.
+# its container and install its Caddy snippet; then reload Caddy once. "caddy" first installs the
+# shared proxy from deploy/caddy/ into /opt/caddy. Uncommitted changes are not deployed. The next CI
+# deploy replaces it again.
 #
 # Usage from Git Bash on your PC (first time: deploy/setup-server.sh):
-#   deploy/deploy.sh                       # every app
+#   deploy/deploy.sh                       # caddy and every app
 #   deploy/deploy.sh regicide              # one app
-#   deploy/deploy.sh the-game start-page   # several
+#   deploy/deploy.sh caddy the-game        # several
 #
 # An app is a top-level directory with <app>/Dockerfile, <app>/deploy/compose.yaml and
 # <app>/deploy/<app>.caddy. Its source lands in /opt/board-games/<app>/src/<app> on the server,
@@ -29,23 +30,41 @@ all_apps() {
 	return 0
 }
 
+caddy=
+apps=()
 if [ $# -eq 0 ]; then
+	caddy=1
 	mapfile -t apps < <(all_apps)
-else
-	apps=("$@")
 fi
+for a in "$@"; do
+	if [ "$a" = caddy ]; then caddy=1; else apps+=("$a"); fi
+done
 
 for app in "${apps[@]}"; do
 	if ! git cat-file -e "HEAD:$app/deploy/compose.yaml" 2>/dev/null ||
 		! git cat-file -e "HEAD:$app/deploy/$app.caddy" 2>/dev/null; then
 		echo "unknown app '$app': not committed, or missing deploy/compose.yaml or deploy/$app.caddy" >&2
-		echo "apps: $(all_apps | tr '\n' ' ')" >&2
+		echo "apps: $(all_apps | tr '\n' ' ')caddy" >&2
 		exit 1
 	fi
 done
 
-ssh -i "$KEY" "$HOST" '[ -d /opt/caddy/conf/sites ] && docker network inspect web >/dev/null 2>&1' ||
-	{ echo "shared Caddy missing: run deploy/setup-server.sh first" >&2; exit 1; }
+if [ -n "$caddy" ]; then
+	echo "==> caddy"
+	[ -z "$(git status --porcelain -- deploy/caddy)" ] ||
+		echo "warning: uncommitted changes in deploy/caddy/ are not deployed" >&2
+	git -c core.autocrlf=false archive --format=tar HEAD:deploy/caddy | ssh -i "$KEY" "$HOST" "set -eu
+mkdir -p /opt/caddy/conf/sites
+tar -x -C /opt/caddy
+echo $rev >/opt/caddy/REVISION
+docker compose -f /opt/caddy/compose.yaml up -d
+# Keep everything writable for the CI deploy user (see setup-server.sh).
+if id deploy >/dev/null 2>&1; then chown -R deploy:deploy /opt/caddy; fi
+"
+fi
+
+ssh -i "$KEY" "$HOST" '[ -f /opt/caddy/compose.yaml ] && docker network inspect web >/dev/null 2>&1' ||
+	{ echo "shared Caddy missing: run deploy/deploy.sh caddy first" >&2; exit 1; }
 
 for app in "${apps[@]}"; do
 	echo "==> $app"
