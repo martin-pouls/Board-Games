@@ -6,7 +6,7 @@
 # root. The image keeps the repo layout (/src/gate, /src/shared): go.mod and the frontend find
 # shared/ at ../../shared as they do in a checkout. Dockerfile.dockerignore next to this file applies.
 
-FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS web
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS web
 WORKDIR /src/gate/frontend
 COPY gate/frontend/package.json gate/frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
