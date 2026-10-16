@@ -135,7 +135,17 @@
 
 	{#if command}
 		<span class="flex h-5 min-w-0 items-center justify-between gap-1 text-[0.7rem] font-medium">
-			<CommandChip {command} size="xs" muted={!pile.commandActive} class="min-w-0" />
+			{#if command === 'noCommunication' && pile.commandActive}
+				<!-- the loudest rule (with the screen's glow): full name, solid -->
+				<CommandChip
+					{command}
+					size="xs"
+					label={commandInfo(command).label}
+					class="min-w-0 bg-violet-600 text-white dark:bg-violet-500 dark:text-white"
+				/>
+			{:else}
+				<CommandChip {command} size="xs" muted={!pile.commandActive} class="min-w-0" />
+			{/if}
 			{#if playsThisTurn > 0}
 				<span class="shrink-0 whitespace-nowrap tabular-nums opacity-70"
 					>+{playsThisTurn}<span class="@max-[10.5rem]:hidden">&nbsp;this turn</span></span

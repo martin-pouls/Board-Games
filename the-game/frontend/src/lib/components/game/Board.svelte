@@ -19,7 +19,6 @@
 	import Hand from './Hand.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import TurnBar from './TurnBar.svelte';
-	import ActiveCommands from './ActiveCommands.svelte';
 	import NoCommunicationFrame from './NoCommunicationFrame.svelte';
 	import RulesHelp from './RulesHelp.svelte';
 
@@ -206,8 +205,6 @@
 
 	<PlayerStrip players={view.players} online={client.online} showCounts={view.phase !== 'lobby'} />
 
-	<ActiveCommands commands={view.activeCommands} piles={view.piles} />
-
 	<div class="grid max-h-[34rem] min-h-56 flex-1 grid-cols-2 grid-rows-2 gap-2 sm:gap-3">
 		{#each piles as pile (pile.index)}
 			{@const legal = selectedCard?.legalPiles.includes(pile.index) ?? false}
@@ -225,8 +222,14 @@
 		{/each}
 	</div>
 
+	<!--
+		The panel keeps its full height from the start (turn bar, a hand of full-size cards, the tip),
+		so the piles don't shrink when the hand gets fewer, taller cards. Until then the room shows as
+		space between the piles and the turn bar. Each rule shows once: Infinity commands on their
+		pile, the turn's rules in the turn bar's two fixed lines.
+	-->
 	<div
-		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
+		class="sticky bottom-0 -mx-3 mt-auto flex min-h-[calc(11.25rem+max(0.25rem,env(safe-area-inset-bottom)))] flex-col justify-end gap-1 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
 	>
 		{#if controls}
 			{@render controls()}

@@ -66,54 +66,67 @@ export function commandInfo(c: CommandName): CommandInfo {
 	return COMMANDS[c];
 }
 
-/** Target dots for TurnBar: exactCount ?? requiredMinimum. */
+/** Cards a turn must reach: exactCount ?? requiredMinimum. */
 export function targetCount(turn: Turn): number {
 	return turn.constraints.exactCount ?? turn.requiredMinimum;
 }
 
-export interface TurnHint {
-	command: CommandName;
-	text: string;
+/**
+ * What TurnBar shows besides the buttons, from server facts only. Each rule appears once on the
+ * board: Infinity commands and the skull on their pile, the rest here. `line` is one line of text,
+ * so the turn bar keeps its height and the piles don't move.
+ */
+export interface TurnStatus {
+	/** Single pile is in force: a tag below the status line (the bound pile is also marked). */
+	singlePile: { bound: boolean; label: string; title: string } | null;
+	/** 3! is in force (and no STOP): a badge beside the Single pile tag; `line` counts toward it. */
+	exactly: number | null;
+	line: { text: string; tone: 'muted' | 'warn'; dots: boolean };
+	/** Draw only one is visible: shown on the End turn button, where it takes effect. */
+	drawOnlyOne: boolean;
 }
 
-/** Hints for TurnBar, from server facts only (constraints + activeCommands). */
-export function turnHints(view: PlayerView, isMyTurn: boolean): TurnHint[] {
+export function turnStatus(view: PlayerView, isMyTurn: boolean): TurnStatus | null {
 	const turn = view.turn;
-	if (!turn) return [];
+	if (!turn) return null;
 	const c = turn.constraints;
-	const visible = (cmd: CommandName) => view.activeCommands.some((a) => a.command === cmd);
-	const hints: TurnHint[] = [];
-	const name = view.players.find((p) => p.id === turn.activePlayerId)?.name ?? 'Someone';
+	const singlePile = c.singlePile
+		? c.boundPile !== null
+			? {
+					bound: true,
+					label: 'Only the marked pile',
+					title: 'Single pile: all cards this turn on the marked pile'
+				}
+			: {
+					bound: false,
+					label: 'All cards on one pile',
+					title: 'Single pile: the first card picks the pile for the whole turn'
+				}
+		: null;
 
-	if (c.stopPlayed) {
-		hints.push({
-			command: 'stop',
-			text: isMyTurn ? 'STOP: no more cards, end your turn' : `${name} played STOP`
-		});
+	const played = turn.cardsPlayed;
+	const target = targetCount(turn);
+	let line: TurnStatus['line'];
+	if (isMyTurn && turn.stuck) {
+		line = { text: 'Stuck: undo or give up', tone: 'warn', dots: false };
+	} else if (c.stopPlayed) {
+		line = {
+			text: isMyTurn ? 'STOP: end your turn' : `STOP: ${played} played`,
+			tone: 'warn',
+			dots: false
+		};
+	} else if (c.exactCount !== null) {
+		line = { text: `${played} of ${c.exactCount} played`, tone: 'muted', dots: isMyTurn };
+	} else if (isMyTurn && played < target) {
+		line = { text: `${played} of ${target} played`, tone: 'muted', dots: true };
+	} else {
+		line = { text: `${played} played`, tone: 'muted', dots: isMyTurn };
 	}
-	if (c.skullPiles.length > 0) {
-		hints.push({
-			command: 'skull',
-			text: isMyTurn ? 'Cover the skull before ending your turn' : `${name} must cover the skull`
-		});
-	}
-	if (c.exactCount !== null) {
-		hints.push({ command: 'exactlyThree', text: `3!: exactly ${c.exactCount} cards this turn` });
-	}
-	if (c.singlePile) {
-		hints.push({
-			command: 'singlePile',
-			text:
-				c.boundPile === null
-					? 'Single pile: the first card picks the pile'
-					: 'Single pile: only the marked pile'
-		});
-	}
-	if (visible('noBackwardsTrick')) {
-		hints.push({ command: 'noBackwardsTrick', text: 'No backwards trick' });
-	}
-	if (visible('drawOnlyOne')) {
-		hints.push({ command: 'drawOnlyOne', text: 'Draw only 1 at turn end' });
-	}
-	return hints;
+
+	return {
+		singlePile,
+		exactly: c.stopPlayed ? null : c.exactCount,
+		line,
+		drawOnlyOne: view.activeCommands.some((a) => a.command === 'drawOnlyOne')
+	};
 }

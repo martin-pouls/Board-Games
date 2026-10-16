@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { COMMANDS, commandInfo, targetCount, turnHints } from './commands.js';
+import { COMMANDS, commandInfo, targetCount, turnStatus } from './commands.js';
 import {
 	extremeEightCommands,
 	extremeMyTurn,
 	extremeOthersNoComm,
 	extremeSkull,
-	lostSkull,
 	fixtures,
 	noConstraints,
 	playingMyTurn,
 	playingOthersTurn
 } from './fixtures.js';
-import type { CommandName, PlayerView } from '#lib/types.js';
+import type { CommandName } from '#lib/types.js';
 
 const names: CommandName[] = [
 	'stop',
@@ -58,63 +57,85 @@ describe('targetCount', () => {
 	});
 });
 
-const texts = (v: PlayerView, mine: boolean) => turnHints(v, mine).map((h) => h.text);
-
-describe('turnHints', () => {
-	it('is empty for every classic fixture', () => {
+describe('turnStatus', () => {
+	it('is null without a turn', () => {
+		expect(turnStatus(fixtures.lobbyHostExtreme, true)).toBeNull();
+	});
+	it('has no Single pile tag and no Draw only one in any classic fixture', () => {
 		for (const v of Object.values(fixtures)) {
-			if (v.options.variant !== 'classic') continue;
-			expect(turnHints(v, true)).toEqual([]);
-			expect(turnHints(v, false)).toEqual([]);
+			if (v.options.variant !== 'classic' || !v.turn) continue;
+			const s = turnStatus(v, true)!;
+			expect(s.singlePile).toBeNull();
+			expect(s.exactly).toBeNull();
+			expect(s.drawOnlyOne).toBe(false);
 		}
 	});
-	it('is empty without a turn', () => {
-		expect(turnHints(fixtures.lobbyHostExtreme, true)).toEqual([]);
+	it('counts toward the minimum on your turn, plain count on others', () => {
+		expect(turnStatus(playingMyTurn, true)!.line).toEqual({
+			text: '1 of 2 played',
+			tone: 'muted',
+			dots: true
+		});
+		const done = structuredClone(playingMyTurn);
+		done.turn!.cardsPlayed = 3;
+		expect(turnStatus(done, true)!.line.text).toBe('3 played');
+		expect(turnStatus(playingOthersTurn, false)!.line).toMatchObject({ dots: false });
 	});
-	it('asks to cover the skull first, then 3!', () => {
-		expect(turnHints(extremeSkull, true)).toEqual([
-			{ command: 'skull', text: 'Cover the skull before ending your turn' },
-			{ command: 'exactlyThree', text: '3!: exactly 3 cards this turn' }
-		]);
-	});
-	it("names the active player on others' turns", () => {
+	it('badges 3! and counts toward it', () => {
+		expect(turnStatus(extremeSkull, true)!.exactly).toBe(3);
+		expect(turnStatus(extremeSkull, true)!.line).toEqual({
+			text: '2 of 3 played',
+			tone: 'muted',
+			dots: true
+		});
 		const v = structuredClone(extremeSkull);
 		v.turn!.activePlayerId = 'p_ben';
-		expect(texts(v, false)).toEqual(['Ben must cover the skull', '3!: exactly 3 cards this turn']);
-		expect(texts(lostSkull, false)).toEqual(['Dan must cover the skull']);
+		expect(turnStatus(v, false)!.line).toEqual({
+			text: '2 of 3 played',
+			tone: 'muted',
+			dots: false
+		});
 	});
-	it('falls back to "Someone" for an unknown active player', () => {
-		const v = structuredClone(extremeSkull);
-		v.turn!.activePlayerId = 'p_nobody';
-		expect(texts(v, false)[0]).toBe('Someone must cover the skull');
+	it('tags a single pile, bound or still to be picked', () => {
+		expect(turnStatus(extremeMyTurn, true)!.singlePile).toEqual({
+			bound: true,
+			label: 'Only the marked pile',
+			title: 'Single pile: all cards this turn on the marked pile'
+		});
+		expect(turnStatus(extremeEightCommands, true)!.singlePile).toEqual({
+			bound: false,
+			label: 'All cards on one pile',
+			title: 'Single pile: the first card picks the pile for the whole turn'
+		});
 	});
-	it('explains a bound single pile and a visible No backwards trick', () => {
-		expect(turnHints(extremeMyTurn, true)).toEqual([
-			{ command: 'singlePile', text: 'Single pile: only the marked pile' },
-			{ command: 'noBackwardsTrick', text: 'No backwards trick' }
-		]);
+	it('puts Draw only one on the End turn button, nothing else for Infinity commands', () => {
+		const s = turnStatus(extremeOthersNoComm, false)!;
+		expect(s.drawOnlyOne).toBe(true);
+		expect(s.singlePile).toBeNull();
+		expect(turnStatus(extremeMyTurn, true)!.drawOnlyOne).toBe(false);
 	});
-	it('says the first card picks an unbound single pile', () => {
-		expect(texts(extremeEightCommands, true)).toEqual([
-			'Single pile: the first card picks the pile',
-			'No backwards trick'
-		]);
-	});
-	it('mentions Draw only one, but not No communication (that has its own banner)', () => {
-		expect(turnHints(extremeOthersNoComm, false)).toEqual([
-			{ command: 'drawOnlyOne', text: 'Draw only 1 at turn end' }
-		]);
-	});
-	it('says no card may follow a STOP', () => {
+	it('replaces the count with STOP', () => {
 		const v = structuredClone(extremeMyTurn);
 		v.turn!.constraints.stopPlayed = true;
-		expect(texts(v, true)[0]).toBe('STOP: no more cards, end your turn');
+		expect(turnStatus(v, true)!.line).toEqual({
+			text: 'STOP: end your turn',
+			tone: 'warn',
+			dots: false
+		});
 		v.turn!.activePlayerId = 'p_ben';
-		expect(texts(v, false)[0]).toBe('Ben played STOP');
+		expect(turnStatus(v, false)!.line.text).toBe('STOP: 1 played');
+		v.turn!.constraints.exactCount = 3;
+		expect(turnStatus(v, false)!.exactly).toBeNull();
 	});
-	it('ignores commands that are not visible', () => {
-		const v = structuredClone(playingOthersTurn);
-		v.activeCommands = [{ command: 'noCommunication', pile: 0 }];
-		expect(turnHints(v, false)).toEqual([]);
+	it('says stuck in the same line, only to the stuck player', () => {
+		const v = structuredClone(extremeSkull);
+		v.turn!.stuck = true;
+		expect(turnStatus(v, true)!.line).toEqual({
+			text: 'Stuck: undo or give up',
+			tone: 'warn',
+			dots: false
+		});
+		v.turn!.activePlayerId = 'p_ben';
+		expect(turnStatus(v, false)!.line.tone).toBe('muted');
 	});
 });

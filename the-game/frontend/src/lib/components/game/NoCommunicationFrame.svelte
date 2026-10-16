@@ -5,7 +5,7 @@
 
 <!--
 	While a No communication card is visible: a violet glow around the whole screen. It takes no
-	room from the board yet stays in view; the loud chip in ActiveCommands names the rule.
+	room from the board yet stays in view; the solid chip on its pile names the rule.
 -->
 <div
 	transition:fade={{ duration: prefersReducedMotion.current ? 0 : 200 }}
