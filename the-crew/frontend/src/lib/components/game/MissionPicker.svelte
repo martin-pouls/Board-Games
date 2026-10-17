@@ -1,26 +1,36 @@
 <script lang="ts" module>
-	import { cap, terms } from '#lib/edition.js';
+	import { cap, edition, terms } from '#lib/edition.js';
 	import type { MissionDef } from '#lib/types.js';
 
-	export type MarkerKind = 'deadZone' | 'disruption' | 'objective' | 'commander';
+	export type MarkerKind = 'deadZone' | 'disruption' | 'comm' | 'objective' | 'commander';
 
 	export const MARKERS: Record<MarkerKind, { label: string }> = {
-		deadZone: { label: 'Dead zone' },
+		deadZone: { label: edition === 'deepSea' ? 'Currents' : 'Dead zone' },
+		comm: { label: 'Special communication' },
 		disruption: { label: 'Disruption' },
 		objective: { label: 'Special objective' },
 		commander: { label: `${cap(terms.commander)} decides` }
 	};
 
+	/** Distributions where the commander (Deep Sea: the captain) decides who takes the tasks. */
+	const CAPTAIN_DECIDES: MissionDef['distribution'][] = [
+		'commanderDecision',
+		'commanderDistribution',
+		'oneMember',
+		'captainOrVolunteer',
+		'volunteers',
+		'free'
+	];
+
 	/** The special rules of a mission worth a marker in the grid. */
 	export function missionMarkers(def: MissionDef | undefined): MarkerKind[] {
 		if (!def) return [];
 		const out: MarkerKind[] = [];
-		if (def.deadZone) out.push('deadZone');
+		if (def.deadZone || def.commMode === 'currents') out.push('deadZone');
 		if (def.fromTrick > 1) out.push('disruption');
-		if (def.objectives.length > 0) out.push('objective');
-		if (def.distribution === 'commanderDecision' || def.distribution === 'commanderDistribution') {
-			out.push('commander');
-		}
+		if (def.commMode && def.commMode !== 'currents') out.push('comm');
+		if (def.objectives.length > 0 || def.stages > 0) out.push('objective');
+		if (CAPTAIN_DECIDES.includes(def.distribution)) out.push('commander');
 		return out;
 	}
 </script>
@@ -31,11 +41,13 @@
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Target from '@lucide/svelte/icons/target';
 	import UserStar from '@lucide/svelte/icons/user-star';
+	import Waves from '@lucide/svelte/icons/waves';
+	import { missionCount } from '#lib/edition.js';
 	import { missionLabelOf } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { LogEntry } from '#lib/types.js';
 
-	const MISSIONS = Array.from({ length: 50 }, (_, i) => i + 1);
+	const MISSIONS = Array.from({ length: missionCount }, (_, i) => i + 1);
 
 	let {
 		selected,
@@ -45,7 +57,7 @@
 		disabled = false,
 		onselect
 	}: {
-		/** The selected mission, 1–50. */
+		/** The selected mission, 1 to missionCount. */
 		selected: number;
 		logbook: LogEntry[];
 		/** The mission table, for the markers; the grid works without it. */
@@ -81,6 +93,8 @@
 		<EyeOff class="size-3" />
 	{:else if kind === 'disruption'}
 		<Clock class="size-3" />
+	{:else if kind === 'comm'}
+		<Waves class="size-3" />
 	{:else if kind === 'objective'}
 		<Target class="size-3" />
 	{:else}

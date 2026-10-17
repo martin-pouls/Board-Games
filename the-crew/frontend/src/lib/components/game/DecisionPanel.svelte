@@ -2,12 +2,14 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import Shuffle from '@lucide/svelte/icons/shuffle';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { cap, terms } from '#lib/edition.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { byTokenOrder, cardLabel } from '#lib/game/cards.js';
 	import { listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
+	import { taskTextOf } from '#lib/game/taskText.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
 	import EditionGlyph from './EditionGlyph.svelte';
@@ -47,6 +49,12 @@
 	const dummy = $derived(attempt.members.find((m) => m.dummy));
 	const jarvisTurn = $derived(!!dummy && attempt.turn === dummy.seat);
 	const forJarvis = $derived(jarvisTurn && mine);
+	const players = $derived(attempt.members.length);
+	// Deep Sea: the task whose owner predicts now, and the task tapped in the pool.
+	const predictTask = $derived(attempt.predict >= 0 ? attempt.tasks[attempt.predict] : null);
+	const forDummyPrediction = $derived(!!dummy && predictTask?.owner === dummy.seat);
+	const tappedTask = $derived(selectedTasks.length ? attempt.tasks[selectedTasks[0]] : null);
+	const twoVolunteers = $derived(attempt.pick === 'volunteers' && (mission?.volunteers ?? 0) > 1);
 
 	/** The next human seat in direction d (left = the next seat), skipping the dummy. */
 	function neighbour(d: Direction): number {
@@ -73,9 +81,24 @@
 				return attempt.trick.length
 					? 'Your turn: follow suit if you can.'
 					: 'Your turn: lead a card.';
-			case 'draft':
+			case 'draft': {
 				if (!mine) return `Waiting for ${waitingFor} to take a task.`;
-				return forJarvis ? `Choose a task for ${terms.dummy}: tap it.` : 'Take a task: tap it.';
+				if (draftTask && !attempt.takeable.includes(draftTask.id))
+					return 'This task cannot be taken now: tap another one.';
+				const or = attempt.actions.pass ? ', or pass' : '';
+				return forJarvis
+					? `Choose a task for ${terms.dummy}: tap it${or}.`
+					: `Take a task: tap it${or}.`;
+			}
+			case 'assign':
+				if (!mine)
+					return `${stepText(step, attempt.pick, mission)} Waiting for ${name(attempt.commander)}.`;
+				return tappedTask ? 'Who takes this task?' : 'Tap a task, then choose who takes it.';
+			case 'predict':
+				if (!mine) return `Waiting for ${waitingFor} to predict.`;
+				return forDummyPrediction
+					? `How many tricks will ${terms.dummy} win?`
+					: 'How many tricks will you win?';
 			case 'pass':
 				return attempt.pass?.chosen
 					? `Waiting for ${waitingFor} to choose a card.`
@@ -84,6 +107,8 @@
 				if (mine) return `The ${terms.commander} asks you.`;
 				return isCommander ? 'Waiting for the crew to answer.' : `Waiting for ${waitingFor}.`;
 			case 'pick':
+				if (mine && twoVolunteers)
+					return chosen.length < 2 ? 'Pick the two volunteers.' : 'Confirm the volunteers.';
 				if (mine && attempt.pick === 'roles')
 					return roles[0] == null
 						? 'Pick who wins only the first four tricks.'
@@ -91,8 +116,8 @@
 							? 'Now pick who wins only the last trick.'
 							: 'Confirm the roles.';
 				return mine
-					? stepText(step, attempt.pick)
-					: `${stepText(step, attempt.pick)} Waiting for ${name(attempt.commander)}.`;
+					? stepText(step, attempt.pick, mission)
+					: `${stepText(step, attempt.pick, mission)} Waiting for ${name(attempt.commander)}.`;
 			case 'adjustTokens':
 				return mine
 					? stepText(step, attempt.pick)
@@ -113,6 +138,8 @@
 		if (poll.kind === 'wellIll') return 'How do you feel: well or ill?';
 		if (pollObjective) return `Could you take this objective: ${objectiveText(pollObjective)}?`;
 		if (pollTask?.card) return `Could you take ${cardLabel(pollTask.card)}?`;
+		if (mission?.distribution === 'volunteers' && mission.volunteers > 1)
+			return `Would you volunteer to share the ${attempt.tasks.length} tasks with another member?`;
 		return `Could you take all ${attempt.tasks.length} tasks?`;
 	});
 	const answerText = (a: boolean | null | undefined) =>
@@ -126,11 +153,18 @@
 	$effect(() => {
 		void pickKey;
 		roles = [];
+		chosen = [];
 	});
+	/** Mission 26: the two volunteers tapped, not yet confirmed. */
+	let chosen = $state<number[]>([]);
 	const pickedRoles = $derived(roles[0] != null && roles[1] != null ? [roles[0], roles[1]] : null);
 	/** The seats the commander may pick now (the server applies the rules, e.g. the even split). */
 	const pickable = $derived(attempt.pickable);
 	function pickSeat(s: number) {
+		if (twoVolunteers) {
+			chosen = chosen.includes(s) ? chosen.filter((c) => c !== s) : [...chosen, s].slice(-2);
+			return;
+		}
 		if (attempt.pick !== 'roles') {
 			void run(() => client.pick([s]));
 			return;
@@ -173,6 +207,10 @@
 	class="flex min-h-14 flex-col justify-center gap-2 rounded-xl bg-muted/60 px-3 py-2"
 	role="status"
 >
+	{#if tappedTask?.objective}
+		<!-- Deep Sea: the tapped task card in words. -->
+		<p class="text-sm leading-snug">{taskTextOf(tappedTask, players)}</p>
+	{/if}
 	<!-- The status; a tapped card or task replaces it with the button that confirms it. -->
 	{#if attempt.step === 'play' && mine && selectedCard}
 		<Button
@@ -182,16 +220,28 @@
 		>
 			Play {cardLabel(selectedCard)}{forJarvis ? ` for ${terms.dummy}` : ''}
 		</Button>
-	{:else if attempt.step === 'draft' && mine && draftTask}
-		<Button
-			class="h-10 w-full text-base"
-			{disabled}
-			onclick={() => run(() => client.pickTask(draftTask.id))}
-		>
-			Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
-				? ` for ${terms.dummy}`
-				: ''}
-		</Button>
+	{:else if attempt.step === 'draft' && mine && draftTask && attempt.takeable.includes(draftTask.id)}
+		<div class="flex gap-2">
+			<Button
+				class="h-10 flex-1 text-base"
+				{disabled}
+				onclick={() => run(() => client.pickTask(draftTask.id))}
+			>
+				Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
+					? ` for ${terms.dummy}`
+					: ''}
+			</Button>
+			{#if attempt.actions.replaceTasks}
+				<Button
+					class="h-10"
+					variant="secondary"
+					{disabled}
+					onclick={() => run(() => client.replaceTask(draftTask.id))}
+				>
+					<Shuffle />Replace
+				</Button>
+			{/if}
+		</div>
 	{:else}
 		<p
 			class={cn(
@@ -204,7 +254,65 @@
 		</p>
 	{/if}
 
-	{#if attempt.step === 'poll' && poll}
+	{#if attempt.step === 'draft' && mine && attempt.actions.pass && !draftTask}
+		<Button
+			class="h-10"
+			variant="secondary"
+			{disabled}
+			onclick={() => run(() => client.passTask())}
+		>
+			Pass{forJarvis ? ` for ${terms.dummy}` : ''}
+		</Button>
+	{/if}
+	{#if attempt.actions.replaceTasks && attempt.step !== 'draft'}
+		<!-- Before the first choice the captain may swap a displayed task for another of the same difficulty. -->
+		<div class="flex items-center gap-2 text-sm">
+			<span class="mr-auto text-muted-foreground">
+				{tappedTask ? 'Replace the tapped task?' : 'Tap a task to replace it.'}
+			</span>
+			<Button
+				size="sm"
+				variant="secondary"
+				disabled={disabled || !tappedTask}
+				onclick={() => tappedTask && run(() => client.replaceTask(tappedTask.id))}
+			>
+				<Shuffle />Replace
+			</Button>
+		</div>
+	{/if}
+
+	{#if attempt.step === 'assign' && mine && tappedTask}
+		<div class="flex flex-wrap items-center gap-2">
+			{#each attempt.assignable[tappedTask.id] ?? [] as s (s)}
+				<Button
+					class="h-9"
+					variant="secondary"
+					{disabled}
+					onclick={() => run(() => client.assignTask(tappedTask.id, s))}
+				>
+					{name(s)}
+				</Button>
+			{/each}
+		</div>
+	{:else if attempt.step === 'predict' && mine && predictTask}
+		<p class="text-sm">
+			{taskTextOf(predictTask, players)}{predictTask.objective?.hidden
+				? ` · Only you will see the number until the debrief.`
+				: ' · Everyone will see the number.'}
+		</p>
+		<div class="grid grid-cols-7 gap-1.5">
+			{#each Array.from({ length: attempt.totalTricks + 1 }, (_, i) => i) as n (n)}
+				<Button
+					class="h-10 px-0"
+					variant="secondary"
+					{disabled}
+					onclick={() => run(() => client.predict(predictTask.id, n))}
+				>
+					{n}
+				</Button>
+			{/each}
+		</div>
+	{:else if attempt.step === 'poll' && poll}
 		<p class="text-sm">{question}</p>
 		<ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
 			{#each pollers as s (s)}
@@ -244,7 +352,7 @@
 				<!-- A tapped role shows in the mission panel's objectives. -->
 				<Button
 					class="h-9 gap-1.5"
-					variant={roles.includes(s) ? 'default' : 'secondary'}
+					variant={roles.includes(s) || chosen.includes(s) ? 'default' : 'secondary'}
 					{disabled}
 					onclick={() => pickSeat(s)}
 				>
@@ -259,6 +367,14 @@
 					class="ml-auto h-9"
 					disabled={disabled || !pickedRoles}
 					onclick={() => pickedRoles && run(() => client.pick(pickedRoles))}
+				>
+					Confirm
+				</Button>
+			{:else if twoVolunteers}
+				<Button
+					class="ml-auto h-9"
+					disabled={disabled || chosen.length < 2}
+					onclick={() => run(() => client.pick(chosen))}
 				>
 					Confirm
 				</Button>

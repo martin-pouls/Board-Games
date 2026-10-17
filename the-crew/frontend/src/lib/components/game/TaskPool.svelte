@@ -21,6 +21,7 @@
 		tasks={open}
 		attempt={attempt.number}
 		size="task"
+		players={attempt.members.length}
 		{pick}
 		label="Open tasks"
 		class="justify-center pt-1"

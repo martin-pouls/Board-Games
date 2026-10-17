@@ -2,8 +2,12 @@
 	import PartyPopper from '@lucide/svelte/icons/party-popper';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import House from '@lucide/svelte/icons/house';
+	import Shuffle from '@lucide/svelte/icons/shuffle';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { Switch } from '#lib/components/ui/switch/index.js';
+	import { edition, missionCount, missionName as nameOf } from '#lib/edition.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardKey } from '#lib/game/cards.js';
 	import { missionLabel, resultText, seatName } from '#lib/game/format.js';
@@ -40,7 +44,21 @@
 	const entry = $derived(view.logbook.find((e) => e.mission === view.mission));
 	const disabled = $derived(busy || !connected);
 	const missionName = $derived(view.missionDef ? missionLabel(view.missionDef) : view.mission);
-	const lastMission = $derived(view.mission >= 50);
+	const lastMission = $derived(view.mission >= missionCount);
+	// Deep Sea: Q1's next stage after a won stage; same or new tasks and "don't count" after a loss.
+	const nextStage = $derived(won && attempt.stage + 1 < attempt.stages);
+	const deepSea = edition === 'deepSea';
+	const cardTasks = $derived(
+		deepSea &&
+			!view.missionDef?.fixedTasks.length &&
+			attempt.tasks.some((t) => t.cardId > 0 || t.faceDown)
+	);
+	const canUncount = $derived(deepSea && !won && !view.missionDef?.uncounted && !entry?.completed);
+	let uncounted = $state(false);
+	const nextAttempt = (newTasks: boolean) =>
+		run(() =>
+			client.nextAttempt(deepSea ? { newTasks, uncounted: canUncount && uncounted } : undefined)
+		);
 	const reason = $derived(
 		result
 			? resultText(result, attempt.members, attempt.seat, attempt.tasks, attempt.objectives)
@@ -68,7 +86,11 @@
 		</span>
 		<div class="min-w-0">
 			<h2 class="font-display text-lg leading-tight font-bold">
-				{won ? `Mission ${missionName} accomplished` : `Attempt ${attempt.number} failed`}
+				{nextStage
+					? `Stage ${attempt.stage + 1} of ${attempt.stages} accomplished`
+					: won
+						? `Mission ${missionName} accomplished`
+						: `Attempt ${attempt.number} failed`}
 			</h2>
 			<p class="text-sm leading-snug">{reason}</p>
 			{#if entry}
@@ -100,8 +122,23 @@
 	</ul>
 
 	{#if isHost}
+		{#if canUncount}
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex flex-col gap-0.5">
+					<Label for="opt-uncounted" class="text-sm leading-snug font-normal">
+						Don't count this attempt
+					</Label>
+					<p class="text-xs text-muted-foreground">The loss could not be avoided.</p>
+				</div>
+				<Switch id="opt-uncounted" bind:checked={uncounted} {disabled} />
+			</div>
+		{/if}
 		<div class="grid grid-cols-2 gap-2">
-			{#if won}
+			{#if nextStage}
+				<Button class="h-11" {disabled} onclick={() => run(() => client.nextAttempt())}>
+					<EditionGlyph kind="mission" />Stage {attempt.stage + 2}
+				</Button>
+			{:else if won}
 				<Button
 					class="h-11"
 					disabled={disabled || lastMission}
@@ -109,15 +146,22 @@
 				>
 					<EditionGlyph kind="mission" />{lastMission
 						? 'Last mission'
-						: `Mission ${view.mission + 1}`}
+						: `Mission ${nameOf(view.mission + 1)}`}
+				</Button>
+			{:else if cardTasks}
+				<Button class="h-11" {disabled} onclick={() => nextAttempt(false)}>
+					<RotateCcw />Same tasks
+				</Button>
+				<Button class="h-11" variant="secondary" {disabled} onclick={() => nextAttempt(true)}>
+					<Shuffle />New tasks
 				</Button>
 			{:else}
-				<Button class="h-11" {disabled} onclick={() => run(() => client.nextAttempt())}>
+				<Button class="h-11" {disabled} onclick={() => nextAttempt(false)}>
 					<RotateCcw />Try again
 				</Button>
 			{/if}
 			<Button
-				class="h-11"
+				class={cn('h-11', !won && cardTasks && 'col-span-2')}
 				variant="secondary"
 				{disabled}
 				onclick={() => run(() => client.backToLobby())}

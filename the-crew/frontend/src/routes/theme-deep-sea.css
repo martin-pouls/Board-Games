@@ -30,6 +30,7 @@
 	--yellow: oklch(0.68 0.15 75);
 	--rocket: oklch(0.26 0.05 225); /* submarine card face */
 	--rocket-ink: oklch(0.9 0.08 190);
+	--captain: oklch(0.62 0.14 70);
 	--success: oklch(0.56 0.14 155);
 	--danger: oklch(0.55 0.2 27);
 	--panel: oklch(0.93 0.025 190 / 60%);
@@ -37,6 +38,11 @@
 	--stars: transparent;
 	--abyss: transparent;
 	--new-card: oklch(0.6 0.12 200);
+	/* Task cards: sea-blue paper with dark ink and orange number badges, like the printed ones. */
+	--task-top: oklch(0.96 0.02 215);
+	--task-bottom: oklch(0.86 0.055 222);
+	--task-ink: oklch(0.24 0.06 240);
+	--task-badge: oklch(0.68 0.18 45);
 }
 
 .dark[data-edition='deepSea'] {
@@ -63,6 +69,7 @@
 	--yellow: oklch(0.64 0.15 75);
 	--rocket: oklch(0.3 0.06 225);
 	--rocket-ink: oklch(0.9 0.08 190);
+	--captain: oklch(0.84 0.13 80);
 	--success: oklch(0.72 0.15 155);
 	--danger: oklch(0.66 0.19 27);
 	--panel: oklch(0.23 0.04 235 / 70%);
@@ -70,6 +77,10 @@
 	--stars: oklch(0.88 0.15 190 / 75%); /* bioluminescent dots */
 	--abyss: oklch(0.1 0.025 245 / 70%);
 	--new-card: oklch(0.8 0.14 75);
+	--task-top: oklch(0.92 0.025 215);
+	--task-bottom: oklch(0.8 0.06 222);
+	--task-ink: oklch(0.22 0.06 240);
+	--task-badge: oklch(0.66 0.18 45);
 }
 
 /* Instead of the starfield: a few glowing dots (bigger, fewer, other places), and a gradient from the
@@ -83,4 +94,20 @@
 		radial-gradient(2px 2px at 9% 81%, var(--stars), transparent 70%) no-repeat,
 		radial-gradient(1.5px 1.5px at 63% 92%, var(--stars), transparent 70%) no-repeat,
 		linear-gradient(to bottom, var(--glow), transparent 40%, var(--abyss) 100%) no-repeat;
+}
+
+/* A task card's face (DeepSeaTaskFace) and the "any colour" small card: quartered in the four
+   colours, as printed. */
+.task-face {
+	background:
+		radial-gradient(120% 60% at 30% 10%, oklch(1 0 0 / 55%), transparent 60%),
+		linear-gradient(to bottom, var(--task-top), var(--task-bottom));
+}
+.task-any {
+	background: conic-gradient(
+		var(--green) 0 25%,
+		var(--pink) 0 50%,
+		var(--yellow) 0 75%,
+		var(--blue) 0
+	);
 }

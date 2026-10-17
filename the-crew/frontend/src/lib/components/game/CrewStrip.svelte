@@ -49,6 +49,9 @@
 	);
 	const tasks = $derived(byTokenOrder(attempt.tasks));
 	const tasksOf = (m: Member) => tasks.filter((t) => t.owner === m.seat);
+	/** Rapture of the deep allows several communications; older views only have the first. */
+	const commsOf = (m: Member) =>
+		m.communications?.length ? m.communications : m.communication ? [m.communication] : [];
 	const anyJarvisEnabled = $derived(!!jarvis?.stacks.some((s) => s.up && jarvisEnabled(s.up)));
 </script>
 
@@ -65,7 +68,7 @@
 
 {#snippet badges(m: Member)}
 	{#if m.seat === attempt.commander}
-		<Crown class="size-3.5 shrink-0 text-rocket-ink" aria-label={cap(terms.commander)} />
+		<Crown class="size-3.5 shrink-0 text-captain" aria-label={cap(terms.commander)} />
 	{/if}
 	{#if m.seat === attempt.silenced}
 		<MicOff class="size-3.5 shrink-0 text-danger" aria-label="Silenced" />
@@ -95,20 +98,22 @@
 						{@render badges(m)}
 					</span>
 					{@render stats(m)}
-					{#if m.communication}
-						{@const c = m.communication.card}
-						<span class="relative shrink-0">
-							{#key cardKey(c)}
-								<span
-									class="block"
-									in:receive={{ key: cardKey(c), offstage: 'top' }}
-									out:send={{ key: cardKey(c), offstage: 'top' }}
-								>
-									<PlayingCard card={c} size="xs" />
-								</span>
-							{/key}
-							<CommBadge comm={m.communication} class="absolute -top-1.5 -right-1.5" />
-						</span>
+					{#if commsOf(m).length}
+						{#each commsOf(m) as comm (cardKey(comm.card))}
+							{@const c = comm.card}
+							<span class="relative shrink-0">
+								{#key cardKey(c)}
+									<span
+										class="block"
+										in:receive={{ key: cardKey(c), offstage: 'top' }}
+										out:send={{ key: cardKey(c), offstage: 'top' }}
+									>
+										<PlayingCard card={c} size="xs" />
+									</span>
+								{/key}
+								<CommBadge {comm} class="absolute -top-1.5 -right-1.5" />
+							</span>
+						{/each}
 					{:else if m.communicated}
 						<EditionGlyph
 							kind="comm"
@@ -119,6 +124,7 @@
 					<TaskList
 						tasks={tasksOf(m)}
 						attempt={attempt.number}
+						players={attempt.members.length}
 						pick={taskPick}
 						label={`${m.name}'s tasks`}
 						class="ml-auto pt-1"
@@ -142,6 +148,7 @@
 				<TaskList
 					tasks={tasksOf(jarvis)}
 					attempt={attempt.number}
+					players={attempt.members.length}
 					pick={taskPick}
 					label={`${terms.dummyPossessive} tasks`}
 					class="ml-auto pt-1"

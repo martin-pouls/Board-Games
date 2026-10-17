@@ -104,17 +104,26 @@
 		selected = sameCard(c, selected) ? null : c;
 	}
 
+	// Deep Sea: before the first choice the captain may tap a displayed task to replace it.
+	const replacing = $derived(attempt.actions.replaceTasks && step !== 'draft');
 	function taskEnabled(t: Task): boolean {
-		if (!ready || !mine) return false;
-		if (step === 'draft') return t.owner === OWNER_UNASSIGNED;
+		if (!ready) return false;
+		if (replacing) return t.owner === OWNER_UNASSIGNED;
+		if (!mine) return false;
+		if (step === 'draft' || step === 'assign') return t.owner === OWNER_UNASSIGNED;
 		if (step === 'adjustTokens') return true;
 		return false;
 	}
 	function pickTask(t: Task) {
 		// Like a card: tap to select, tap again (or confirm in the decision panel) to take it.
 		if (step === 'draft') {
-			if (selectedTasks[0] === t.id) void run(() => client.pickTask(t.id));
+			if (selectedTasks[0] === t.id && attempt.takeable.includes(t.id))
+				void run(() => client.pickTask(t.id));
 			else selectedTasks = [t.id];
+			return;
+		}
+		if (replacing || step === 'assign') {
+			selectedTasks = selectedTasks[0] === t.id ? [] : [t.id];
 			return;
 		}
 		selectedTasks = selectedTasks.includes(t.id)
@@ -163,6 +172,17 @@
 			: `Draw: ${cardLabel(ex.gave)} was taken from you; you drew ${cardLabel(ex.got)}.`;
 	});
 	const canCommunicate = $derived(attempt.actions.communicate.length > 0 && ready);
+	// Rapture of the deep lets a member communicate again while sonar tokens are left.
+	const showCommunicate = $derived(
+		playing &&
+			step === 'play' &&
+			attempt.comm !== 'none' &&
+			attempt.seat !== attempt.silenced &&
+			(!me?.communicated || attempt.actions.communicate.length > 0)
+	);
+	const myComms = $derived(
+		me?.communications.length ? me.communications : me?.communication ? [me.communication] : []
+	);
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 sm:max-w-xl">
@@ -239,7 +259,7 @@
 			<span class="flex items-center gap-1">
 				You
 				{#if attempt.seat === attempt.commander}
-					<Crown class="size-3.5 text-rocket-ink" aria-label={cap(terms.commander)} />
+					<Crown class="size-3.5 text-captain" aria-label={cap(terms.commander)} />
 				{/if}
 				{#if attempt.seat === attempt.silenced}
 					<MicOff class="size-3.5 text-danger" aria-label="Silenced" />
@@ -248,20 +268,21 @@
 			<span class="flex items-center gap-0.5" title="Tricks won">
 				<Trophy class="size-3.5" />{me?.tricksWon ?? 0}
 			</span>
-			{#if me?.communication}
+			{#each myComms as c (cardLabel(c.card))}
 				<span class="flex items-center gap-1">
-					<CommBadge comm={me.communication} />
-					{cardLabel(me.communication.card)}
+					<CommBadge comm={c} />
+					{cardLabel(c.card)}
 				</span>
-			{/if}
+			{/each}
 			<TaskList
 				tasks={myTasks}
 				attempt={attempt.number}
+				players={attempt.members.length}
 				pick={taskPick}
 				label="Your tasks"
 				class="pt-1"
 			/>
-			{#if playing && step === 'play' && !me?.communicated && attempt.seat !== attempt.silenced}
+			{#if showCommunicate}
 				<Button
 					size="sm"
 					variant="outline"
@@ -294,7 +315,7 @@
 <CommunicateSheet
 	bind:open={commOpen}
 	options={attempt.actions.communicate}
-	deadZone={mission?.deadZone ?? false}
+	deadZone={(mission?.deadZone ?? false) || attempt.comm === 'currents'}
 	disabled={!ready}
 	oncommunicate={(o) => run(() => client.communicate(o.card, o.position))}
 />

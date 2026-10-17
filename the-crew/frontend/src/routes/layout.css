@@ -61,6 +61,7 @@
 	--yellow: oklch(0.68 0.15 75);
 	--rocket: oklch(0.24 0.06 275); /* rocket card face */
 	--rocket-ink: oklch(0.86 0.12 60);
+	--captain: var(--rocket-ink); /* the commander's crown */
 	--signal: var(--primary); /* "your turn", selection */
 	--success: oklch(0.56 0.14 155);
 	--danger: oklch(0.55 0.2 27);
@@ -113,6 +114,7 @@
 	--yellow: oklch(0.64 0.15 75);
 	--rocket: oklch(0.3 0.07 275);
 	--rocket-ink: oklch(0.86 0.12 60);
+	--captain: var(--rocket-ink); /* the commander's crown */
 	--signal: var(--primary);
 	--success: oklch(0.72 0.15 155);
 	--danger: oklch(0.66 0.19 27);
@@ -133,6 +135,9 @@
 	--color-yellow: var(--yellow);
 	--color-rocket: var(--rocket);
 	--color-rocket-ink: var(--rocket-ink);
+	--color-captain: var(--captain);
+	--color-task-ink: var(--task-ink);
+	--color-task-badge: var(--task-badge);
 	--color-signal: var(--signal);
 	--color-success: var(--success);
 	--color-danger: var(--danger);

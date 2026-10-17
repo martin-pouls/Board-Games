@@ -2,9 +2,11 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 	import { cardLabel, tokenLabel, tokenMeaning } from '#lib/game/cards.js';
+	import { taskTextOf } from '#lib/game/taskText.js';
 	import { cn } from '#lib/utils.js';
 	import type { Task } from '#lib/types.js';
 	import CardBack from './CardBack.svelte';
+	import DeepSeaTaskFace from './DeepSeaTaskFace.svelte';
 	import PlayingCard from './PlayingCard.svelte';
 	import TokenBadge from './TokenBadge.svelte';
 
@@ -13,6 +15,7 @@
 		owner = '',
 		size = 'task',
 		selected = false,
+		players = 3,
 		onpick
 	}: {
 		task: Task;
@@ -20,13 +23,25 @@
 		owner?: string;
 		size?: 'xs' | 'task';
 		selected?: boolean;
+		/** Deep Sea: the crew members (the dummy included), for the numbers in the card text. */
+		players?: number;
 		/** Makes the card a button. */
 		onpick?: () => void;
 	} = $props();
 
+	/** A Deep Sea task card: a text card, or face down with only its difficulty. */
+	const deepSea = $derived(!task.card && (!!task.objective || task.difficulty > 0));
+	const text = $derived(deepSea ? taskTextOf(task, players) : '');
+
 	const label = $derived(
 		[
-			task.card ? `Task ${cardLabel(task.card)}` : 'Face-down task',
+			deepSea
+				? task.objective
+					? `Task: ${text}, difficulty ${task.difficulty}`
+					: `Face-down task, difficulty ${task.difficulty}`
+				: task.card
+					? `Task ${cardLabel(task.card)}`
+					: 'Face-down task',
 			task.token && `token ${tokenLabel(task.token)} (${tokenMeaning(task.token)})`,
 			owner && `for ${owner}`,
 			task.status !== 'open' && task.status
@@ -44,6 +59,27 @@
 				{size}
 				class={cn(task.status === 'failed' && 'opacity-60 grayscale')}
 			/>
+		{:else if deepSea}
+			{#if task.objective}
+				<DeepSeaTaskFace
+					{task}
+					{text}
+					{players}
+					{size}
+					class={cn(task.status === 'failed' && 'opacity-60 grayscale')}
+				/>
+			{:else}
+				<CardBack
+					{size}
+					label={`Face-down task, difficulty ${task.difficulty}`}
+					class={size === 'xs' ? 'h-[3.5rem] w-[4.5rem]' : 'h-[5.6rem] w-[5.25rem]'}
+				/>
+			{/if}
+			<span
+				class="absolute -top-1.5 -left-1.5 grid size-5 place-items-center rounded-full border border-ink/40 bg-paper font-display text-[0.65rem] leading-none font-bold text-ink shadow"
+				title={`Difficulty ${task.difficulty}`}
+				aria-hidden="true">{task.difficulty}</span
+			>
 		{:else}
 			<CardBack {size} label="Face-down task" />
 		{/if}
@@ -69,7 +105,10 @@
 	</span>
 	{#if owner}
 		<span
-			class="block max-w-12 truncate text-center text-[0.65rem] leading-tight text-muted-foreground"
+			class={cn(
+				'block truncate text-center text-[0.65rem] leading-tight text-muted-foreground',
+				deepSea ? 'max-w-20' : 'max-w-12'
+			)}
 		>
 			{owner}
 		</span>
@@ -82,7 +121,7 @@
 		class={cn(
 			'flex flex-col items-center gap-0.5 rounded-md transition-transform focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
 			selected
-				? '-translate-y-1 [&_[role=img]]:ring-3 [&_[role=img]]:ring-signal'
+				? '-translate-y-1 [&_[data-face]]:ring-3 [&_[data-face]]:ring-signal [&_[role=img]]:ring-3 [&_[role=img]]:ring-signal'
 				: 'hover:-translate-y-0.5'
 		)}
 		aria-label={label}

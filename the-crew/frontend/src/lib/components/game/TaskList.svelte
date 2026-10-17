@@ -25,6 +25,7 @@
 		size = 'xs',
 		pick,
 		label,
+		players,
 		class: className
 	}: {
 		/** The tasks to show, already in token order. */
@@ -34,6 +35,8 @@
 		size?: 'xs' | 'task';
 		pick?: TaskPick;
 		label: string;
+		/** Deep Sea: the crew members (the dummy included), for the numbers in the card texts. */
+		players?: number;
 		class?: string;
 	} = $props();
 
@@ -56,6 +59,7 @@
 				<TaskCard
 					task={t}
 					{size}
+					{players}
 					selected={!!pick?.selected.includes(t.id)}
 					onpick={pick?.canPick(t) ? () => pick.onpick(t) : undefined}
 				/>
