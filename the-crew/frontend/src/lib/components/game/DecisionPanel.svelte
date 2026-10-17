@@ -296,9 +296,9 @@
 		</div>
 	{:else if attempt.step === 'predict' && mine && predictTask}
 		<p class="text-sm">
-			{taskTextOf(predictTask, players)}{predictTask.objective?.hidden
-				? ` · Only you will see the number until the debrief.`
-				: ' · Everyone will see the number.'}
+			{predictTask.objective?.hidden
+				? 'Only you will see the number until the debrief.'
+				: 'Everyone will see the number.'}
 		</p>
 		<div class="grid grid-cols-7 gap-1.5">
 			{#each Array.from({ length: attempt.totalTricks + 1 }, (_, i) => i) as n (n)}
