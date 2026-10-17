@@ -268,6 +268,44 @@ func (o Objective) status(h History) Status {
 		return o.crewBalance(h)
 	case KindCardInLastTrick:
 		return o.cardInLastTrick(h)
+	case KindCmpTricks:
+		return o.cmpTricks(h)
+	case KindCmpCaptain:
+		return o.cmpCaptain(h)
+	case KindPredict:
+		return o.predict(h)
+	case KindAvoidTricks:
+		return o.avoidTricks(h)
+	case KindNoConsecutive:
+		return o.noConsecutive(h)
+	case KindConsecutive:
+		return o.consecutive(h)
+	case KindWinWith:
+		return o.winWith(h)
+	case KindWinTrickWhere:
+		return o.winTrickWhere(h)
+	case KindWinCount:
+		return o.winCount(h)
+	case KindWinEachColour:
+		return o.winEachColour(h)
+	case KindWinAllOfAnyColour:
+		return o.winAllOfAnyColour(h)
+	case KindNeverLead:
+		return o.neverLead(h)
+	case KindEqualSuits:
+		return o.equalSuits(h)
+	case KindMoreSuit:
+		return o.moreSuit(h)
+	case KindAll:
+		return o.all(h)
+	case KindLeaderStaysAhead:
+		return o.leaderStaysAhead(h)
+	case KindLastCardPlayed:
+		return o.lastCardPlayed(h)
+	case KindTrickQuota:
+		return o.trickQuota(h)
+	case KindNone:
+		return StatusFulfilled
 	}
 	panic("domain: unknown objective kind " + string(o.Kind))
 }
@@ -306,9 +344,9 @@ func (o Objective) winNoTricks(h History) Status {
 	return StatusOpen
 }
 
-// winExactlyTricks (mission 33). Fulfilled: after the last trick, the owner won exactly Count,
-// none by trump if NotWithTrump. Fails: a trick too many, a trick won by trump, or too few tricks
-// left to reach Count.
+// winExactlyTricks (mission 33; Deep Sea 83, 84, 87, Q1). Fulfilled: after the last trick, the
+// owner won exactly Count, none by trump if NotWithTrump, none containing a colour card of a rank
+// in Without. Fails: a trick too many, a forbidden trick, or too few tricks left to reach Count.
 func (o Objective) winExactlyTricks(h History) Status {
 	won := 0
 	for _, t := range h.Tricks {
@@ -316,6 +354,9 @@ func (o Objective) winExactlyTricks(h History) Status {
 			continue
 		}
 		if o.NotWithTrump && t.WinningCard().IsTrump() {
+			return StatusFailed
+		}
+		if slices.ContainsFunc(t.Plays, func(p Play) bool { return !p.Card.IsTrump() && slices.Contains(o.Without, p.Card.Rank) }) {
 			return StatusFailed
 		}
 		won++
@@ -473,13 +514,20 @@ func (o Objective) crewNeverWinWith(h History) Status {
 	return StatusOpen
 }
 
-// crewBalance (missions 29, 34). Fulfilled: after the last trick, the condition always held.
-// Fails: after some trick, a member has won more than Count tricks more than another member (the
-// dummy counts as a member).
+// crewBalance (missions 29, 34; Deep Sea 8, 21 with Rank). Fulfilled: after the last trick, the
+// condition always held. Fails: after some trick, a member has won more than Count tricks (with
+// Rank: colour cards of that rank) more than another member (the dummy counts as a member).
 func (o Objective) crewBalance(h History) Status {
 	won := make([]int, h.Seats)
 	for _, t := range h.Tricks {
-		won[t.Winner]++
+		if o.Rank == 0 {
+			won[t.Winner]++
+		}
+		for _, p := range t.Plays {
+			if o.Rank > 0 && !p.Card.IsTrump() && p.Card.Rank == o.Rank {
+				won[t.Winner]++
+			}
+		}
 		if slices.Max(won)-slices.Min(won) > o.Count {
 			return StatusFailed
 		}
