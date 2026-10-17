@@ -1,7 +1,6 @@
 <script lang="ts">
 	import PartyPopper from '@lucide/svelte/icons/party-popper';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-	import Rocket from '@lucide/svelte/icons/rocket';
 	import House from '@lucide/svelte/icons/house';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -10,6 +9,7 @@
 	import { resultText, seatName } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, PlayerView } from '#lib/types.js';
+	import EditionGlyph from './EditionGlyph.svelte';
 	import PlayingCard from './PlayingCard.svelte';
 
 	let {
@@ -106,7 +106,9 @@
 					disabled={disabled || lastMission}
 					onclick={() => run(() => client.nextMission())}
 				>
-					<Rocket />{lastMission ? 'Last mission' : `Mission ${view.mission + 1}`}
+					<EditionGlyph kind="mission" />{lastMission
+						? 'Last mission'
+						: `Mission ${view.mission + 1}`}
 				</Button>
 			{:else}
 				<Button class="h-11" {disabled} onclick={() => run(() => client.nextAttempt())}>

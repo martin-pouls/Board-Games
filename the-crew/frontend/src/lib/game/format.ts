@@ -1,4 +1,5 @@
 // Texts for objectives, mission briefings and results. Pure functions, unit-tested.
+import { terms } from '#lib/edition.js';
 import { cardLabel, SUIT_NAMES, tokenLabel } from './cards.js';
 import {
 	LAST_TRICK,
@@ -16,14 +17,15 @@ import {
 	type Step
 } from '#lib/types.js';
 
-export const JARVIS = 'JARVIS';
+/** The name of the dummy crew member: JARVIS (Planet Nine) or Tonoja (Deep Sea). */
+export const DUMMY = terms.dummy;
 
-/** "You", the player's name, or JARVIS. */
+/** "You", the player's name, or the dummy's name. */
 export function seatName(members: Member[], seat: number, you: number): string {
 	if (seat === you) return 'You';
 	const m = members.find((m) => m.seat === seat);
 	if (!m) return `Seat ${seat + 1}`;
-	return m.dummy ? JARVIS : m.name;
+	return m.dummy ? DUMMY : m.name;
 }
 
 /** "trick 3", "the last trick". */
@@ -59,7 +61,7 @@ function plural(n: number, word: string): string {
  * owner as subject ("You: win …", "The crew: …").
  */
 export function objectiveText(o: Objective): string {
-	const noTrump = o.notWithTrump ? ', none of them with a rocket' : '';
+	const noTrump = o.notWithTrump ? `, none of them with a ${terms.trump}` : '';
 	switch (o.kind) {
 		case 'winCards':
 			return `win ${cardsText(o.cards)}`;
@@ -99,7 +101,7 @@ export function ownerText(owner: number, members: Member[], you: number): string
 
 const OWNER_RULES: Record<OwnerRule, string> = {
 	crew: 'The crew',
-	commander: 'The commander',
+	commander: `The ${terms.commander}`,
 	chosen: 'A chosen crew member',
 	roleA: 'One chosen crew member',
 	roleB: 'Another chosen crew member',
@@ -117,11 +119,9 @@ export function specText(s: ObjectiveSpec): string {
 
 const DISTRIBUTION: Record<MissionDef['distribution'], string> = {
 	'': '',
-	open: 'Tasks are drafted, the commander first.',
-	commanderDecision:
-		'The commander asks who takes the tasks, then decides; one member takes them all.',
-	commanderDistribution:
-		'The commander reveals the tasks one by one and assigns each after asking the crew; the tasks must be shared out as evenly as possible.'
+	open: `Tasks are drafted, the ${terms.commander} first.`,
+	commanderDecision: `The ${terms.commander} asks who takes the tasks, then decides; one member takes them all.`,
+	commanderDistribution: `The ${terms.commander} reveals the tasks one by one and assigns each after asking the crew; the tasks must be shared out as evenly as possible.`
 };
 
 /** The briefing of a mission: its tasks, tokens and special rules, one line each. */
@@ -149,7 +149,7 @@ export function briefing(m: MissionDef): string[] {
 		lines.push('Before play, the crew may move one token to a task without a token.');
 	}
 	if (m.setup.includes('silenceMember')) {
-		lines.push('The commander picks a crew member who may not communicate.');
+		lines.push(`The ${terms.commander} picks a crew member who may not communicate.`);
 	}
 	if (m.setup.includes('drawAfterFirstTrick')) {
 		lines.push('After the first trick, everyone draws a card from their right neighbour.');
@@ -163,11 +163,11 @@ export function briefing(m: MissionDef): string[] {
 }
 
 const PICK_PROMPT: Record<Exclude<PickKind, ''>, string> = {
-	silence: 'The commander picks a crew member who may not communicate.',
-	roles: 'The commander picks the two crew members for the special objectives.',
-	objective: 'The commander picks who takes the special objective.',
-	decision: 'The commander picks who takes all the tasks.',
-	distribute: 'The commander assigns the revealed task.'
+	silence: `The ${terms.commander} picks a crew member who may not communicate.`,
+	roles: `The ${terms.commander} picks the two crew members for the special objectives.`,
+	objective: `The ${terms.commander} picks who takes the special objective.`,
+	decision: `The ${terms.commander} picks who takes all the tasks.`,
+	distribute: `The ${terms.commander} assigns the revealed task.`
 };
 
 /** A sentence about the current step, for the status line. */
@@ -176,7 +176,7 @@ export function stepText(step: Step, pick: PickKind): string {
 		case 'adjustTokens':
 			return 'The crew may adjust the tokens before play.';
 		case 'poll':
-			return 'The commander asks the crew.';
+			return `The ${terms.commander} asks the crew.`;
 		case 'pick':
 			return pick ? PICK_PROMPT[pick] : '';
 		case 'draft':

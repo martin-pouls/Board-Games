@@ -4,11 +4,13 @@
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { cap, terms } from '#lib/edition.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { byTokenOrder, cardLabel } from '#lib/game/cards.js';
 	import { listText, objectiveText, seatName, stepText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
+	import EditionGlyph from './EditionGlyph.svelte';
 	import TaskCard from './TaskCard.svelte';
 
 	let {
@@ -25,7 +27,7 @@
 		client: GameClient;
 		attempt: Attempt;
 		mission: MissionDef | null;
-		/** The card picked in the hand or among JARVIS's stacks. */
+		/** The card picked in the hand or among the dummy's stacks. */
 		selectedCard: Card | null;
 		/** Tasks tapped in the pool or a member's row (draft, token swap or move). */
 		selectedTasks: number[];
@@ -46,7 +48,7 @@
 	const jarvisTurn = $derived(!!dummy && attempt.turn === dummy.seat);
 	const forJarvis = $derived(jarvisTurn && mine);
 
-	/** The next human seat in direction d (left = the next seat), skipping JARVIS. */
+	/** The next human seat in direction d (left = the next seat), skipping the dummy. */
 	function neighbour(d: Direction): number {
 		const n = attempt.members.length;
 		const step = d === 'left' ? 1 : n - 1;
@@ -57,7 +59,7 @@
 
 	const waitingFor = $derived(
 		listText(
-			attempt.actors.map((s) => (jarvisTurn ? `${name(s)} (for JARVIS)` : name(s))),
+			attempt.actors.map((s) => (jarvisTurn ? `${name(s)} (for ${terms.dummy})` : name(s))),
 			'or'
 		)
 	);
@@ -67,19 +69,19 @@
 		switch (step) {
 			case 'play':
 				if (!mine) return `Waiting for ${waitingFor} to play.`;
-				if (forJarvis) return "JARVIS's turn: tap one of its cards.";
+				if (forJarvis) return `${terms.dummyPossessive} turn: tap one of its cards.`;
 				return attempt.trick.length
 					? 'Your turn: follow suit if you can.'
 					: 'Your turn: lead a card.';
 			case 'draft':
 				if (!mine) return `Waiting for ${waitingFor} to take a task.`;
-				return forJarvis ? 'Choose a task for JARVIS: tap it.' : 'Take a task: tap it.';
+				return forJarvis ? `Choose a task for ${terms.dummy}: tap it.` : 'Take a task: tap it.';
 			case 'pass':
 				return attempt.pass?.chosen
 					? `Waiting for ${waitingFor} to choose a card.`
 					: stepText(step, attempt.pick);
 			case 'poll':
-				if (mine) return 'The commander asks you.';
+				if (mine) return `The ${terms.commander} asks you.`;
 				return isCommander ? 'Waiting for the crew to answer.' : `Waiting for ${waitingFor}.`;
 			case 'pick':
 				if (mine && attempt.pick === 'roles')
@@ -178,7 +180,7 @@
 			{disabled}
 			onclick={() => run(() => client.playCard(selectedCard))}
 		>
-			Play {cardLabel(selectedCard)}{forJarvis ? ' for JARVIS' : ''}
+			Play {cardLabel(selectedCard)}{forJarvis ? ` for ${terms.dummy}` : ''}
 		</Button>
 	{:else if attempt.step === 'draft' && mine && draftTask}
 		<Button
@@ -187,7 +189,7 @@
 			onclick={() => run(() => client.pickTask(draftTask.id))}
 		>
 			Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
-				? ' for JARVIS'
+				? ` for ${terms.dummy}`
 				: ''}
 		</Button>
 	{:else}
@@ -288,7 +290,7 @@
 	{:else if attempt.step === 'pass' && attempt.pass && !attempt.pass.chosen}
 		{@const to = name(neighbour(attempt.pass.direction))}
 		<p class="text-sm">
-			Choose a card to pass {attempt.pass.direction} to {to}. Rockets can't be passed.
+			Choose a card to pass {attempt.pass.direction} to {to}. {cap(terms.trumps)} can't be passed.
 		</p>
 		<Button
 			class="h-11"
@@ -301,7 +303,9 @@
 
 	{#if attempt.step === 'play' && attempt.actions.sendDistress}
 		<div class="flex flex-wrap items-center gap-1.5 border-t border-foreground/10 pt-2 text-sm">
-			<span class="mr-auto text-muted-foreground">Distress signal?</span>
+			<span class="mr-auto flex items-center gap-1.5 text-muted-foreground">
+				<EditionGlyph kind="distress" class="size-4 shrink-0" />Distress signal?
+			</span>
 			<Button
 				size="sm"
 				variant="secondary"

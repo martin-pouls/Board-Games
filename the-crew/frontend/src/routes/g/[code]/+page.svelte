@@ -10,6 +10,7 @@
 	import Table from '#lib/components/game/Table.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';
 	import { leaveGame } from '#lib/api.js';
+	import { terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
 	import { ApiError } from '#lib/api.js';
 	import { sessions } from '#lib/session.js';
@@ -67,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>{code} · The Crew</title>
+	<title>{code} · {terms.title}</title>
 </svelte:head>
 
 {#if conn?.status === 'reconnecting'}

@@ -3,6 +3,8 @@
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/space-grotesk';
 @import '@fontsource-variable/nunito';
+/* Mission Deep Sea: token overrides under [data-edition='deepSea'] (Planet Nine ignores them). */
+@import './theme-deep-sea.css';
 
 /* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
 @source '../../../../shared/frontend/src';
@@ -13,7 +15,8 @@
  * Space theme: pale mission paper, deep indigo ink and a coral accent by day; midnight navy with
  * a faint starfield and a cyan accent by night. The theme is set before first paint by the script
  * in app.html and kept by mode-watcher afterwards. Cards keep a light face in both modes so the
- * four colours stay distinct; rockets are dark cards.
+ * four colours stay distinct; rockets are dark cards. Mission Deep Sea overrides the tokens in
+ * theme-deep-sea.css.
  */
 :root {
 	--background: oklch(0.955 0.008 85);

@@ -14,6 +14,7 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Switch } from '#lib/components/ui/switch/index.js';
 	import { getMissions } from '#lib/api.js';
+	import { terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
@@ -22,6 +23,7 @@
 	import { cn } from '#lib/utils.js';
 	import type { MissionDef, PlayerView } from '#lib/types.js';
 	import ShareInvite from '@board-games/shared/ShareInvite.svelte';
+	import EditionGlyph from './EditionGlyph.svelte';
 	import MissionBriefing from './MissionBriefing.svelte';
 	import MissionPicker from './MissionPicker.svelte';
 
@@ -118,7 +120,7 @@
 			<ShareInvite
 				code={view.gameId}
 				link={`${globalThis.location?.origin ?? ''}${resolve('/join/[code]', { code: view.gameId })}`}
-				title="The Crew"
+				title={terms.title}
 			/>
 		</Card.Content>
 	</Card.Root>
@@ -150,7 +152,7 @@
 			{#if view.players.length === 2}
 				<p class="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
 					<Bot class="size-4 shrink-0" />
-					JARVIS joins as the third crew member
+					{terms.dummy} joins as the third crew member
 				</p>
 			{/if}
 		</Card.Content>
@@ -202,7 +204,9 @@
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-1.5">
 			<div class="flex items-center justify-between gap-3">
-				<Label for="opt-distress" class="text-base">Distress signal</Label>
+				<Label for="opt-distress" class="text-base">
+					<EditionGlyph kind="distress" class="size-4 shrink-0" />Distress signal
+				</Label>
 				<Switch
 					id="opt-distress"
 					disabled={!canEdit}
@@ -210,7 +214,7 @@
 				/>
 			</div>
 			<p class="text-sm text-muted-foreground">
-				Lets the commander have everyone pass a card before the first trick.
+				Lets the {terms.commander} have everyone pass a card before the first trick.
 			</p>
 		</Card.Content>
 	</Card.Root>

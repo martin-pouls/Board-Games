@@ -1,4 +1,5 @@
 <script lang="ts" module>
+	import { cap, terms } from '#lib/edition.js';
 	import type { MissionDef } from '#lib/types.js';
 
 	export type MarkerKind = 'deadZone' | 'disruption' | 'objective' | 'commander';
@@ -7,7 +8,7 @@
 		deadZone: { label: 'Dead zone' },
 		disruption: { label: 'Disruption' },
 		objective: { label: 'Special objective' },
-		commander: { label: 'Commander decides' }
+		commander: { label: `${cap(terms.commander)} decides` }
 	};
 
 	/** The special rules of a mission worth a marker in the grid. */

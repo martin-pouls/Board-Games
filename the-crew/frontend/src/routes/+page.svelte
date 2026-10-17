@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import HomePage from '@board-games/shared/HomePage.svelte';
 	import { createGame, getSummary, joinGame } from '#lib/api.js';
+	import { terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
 	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 	import { sessions } from '#lib/session.js';
@@ -20,9 +21,7 @@
 	statusLabels={{ debrief: 'Debrief' }}
 >
 	{#snippet hero()}
-		<Card.Title class="text-3xl">The Crew</Card.Title>
-		<Card.Description
-			>Reach Planet Nine together: win every trick you promised, in silence.</Card.Description
-		>
+		<Card.Title class="text-3xl">{terms.title}</Card.Title>
+		<Card.Description>{terms.tagline}</Card.Description>
 	{/snippet}
 </HomePage>

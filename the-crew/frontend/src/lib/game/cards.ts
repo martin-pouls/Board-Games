@@ -1,4 +1,5 @@
 // Card helpers shared by the components: labels, keys, colours.
+import { terms } from '#lib/edition.js';
 import type { Card, Suit, Token } from '#lib/types.js';
 
 export const SUIT_NAMES: Record<Suit, string> = {
@@ -6,10 +7,10 @@ export const SUIT_NAMES: Record<Suit, string> = {
 	blue: 'blue',
 	green: 'green',
 	yellow: 'yellow',
-	trump: 'rocket'
+	trump: terms.trump
 };
 
-/** "pink 7", "rocket 4". */
+/** "pink 7", "rocket 4" (Deep Sea: "submarine 4"). */
 export function cardLabel(c: Card): string {
 	return `${SUIT_NAMES[c.suit]} ${c.rank}`;
 }

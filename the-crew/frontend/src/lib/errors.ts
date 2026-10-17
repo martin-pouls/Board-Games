@@ -1,4 +1,5 @@
 import { commonErrorMessages } from '@board-games/shared/errors.js';
+import { cap, terms } from '#lib/edition.js';
 import type { ApiErrorCode } from '#lib/types.js';
 
 const messages: Record<ApiErrorCode, string> = {
@@ -11,7 +12,7 @@ const messages: Record<ApiErrorCode, string> = {
 	invalid_name: 'Please enter a valid name.',
 	unknown_player: 'That player is not in this game.',
 	not_enough_players: 'The crew needs at least two players.',
-	not_commander: 'Only the commander can do that.',
+	not_commander: `Only the ${terms.commander} can do that.`,
 	wrong_step: 'That is not possible at this point of the mission.',
 	duplicate_player: "You're already in this game.",
 	not_your_turn: "It's not your turn.",
@@ -24,7 +25,7 @@ const messages: Record<ApiErrorCode, string> = {
 	invalid_seat: "That crew member can't be chosen.",
 	invalid_task: "That task can't be chosen.",
 	uneven_distribution: 'The tasks must be shared out as evenly as possible.',
-	cannot_pass_trump: "Rockets can't be passed.",
+	cannot_pass_trump: `${cap(terms.trumps)} can't be passed.`,
 	already_answered: 'You have already answered.',
 	not_allowed: "That isn't allowed in this mission.",
 	invalid_direction: 'Choose left or right.',

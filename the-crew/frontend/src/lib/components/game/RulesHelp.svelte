@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { terms } from '#lib/edition.js';
 	import { briefing } from '#lib/game/format.js';
 	import type { MissionDef } from '#lib/types.js';
 
@@ -33,10 +34,14 @@
 				<h3 class="mb-1 font-semibold">Tricks</h3>
 				<ul class="list-disc pl-5">
 					<li>
-						The commander (whoever holds rocket 4) leads the first trick; the winner leads the next.
+						The {terms.commander} (whoever holds {terms.trump} 4) leads the first trick; the winner leads
+						the next.
 					</li>
 					<li>Follow the colour that was led if you can. Otherwise play any card.</li>
-					<li>The highest rocket wins; without a rocket, the highest card of the led colour.</li>
+					<li>
+						The highest {terms.trump} wins; without a {terms.trump}, the highest card of the led
+						colour.
+					</li>
 				</ul>
 			</section>
 			<section>
@@ -55,21 +60,21 @@
 				<ul class="list-disc pl-5">
 					<li>
 						Once per attempt, before a trick starts, you may show one card: your highest (▲), only
-						(●) or lowest (▼) card of its colour. Never a rocket.
+						(●) or lowest (▼) card of its colour. Never a {terms.trump}.
 					</li>
 					<li>In a dead zone (?) the position stays secret.</li>
 					<li>
-						Distress signal (a lobby option, off by default): before the first trick, the commander
-						may have everyone pass one non-rocket card left or right. It counts as an extra attempt.
+						Distress signal (a lobby option, off by default): before the first trick, the {terms.commander}
+						may have everyone pass one non-{terms.trump} card left or right. It counts as an extra attempt.
 					</li>
 				</ul>
 			</section>
 			<section>
-				<h3 class="mb-1 font-semibold">JARVIS (2 players)</h3>
+				<h3 class="mb-1 font-semibold">{terms.dummy} (2 players)</h3>
 				<ul class="list-disc pl-5">
 					<li>
-						JARVIS plays only its face-up cards, chosen by the commander. A hidden card turns face
-						up after the trick in which the card above it was played.
+						{terms.dummy} plays only its face-up cards, chosen by the {terms.commander}. A hidden
+						card turns face up after the trick in which the card above it was played.
 					</li>
 				</ul>
 			</section>

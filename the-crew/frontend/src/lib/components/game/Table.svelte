@@ -13,6 +13,7 @@
 	import { setCardMotion } from '@board-games/shared/cardMotion.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { cap, terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
@@ -235,7 +236,7 @@
 			<span class="flex items-center gap-1">
 				You
 				{#if attempt.seat === attempt.commander}
-					<Crown class="size-3.5 text-rocket-ink" aria-label="Commander" />
+					<Crown class="size-3.5 text-rocket-ink" aria-label={cap(terms.commander)} />
 				{/if}
 				{#if attempt.seat === attempt.silenced}
 					<MicOff class="size-3.5 text-danger" aria-label="Silenced" />

@@ -2,15 +2,16 @@
 	import Crown from '@lucide/svelte/icons/crown';
 	import Layers from '@lucide/svelte/icons/layers';
 	import MicOff from '@lucide/svelte/icons/mic-off';
-	import Radio from '@lucide/svelte/icons/radio';
 	import Trophy from '@lucide/svelte/icons/trophy';
 	import { getCardMotion } from '@board-games/shared/cardMotion.js';
 	import { byTokenOrder, cardKey, sameCard } from '#lib/game/cards.js';
-	import { JARVIS } from '#lib/game/format.js';
+	import { cap, terms } from '#lib/edition.js';
+	import { DUMMY } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Member } from '#lib/types.js';
 	import CardBack from './CardBack.svelte';
 	import CommBadge from './CommBadge.svelte';
+	import EditionGlyph from './EditionGlyph.svelte';
 	import PlayingCard from './PlayingCard.svelte';
 	import TaskList, { type TaskPick } from './TaskList.svelte';
 
@@ -25,7 +26,7 @@
 		attempt: Attempt;
 		/** Player IDs with a live connection. */
 		online: string[];
-		/** Whether the viewer can pick this JARVIS card now (the commander on JARVIS's turn). */
+		/** Whether the viewer can pick this dummy card now (the commander on the dummy's turn). */
 		jarvisEnabled?: (c: Card) => boolean;
 		selected?: Card | null;
 		onpick?: (c: Card) => void;
@@ -64,7 +65,7 @@
 
 {#snippet badges(m: Member)}
 	{#if m.seat === attempt.commander}
-		<Crown class="size-3.5 shrink-0 text-rocket-ink" aria-label="Commander" />
+		<Crown class="size-3.5 shrink-0 text-rocket-ink" aria-label={cap(terms.commander)} />
 	{/if}
 	{#if m.seat === attempt.silenced}
 		<MicOff class="size-3.5 shrink-0 text-danger" aria-label="Silenced" />
@@ -109,7 +110,11 @@
 							<CommBadge comm={m.communication} class="absolute -top-1.5 -right-1.5" />
 						</span>
 					{:else if m.communicated}
-						<Radio class="size-4 shrink-0 text-muted-foreground/60" aria-label="Has communicated" />
+						<EditionGlyph
+							kind="comm"
+							class="size-4 shrink-0 text-muted-foreground/60"
+							aria-label="Has communicated"
+						/>
 					{/if}
 					<TaskList
 						tasks={tasksOf(m)}
@@ -131,18 +136,18 @@
 			)}
 		>
 			<div class="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1">
-				<span class="font-display text-sm font-semibold tracking-wider">{JARVIS}</span>
+				<span class="font-display text-sm font-semibold tracking-wider">{DUMMY}</span>
 				{@render badges(jarvis)}
 				{@render stats(jarvis)}
 				<TaskList
 					tasks={tasksOf(jarvis)}
 					attempt={attempt.number}
 					pick={taskPick}
-					label="JARVIS's tasks"
+					label={`${terms.dummyPossessive} tasks`}
 					class="ml-auto pt-1"
 				/>
 			</div>
-			<ul class="flex justify-between gap-1" aria-label="JARVIS's stacks">
+			<ul class="flex justify-between gap-1" aria-label={`${terms.dummyPossessive} stacks`}>
 				{#each jarvis.stacks as s, i (i)}
 					{@const on = !!s.up && jarvisEnabled(s.up)}
 					<li class="relative h-[4.1rem] w-[2.6rem] shrink-0">

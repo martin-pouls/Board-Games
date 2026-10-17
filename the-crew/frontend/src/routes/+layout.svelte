@@ -2,6 +2,8 @@
 	import './layout.css';
 	import { page } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
+	import faviconDeepSea from '#lib/assets/favicon-deep-sea.svg';
+	import { edition, terms } from '#lib/edition.js';
 	import { ModeWatcher } from 'mode-watcher';
 	import AppFrame from '@board-games/shared/AppFrame.svelte';
 	import { Toaster } from '#lib/components/ui/sonner/index.js';
@@ -11,11 +13,11 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
-	<title>The Crew</title>
+	<link rel="icon" href={edition === 'deepSea' ? faviconDeepSea : favicon} />
+	<title>{terms.title}</title>
 </svelte:head>
 
-<ModeWatcher themeColors={{ light: '#f2f0ea', dark: '#0b1022' }} />
+<ModeWatcher themeColors={terms.themeColor} />
 <Toaster />
 <AppFrame
 	url={page.url}

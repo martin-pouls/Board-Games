@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { terms } from '#lib/edition.js';
 	import { cardKey, cardLabel, sameCard } from '#lib/game/cards.js';
 	import { positionText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
@@ -68,7 +69,7 @@
 		{:else}
 			<p class="text-sm text-muted-foreground">
 				None of your cards can be communicated: only your highest, lowest or only card of a colour,
-				never a rocket.
+				never a {terms.trump}.
 			</p>
 		{/if}
 		{#if chosen}

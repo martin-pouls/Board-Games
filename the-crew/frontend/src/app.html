@@ -8,8 +8,18 @@
 		<meta name="theme-color" content="#f2f0ea" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
 		<script>
-			// Set the theme before first paint (same storage key and values as mode-watcher).
+			// Set the edition and theme before first paint (same storage key and values as
+			// mode-watcher). The placeholder is replaced in vite.config.ts (EDITION or the Vite mode); the
+			// colours and the favicon mirror src/lib/edition.ts and src/routes/theme-deep-sea.css.
 			try {
+				var deepSea = '__EDITION_FOR_APP_HTML__' === 'deepSea';
+				var colors = deepSea ? ['#e7f3f1', '#04131d'] : ['#f2f0ea', '#0b1022'];
+				if (deepSea) {
+					document.documentElement.setAttribute('data-edition', 'deepSea');
+					document
+						.querySelector('link[rel="icon"]')
+						.setAttribute('href', '%sveltekit.assets%/favicon-deep-sea.svg');
+				}
 				var m = localStorage.getItem('mode-watcher-mode') || 'system';
 				var dark =
 					m === 'dark' || (m === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -18,7 +28,7 @@
 				r.style.colorScheme = dark ? 'dark' : 'light';
 				document
 					.querySelector('meta[name="theme-color"]')
-					.setAttribute('content', dark ? '#0b1022' : '#f2f0ea');
+					.setAttribute('content', dark ? colors[1] : colors[0]);
 			} catch (e) {}
 		</script>
 		%sveltekit.head%
