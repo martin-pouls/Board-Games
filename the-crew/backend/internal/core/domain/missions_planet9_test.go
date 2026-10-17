@@ -205,12 +205,6 @@ func TestMissionForBounds(t *testing.T) {
 			t.Errorf("MissionFor(PlanetNine, %d) succeeded", n)
 		}
 	}
-	if _, ok := MissionFor(EditionDeepSea, 1); ok {
-		t.Error("MissionFor(DeepSea, 1) succeeded before its table exists")
-	}
-	if got := Missions(EditionDeepSea); got != 0 {
-		t.Errorf("Missions(DeepSea) = %d, want 0", got)
-	}
 	if _, ok := MissionFor(Edition("unknown"), 1); ok {
 		t.Error("MissionFor(unknown edition, 1) succeeded")
 	}

@@ -33,7 +33,76 @@ const (
 	KindCrewNeverWinWith ObjectiveKind = "crewNeverWinWith" // no trick is won by a colour of Rank
 	KindCrewBalance      ObjectiveKind = "crewBalance"      // no member ever leads by more than Count tricks
 	KindCardInLastTrick  ObjectiveKind = "cardInLastTrick"  // Cards are won in the last trick
+
+	// Deep Sea (deep-sea/rules.md §9 and the mission objectives of §8).
+	KindCmpTricks         ObjectiveKind = "cmpTricks"         // Cmp more | fewer than each other member, moreThanAll: than all others together
+	KindCmpCaptain        ObjectiveKind = "cmpCaptain"        // Cmp more | fewer | equal tricks than the captain (never the captain's task)
+	KindPredict           ObjectiveKind = "predict"           // win exactly Count tricks, predicted after the selection (-1 until then); Hidden
+	KindAvoidTricks       ObjectiveKind = "avoidTricks"       // the owner wins none of the Tricks
+	KindNoConsecutive     ObjectiveKind = "noConsecutive"     // the owner never wins two tricks in a row
+	KindConsecutive       ObjectiveKind = "consecutive"       // Count tricks in a row; Exact: exactly Count tricks in total, all in a row
+	KindWinWith           ObjectiveKind = "winWith"           // win a trick whose winning card matches With, with another card matching Target (if set)
+	KindWinTrickWhere     ObjectiveKind = "winTrickWhere"     // win a trick without trump whose cards meet Where
+	KindWinCount          ObjectiveKind = "winCount"          // the won cards matching Suits and Ranks number Cmp exactly | atLeast Count
+	KindWinEachColour     ObjectiveKind = "winEachColour"     // at least one won card of each colour
+	KindWinAllOfAnyColour ObjectiveKind = "winAllOfAnyColour" // every card of at least one colour
+	KindNeverLead         ObjectiveKind = "neverLead"         // the owner (crew: nobody) never leads a card of Suits
+	KindEqualSuits        ObjectiveKind = "equalSuits"        // as many won cards of Suits[0] as of Suits[1], more than 0; InOneTrick
+	KindMoreSuit          ObjectiveKind = "moreSuit"          // more won cards of Suits[0] than of Suits[1]
+	KindAll               ObjectiveKind = "all"               // every one of Parts (owned by the owner)
+	KindLeaderStaysAhead  ObjectiveKind = "leaderStaysAhead"  // the first trick's winner always has more tricks than every other member
+	KindLastCardPlayed    ObjectiveKind = "lastCardPlayed"    // Cards[0] is the last card played in the last trick
+	KindTrickQuota        ObjectiveKind = "trickQuota"        // Q2: every seat wins exactly Targets[seat] tricks
+	KindNone              ObjectiveKind = "none"              // no condition: Q2's face-down tasks
 )
+
+// Comparison is the relation of a Deep Sea objective.
+type Comparison string
+
+const (
+	CmpMore        Comparison = "more"
+	CmpFewer       Comparison = "fewer"
+	CmpEqual       Comparison = "equal"
+	CmpMoreThanAll Comparison = "moreThanAll" // more than all others together
+	CmpExactly     Comparison = "exactly"
+	CmpAtLeast     Comparison = "atLeast"
+)
+
+// TrickCondition is what every card of a trick (winTrickWhere) must meet.
+type TrickCondition string
+
+const (
+	WhereBelow      TrickCondition = "below"      // every card lower than Count
+	WhereAbove      TrickCondition = "above"      // every card higher than Count
+	WhereEven       TrickCondition = "even"       // only even values
+	WhereOdd        TrickCondition = "odd"        // only odd values
+	WhereSumAtLeast TrickCondition = "sumAtLeast" // the values add up to at least Count
+	WhereSumBelow   TrickCondition = "sumBelow"   // the values add up to less than Count
+	WhereSumBetween TrickCondition = "sumBetween" // the values add up to Count..Max
+)
+
+// CardMatch selects cards: Suit (trump for submarines) and/or Rank; the zero value matches nothing.
+// A rank alone matches colour cards only.
+type CardMatch struct {
+	Suit Suit
+	Rank Rank
+}
+
+// IsZero reports whether m is unset.
+func (m CardMatch) IsZero() bool { return m == CardMatch{} }
+
+// Matches reports whether c is selected by m.
+func (m CardMatch) Matches(c Card) bool {
+	switch {
+	case m.IsZero():
+		return false
+	case m.Suit == "" && c.IsTrump():
+		return false
+	case m.Suit != "" && c.Suit != m.Suit:
+		return false
+	}
+	return m.Rank == 0 || c.Rank == m.Rank
+}
 
 // Owner values besides a seat.
 const (
@@ -55,12 +124,38 @@ type Objective struct {
 	Rank         Rank   // crewNeverWinWith
 	NotWithTrump bool   // winExactlyTricks, winOnlyTricks: no counted trick may be won by trump
 	Ordered      bool   // crewWinWithEach: Cards win in their order
+
+	// Deep Sea. crewBalance with Rank counts the won colour cards of that rank instead of tricks;
+	// winExactlyTricks with Without: no counted trick may contain a colour card of these ranks.
+	Cmp        Comparison     // cmpTricks, cmpCaptain, winCount
+	Suits      []Suit         // winCount, neverLead, equalSuits, moreSuit
+	Ranks      []Rank         // winCount: colour cards of these ranks
+	With       CardMatch      // winWith: the winning card
+	Target     CardMatch      // winWith: another card in the trick
+	Where      TrickCondition // winTrickWhere, with Count (and Max)
+	Max        int            // winTrickWhere sumBetween
+	Exact      bool           // consecutive
+	InOneTrick bool           // equalSuits
+	Hidden     bool           // predict: the prediction is secret until the end
+	Parts      []Objective    // all
+	Targets    []int          // trickQuota: per seat
+	Without    []Rank         // winExactlyTricks
 }
 
 func (o Objective) clone() Objective {
 	c := o
 	c.Cards = slices.Clone(o.Cards)
 	c.Tricks = slices.Clone(o.Tricks)
+	c.Suits = slices.Clone(o.Suits)
+	c.Ranks = slices.Clone(o.Ranks)
+	c.Targets = slices.Clone(o.Targets)
+	c.Without = slices.Clone(o.Without)
+	if o.Parts != nil {
+		c.Parts = make([]Objective, len(o.Parts))
+		for i, p := range o.Parts {
+			c.Parts[i] = p.clone()
+		}
+	}
 	return c
 }
 
@@ -102,6 +197,8 @@ type History struct {
 	Tricks []TrickRecord // completed so far, in order
 	Total  int           // tricks in the attempt (13, 13, 10, 8)
 	Seats  int           // members, the dummy included
+	// Captain is the commander's seat (cmpCaptain).
+	Captain int
 }
 
 // over reports whether the last trick has been played.

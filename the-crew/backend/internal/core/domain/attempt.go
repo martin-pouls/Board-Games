@@ -44,10 +44,13 @@ type Task struct {
 	ID        int // its index in Attempt.Tasks (layout order)
 	Objective Objective
 	Token     Token
-	FaceDown  bool // drawn but not revealed yet (commander's decision and distribution)
+	FaceDown  bool // drawn but not revealed yet (commander's decision and distribution); Q2: for good
+	// Deep Sea: the task card and its difficulty for this crew size; 0 for Planet Nine.
+	CardID     int
+	Difficulty int
 }
 
-// Card is the task's card (Planet Nine tasks name one card).
+// Card is the task's card (Planet Nine tasks name one card; not for Deep Sea task cards).
 func (t Task) Card() Card { return t.Objective.Cards[0] }
 
 // Owner is the seat that owns the task, or OwnerUnassigned.
