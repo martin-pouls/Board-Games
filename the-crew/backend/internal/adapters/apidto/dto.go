@@ -45,6 +45,27 @@ type Objective struct {
 	Rank         int    `json:"rank"`
 	NotWithTrump bool   `json:"notWithTrump"`
 	Ordered      bool   `json:"ordered"`
+
+	// Deep Sea. Zero or empty when the kind does not use the field.
+	Cmp        string      `json:"cmp"`        // "" | "more" | "fewer" | "equal" | "moreThanAll" | "exactly" | "atLeast"
+	Suits      []string    `json:"suits"`      // never null
+	Ranks      []int       `json:"ranks"`      // never null
+	With       *CardMatch  `json:"with"`       // null when unset
+	Target     *CardMatch  `json:"target"`     // null when unset
+	Where      string      `json:"where"`      // "" | "below" | "above" | "even" | "odd" | "sumAtLeast" | "sumBelow" | "sumBetween"
+	Max        int         `json:"max"`        //
+	Exact      bool        `json:"exact"`      //
+	InOneTrick bool        `json:"inOneTrick"` //
+	Hidden     bool        `json:"hidden"`     // predict: the prediction is secret until the debrief
+	Parts      []Objective `json:"parts"`      // never null; kind "all": every part (same owner)
+	Targets    []int       `json:"targets"`    // never null; trickQuota: per seat
+	Without    []int       `json:"without"`    // never null; ranks
+}
+
+// CardMatch selects cards: a suit ("" = any colour; "trump" = submarines) and/or a rank (0 = any).
+type CardMatch struct {
+	Suit string `json:"suit"`
+	Rank int    `json:"rank"`
 }
 
 // ObjectiveSpec is a special objective of a mission: a template plus the rule for its owner.
@@ -58,15 +79,30 @@ type ObjectiveSpec struct {
 // MissionDef is one row of the mission table.
 type MissionDef struct {
 	Number       int             `json:"number"`
+	Label        string          `json:"label"` // shown instead of the number ("Q1"), else ""
 	Tasks        int             `json:"tasks"`
 	Tokens       []string        `json:"tokens"`       // never null; placement order
-	Distribution string          `json:"distribution"` // "" | "open" | "commanderDecision" | "commanderDistribution"
+	Distribution string          `json:"distribution"` // "" | "open" | "commanderDecision" | "commanderDistribution" | Deep Sea: "draft" | "oneMember" | "captainOrVolunteer" | "volunteers" | "free"
 	DeadZone     bool            `json:"deadZone"`
 	FromTrick    int             `json:"fromTrick"` // disruption: nobody communicates before this trick; 0 = no restriction
 	Golden       bool            `json:"golden"`
 	Setup        []string        `json:"setup"` // never null; "swapTokens" | "moveToken" | "silenceMember" | "drawAfterFirstTrick"
 	Poll         string          `json:"poll"`  // "" | "yesNo" | "wellIll"
 	Objectives   []ObjectiveSpec `json:"objectives"`
+
+	// Deep Sea.
+	CommMode        string            `json:"commMode"`        // "" (normal) | "currents" | "rapture" | "unfamiliar" | "none"
+	Difficulty      int               `json:"difficulty"`      // total difficulty of the drawn task cards; 0 = none drawn
+	DifficultyBy    []int             `json:"difficultyBy"`    // always 3 entries (crew of 3, 4, 5); all 0 unless the mission sets it per crew size (Q2)
+	Volunteers      int               `json:"volunteers"`      // distribution "volunteers": how many members take the tasks
+	CaptainSkipped  bool              `json:"captainSkipped"`  // the captain receives no task
+	HardestFirst    bool              `json:"hardestFirst"`    // the captain's first task is one of the highest difficulty
+	FixedTasks      []int             `json:"fixedTasks"`      // never null; task card numbers laid out instead of drawing
+	FaceDownTasks   bool              `json:"faceDownTasks"`   // only the difficulty of the tasks is visible
+	Uncounted       bool              `json:"uncounted"`       // the logbook counts no attempts
+	CaptainCard     Card              `json:"captainCard"`     // the card whose holder is captain (trump 4 unless the mission says otherwise)
+	Stages          int               `json:"stages"`          // Q1: number of stages; 0 without
+	StageObjectives [][]ObjectiveSpec `json:"stageObjectives"` // never null; the objectives added in each stage
 }
 
 // MissionCatalogue is the body of GET /api/missions.
@@ -97,14 +133,20 @@ type Member struct {
 	Dummy         bool           `json:"dummy"`
 	CardCount     int            `json:"cardCount"`
 	TricksWon     int            `json:"tricksWon"`
-	Communication *Communication `json:"communication"` // while the card is still held, else null
-	Communicated  bool           `json:"communicated"`  // once per attempt
-	Stacks        []Stack        `json:"stacks"`        // the dummy's stacks; [] for a human
-	MustAct       bool           `json:"mustAct"`
-	Cards         []Card         `json:"cards"` // null until the debrief; then every card still held
+	Communication *Communication `json:"communication"` // the first communication while its card is still held, else null
+	// Communications are all communications whose card is still held, in order (rapture of the
+	// deep allows several); never null.
+	Communications []Communication `json:"communications"`
+	Communicated   bool            `json:"communicated"` // once per attempt
+	Stacks         []Stack         `json:"stacks"`       // the dummy's stacks; [] for a human
+	MustAct        bool            `json:"mustAct"`
+	Cards          []Card          `json:"cards"` // null until the debrief; then every card still held
 }
 
-// Task is a task card. Card is null while the task is face down.
+// Task is a task card. Card is null while the task is face down and for Deep Sea task cards.
+// Deep Sea: cardId (0 while face down) and objective (null while face down) describe the card,
+// the difficulty is always shown; the objective of a hidden prediction of another member has
+// count -1 until the debrief, predicted says whether the number has been noted.
 type Task struct {
 	ID       int    `json:"id"`
 	Card     *Card  `json:"card"`
@@ -112,6 +154,11 @@ type Task struct {
 	Owner    int    `json:"owner"` // seat, or -2 while not assigned
 	Status   string `json:"status"`
 	FaceDown bool   `json:"faceDown"`
+
+	CardID     int        `json:"cardId"`     // Deep Sea card number 1..96; 0 for Planet Nine and while face down
+	Difficulty int        `json:"difficulty"` // Deep Sea; 0 for Planet Nine
+	Objective  *Objective `json:"objective"`  // Deep Sea: the card's objective, null for Planet Nine and while face down
+	Predicted  bool       `json:"predicted"`  // Deep Sea prediction task: the number has been noted
 }
 
 // ObjectiveView is a special objective with its status ("open" | "fulfilled" | "failed").
@@ -153,6 +200,8 @@ type Actions struct {
 	Communicate  []CommOption `json:"communicate"` // never null; empty unless the viewer may communicate now
 	SendDistress bool         `json:"sendDistress"`
 	Handover     bool         `json:"handover"`
+	Pass         bool         `json:"pass"`         // Deep Sea: the viewer may pass in the draft now
+	ReplaceTasks bool         `json:"replaceTasks"` // Deep Sea: the viewer is the captain and may replace displayed tasks
 }
 
 // Play is one card played to a trick.
@@ -183,8 +232,8 @@ type Attempt struct {
 	Number      int             `json:"number"`
 	Seat        int             `json:"seat"` // the viewer's seat
 	Commander   int             `json:"commander"`
-	Step        string          `json:"step"` // "adjustTokens" | "poll" | "pick" | "draft" | "pass" | "play" | "" (debrief)
-	Pick        string          `json:"pick"` // step pick: "silence" | "roles" | "objective" | "decision" | "distribute"; else ""
+	Step        string          `json:"step"` // "adjustTokens" | "poll" | "pick" | "draft" | "assign" | "predict" | "pass" | "play" | "" (debrief)
+	Pick        string          `json:"pick"` // step pick: "silence" | "roles" | "objective" | "decision" | "distribute" | "oneMember" | "volunteers"; else ""
 	Actors      []int           `json:"actors"`
 	Turn        int             `json:"turn"` // step play: the seat to play; step draft: the seat to take a task; else -1
 	TrickNumber int             `json:"trickNumber"`
@@ -205,6 +254,19 @@ type Attempt struct {
 	Distress    bool            `json:"distress"`
 	Actions     Actions         `json:"actions"`
 	Result      *AttemptResult  `json:"result"`
+
+	// Deep Sea.
+	Comm               string  `json:"comm"`               // this attempt's communication mode: "" (normal) | "currents" | "rapture" | "none" (never "unfamiliar")
+	Terrain            *Card   `json:"terrain"`            // unfamiliar terrain: the colour card that picked the mode, else null
+	TokensLeft         int     `json:"tokensLeft"`         // rapture of the deep: shared sonar tokens left, else -1
+	CommFirstTrickOnly bool    `json:"commFirstTrickOnly"` // communication ends with the first trick
+	Chosen             []int   `json:"chosen"`             // never null; the members the captain chose to take the tasks
+	Stage              int     `json:"stage"`              // Q1: 0-based stage
+	Stages             int     `json:"stages"`             // Q1: number of stages; 0 without
+	Redeals            int     `json:"redeals"`            // automatic re-deals before this attempt
+	Takeable           []int   `json:"takeable"`           // never null; step draft, for the one who picks: the task ids they may take
+	Assignable         [][]int `json:"assignable"`         // never null; step assign, for the captain: per task id the seats it may go to
+	Predict            int     `json:"predict"`            // step predict: the task id being predicted, else -1
 }
 
 // GameOptions are the host-selectable lobby settings.
@@ -259,6 +321,10 @@ const (
 	EventTrickWon        = "trickWon"
 	EventCardsDrawn      = "cardsDrawn"
 	EventAttemptEnded    = "attemptEnded"
+	EventRedealt         = "redealt"
+	EventTaskReplaced    = "taskReplaced"
+	EventTaskPassed      = "taskPassed"
+	EventPredicted       = "predicted"
 	EventBackInLobby     = "backInLobby"
 	EventGameEnded       = "gameEnded"
 )
@@ -274,10 +340,12 @@ type Event struct {
 	Name       string `json:"name,omitempty"`
 	Mission    *int   `json:"mission,omitempty"`   // missionSelected, attemptStarted
 	Number     *int   `json:"number,omitempty"`    // attemptStarted: attempt number; trickWon: trick number
+	Times      *int   `json:"times,omitempty"`     // redealt
+	Tricks     *int   `json:"tricks,omitempty"`    // predicted: the number; -1 = a hidden prediction
 	Commander  *int   `json:"commander,omitempty"` // attemptStarted
-	Seat       *int   `json:"seat,omitempty"`      // pollAnswered, taskPicked, passCardChosen, communicated, cardPlayed, trickWon
+	Seat       *int   `json:"seat,omitempty"`      // pollAnswered, taskPicked, passCardChosen, communicated, cardPlayed, trickWon, taskPassed, predicted
 	Seats      []int  `json:"seats,omitempty"`     // picked
-	TaskID     *int   `json:"taskId,omitempty"`    // taskPicked, taskHandedOver
+	TaskID     *int   `json:"taskId,omitempty"`    // taskPicked, taskHandedOver, taskReplaced, predicted
 	From       *int   `json:"from,omitempty"`      // tokensAdjusted (-1 = skipped), taskHandedOver
 	To         *int   `json:"to,omitempty"`        // tokensAdjusted (-1 = skipped), taskHandedOver
 	Yes        *bool  `json:"yes,omitempty"`       // pollAnswered

@@ -28,7 +28,11 @@ const (
 	CmdCommunicate    = "communicate"    // card, position (may be empty in a dead zone)
 	CmdPlayCard       = "playCard"       // card
 	CmdGiveUp         = "giveUp"         //
-	CmdNextAttempt    = "nextAttempt"    //
+	CmdPassTask       = "passTask"       // Deep Sea: pass in the draft
+	CmdReplaceTask    = "replaceTask"    // Deep Sea: taskId
+	CmdPredict        = "predict"        // Deep Sea: taskId, tricks
+	CmdAssignTask     = "assignTask"     // Deep Sea: taskId, seat
+	CmdNextAttempt    = "nextAttempt"    // Deep Sea: optional newTasks, uncounted (absent = false)
 	CmdNextMission    = "nextMission"    //
 	CmdBackToLobby    = "backToLobby"    //
 	CmdEndGame        = "endGame"        //
@@ -59,4 +63,7 @@ type ClientMessage struct {
 	From      *int         `json:"from,omitempty"`
 	To        *int         `json:"to,omitempty"`
 	Seat      *int         `json:"seat,omitempty"`
+	Tricks    *int         `json:"tricks,omitempty"`
+	NewTasks  bool         `json:"newTasks,omitempty"`
+	Uncounted bool         `json:"uncounted,omitempty"`
 }

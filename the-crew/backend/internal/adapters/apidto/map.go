@@ -90,7 +90,7 @@ func fromLogbook(l map[int]domain.LogEntry) []LogEntry {
 }
 
 func fromObjective(o domain.Objective) Objective {
-	return Objective{
+	out := Objective{
 		Kind:         string(o.Kind),
 		Owner:        o.Owner,
 		Cards:        fromCards(o.Cards),
@@ -100,7 +100,44 @@ func fromObjective(o domain.Objective) Objective {
 		Rank:         int(o.Rank),
 		NotWithTrump: o.NotWithTrump,
 		Ordered:      o.Ordered,
+		Cmp:          string(o.Cmp),
+		Suits:        make([]string, len(o.Suits)),
+		Ranks:        fromRanks(o.Ranks),
+		With:         fromCardMatch(o.With),
+		Target:       fromCardMatch(o.Target),
+		Where:        string(o.Where),
+		Max:          o.Max,
+		Exact:        o.Exact,
+		InOneTrick:   o.InOneTrick,
+		Hidden:       o.Hidden,
+		Parts:        make([]Objective, len(o.Parts)),
+		Targets:      ints(o.Targets),
+		Without:      fromRanks(o.Without),
 	}
+	for i, s := range o.Suits {
+		out.Suits[i] = string(s)
+	}
+	for i, p := range o.Parts {
+		out.Parts[i] = fromObjective(p)
+	}
+	return out
+}
+
+// fromRanks maps ranks; the result is never nil.
+func fromRanks(rs []domain.Rank) []int {
+	out := make([]int, len(rs))
+	for i, r := range rs {
+		out[i] = int(r)
+	}
+	return out
+}
+
+// fromCardMatch maps a card match; nil when unset.
+func fromCardMatch(m domain.CardMatch) *CardMatch {
+	if m.IsZero() {
+		return nil
+	}
+	return &CardMatch{Suit: string(m.Suit), Rank: int(m.Rank)}
 }
 
 func fromPlays(ps []domain.Play) []Play {
@@ -136,7 +173,23 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 			Communicate:  make([]CommOption, 0, len(a.Actions.Communicate)),
 			SendDistress: a.Actions.SendDistress,
 			Handover:     a.Actions.Handover,
+			Pass:         a.Actions.Pass,
+			ReplaceTasks: a.Actions.ReplaceTasks,
 		},
+		Comm:               string(a.Comm),
+		Terrain:            fromCardPtr(a.Terrain),
+		TokensLeft:         a.TokensLeft,
+		CommFirstTrickOnly: a.CommFirstTrickOnly,
+		Chosen:             ints(a.Chosen),
+		Stage:              a.Stage,
+		Stages:             a.Stages,
+		Redeals:            a.Redeals,
+		Takeable:           ints(a.Takeable),
+		Assignable:         make([][]int, len(a.Assignable)),
+		Predict:            a.Predict,
+	}
+	for i, seats := range a.Assignable {
+		out.Assignable[i] = ints(seats)
 	}
 	for _, m := range a.Members {
 		mv := Member{
@@ -149,6 +202,11 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 			Communicated: m.Communicated,
 			Stacks:       make([]Stack, 0, len(m.Stacks)),
 			MustAct:      m.MustAct,
+
+			Communications: make([]Communication, 0, len(m.Communications)),
+		}
+		for _, c := range m.Communications {
+			mv.Communications = append(mv.Communications, Communication{Card: FromCard(c.Card), Position: string(c.Position), Trick: c.Trick})
 		}
 		if c := m.Communication; c != nil {
 			mv.Communication = &Communication{Card: FromCard(c.Card), Position: string(c.Position), Trick: c.Trick}
@@ -162,14 +220,22 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 		out.Members = append(out.Members, mv)
 	}
 	for _, t := range a.Tasks {
-		out.Tasks = append(out.Tasks, Task{
-			ID:       t.ID,
-			Card:     fromCardPtr(t.Card),
-			Token:    string(t.Token),
-			Owner:    t.Owner,
-			Status:   string(t.Status),
-			FaceDown: t.FaceDown,
-		})
+		task := Task{
+			ID:         t.ID,
+			Card:       fromCardPtr(t.Card),
+			Token:      string(t.Token),
+			Owner:      t.Owner,
+			Status:     string(t.Status),
+			FaceDown:   t.FaceDown,
+			CardID:     t.CardID,
+			Difficulty: t.Difficulty,
+			Predicted:  t.Predicted,
+		}
+		if t.Objective != nil {
+			o := fromObjective(*t.Objective)
+			task.Objective = &o
+		}
+		out.Tasks = append(out.Tasks, task)
 	}
 	for _, o := range a.Objectives {
 		out.Objectives = append(out.Objectives, ObjectiveView{Objective: fromObjective(o.Objective), Status: string(o.Status)})
@@ -207,6 +273,7 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 func FromMission(m domain.MissionDef) MissionDef {
 	out := MissionDef{
 		Number:       m.Number,
+		Label:        m.Label,
 		Tasks:        m.Tasks,
 		Tokens:       make([]string, 0, len(m.Tokens)),
 		Distribution: string(m.Distribution),
@@ -216,6 +283,19 @@ func FromMission(m domain.MissionDef) MissionDef {
 		Setup:        make([]string, 0, len(m.Setup)),
 		Poll:         string(m.Poll),
 		Objectives:   make([]ObjectiveSpec, 0, len(m.Objectives)),
+
+		CommMode:        string(m.Comm.Mode),
+		Difficulty:      m.Difficulty,
+		DifficultyBy:    m.DifficultyBy[:],
+		Volunteers:      m.Volunteers,
+		CaptainSkipped:  m.CaptainSkipped,
+		HardestFirst:    m.HardestFirst,
+		FixedTasks:      ints(m.FixedTasks),
+		FaceDownTasks:   m.FaceDownTasks,
+		Uncounted:       m.Uncounted,
+		CaptainCard:     FromCard(captainCard(m)),
+		Stages:          len(m.Stages),
+		StageObjectives: make([][]ObjectiveSpec, len(m.Stages)),
 	}
 	for _, t := range m.Tokens {
 		out.Tokens = append(out.Tokens, string(t))
@@ -223,14 +303,32 @@ func FromMission(m domain.MissionDef) MissionDef {
 	for _, s := range m.Setup {
 		out.Setup = append(out.Setup, string(s))
 	}
-	for _, s := range m.Objectives {
+	out.Objectives = fromSpecs(m.Objectives)
+	for i, st := range m.Stages {
+		out.StageObjectives[i] = fromSpecs(st)
+	}
+	return out
+}
+
+// captainCard is the card whose holder is the captain (the commander).
+func captainCard(m domain.MissionDef) domain.Card {
+	if m.CaptainCard == (domain.Card{}) {
+		return domain.CommanderCard
+	}
+	return m.CaptainCard
+}
+
+// fromSpecs maps the special objectives of a mission; the result is never nil.
+func fromSpecs(specs []domain.ObjectiveSpec) []ObjectiveSpec {
+	out := make([]ObjectiveSpec, 0, len(specs))
+	for _, s := range specs {
 		o := fromObjective(s.Objective)
 		o.Owner = domain.OwnerUnassigned // the template's owner is ignored; the owner rule decides
 		spec := ObjectiveSpec{Objective: o, OwnerRule: string(s.Owner), TaskToken: string(s.TaskToken)}
 		if s.Owner == domain.OwnerRuleLeftOfHolder {
 			spec.Holder = ptr(FromCard(s.Holder))
 		}
-		out.Objectives = append(out.Objectives, spec)
+		out = append(out, spec)
 	}
 	return out
 }
@@ -315,6 +413,14 @@ func FromEvent(e domain.Event) (Event, bool) {
 		return Event{Type: EventCardsDrawn}, true
 	case domain.AttemptEnded:
 		return Event{Type: EventAttemptEnded, Success: ptr(e.Success), Reason: string(e.Reason)}, true
+	case domain.Redealt:
+		return Event{Type: EventRedealt, Times: ptr(e.Times)}, true
+	case domain.TaskReplaced:
+		return Event{Type: EventTaskReplaced, TaskID: ptr(e.TaskID)}, true
+	case domain.TaskPassed:
+		return Event{Type: EventTaskPassed, Seat: ptr(e.Seat)}, true
+	case domain.Predicted:
+		return Event{Type: EventPredicted, TaskID: ptr(e.TaskID), Seat: ptr(e.Seat), Tricks: ptr(e.Tricks)}, true
 	case domain.BackInLobby:
 		return Event{Type: EventBackInLobby}, true
 	case domain.GameEnded:

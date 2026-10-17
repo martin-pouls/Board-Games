@@ -42,18 +42,26 @@ func startApp(t *testing.T, dbPath string, seed uint64) *app {
 
 func startAppRNG(t *testing.T, dbPath string, newRNG func() domain.RNG) *app {
 	t.Helper()
+	return startAppEdition(t, dbPath, domain.EditionPlanetNine, newRNG)
+}
+
+// startAppEdition starts the backend of one edition (as EDITION does in production).
+func startAppEdition(t *testing.T, dbPath string, edition domain.Edition, newRNG func() domain.RNG) *app {
+	t.Helper()
 	db, err := sqlite.Open(context.Background(), dbPath)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	hub := ws.NewHub(nil)
 	svc := service.New(sqlite.NewGameRepository(db), hub, service.Config{
-		NewRNG: newRNG,
+		Edition: edition,
+		NewRNG:  newRNG,
 	})
 	srv := httptest.NewServer(httpapi.NewRouter(httpapi.Deps{
-		Health: db.Ping,
-		Games:  svc,
-		WS:     ws.NewHandler(hub, svc, ws.Options{}),
+		Edition: edition,
+		Health:  db.Ping,
+		Games:   svc,
+		WS:      ws.NewHandler(hub, svc, ws.Options{}),
 	}))
 	a := &app{srv: srv, db: db}
 	t.Cleanup(a.stop)

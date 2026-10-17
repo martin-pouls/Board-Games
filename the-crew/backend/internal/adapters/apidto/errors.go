@@ -45,6 +45,7 @@ const (
 	CodeInvalidDirection    = "invalid_direction"
 	CodeInvalidTokenMove    = "invalid_token_move"
 	CodeInvalidResultChoice = "invalid_result_choice"
+	CodeInvalidPrediction   = "invalid_prediction"
 	CodeRateLimited         = wire.CodeRateLimited
 	CodeInternal            = wire.CodeInternal
 )
@@ -95,6 +96,7 @@ var Errors = append(httpkit.ErrorMapper{
 	{Err: domain.ErrCannotPassTrump, Code: CodeCannotPassTrump, Status: http.StatusUnprocessableEntity},
 	{Err: domain.ErrInvalidDirection, Code: CodeInvalidDirection, Status: http.StatusUnprocessableEntity},
 	{Err: domain.ErrInvalidTokenMove, Code: CodeInvalidTokenMove, Status: http.StatusUnprocessableEntity},
+	{Err: domain.ErrInvalidPrediction, Code: CodeInvalidPrediction, Status: http.StatusUnprocessableEntity},
 }, httpkit.CommonErrors...)
 
 // ErrorFor maps an error to an HTTP status and wire error body. It is used by

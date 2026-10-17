@@ -313,7 +313,7 @@ func (g *Game) attemptView(seat int) *AttemptView {
 			tv.CardID, tv.Objective = t.CardID, &o
 			if o.Kind == KindPredict {
 				tv.Predicted = o.Count >= 0
-				if o.Hidden && !over && a.actorFor(t.Owner()) != seat {
+				if o.Hidden && !over && (t.Owner() < 0 || a.actorFor(t.Owner()) != seat) {
 					o.Count = -1
 				}
 			}

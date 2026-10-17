@@ -28,8 +28,20 @@ func NewGame(t testing.TB, n, mission int, rng domain.RNG) *domain.Game {
 // NewGameWith is NewGame with the lobby options opts set by the host.
 func NewGameWith(t testing.TB, n, mission int, opts domain.Options, rng domain.RNG) *domain.Game {
 	t.Helper()
+	return NewGameIn(t, domain.EditionPlanetNine, n, mission, opts, rng)
+}
+
+// NewDeepSeaGame is NewGame for a Deep Sea mission.
+func NewDeepSeaGame(t testing.TB, n, mission int, rng domain.RNG) *domain.Game {
+	t.Helper()
+	return NewGameIn(t, domain.EditionDeepSea, n, mission, domain.Options{}, rng)
+}
+
+// NewGameIn is NewGameWith for the given edition.
+func NewGameIn(t testing.TB, edition domain.Edition, n, mission int, opts domain.Options, rng domain.RNG) *domain.Game {
+	t.Helper()
 	names := []string{"Ann", "Ben", "Cleo", "Dan", "Eve"}
-	g, err := domain.NewGame("GAME1", domain.EditionPlanetNine, PlayerID(0), names[0], domain.Options{})
+	g, err := domain.NewGame("GAME1", edition, PlayerID(0), names[0], domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,8 +65,10 @@ func NewGameWith(t testing.TB, n, mission int, opts domain.Options, rng domain.R
 
 // Step makes one legal move for the first actor of the attempt: skips the distress signal and the
 // token swap, answers polls with yes, picks the first seat that is accepted, takes the first free
-// task, passes the first non-trump card and plays the first legal card. It fails the test when
-// the game is not playing or the move is rejected.
+// task, passes the first non-trump card and plays the first legal card. Deep Sea: takes the first
+// task the domain offers (passes when it offers none), assigns the first task to the first seat
+// allowed and predicts 2 tricks. It fails the test when the game is not playing or the move is
+// rejected.
 func Step(t testing.TB, g *domain.Game, rng domain.RNG) {
 	t.Helper()
 	if g.Phase != domain.PhasePlaying {
@@ -72,11 +86,31 @@ func Step(t testing.TB, g *domain.Game, rng domain.RNG) {
 	case domain.StepPick:
 		err = pickSeats(g, by)
 	case domain.StepDraft:
+		if g.Edition == domain.EditionDeepSea {
+			if take := g.Takeable(); len(take) > 0 {
+				err = g.PickTask(by, take[0])
+			} else {
+				err = g.PassTask(by)
+			}
+			break
+		}
 		for _, task := range a.Tasks {
 			if task.Owner() == domain.OwnerUnassigned {
 				err = g.PickTask(by, task.ID)
 				break
 			}
+		}
+	case domain.StepAssign:
+		for task, seats := range g.Assignable() {
+			if len(seats) > 0 {
+				err = g.AssignTask(by, task, seats[0])
+				break
+			}
+		}
+	case domain.StepPredict:
+		var v domain.PlayerView
+		if v, err = g.ViewFor(by); err == nil {
+			err = g.Predict(by, v.Attempt.Predict, 2)
 		}
 	case domain.StepPass:
 		for _, c := range a.Members[seat].Hand {

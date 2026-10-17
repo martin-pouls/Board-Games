@@ -48,8 +48,17 @@ type GameService interface {
 	// PlayCard plays for the seat whose turn it is (the commander plays for the dummy).
 	PlayCard(ctx context.Context, id domain.GameID, player domain.PlayerID, card domain.Card) error
 	GiveUp(ctx context.Context, id domain.GameID, player domain.PlayerID) error
-	// NextAttempt deals a new attempt of the same mission after a loss (host, debrief).
-	NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID) error
+	// PassTask passes in the draft (Deep Sea; the captain acts for the dummy).
+	PassTask(ctx context.Context, id domain.GameID, player domain.PlayerID) error
+	// ReplaceTask lets the captain replace a displayed task by another card (Deep Sea).
+	ReplaceTask(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID int) error
+	// Predict notes the number of tricks for a prediction task (Deep Sea).
+	Predict(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID, tricks int) error
+	// AssignTask gives a task to a seat (Deep Sea: the captain's assignment).
+	AssignTask(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID, toSeat int) error
+	// NextAttempt deals a new attempt of the same mission after a loss, or the next stage after a
+	// won stage (host, debrief). The choice is Deep Sea only.
+	NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID, choice domain.NextAttemptChoice) error
 	// NextMission starts the next mission after a win (host, debrief).
 	NextMission(ctx context.Context, id domain.GameID, player domain.PlayerID) error
 	BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID) error

@@ -184,8 +184,20 @@ func (f *fakeService) PlayCard(ctx context.Context, id domain.GameID, p domain.P
 func (f *fakeService) GiveUp(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.rec(ctx, id, "GiveUp")
 }
-func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
-	return f.rec(ctx, id, "NextAttempt")
+func (f *fakeService) PassTask(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+	return f.rec(ctx, id, "PassTask")
+}
+func (f *fakeService) ReplaceTask(ctx context.Context, id domain.GameID, p domain.PlayerID, task int) error {
+	return f.rec(ctx, id, "ReplaceTask", task)
+}
+func (f *fakeService) Predict(ctx context.Context, id domain.GameID, p domain.PlayerID, task, tricks int) error {
+	return f.rec(ctx, id, "Predict", task, tricks)
+}
+func (f *fakeService) AssignTask(ctx context.Context, id domain.GameID, p domain.PlayerID, task, seat int) error {
+	return f.rec(ctx, id, "AssignTask", task, seat)
+}
+func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domain.PlayerID, c domain.NextAttemptChoice) error {
+	return f.rec(ctx, id, "NextAttempt", c.NewTasks, c.Uncounted)
 }
 func (f *fakeService) NextMission(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.rec(ctx, id, "NextMission")
@@ -413,7 +425,14 @@ func TestAllCommands(t *testing.T) {
 		{`{"type":"communicate","requestId":"1","card":{"suit":"pink","rank":9}}`, "Communicate(pink 9,[])"}, // dead zone
 		{`{"type":"playCard","requestId":"1","card":{"suit":"trump","rank":4}}`, "PlayCard(trump 4)"},
 		{`{"type":"giveUp","requestId":"1"}`, "GiveUp"},
-		{`{"type":"nextAttempt","requestId":"1"}`, "NextAttempt"},
+		{`{"type":"passTask","requestId":"1"}`, "PassTask"},
+		{`{"type":"replaceTask","requestId":"1","taskId":2}`, "ReplaceTask(2)"},
+		{`{"type":"predict","requestId":"1","taskId":1,"tricks":0}`, "Predict(1,0)"}, // 0 tricks is present
+		{`{"type":"assignTask","requestId":"1","taskId":3,"seat":0}`, "AssignTask(3,0)"},
+		{`{"type":"nextAttempt","requestId":"1"}`, "NextAttempt(false,false)"},
+		{`{"type":"nextAttempt","requestId":"1","newTasks":true}`, "NextAttempt(true,false)"},
+		{`{"type":"nextAttempt","requestId":"1","uncounted":true}`, "NextAttempt(false,true)"},
+		{`{"type":"nextAttempt","requestId":"1","newTasks":true,"uncounted":true}`, "NextAttempt(true,true)"},
 		{`{"type":"nextMission","requestId":"1"}`, "NextMission"},
 		{`{"type":"backToLobby","requestId":"1"}`, "BackToLobby"},
 		{`{"type":"endGame","requestId":"1"}`, "EndGame"},
@@ -465,6 +484,11 @@ func TestCommandErrors(t *testing.T) {
 		`{"type":"pickTask","requestId":"3"}`,
 		`{"type":"sendDistress","requestId":"3"}`,
 		`{"type":"choosePassCard","requestId":"3"}`,
+		`{"type":"replaceTask","requestId":"3"}`,
+		`{"type":"predict","requestId":"3","taskId":1}`,
+		`{"type":"predict","requestId":"3","tricks":2}`,
+		`{"type":"assignTask","requestId":"3","taskId":1}`,
+		`{"type":"assignTask","requestId":"3","seat":1}`,
 		`{"type":"handover","requestId":"3","taskId":1}`,
 		`{"type":"handover","requestId":"3","seat":1}`,
 		`{"type":"communicate","requestId":"3","position":"only"}`,

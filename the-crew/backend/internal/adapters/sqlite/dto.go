@@ -53,6 +53,26 @@ type objectiveDTO struct {
 	Rank         int       `json:"rank"`
 	NotWithTrump bool      `json:"notWithTrump"`
 	Ordered      bool      `json:"ordered"`
+
+	// Deep Sea. Missing in older snapshots: zero values.
+	Cmp        string         `json:"cmp,omitempty"`
+	Suits      []string       `json:"suits"`
+	Ranks      []int          `json:"ranks"`
+	With       *cardMatchDTO  `json:"with,omitempty"`
+	Target     *cardMatchDTO  `json:"target,omitempty"`
+	Where      string         `json:"where,omitempty"`
+	Max        int            `json:"max,omitempty"`
+	Exact      bool           `json:"exact,omitempty"`
+	InOneTrick bool           `json:"inOneTrick,omitempty"`
+	Hidden     bool           `json:"hidden,omitempty"`
+	Parts      []objectiveDTO `json:"parts"`
+	Targets    []int          `json:"targets"`
+	Without    []int          `json:"without"`
+}
+
+type cardMatchDTO struct {
+	Suit string `json:"suit"`
+	Rank int    `json:"rank"`
 }
 
 type taskDTO struct {
@@ -60,6 +80,9 @@ type taskDTO struct {
 	Objective objectiveDTO `json:"objective"`
 	Token     string       `json:"token"`
 	FaceDown  bool         `json:"faceDown"`
+
+	CardID     int `json:"cardId,omitempty"` // Deep Sea
+	Difficulty int `json:"difficulty,omitempty"`
 }
 
 type pollDTO struct {
@@ -127,6 +150,15 @@ type attemptDTO struct {
 	Trick           trickDTO         `json:"trick"`
 	Tricks          []trickRecordDTO `json:"tricks"`
 	Result          *resultDTO       `json:"result"`
+
+	// Deep Sea. Missing in older snapshots: zero values.
+	Comm     string   `json:"comm,omitempty"`
+	Terrain  *cardDTO `json:"terrain,omitempty"`
+	TaskDeck []int    `json:"taskDeck"`
+	Passes   int      `json:"passes,omitempty"`
+	Chosen   []int    `json:"chosen"`
+	Stage    int      `json:"stage,omitempty"`
+	Redeals  int      `json:"redeals,omitempty"`
 }
 
 // optionsDTO holds the lobby options. A snapshot without it loads with every option off.
@@ -146,6 +178,7 @@ type gameDTO struct {
 	Mission       int                 `json:"mission"`
 	Logbook       map[int]logEntryDTO `json:"logbook"`
 	Attempt       *attemptDTO         `json:"attempt"`
+	UsedTasks     []int               `json:"usedTasks"` // Deep Sea
 	Revision      int64               `json:"revision"`
 	CreatedAt     time.Time           `json:"createdAt"`
 }
@@ -189,6 +222,7 @@ func toDTO(g *domain.Game) gameDTO {
 		Options:       optionsDTO{Distress: g.Options.Distress},
 		Mission:       g.Mission,
 		Attempt:       attemptToDTO(g.Attempt),
+		UsedTasks:     mapSlice(g.UsedTasks, intCopy),
 		Revision:      g.Revision,
 		CreatedAt:     g.CreatedAt,
 	}
@@ -238,9 +272,18 @@ func attemptToDTO(a *domain.Attempt) *attemptDTO {
 		Result: mapPtr(a.Result, func(r domain.AttemptResult) resultDTO {
 			return resultDTO{Success: r.Success, Reason: string(r.Reason), Task: r.Task, Objective: r.Objective, Trick: r.Trick, Seat: r.Seat}
 		}),
+		Comm:     string(a.Comm),
+		Terrain:  cardPtrToDTO(a.Terrain),
+		TaskDeck: mapSlice(a.TaskDeck, intCopy),
+		Passes:   a.Passes,
+		Chosen:   mapSlice(a.Chosen, intCopy),
+		Stage:    a.Stage,
+		Redeals:  a.Redeals,
 	}
 	return d
 }
+
+func intCopy(n int) int { return n }
 
 func cardPtrToDTO(c *domain.Card) *cardDTO   { return mapPtr(c, cardToDTO) }
 func cardPtrFromDTO(c *cardDTO) *domain.Card { return mapPtr(c, cardFromDTO) }
@@ -270,28 +313,60 @@ func memberFromDTO(d memberDTO) domain.Member {
 	}
 }
 
+func cardMatchToDTO(m domain.CardMatch) *cardMatchDTO {
+	if m.IsZero() {
+		return nil
+	}
+	return &cardMatchDTO{Suit: string(m.Suit), Rank: int(m.Rank)}
+}
+
+func cardMatchFromDTO(d *cardMatchDTO) domain.CardMatch {
+	if d == nil {
+		return domain.CardMatch{}
+	}
+	return domain.CardMatch{Suit: domain.Suit(d.Suit), Rank: domain.Rank(d.Rank)}
+}
+
 func objectiveToDTO(o domain.Objective) objectiveDTO {
 	return objectiveDTO{
 		Kind: string(o.Kind), Owner: o.Owner, Cards: mapSlice(o.Cards, cardToDTO), Count: o.Count,
-		Tricks: mapSlice(o.Tricks, func(n int) int { return n }), Suit: string(o.Suit), Rank: int(o.Rank),
+		Tricks: mapSlice(o.Tricks, intCopy), Suit: string(o.Suit), Rank: int(o.Rank),
 		NotWithTrump: o.NotWithTrump, Ordered: o.Ordered,
+		Cmp:   string(o.Cmp),
+		Suits: mapSlice(o.Suits, func(s domain.Suit) string { return string(s) }),
+		Ranks: mapSlice(o.Ranks, func(r domain.Rank) int { return int(r) }),
+		With:  cardMatchToDTO(o.With), Target: cardMatchToDTO(o.Target),
+		Where: string(o.Where), Max: o.Max, Exact: o.Exact, InOneTrick: o.InOneTrick, Hidden: o.Hidden,
+		Parts:   mapSlice(o.Parts, objectiveToDTO),
+		Targets: mapSlice(o.Targets, intCopy),
+		Without: mapSlice(o.Without, func(r domain.Rank) int { return int(r) }),
 	}
 }
 
 func objectiveFromDTO(d objectiveDTO) domain.Objective {
 	return domain.Objective{
 		Kind: domain.ObjectiveKind(d.Kind), Owner: d.Owner, Cards: mapSlice(d.Cards, cardFromDTO), Count: d.Count,
-		Tricks: mapSlice(d.Tricks, func(n int) int { return n }), Suit: domain.Suit(d.Suit), Rank: domain.Rank(d.Rank),
+		Tricks: mapSlice(d.Tricks, intCopy), Suit: domain.Suit(d.Suit), Rank: domain.Rank(d.Rank),
 		NotWithTrump: d.NotWithTrump, Ordered: d.Ordered,
+		Cmp:   domain.Comparison(d.Cmp),
+		Suits: mapSlice(d.Suits, func(s string) domain.Suit { return domain.Suit(s) }),
+		Ranks: mapSlice(d.Ranks, func(r int) domain.Rank { return domain.Rank(r) }),
+		With:  cardMatchFromDTO(d.With), Target: cardMatchFromDTO(d.Target),
+		Where: domain.TrickCondition(d.Where), Max: d.Max, Exact: d.Exact, InOneTrick: d.InOneTrick, Hidden: d.Hidden,
+		Parts:   mapSlice(d.Parts, objectiveFromDTO),
+		Targets: mapSlice(d.Targets, intCopy),
+		Without: mapSlice(d.Without, func(r int) domain.Rank { return domain.Rank(r) }),
 	}
 }
 
 func taskToDTO(t domain.Task) taskDTO {
-	return taskDTO{ID: t.ID, Objective: objectiveToDTO(t.Objective), Token: string(t.Token), FaceDown: t.FaceDown}
+	return taskDTO{ID: t.ID, Objective: objectiveToDTO(t.Objective), Token: string(t.Token), FaceDown: t.FaceDown,
+		CardID: t.CardID, Difficulty: t.Difficulty}
 }
 
 func taskFromDTO(d taskDTO) domain.Task {
-	return domain.Task{ID: d.ID, Objective: objectiveFromDTO(d.Objective), Token: domain.Token(d.Token), FaceDown: d.FaceDown}
+	return domain.Task{ID: d.ID, Objective: objectiveFromDTO(d.Objective), Token: domain.Token(d.Token), FaceDown: d.FaceDown,
+		CardID: d.CardID, Difficulty: d.Difficulty}
 }
 
 func fromDTO(d gameDTO) (*domain.Game, error) {
@@ -307,6 +382,7 @@ func fromDTO(d gameDTO) (*domain.Game, error) {
 		Options:   domain.Options{Distress: d.Options.Distress},
 		Mission:   d.Mission,
 		Attempt:   attemptFromDTO(d.Attempt),
+		UsedTasks: mapSlice(d.UsedTasks, intCopy),
 		Revision:  d.Revision,
 		CreatedAt: d.CreatedAt,
 	}
@@ -349,6 +425,13 @@ func attemptFromDTO(d *attemptDTO) *domain.Attempt {
 		Result: mapPtr(d.Result, func(r resultDTO) domain.AttemptResult {
 			return domain.AttemptResult{Success: r.Success, Reason: domain.Reason(r.Reason), Task: r.Task, Objective: r.Objective, Trick: r.Trick, Seat: r.Seat}
 		}),
+		Comm:     domain.CommMode(d.Comm),
+		Terrain:  cardPtrFromDTO(d.Terrain),
+		TaskDeck: mapSlice(d.TaskDeck, intCopy),
+		Passes:   d.Passes,
+		Chosen:   mapSlice(d.Chosen, intCopy),
+		Stage:    d.Stage,
+		Redeals:  d.Redeals,
 	}
 }
 

@@ -282,9 +282,29 @@ func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.Pl
 	return s.act(ctx, id, func(g *domain.Game) error { return g.GiveUp(player) })
 }
 
+// PassTask implements ports.GameService.
+func (s *Service) PassTask(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.PassTask(player) })
+}
+
+// ReplaceTask implements ports.GameService.
+func (s *Service) ReplaceTask(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.ReplaceTask(player, taskID, s.cfg.NewRNG()) })
+}
+
+// Predict implements ports.GameService.
+func (s *Service) Predict(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID, tricks int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.Predict(player, taskID, tricks) })
+}
+
+// AssignTask implements ports.GameService.
+func (s *Service) AssignTask(ctx context.Context, id domain.GameID, player domain.PlayerID, taskID, toSeat int) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.AssignTask(player, taskID, toSeat) })
+}
+
 // NextAttempt implements ports.GameService.
-func (s *Service) NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
-	return s.act(ctx, id, func(g *domain.Game) error { return g.NextAttempt(player, domain.NextAttemptChoice{}, s.cfg.NewRNG()) })
+func (s *Service) NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID, choice domain.NextAttemptChoice) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.NextAttempt(player, choice, s.cfg.NewRNG()) })
 }
 
 // NextMission implements ports.GameService.

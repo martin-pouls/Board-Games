@@ -65,6 +65,8 @@ var nullKeys = map[string]bool{
 	"missionDef": true, "attempt": true, "card": true, "up": true, "communication": true,
 	"poll": true, "pass": true, "exchange": true, "lastTrick": true, "result": true,
 	"cards": true, "chosen": true, "gave": true, "got": true, "holder": true,
+	// Deep Sea.
+	"with": true, "target": true, "terrain": true, "objective": true,
 }
 
 // assertNoNulls fails for a null in a key that is not in nullKeys, and for a null inside an
@@ -568,11 +570,7 @@ func TestFromMissionAndCatalogue(t *testing.T) {
 	if c.Edition != "planetNine" || len(c.Missions) != 50 {
 		t.Fatalf("catalogue = %s %d", c.Edition, len(c.Missions))
 	}
-	s := mustJSON(t, c)
-	if strings.Contains(s, "null") && !strings.Contains(s, `"holder":null`) {
-		t.Errorf("unexpected null in the catalogue")
-	}
-	assertNoNullsExcept(t, c, map[string]bool{"holder": true})
+	assertNoNullsExcept(t, c, map[string]bool{"holder": true, "with": true, "target": true})
 	for i, m := range c.Missions {
 		if m.Number != i+1 {
 			t.Fatalf("mission %d at index %d", m.Number, i)
@@ -742,6 +740,11 @@ func TestFromEvents(t *testing.T) {
 		{domain.CardsDrawn{}, `{"type":"cardsDrawn"}`},
 		{domain.AttemptEnded{Success: false, Reason: domain.ReasonTaskFailed}, `{"type":"attemptEnded","success":false,"reason":"taskFailed"}`},
 		{domain.AttemptEnded{Success: true, Reason: domain.ReasonCompleted}, `{"type":"attemptEnded","success":true,"reason":"completed"}`},
+		{domain.Redealt{Times: 2}, `{"type":"redealt","times":2}`},
+		{domain.TaskReplaced{TaskID: 0}, `{"type":"taskReplaced","taskId":0}`},
+		{domain.TaskPassed{Seat: 0}, `{"type":"taskPassed","seat":0}`},
+		{domain.Predicted{TaskID: 1, Seat: 2, Tricks: 0}, `{"type":"predicted","taskId":1,"seat":2,"tricks":0}`},
+		{domain.Predicted{TaskID: 1, Seat: 2, Tricks: -1}, `{"type":"predicted","taskId":1,"seat":2,"tricks":-1}`},
 		{domain.BackInLobby{}, `{"type":"backInLobby"}`},
 		{domain.GameEnded{ByPlayerID: "p1"}, `{"type":"gameEnded","byPlayerId":"p1"}`},
 	}
@@ -767,6 +770,7 @@ func TestFromEvents(t *testing.T) {
 		EventPlayerJoined, EventPlayerLeft, EventMissionSelected, EventOptionsChanged, EventAttemptStarted, EventTokensAdjusted, EventPollAnswered,
 		EventPicked, EventTaskPicked, EventDistressSignal, EventPassCardChosen, EventCardsPassed, EventTaskHandedOver,
 		EventCommunicated, EventCardPlayed, EventTrickWon, EventCardsDrawn, EventAttemptEnded, EventBackInLobby, EventGameEnded,
+		EventRedealt, EventTaskReplaced, EventTaskPassed, EventPredicted,
 	} {
 		if !seen[typ] {
 			t.Errorf("event type %s is not mapped", typ)
@@ -830,14 +834,14 @@ func TestServerMessageJSON(t *testing.T) {
 func TestClientMessageDecode(t *testing.T) {
 	var m ClientMessage
 	in := `{"type":"x","requestId":"4","mission":0,"seats":[1,2],"taskId":0,"card":{"suit":"pink","rank":3},` +
-		`"position":"only","direction":"left","yes":false,"from":0,"to":2,"seat":0}`
+		`"position":"only","direction":"left","yes":false,"from":0,"to":2,"seat":0,"tricks":0,"newTasks":true,"uncounted":true}`
 	if err := json.Unmarshal([]byte(in), &m); err != nil {
 		t.Fatal(err)
 	}
 	if m.Type != "x" || m.RequestID != "4" || m.Mission == nil || *m.Mission != 0 || !slices.Equal(m.Seats, []int{1, 2}) ||
 		m.TaskID == nil || *m.TaskID != 0 || m.Card == nil || *m.Card != (Card{"pink", 3}) || m.Position != "only" ||
 		m.Direction != "left" || m.Yes == nil || *m.Yes || m.From == nil || *m.From != 0 || m.To == nil || *m.To != 2 ||
-		m.Seat == nil || *m.Seat != 0 {
+		m.Seat == nil || *m.Seat != 0 || m.Tricks == nil || *m.Tricks != 0 || !m.NewTasks || !m.Uncounted {
 		t.Fatalf("decoded %+v", m)
 	}
 	// Absent fields stay nil.
@@ -845,19 +849,19 @@ func TestClientMessageDecode(t *testing.T) {
 	if err := json.Unmarshal([]byte(`{"type":"endGame","requestId":"4"}`), &e); err != nil {
 		t.Fatal(err)
 	}
-	if e.Type != CmdEndGame || e.Mission != nil || e.TaskID != nil || e.Card != nil || e.Yes != nil || e.From != nil || e.To != nil || e.Seat != nil || e.Seats != nil {
+	if e.Type != CmdEndGame || e.Mission != nil || e.TaskID != nil || e.Card != nil || e.Yes != nil || e.From != nil || e.To != nil || e.Seat != nil || e.Seats != nil || e.Tricks != nil || e.NewTasks || e.Uncounted {
 		t.Fatalf("decoded %+v", e)
 	}
 	// The command names are the ones of the protocol.
 	want := []string{
 		"setOptions", "selectMission", "startMission", "adjustTokens", "skipTokens", "answerPoll", "pick", "pickTask", "sendDistress",
-		"skipDistress", "choosePassCard", "handover", "communicate", "playCard", "giveUp", "nextAttempt", "nextMission",
-		"backToLobby", "endGame",
+		"skipDistress", "choosePassCard", "handover", "communicate", "playCard", "giveUp", "passTask", "replaceTask", "predict",
+		"assignTask", "nextAttempt", "nextMission", "backToLobby", "endGame",
 	}
 	got := []string{
 		CmdSetOptions, CmdSelectMission, CmdStartMission, CmdAdjustTokens, CmdSkipTokens, CmdAnswerPoll, CmdPick, CmdPickTask, CmdSendDistress,
-		CmdSkipDistress, CmdChoosePassCard, CmdHandover, CmdCommunicate, CmdPlayCard, CmdGiveUp, CmdNextAttempt, CmdNextMission,
-		CmdBackToLobby, CmdEndGame,
+		CmdSkipDistress, CmdChoosePassCard, CmdHandover, CmdCommunicate, CmdPlayCard, CmdGiveUp, CmdPassTask, CmdReplaceTask, CmdPredict,
+		CmdAssignTask, CmdNextAttempt, CmdNextMission, CmdBackToLobby, CmdEndGame,
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("commands = %v", got)
@@ -917,6 +921,7 @@ func TestErrorFor(t *testing.T) {
 		{"cannot pass trump", domain.ErrCannotPassTrump, 422, "cannot_pass_trump", ""},
 		{"invalid direction", domain.ErrInvalidDirection, 422, "invalid_direction", ""},
 		{"invalid token move", domain.ErrInvalidTokenMove, 422, "invalid_token_move", ""},
+		{"invalid prediction", domain.ErrInvalidPrediction, 422, "invalid_prediction", ""},
 		{"duplicate game id", ports.ErrDuplicateGameID, 500, "internal", "internal error"},
 		{"other", errors.New("disk on fire"), 500, "internal", "internal error"},
 		{"nil", nil, 500, "internal", "internal error"},
@@ -946,7 +951,7 @@ func TestEveryDomainErrorIsMapped(t *testing.T) {
 		domain.ErrMustFollowSuit, domain.ErrCannotCommunicate, domain.ErrAlreadyCommunicated, domain.ErrInvalidPosition,
 		domain.ErrInvalidSeat, domain.ErrInvalidTask, domain.ErrUnevenDistribution, domain.ErrCannotPassTrump,
 		domain.ErrAlreadyAnswered, domain.ErrNotAllowed, domain.ErrInvalidDirection, domain.ErrInvalidTokenMove,
-		domain.ErrInvalidResultChoice,
+		domain.ErrInvalidResultChoice, domain.ErrInvalidPrediction,
 	}
 	codes := map[string]error{}
 	for _, e := range sentinels {

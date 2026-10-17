@@ -191,11 +191,11 @@ func TestMissionFlow(t *testing.T) {
 	if err := f.svc.NextMission(ctx, id, host.PlayerID); !errors.Is(err, domain.ErrInvalidResultChoice) {
 		t.Fatalf("next mission after a loss: %v", err)
 	}
-	if err := f.svc.NextAttempt(ctx, id, guest.PlayerID); !errors.Is(err, domain.ErrNotHost) {
+	if err := f.svc.NextAttempt(ctx, id, guest.PlayerID, domain.NextAttemptChoice{}); !errors.Is(err, domain.ErrNotHost) {
 		t.Fatalf("next attempt by a guest: %v", err)
 	}
 	calls := rngCalls.Load()
-	do(f.svc.NextAttempt(ctx, id, host.PlayerID))
+	do(f.svc.NextAttempt(ctx, id, host.PlayerID, domain.NextAttemptChoice{}))
 	v = view(host.PlayerID)
 	if v.Phase != domain.PhasePlaying || v.Attempt.Number != 2 || rngCalls.Load() != calls+1 {
 		t.Fatalf("next attempt: %+v", v.Attempt)

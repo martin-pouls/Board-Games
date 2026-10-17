@@ -28,20 +28,29 @@ import (
 type crewT struct {
 	t       *testing.T
 	a       *app
-	dbPath  string
-	rng     domain.RNG
-	code    string
-	ps      []*player
-	snaps   map[int64]*domain.Game // the server's game at each revision seen after a step
-	checked []int                  // per player: how many logged views have been checked
+	edition domain.Edition
+	// passFirst makes a Deep Sea drafter pass whenever the rules allow it.
+	passFirst bool
+	dbPath    string
+	rng       domain.RNG
+	code      string
+	ps        []*player
+	snaps     map[int64]*domain.Game // the server's game at each revision seen after a step
+	checked   []int                  // per player: how many logged views have been checked
 	// distress makes the commander send the distress signal (to the left) when he may.
 	distress bool
 }
 
 func newCrew(t *testing.T, n int, seed uint64) *crewT {
 	t.Helper()
-	c := &crewT{t: t, dbPath: filepath.Join(t.TempDir(), "crew.db"), rng: gametest.NewRNG(seed), snaps: map[int64]*domain.Game{}}
-	c.a = startAppRNG(t, c.dbPath, func() domain.RNG { return c.rng })
+	return newCrewIn(t, domain.EditionPlanetNine, n, seed)
+}
+
+// newCrewIn is newCrew for a server of the given edition.
+func newCrewIn(t *testing.T, edition domain.Edition, n int, seed uint64) *crewT {
+	t.Helper()
+	c := &crewT{t: t, edition: edition, dbPath: filepath.Join(t.TempDir(), "crew.db"), rng: gametest.NewRNG(seed), snaps: map[int64]*domain.Game{}}
+	c.a = startAppEdition(t, c.dbPath, edition, func() domain.RNG { return c.rng })
 	host := c.a.create(t, "Ann")
 	c.code = host.GameID
 	c.ps = []*player{{sess: host}}
@@ -137,9 +146,8 @@ func forbidden(g *domain.Game, seat int) map[string]bool {
 				}
 			}
 		case o != seat:
-			public := a.CommunicatedCard(o)
 			for _, h := range m.Hand {
-				if public == nil || public.Card != h {
+				if !slices.ContainsFunc(a.CommunicatedCards(o), func(cm domain.Communication) bool { return cm.Card == h }) {
 					out[cardKey(wireCard(h))] = true
 				}
 			}
@@ -154,6 +162,9 @@ func (c *crewT) checkView(seat int, v apidto.PlayerView, g *domain.Game) {
 	t.Helper()
 	if v.Attempt == nil || g.Attempt == nil {
 		return
+	}
+	if g.Edition == domain.EditionDeepSea {
+		c.checkDeepSea(seat, v, g)
 	}
 	a, at := g.Attempt, v.Attempt
 	if a.Result != nil {
@@ -239,6 +250,9 @@ func (c *crewT) checkMessage(seat int, m wireMsg, g *domain.Game) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if g.Edition == domain.EditionDeepSea {
+		c.checkDeepSeaEvents(seat, m, g)
+	}
 	for _, e := range m.Events {
 		if e.Card != nil && e.Type != apidto.EventCardPlayed && e.Type != apidto.EventCommunicated {
 			t.Fatalf("player %d: event %s carries a card", seat, e.Type)
@@ -276,6 +290,9 @@ func (c *crewT) actor(g *domain.Game) (int, apidto.PlayerView) {
 
 // candidates are the commands the actor tries, in order, for the step of their view.
 func (c *crewT) candidates(v apidto.PlayerView) []apidto.ClientMessage {
+	if out, ok := c.deepSeaCandidates(v); ok {
+		return out
+	}
 	at := v.Attempt
 	n := len(c.ps)
 	msg := func(typ string) apidto.ClientMessage { return apidto.ClientMessage{Type: typ} }
@@ -399,7 +416,7 @@ func (c *crewT) restart() {
 		before[k] = c.rest(k)
 	}
 	c.a.stop()
-	c.a = startAppRNG(c.t, c.dbPath, func() domain.RNG { return c.rng })
+	c.a = startAppEdition(c.t, c.dbPath, c.edition, func() domain.RNG { return c.rng })
 	for k := range c.ps {
 		if after := c.rest(k); !reflect.DeepEqual(before[k], after) {
 			c.t.Fatalf("player %d: view changed across the restart:\n before %+v\n after  %+v", k, before[k], after)

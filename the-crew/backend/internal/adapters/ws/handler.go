@@ -117,8 +117,25 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 		}
 	case apidto.CmdGiveUp:
 		err = b.svc.GiveUp(ctx, id, p)
+	case apidto.CmdPassTask:
+		err = b.svc.PassTask(ctx, id, p)
+	case apidto.CmdReplaceTask:
+		if msg.TaskID == nil {
+			return apidto.BadRequest("missing taskId")
+		}
+		err = b.svc.ReplaceTask(ctx, id, p, *msg.TaskID)
+	case apidto.CmdPredict:
+		if msg.TaskID == nil || msg.Tricks == nil {
+			return apidto.BadRequest("missing taskId or tricks")
+		}
+		err = b.svc.Predict(ctx, id, p, *msg.TaskID, *msg.Tricks)
+	case apidto.CmdAssignTask:
+		if msg.TaskID == nil || msg.Seat == nil {
+			return apidto.BadRequest("missing taskId or seat")
+		}
+		err = b.svc.AssignTask(ctx, id, p, *msg.TaskID, *msg.Seat)
 	case apidto.CmdNextAttempt:
-		err = b.svc.NextAttempt(ctx, id, p)
+		err = b.svc.NextAttempt(ctx, id, p, domain.NextAttemptChoice{NewTasks: msg.NewTasks, Uncounted: msg.Uncounted})
 	case apidto.CmdNextMission:
 		err = b.svc.NextMission(ctx, id, p)
 	case apidto.CmdBackToLobby:
