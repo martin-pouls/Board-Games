@@ -59,6 +59,10 @@ type simRun struct {
 	tag     string
 	log     []string
 	distres bool // the distress signal was sent in the running attempt
+
+	// Deep Sea (sim_deepsea_test.go).
+	dsPos    int // draft: turns taken (picks and passes) in the running attempt
+	rollouts int // > 0: cards are chosen by random playouts instead of uniformly
 }
 
 func (s *simRun) failf(format string, args ...any) {
@@ -134,6 +138,9 @@ func (s *simRun) checkEvents(name string) {
 	s.t.Helper()
 	g := s.g
 	for _, e := range g.PullEvents() {
+		if g.Edition == EditionDeepSea {
+			s.checkEventDeepSea(name, e)
+		}
 		switch ev := e.(type) {
 		case CardPlayed:
 			if g.Attempt != nil {
@@ -216,6 +223,12 @@ func (s *simRun) checkInvariants(name string) {
 			s.failf("%s: view for %s: %v", name, p.ID, err)
 		}
 		s.checkView(name, seat, v)
+		if g.Edition == EditionDeepSea {
+			s.checkViewDeepSea(name, seat, v)
+		}
+	}
+	if g.Edition == EditionDeepSea {
+		s.checkDeepSea(name)
 	}
 }
 
@@ -346,7 +359,9 @@ func (s *simRun) checkView(name string, seat int, v PlayerView) {
 	}
 	for i, t := range a.Tasks {
 		tv := av.Tasks[i]
-		if t.FaceDown && !over {
+		if g.Edition == EditionDeepSea {
+			s.checkTaskViewDeepSea(name, seat, t, tv)
+		} else if t.FaceDown && !over {
 			if tv.Card != nil {
 				s.failf("%s: view of seat %d shows the face-down task %d (%v)", name, seat, i, *tv.Card)
 			}
