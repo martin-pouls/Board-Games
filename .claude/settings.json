@@ -33,5 +33,10 @@
     "claude-md-management@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true
   },
-  "outputStyle": "Concise"
+  "outputStyle": "Concise",
+  "enabledMcpjsonServers": [
+    "playwright",
+    "svelte"
+  ],
+  "enableAllProjectMcpServers": true
 }
