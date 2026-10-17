@@ -1,4 +1,4 @@
-// Sample Deep Sea views for tests and UI previews. Not used by the running app.
+// Sample Deep Sea views for tests and the dev fixtures route (/dev/fixtures). Not in production builds.
 //
 // Built on the table simulation of fixtures.ts (submarine 4 is the captain's card, Tonoja is the
 // dummy of two-player games). Every situation exists for 2 players (with Tonoja), 3 and 5 players:
@@ -7,6 +7,7 @@
 // mission rows are the ones the server sends (deepSeaMissions.fixture.ts).
 import { DEEP_SEA_MISSIONS } from './deepSeaMissions.fixture.js';
 import {
+	baseView,
 	card,
 	commOptions,
 	communicationOf,
@@ -591,3 +592,15 @@ export const deepSeaFixtures: Record<string, () => PlayerView> = Object.fromEntr
 		DEEP_SEA_PLAYERS.map((n) => [`${name}${n}`, () => make(n)] as const)
 	)
 );
+
+/** A Deep Sea lobby of `n` players at mission 4 (no attempt, so not a situation). */
+const dsLobby = (n: number, viewer = 0): PlayerView =>
+	baseView(n, viewer, { edition: 'deepSea', missionDef: deepSeaMission(4) });
+
+/** The Deep Sea lobby and ended views, for the dev fixtures route. */
+export const deepSeaLobbyFixtures: Record<string, () => PlayerView> = {
+	dsLobby1: () => dsLobby(1),
+	dsLobby2: () => dsLobby(2),
+	dsLobby4: () => dsLobby(4, 2),
+	dsEnded: () => ({ ...dsLobby(3, 1), phase: 'ended' })
+};

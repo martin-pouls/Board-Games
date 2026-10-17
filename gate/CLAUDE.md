@@ -40,4 +40,4 @@ mkdir data; openssl rand -hex 32 > data/secret; printf 'family=change-me\n' > da
 go run ./cmd/server
 ```
 
-Run `npm run build` in `gate/frontend` first for the real login page at http://localhost:8083/login. Without Caddy the form posts to `/gate/login` (404); the whole login flow runs in the local stack (`deploy/local.sh gate`). The cookie is `Secure`, so test on http://localhost only (browsers accept Secure cookies there). Checks: `go vet ./... && go test ./...` in `backend/`, `npm run check && npm run lint` in `frontend/`.
+Run `npm run build` in `gate/frontend` first for the real login page at http://localhost:8083/login. Without Caddy the form posts to `/gate/login` (404); the whole login flow runs in the local stack (`deploy/local.sh gate`). The cookie is `Secure`, so test on http://localhost only (browsers accept Secure cookies there). Checks: `go vet ./... && go test ./...` in `backend/`, `npm run check && npm run lint && npm test` in `frontend/` (or `bash .claude/skills/check/check.sh gate`).

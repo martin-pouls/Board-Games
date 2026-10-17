@@ -71,6 +71,17 @@ export class GameSocket<V extends BaseView, E, Cmd extends { type: string }, C e
 		return !!this.view && this.view.hostId === this.view.you;
 	}
 
+	/**
+	 * Dev fixtures only (`/dev/fixtures`): shows a fixed view with every player online, without
+	 * connecting. Commands fail with 'disconnected'.
+	 */
+	showFixture(view: V): this {
+		this.view = view;
+		this.online = view.players.map((p) => p.id);
+		this.status = 'open';
+		return this;
+	}
+
 	connect(): void {
 		if (this.closed || this.ws) return;
 		this.addListeners();

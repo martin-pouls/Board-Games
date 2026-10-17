@@ -26,7 +26,7 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 
 **Apps are independent, except for [shared/](shared/README.md) and Deep Sea.** Each game has its own Go module, npm project, image, database and deploy. No app imports from another app. Backend: `replace github.com/martin-pouls/shared/backend => ../../shared/backend` in `go.mod`. Frontend: compiled as source via the alias `@board-games/shared`.
 
-**The one exception: [deep-sea/](deep-sea/CLAUDE.md) has no code.** It holds only `deploy/` and a CLAUDE.md. Its image builds `the-crew/Dockerfile` with `EDITION=deepSea` (build args in `deep-sea/deploy/compose.yaml`), so it is the same code as The Crew under its own URL, container, database and tile. Consequence for CI: an app depends on every top-level directory its Dockerfile (named by `dockerfile:` in its `deploy/compose.yaml`) copies from, so a change in `the-crew/` or `shared/` redeploys Deep Sea too.
+**Exception: [deep-sea/](deep-sea/CLAUDE.md)** has no code. An app depends on every top-level directory its Dockerfile (named by `dockerfile:` in its `deploy/compose.yaml`) copies from, so a change in `the-crew/` or `shared/` redeploys Deep Sea too.
 
 - **What goes there:** code that is identical in every game, changes only for plumbing reasons and has no game-specific behaviour. Today: the lobby REST/WS/session/persistence plumbing (incl. WS view publishing, bearer auth, typed IDs, the SQLite snapshot repository), the page frame, the home and join pages, the remembered-games list, the lobby's leave/end actions, connection banner, card motion and new-card marks.
 - **What stays in the game:** rules, domain and DTOs, the service, WS command dispatch, and the Lobby/Table/GameOver screens: everything that defines how a game plays or feels. Differences are props, snippets or parameters, never switches on game names.
@@ -49,7 +49,7 @@ The start page and the gate's login page use the same stack, fully prerendered w
 - **Per-player views:** never send other players' hands (or hidden deck order) to a client. Build a projection per player.
 - **Transport split:** REST (`/api/...`) only for the lobby: health, create, summary, join, view, leave (plus static data such as The Crew's `GET /api/missions`). Everything from *start* to *rematch* goes over the WebSocket (`/ws/...`): clients send actions, the server pushes each player their view and the events. No gameplay routes over REST. Gameplay service methods return only `error`; the actor's new view arrives with the broadcast.
 - **Persistence:** each game is a JSON snapshot of the domain aggregate (`games.state`, explicit DTOs in the sqlite adapter, no struct tags on domain types) with a `version` column for optimistic concurrency. Game state survives a restart; connections and presence are in memory. Old snapshots must keep loading (map renamed values in the DTO).
-- **Tests:** each `*_test.go` sits next to its code. The domain has thorough table-driven tests for every rule, app decision and edge case in the game's docs/rules.md.
+- **Tests:** each `*_test.go` sits next to its code. The domain has thorough table-driven tests for every rule, app decision and edge case in the game's docs/rules.md. `backend/internal/e2e` drives the fully wired server (SQLite, service, REST, WS) over real HTTP and WebSocket connections.
 - **Rules:** each game's `docs/rules.md` is the source of truth. Read it before touching game logic; don't re-read the rule PDFs. If it doesn't answer a rule question, ask, then record the answer there (marked **App decision**).
 
 ## Game lifecycle (every game)
@@ -79,9 +79,18 @@ Backend env vars: `ADDR` (default: the game's backend port below; the images set
 | Start page | `:5175` | — |
 | Gate | `:5178` (login page only) | `:8083` |
 
-In dev the start page links to each game's frontend port (`devPort` in `start-page/frontend/src/lib/games.ts`) and the games link back to port 5175 (`shared/frontend/src/startPage.ts`). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and `startPage.ts` together.
+In dev the start page links to each game's frontend port (`devPort` in `start-page/frontend/src/lib/games.ts`) and the games link back to port 5175 (`shared/frontend/src/startPage.ts`). Changing a port means changing the app's `vite.config.ts`, its backend default or `BACKEND_URL` default, `games.ts` and `startPage.ts` together. The `run` skill starts and stops apps on these ports in the background: `bash .claude/skills/run/run.sh fox-duet` (also `stop <app>`, `status`); its port table must follow this one.
 
-**Before declaring work done,** run in each app you touched: `go vet ./... && go test ./...` (backend) and `npm run check && npm run lint && npm test` (frontend).
+**Dev fixtures: look at UI states without playing there.** Every game's `src/lib/game/fixtures.ts` exports `fixtures: Record<string, () => PlayerView>` (a fresh view per call; The Crew picks the build's edition in `editionFixtures.ts`). In dev, `/dev/fixtures` lists them and `/dev/fixtures/<name>` renders one on the real game screen (`GameScreen`, the same component the `/g/[code]` route renders, with a `GameConnection` that never connects: `showFixture`). Production builds drop the fixtures and the route answers 404.
+- Check UI work through fixtures (Playwright, phone viewports, light and dark), not by playing a game into the state.
+- A new UI state (phase, step, pending decision, game over variant) gets a fixture in the same change. `fixtures.test.ts` fails when a phase has none.
+- Keep the phase switch in `GameScreen.svelte`, not in the route, so fixtures show exactly what players see.
+
+**Before declaring work done,** run in each app you touched: `go vet ./... && go test ./...` (backend) and `npm run check && npm run lint && npm test` (frontend). The `check` skill does exactly that for the apps a change touches (`shared/` = all), in parallel: `bash .claude/skills/check/check.sh` (`--base main` for committed work, `--all`, or app names).
+
+**Claude Code hooks** ([.claude/settings.json](.claude/settings.json), scripts in `.claude/hooks/`): every edited file is formatted (gofmt, or the app's Prettier), and edits to committed migrations are blocked (they have already run on the server; add the next `NNNN_name.sql`).
+
+**Agents and MCP:** the `rules-auditor` agent (`.claude/agents/`) audits one game's domain against its docs/rules.md (use it after rule changes). `.mcp.json` provides `playwright` (fixture screenshots) and `svelte` (Svelte 5 / SvelteKit docs: look things up there instead of guessing at runes APIs).
 
 ## Deployment
 

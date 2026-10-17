@@ -5,4 +5,5 @@
 - Game code, rules and look: [the-crew/CLAUDE.md](../the-crew/CLAUDE.md). Deep Sea plan, rules and mission data: [the-crew/docs/deep-sea/](../the-crew/docs/deep-sea/).
 - Its own URL, container (`deep-sea`), volume and database (`deep-sea.db`), game retention (720h) and start-page tile.
 - Local ports: Vite `:5179`, backend `:8085`.
+- Run locally: `bash .claude/skills/run/run.sh deep-sea`, or by hand `npm run dev:deep-sea` in `the-crew/frontend/` and `EDITION=deepSea go run ./cmd/server` in `the-crew/backend/` (the edition picks port and DB). Checks: `check.sh deep-sea` runs the-crew's.
 - CI redeploys this app when `deep-sea/`, `the-crew/` or `shared/` changes: `.github/scripts/plan-deploy.sh` follows the `COPY` sources of the Dockerfile named in `deploy/compose.yaml`.

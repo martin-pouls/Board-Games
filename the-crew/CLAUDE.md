@@ -18,7 +18,7 @@
 - **The trick rules are edition-agnostic** (`trick.go`) and know nothing about seats, the dummy or missions. Only `Member.Playable` and `actorFor` know about the dummy.
 - **One `Attempt` per deal;** a new attempt replaces it. Members are seats (with 2 players seat 2 is the dummy), referenced by seat index on the wire.
 - **The setup is derived:** only `Step` and the open `Poll` are stored; `nextItem` derives the pending setup item from the `MissionDef` and the attempt. `Actors()` is derived per step and never empty while playing.
-- **The RNG is injected** (`Shuffle`, `IntN`). `sim_test.go` plays random legal actions through every mission × 2–5 players and checks card conservation, actors and the hiding rules after every action.
+- **The RNG is injected** (`Shuffle`, `IntN`). `sim_test.go` (and `sim_deepsea_test.go`) play random legal actions through every mission × 2–5 players and check card conservation, actors and the hiding rules after every action.
 - **Editions:** `Game.Edition`, the mission table per edition (`missions_planet9.go`, `missions_deepsea.go`), the task cards (`tasks_deepsea.go`, `taskcard.go`), the open `ObjectiveKind` set (Deep Sea kinds in `objective_deepsea.go`), the Deep Sea setup in `setup_deepsea.go`. No Planet Nine names in `trick.go`, `objective.go` or `seat.go`: the domain says trump, dummy, commander; the UI says rocket, JARVIS, commander.
 
 ## Look and feel

@@ -484,7 +484,7 @@ export const lostSkull: PlayerView = {
 	}
 };
 
-export const fixtures = {
+const views = {
 	lobbyGuest,
 	lobbyHost,
 	lobbyHostExtreme,
@@ -503,3 +503,11 @@ export const fixtures = {
 	extremeEightCommands,
 	lostSkull
 } satisfies Record<string, PlayerView>;
+
+/**
+ * Every named fixture; each call returns a fresh copy. The dev route `/dev/fixtures/<name>` shows
+ * them on the game screen.
+ */
+export const fixtures = Object.fromEntries(
+	Object.entries(views).map(([name, v]) => [name, () => structuredClone(v)])
+) as Record<keyof typeof views, () => PlayerView>;

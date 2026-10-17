@@ -5,10 +5,8 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
+	import GameScreen from '#lib/components/game/GameScreen.svelte';
 	import ConnectionBanner from '@board-games/shared/ConnectionBanner.svelte';
-	import GameOver from '#lib/components/game/GameOver.svelte';
-	import Lobby from '#lib/components/game/Lobby.svelte';
-	import Table from '#lib/components/game/Table.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';
 	import { leaveGame } from '#lib/api.js';
 	import { errorText } from '#lib/errors.js';
@@ -90,28 +88,7 @@
 		</Card.Root>
 	</div>
 {:else if conn && view}
-	{#if view.phase === 'lobby'}
-		<Lobby client={conn} {view} onleave={leave} />
-	{:else if view.phase === 'playing'}
-		<Table client={conn} {view} />
-	{:else if view.phase === 'ended'}
-		{@const host = view.players.find((p) => p.id === view.hostId)}
-		<div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title class="text-2xl">Lobby closed</Card.Title>
-					<Card.Description>
-						{host?.isYou ? 'You' : (host?.name ?? 'The host')} closed this lobby before the game started.
-					</Card.Description>
-				</Card.Header>
-				<Card.Content>
-					<Button class="h-12 w-full text-base" href={resolve('/')}>Back to home</Button>
-				</Card.Content>
-			</Card.Root>
-		</div>
-	{:else}
-		<GameOver client={conn} {view} />
-	{/if}
+	<GameScreen client={conn} {view} onleave={leave} />
 {:else}
 	<div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-3" aria-busy="true">
 		<Skeleton class="h-6 w-1/3" />

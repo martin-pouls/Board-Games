@@ -281,3 +281,47 @@ export const lostView: PlayerView = makeView({
 		soloJestersUsed: 0
 	}
 });
+
+/** A full lobby seen by a guest (Cleo, seat 2). */
+export const lobbyGuestView: PlayerView = makeView({
+	phase: 'lobby',
+	you: 'p3',
+	players: [
+		player('p1', 'Anna', 0, { handCount: 0 }),
+		player('p2', 'Ben', 1, { handCount: 0 }),
+		player('p3', 'Cleo', 2, { isYou: true, handCount: 0 }),
+		player('p4', 'Dan', 3, { handCount: 0 })
+	],
+	castleCount: 0,
+	tavernCount: 0
+});
+
+/** The host closed the lobby before the game started. */
+export const endedView: PlayerView = makeView({
+	...lobbyView,
+	phase: 'ended',
+	you: 'p2',
+	players: lobbyView.players.map((p) => ({ ...p, isYou: p.id === 'p2' }))
+});
+
+/**
+ * Every named fixture; each call returns a fresh copy. The dev route `/dev/fixtures/<name>` shows
+ * them on the game screen.
+ */
+export const fixtures = Object.fromEntries(
+	Object.entries({
+		lobbyView,
+		lobbyGuestView,
+		playView,
+		otherTurnView,
+		discardView,
+		chooseNextChooserView,
+		chooseNextOtherView,
+		afterDefeatView,
+		soloPlayView,
+		soloDiscardShortView,
+		wonSoloView,
+		lostView,
+		endedView
+	}).map(([name, v]) => [name, () => structuredClone(v)])
+) as Record<string, () => PlayerView>;

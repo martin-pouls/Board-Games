@@ -1,4 +1,4 @@
-// Sample views for tests and UI previews. Not used by the running app.
+// Sample views for tests and the dev fixtures route (/dev/fixtures). Not in production builds.
 //
 // The views come from a tiny deterministic table simulation (deal, legal cards, tricks, JARVIS's
 // stacks, mission 12's draw), so card counts, tricks won, hands and the trick shown always agree.
@@ -744,6 +744,8 @@ export const lobbyView1 = () => lobbyView(1);
 export const lobbyView2 = () => lobbyView(2);
 /** Seen by a guest (Cleo), who cannot pick the mission. */
 export const lobbyView4 = () => lobbyView(4, 2);
+/** The host ended the game after a few missions (seen by Bob). */
+export const endedView = () => baseView(3, 1, { phase: 'ended' });
 
 // ---------------------------------------------------------------------------------- 2 players + JARVIS
 
@@ -1011,11 +1013,12 @@ export function mission48View(): PlayerView {
 	});
 }
 
-/** Every fixture by name, for tests and the UI preview. */
+/** Every fixture by name, for tests and the dev fixtures route (`/dev/fixtures/<name>`). */
 export const fixtures: Record<string, () => PlayerView> = {
 	lobbyView1,
 	lobbyView2,
 	lobbyView4,
+	endedView,
 	draftView2,
 	pollView2,
 	pickView2,

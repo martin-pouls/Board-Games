@@ -20,7 +20,7 @@
 <AppFrame
 	url={page.url}
 	isHome={page.route.id === '/'}
-	topBar={page.route.id !== '/g/[code]'}
+	topBar={page.route.id !== '/g/[code]' && page.route.id !== '/dev/fixtures/[name]'}
 	dev={import.meta.env.DEV}
 >
 	{@render children()}

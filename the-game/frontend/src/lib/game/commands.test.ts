@@ -59,10 +59,10 @@ describe('targetCount', () => {
 
 describe('turnStatus', () => {
 	it('is null without a turn', () => {
-		expect(turnStatus(fixtures.lobbyHostExtreme, true)).toBeNull();
+		expect(turnStatus(fixtures.lobbyHostExtreme(), true)).toBeNull();
 	});
 	it('has no Single pile tag and no Draw only one in any classic fixture', () => {
-		for (const v of Object.values(fixtures)) {
+		for (const v of Object.values(fixtures).map((make) => make())) {
 			if (v.options.variant !== 'classic' || !v.turn) continue;
 			const s = turnStatus(v, true)!;
 			expect(s.singlePile).toBeNull();

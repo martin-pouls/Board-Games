@@ -6,8 +6,14 @@ import {
 	fullDeck,
 	missionDef
 } from './fixtures.js';
-import { deepSeaFixtures } from './fixturesDeepSea.js';
-import { OWNER_CREW, OWNER_UNASSIGNED, type Card, type PlayerView } from '#lib/types.js';
+import { deepSeaFixtures, deepSeaLobbyFixtures } from './fixturesDeepSea.js';
+import {
+	OWNER_CREW,
+	OWNER_UNASSIGNED,
+	type Card,
+	type Phase,
+	type PlayerView
+} from '#lib/types.js';
 
 // Both editions' fixtures go through the same checks; the Deep Sea ones have more below.
 const fixtures = { ...planetNineFixtures, ...deepSeaFixtures };
@@ -35,6 +41,14 @@ function visibleCards(v: PlayerView): Card[] {
 }
 
 describe('fixtures', () => {
+	it('cover every phase in each edition (dev route /dev/fixtures/<name>)', () => {
+		const phases: Record<Phase, true> = { lobby: true, playing: true, debrief: true, ended: true };
+		for (const set of [planetNineFixtures, { ...deepSeaLobbyFixtures, ...deepSeaFixtures }]) {
+			const covered = new Set(Object.values(set).map((make) => make().phase));
+			expect([...covered].sort()).toEqual(Object.keys(phases).sort());
+		}
+	});
+
 	it('offers a fresh object every call', () => {
 		for (const [name, make] of Object.entries(fixtures)) {
 			const first = make();
@@ -94,7 +108,7 @@ describe('fixtures', () => {
 			);
 			for (const e of v.logbook) expect(e.total).toBe(e.attempts + (e.distress ? 1 : 0));
 			if (a) expect(a.seat).toBe(me?.seat);
-			else expect(v.phase).toBe('lobby');
+			else expect(['lobby', 'ended']).toContain(v.phase);
 		});
 
 		it('has the right members and counts', () => {
