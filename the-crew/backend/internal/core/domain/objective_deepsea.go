@@ -352,7 +352,9 @@ func (o Objective) moreSuit(h History) Status {
 	return decided(wa > wb+lb, wa+la <= wb)
 }
 
-// all (36, 37, 52, 53): every part, owned by the owner.
+// all (36, 37, 52, 53): every part, owned by the owner. A card that a winCards part requires
+// and an exact winCount part counts (52, 53: submarine 1 and no other) takes one of the counted
+// places, so winning other counted cards fails the task early.
 func (o Objective) all(h History) Status {
 	s := StatusFulfilled
 	for _, p := range o.Parts {
@@ -362,6 +364,27 @@ func (o Objective) all(h History) Status {
 			return StatusFailed
 		case StatusOpen:
 			s = StatusOpen
+		}
+	}
+	for _, pc := range o.Parts {
+		if pc.Kind != KindWinCount || pc.Cmp != CmpExactly {
+			continue
+		}
+		counted := pc.matcher()
+		for _, pw := range o.Parts {
+			if pw.Kind != KindWinCards {
+				continue
+			}
+			var req []Card
+			for _, c := range pw.Cards {
+				if counted(c) {
+					req = append(req, c)
+				}
+			}
+			other, _ := h.cardCounts(o.Owner, func(c Card) bool { return counted(c) && !slices.Contains(req, c) })
+			if len(req) > 0 && other+len(req) > pc.Count {
+				return StatusFailed
+			}
 		}
 	}
 	return s
