@@ -11,9 +11,10 @@ import (
 // maxNameRunes is the maximum length of a player name in runes.
 const maxNameRunes = 20
 
-// NewGame creates a game in the lobby with the host in seat 0, mission 1 selected and opts.
+// NewGame creates a game of the edition in the lobby with the host in seat 0, mission 1 selected
+// and opts.
 // Errors: ErrInvalidName. Revision = 1; no events.
-func NewGame(id GameID, hostID PlayerID, hostName string, opts Options) (*Game, error) {
+func NewGame(id GameID, edition Edition, hostID PlayerID, hostName string, opts Options) (*Game, error) {
 	name, err := normalizeName(hostName)
 	if err != nil {
 		return nil, err
@@ -23,7 +24,7 @@ func NewGame(id GameID, hostID PlayerID, hostName string, opts Options) (*Game, 
 		Phase:     PhaseLobby,
 		HostID:    hostID,
 		Players:   []Player{{ID: hostID, Name: name}},
-		Edition:   EditionPlanetNine,
+		Edition:   edition,
 		Mission:   1,
 		Options:   opts,
 		Logbook:   map[int]LogEntry{},

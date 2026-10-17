@@ -451,3 +451,49 @@ func TestPurgeInactive(t *testing.T) {
 		t.Errorf("second purge removed %d", n)
 	}
 }
+
+// A game of the other edition behaves as if it didn't exist, on every load path.
+func TestOtherEditionIsNotFound(t *testing.T) {
+	ctx := context.Background()
+	deep := newFixture(t, func(c *Config) { c.Edition = domain.EditionDeepSea })
+	host, err := deep.svc.CreateGame(ctx, "P1", domain.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec, err := deep.repo.Load(ctx, host.GameID)
+	if err != nil || rec.Game.Edition != domain.EditionDeepSea {
+		t.Fatalf("created game: %v, %+v", err, rec)
+	}
+	// Same repository, a Planet Nine service (the default edition).
+	p9 := New(deep.repo, &recorder{}, Config{})
+	if _, err := p9.Summary(ctx, host.GameID); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("Summary: %v", err)
+	}
+	if _, err := p9.JoinGame(ctx, host.GameID, "P2"); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("JoinGame: %v", err)
+	}
+	if _, err := p9.Authenticate(ctx, host.GameID, host.Token); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("Authenticate: %v", err)
+	}
+	if _, err := p9.View(ctx, host.GameID, host.PlayerID); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("View: %v", err)
+	}
+	if err := p9.SetOptions(ctx, host.GameID, host.PlayerID, domain.Options{Distress: true}); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("SetOptions: %v", err)
+	}
+	if err := p9.LeaveGame(ctx, host.GameID, host.PlayerID); !errors.Is(err, ports.ErrGameNotFound) {
+		t.Errorf("LeaveGame: %v", err)
+	}
+	// Its own edition still sees it.
+	if _, err := deep.svc.Summary(ctx, host.GameID); err != nil {
+		t.Errorf("own edition: %v", err)
+	}
+	// An empty Config.Edition means Planet Nine.
+	own, err := p9.CreateGame(ctx, "P1", domain.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec, err := deep.repo.Load(ctx, own.GameID); err != nil || rec.Game.Edition != domain.EditionPlanetNine {
+		t.Errorf("default edition: %v, %+v", err, rec)
+	}
+}

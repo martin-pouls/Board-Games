@@ -2,11 +2,16 @@ package domain
 
 import "slices"
 
-// Edition is the game a mission table belongs to. Only Planet Nine exists so far; Deep Sea would
-// add its own table and task source.
+// Edition is the game a mission table belongs to. One deployment serves exactly one edition.
 type Edition string
 
-const EditionPlanetNine Edition = "planetNine"
+const (
+	EditionPlanetNine Edition = "planetNine"
+	EditionDeepSea    Edition = "deepSea"
+)
+
+// Valid reports whether e is a known edition.
+func (e Edition) Valid() bool { return e == EditionPlanetNine || e == EditionDeepSea }
 
 // Distribution is how the drawn tasks reach their owners (rules §6, §10).
 type Distribution string
@@ -79,18 +84,25 @@ type MissionDef struct {
 // Has reports whether the mission has the setup action a.
 func (m MissionDef) Has(a SetupAction) bool { return slices.Contains(m.Setup, a) }
 
-// Missions returns the number of missions of the edition.
-func Missions(e Edition) int {
-	if e == EditionPlanetNine {
-		return len(planetNine)
+// missionTable is the mission table of the edition; the one place that switches on it.
+func missionTable(e Edition) []MissionDef {
+	switch e {
+	case EditionPlanetNine:
+		return planetNine
+	case EditionDeepSea:
+		return deepSea
 	}
-	return 0
+	return nil
 }
+
+// Missions returns the number of missions of the edition.
+func Missions(e Edition) int { return len(missionTable(e)) }
 
 // MissionFor returns mission n of the edition.
 func MissionFor(e Edition, n int) (MissionDef, bool) {
-	if e != EditionPlanetNine || n < 1 || n > len(planetNine) {
+	t := missionTable(e)
+	if n < 1 || n > len(t) {
 		return MissionDef{}, false
 	}
-	return planetNine[n-1], true
+	return t[n-1], true
 }

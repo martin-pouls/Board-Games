@@ -45,7 +45,7 @@ func TestRoundTripEachPhase(t *testing.T) {
 	five.Revision = 6
 
 	// A lobby built through the domain API, with a host change.
-	played, err := domain.NewGame("PLAYY", "p1", "Ann", domain.Options{})
+	played, err := domain.NewGame("PLAYY", domain.EditionPlanetNine, "p1", "Ann", domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

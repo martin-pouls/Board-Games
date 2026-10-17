@@ -62,7 +62,7 @@ The start page and the gate's login page use the same stack, fully prerendered w
 The toolchain was installed via winget: Go at `C:\Program Files\Go\bin`, Node at `C:\Program Files\nodejs`; a shell opened before the install may need its PATH refreshed.
 
 Backend scripts run from `<game>/backend/`, frontend scripts from `<app>/frontend/` (game frontends proxy `/api` and `/ws` to `BACKEND_URL`, default the game's backend port).
-Backend env vars: `ADDR` (default: the game's backend port below; the images set `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: idle games are deleted), `CLEANUP_INTERVAL` (default `1h`).
+Backend env vars: `ADDR` (default: the game's backend port below; the images set `:8080`), `DB_PATH` (default `data/<game>.db`), `STATIC_DIR` (optional, e.g. `../frontend/build` to serve the SPA from Go), `WS_ORIGIN_PATTERNS` (optional extra allowed WebSocket origin host patterns), `GAME_RETENTION` (default `168h`: idle games are deleted), `CLEANUP_INTERVAL` (default `1h`), `EDITION` (The Crew only: `planetNine` (default) | `deepSea`; also picks the default port and DB path).
 
 **Local ports** are fixed, so all apps run side by side:
 

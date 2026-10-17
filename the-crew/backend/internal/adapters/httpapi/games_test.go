@@ -415,6 +415,18 @@ func TestMissionCatalogue(t *testing.T) {
 	}
 }
 
+func TestMissionCatalogueDeepSea(t *testing.T) {
+	h := NewRouter(Deps{Edition: domain.EditionDeepSea, Health: func(context.Context) error { return nil }})
+	w := do(t, h, "GET", "/api/missions", "", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d %s", w.Code, w.Body.String())
+	}
+	c := decode[apidto.MissionCatalogue](t, w)
+	if c.Edition != "deepSea" || c.Missions == nil || len(c.Missions) != 0 {
+		t.Fatalf("catalogue: edition %q, missions %#v", c.Edition, c.Missions)
+	}
+}
+
 func TestAPINotFoundBeatsSPA(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<html>spa</html>"), 0o644); err != nil {

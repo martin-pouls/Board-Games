@@ -11,6 +11,7 @@ import (
 
 	"github.com/martin-pouls/shared/backend/httpkit"
 
+	"github.com/martin-pouls/the-crew/backend/internal/core/domain"
 	"github.com/martin-pouls/the-crew/backend/internal/core/ports"
 )
 
@@ -23,6 +24,7 @@ func DefaultRateLimits() RateLimits { return httpkit.DefaultRateLimits() }
 // Deps are the collaborators the router needs.
 type Deps struct {
 	Logger    *slog.Logger
+	Edition   domain.Edition // optional: the mission catalogue to serve; default Planet Nine
 	Health    func(context.Context) error
 	StaticDir string            // optional: directory of the built SPA (frontend/build)
 	Games     ports.GameService // optional: when nil, the /api/games routes are not registered
@@ -35,7 +37,10 @@ func NewRouter(d Deps) http.Handler {
 	if d.Logger == nil {
 		d.Logger = slog.New(slog.DiscardHandler)
 	}
-	missions := newMissionsHandler()
+	if d.Edition == "" {
+		d.Edition = domain.EditionPlanetNine
+	}
+	missions := newMissionsHandler(d.Edition)
 	api := func(mux *http.ServeMux) {
 		mux.Handle("GET /api/missions", missions)
 		if d.Games != nil {

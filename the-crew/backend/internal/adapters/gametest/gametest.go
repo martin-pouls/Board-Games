@@ -29,7 +29,7 @@ func NewGame(t testing.TB, n, mission int, rng domain.RNG) *domain.Game {
 func NewGameWith(t testing.TB, n, mission int, opts domain.Options, rng domain.RNG) *domain.Game {
 	t.Helper()
 	names := []string{"Ann", "Ben", "Cleo", "Dan", "Eve"}
-	g, err := domain.NewGame("GAME1", PlayerID(0), names[0], domain.Options{})
+	g, err := domain.NewGame("GAME1", domain.EditionPlanetNine, PlayerID(0), names[0], domain.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

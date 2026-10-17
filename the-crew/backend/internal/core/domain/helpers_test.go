@@ -81,7 +81,7 @@ func newLobbyGame(t *testing.T) *Game {
 // newCrew returns a lobby with the first n of alice, bob, carol, dave and erin (host alice).
 func newCrew(t *testing.T, n int) *Game {
 	t.Helper()
-	g, err := NewGame("GAME1", alice, "Alice", Options{})
+	g, err := NewGame("GAME1", EditionPlanetNine, alice, "Alice", Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

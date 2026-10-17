@@ -25,6 +25,7 @@ const (
 
 // Config customises the service; nil fields get production defaults.
 type Config struct {
+	Edition     domain.Edition // the edition this deployment serves; default Planet Nine
 	NewGameID   func() domain.GameID
 	NewPlayerID func() domain.PlayerID
 	NewToken    func() string
@@ -44,6 +45,9 @@ var _ ports.GameService = (*Service)(nil)
 
 // New builds a Service.
 func New(repo ports.GameRepository, pub ports.EventPublisher, cfg Config) *Service {
+	if cfg.Edition == "" {
+		cfg.Edition = domain.EditionPlanetNine
+	}
 	if cfg.NewGameID == nil {
 		cfg.NewGameID = idgen.GameCodeAs[domain.GameID]
 	}
@@ -65,13 +69,25 @@ func New(repo ports.GameRepository, pub ports.EventPublisher, cfg Config) *Servi
 	return &Service{repo: repo, pub: pub, cfg: cfg, locks: lockmap.New[domain.GameID]()}
 }
 
+// load fetches a game; a game of another edition is reported as not found, as if it didn't exist.
+func (s *Service) load(ctx context.Context, id domain.GameID) (*ports.GameRecord, error) {
+	rec, err := s.repo.Load(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if rec.Game.Edition != s.cfg.Edition {
+		return nil, ports.ErrGameNotFound
+	}
+	return rec, nil
+}
+
 // mutate runs fn on a freshly loaded record under the per-game lock, saves it with
 // OCC retry and publishes the resulting events while still holding the lock.
 func (s *Service) mutate(ctx context.Context, id domain.GameID, fn func(*ports.GameRecord) error) (*ports.GameRecord, error) {
 	s.locks.Lock(id)
 	defer s.locks.Unlock(id)
 	for range maxOCCAttempts {
-		rec, err := s.repo.Load(ctx, id)
+		rec, err := s.load(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +119,7 @@ func (s *Service) CreateGame(ctx context.Context, hostName string, opts domain.O
 	hostID := s.cfg.NewPlayerID()
 	token := s.cfg.NewToken()
 	for range maxIDAttempts {
-		g, err := domain.NewGame(s.cfg.NewGameID(), hostID, hostName, opts)
+		g, err := domain.NewGame(s.cfg.NewGameID(), s.cfg.Edition, hostID, hostName, opts)
 		if err != nil {
 			return ports.Session{}, err
 		}
@@ -147,7 +163,7 @@ func (s *Service) JoinGame(ctx context.Context, id domain.GameID, name string) (
 
 // Authenticate implements ports.GameService.
 func (s *Service) Authenticate(ctx context.Context, id domain.GameID, token string) (domain.PlayerID, error) {
-	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
+	rec, err := s.load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return "", err
 	}
@@ -169,7 +185,7 @@ func (s *Service) Authenticate(ctx context.Context, id domain.GameID, token stri
 
 // Summary implements ports.GameService.
 func (s *Service) Summary(ctx context.Context, id domain.GameID) (domain.GameSummary, error) {
-	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
+	rec, err := s.load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return domain.GameSummary{}, err
 	}
@@ -178,7 +194,7 @@ func (s *Service) Summary(ctx context.Context, id domain.GameID) (domain.GameSum
 
 // View implements ports.GameService.
 func (s *Service) View(ctx context.Context, id domain.GameID, player domain.PlayerID) (domain.PlayerView, error) {
-	rec, err := s.repo.Load(ctx, idgen.NormalizeCodeAs(id))
+	rec, err := s.load(ctx, idgen.NormalizeCodeAs(id))
 	if err != nil {
 		return domain.PlayerView{}, err
 	}

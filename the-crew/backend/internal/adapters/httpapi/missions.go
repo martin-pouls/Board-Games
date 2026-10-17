@@ -8,11 +8,11 @@ import (
 	"github.com/martin-pouls/the-crew/backend/internal/core/domain"
 )
 
-// newMissionsHandler serves GET /api/missions: the static catalogue of the 50 missions for the
+// newMissionsHandler serves GET /api/missions: the static mission catalogue of the edition for the
 // lobby's mission picker. It is the same for everybody, so it is encoded once. Like the whole
 // app it sits behind the gate; it needs no game token.
-func newMissionsHandler() http.Handler {
-	body, err := json.Marshal(apidto.Catalogue(domain.EditionPlanetNine))
+func newMissionsHandler(e domain.Edition) http.Handler {
+	body, err := json.Marshal(apidto.Catalogue(e))
 	if err != nil {
 		panic("httpapi: encode mission catalogue: " + err.Error())
 	}
