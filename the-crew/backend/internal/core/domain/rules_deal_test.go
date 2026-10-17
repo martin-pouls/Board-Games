@@ -106,7 +106,7 @@ func TestRulesNewAttemptNewDeal(t *testing.T) {
 	must(t, g.StartMission(alice, rand.New(rand.NewPCG(1, 1))))
 	first := g.Attempt.Members[0].Hand
 	must(t, g.GiveUp(alice))
-	must(t, g.NextAttempt(alice, rand.New(rand.NewPCG(2, 2))))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, rand.New(rand.NewPCG(2, 2))))
 	if g.Attempt.Number != 2 || slices.Equal(first, g.Attempt.Members[0].Hand) {
 		t.Fatalf("attempt %d hands equal %v", g.Attempt.Number, slices.Equal(first, g.Attempt.Members[0].Hand))
 	}

@@ -57,8 +57,8 @@ func TestGiveUpAndNextAttempt(t *testing.T) {
 	}
 	mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.GiveUp(bob) })
 	mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextMission(alice, noShuffle{}) })
-	mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextAttempt(bob, noShuffle{}) })
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextAttempt(bob, NextAttemptChoice{}, noShuffle{}) })
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	if g.Phase != PhasePlaying || g.Attempt.Number != 2 || g.Attempt.Result != nil {
 		t.Fatalf("phase %s attempt %d", g.Phase, g.Attempt.Number)
 	}
@@ -66,7 +66,7 @@ func TestGiveUpAndNextAttempt(t *testing.T) {
 	if e := g.Logbook[1]; e.Attempts != 2 || !e.Completed || e.Total() != 2 {
 		t.Fatalf("logbook %+v", e)
 	}
-	mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextAttempt(alice, noShuffle{}) })
+	mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
 	must(t, g.NextMission(alice, noShuffle{}))
 	if g.Mission != 2 || g.Attempt.Number != 1 || g.Phase != PhasePlaying {
 		t.Fatalf("mission %d attempt %d", g.Mission, g.Attempt.Number)
@@ -88,7 +88,7 @@ func TestDistressCountsInLogbook(t *testing.T) {
 	if v, _ := g.ViewFor(bob); !v.Attempt.Distress {
 		t.Fatal("the signal stays active until the mission is completed")
 	}
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	if g.Attempt.DistressDecided {
 		t.Fatal("a new attempt may pass again")
 	}
@@ -123,7 +123,7 @@ func TestBackToLobbyAndReplay(t *testing.T) {
 		t.Fatalf("replay attempt %d", g.Attempt.Number)
 	}
 	lose(t, g)
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	if g.Attempt.Number != 2 {
 		t.Fatalf("replay attempt %d", g.Attempt.Number)
 	}
@@ -175,7 +175,7 @@ func TestEndGameFromDebrief(t *testing.T) {
 	if g.Phase != PhaseEnded {
 		t.Fatal("ended")
 	}
-	mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextAttempt(alice, noShuffle{}) })
+	mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
 }
 
 func TestCloneIsDeep(t *testing.T) {

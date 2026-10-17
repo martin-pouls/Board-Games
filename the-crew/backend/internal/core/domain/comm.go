@@ -34,6 +34,9 @@ func StatementFor(hand []Card, c Card) (pos Position, ok bool) {
 // CanCommunicate reports why seat may not communicate now, or nil. Communication is open to a
 // human who has not communicated in this attempt and is not silenced, during StepPlay before any
 // card of the current trick is played, from the mission's first allowed trick on (rules §8).
+// Deep Sea: never without communication; in rapture of the deep while a shared token is left,
+// as often as the member likes; in 10/13 only before the first trick once the tasks went to
+// another member (deep-sea/rules.md §4).
 func (g *Game) CanCommunicate(seat int) error {
 	if g.Phase != PhasePlaying {
 		return fmt.Errorf("%w: no attempt is running", ErrWrongPhase)
@@ -44,7 +47,11 @@ func (g *Game) CanCommunicate(seat int) error {
 		return fmt.Errorf("%w: the attempt waits for %s", ErrWrongStep, a.Step)
 	case !a.validSeat(seat) || a.Members[seat].Dummy:
 		return fmt.Errorf("%w: seat %d", ErrInvalidSeat, seat)
-	case a.Comms[seat] != nil:
+	case a.Comm == CommNone:
+		return fmt.Errorf("%w: no communication in this mission", ErrCannotCommunicate)
+	case a.Comm == CommRapture && a.TokensLeft() == 0:
+		return fmt.Errorf("%w: no shared token is left", ErrCannotCommunicate)
+	case a.Comm != CommRapture && len(a.Comms[seat]) > 0:
 		return fmt.Errorf("%w: once per attempt", ErrAlreadyCommunicated)
 	case a.Silenced == seat:
 		return fmt.Errorf("%w: you are silenced in this attempt", ErrCannotCommunicate)
@@ -52,6 +59,8 @@ func (g *Game) CanCommunicate(seat int) error {
 		return fmt.Errorf("%w: only before a trick", ErrCannotCommunicate)
 	case len(a.Tricks)+1 < g.MissionDef().Comm.FromTrick:
 		return fmt.Errorf("%w: not before trick %d", ErrCannotCommunicate, g.MissionDef().Comm.FromTrick)
+	case g.onlyBeforeFirstTrick() && len(a.Tricks) > 0:
+		return fmt.Errorf("%w: only before the first trick", ErrCannotCommunicate)
 	}
 	return nil
 }
@@ -77,29 +86,47 @@ func (g *Game) Communicate(by PlayerID, card Card, pos Position) error {
 	if card.IsTrump() {
 		return fmt.Errorf("%w: trump cards cannot be communicated", ErrCannotCommunicate)
 	}
+	if a.communicates(seat, card) {
+		return fmt.Errorf("%w: %s is already on the table", ErrCannotCommunicate, card)
+	}
 	truth, ok := StatementFor(hand, card)
 	if !ok {
 		return fmt.Errorf("%w: %s is neither your highest, lowest nor only %s card", ErrInvalidPosition, card, card.Suit)
 	}
-	if g.MissionDef().Comm.DeadZone {
+	if g.deadZone() {
 		pos = PosHidden
 	} else if pos != truth {
 		return fmt.Errorf("%w: %s is not your %s %s card", ErrInvalidPosition, card, pos, card.Suit)
 	}
-	a.Comms[seat] = &Communication{Card: card, Position: pos, Trick: len(a.Tricks) + 1}
+	a.Comms[seat] = append(a.Comms[seat], Communication{Card: card, Position: pos, Trick: len(a.Tricks) + 1})
 	g.emit(Communicated{Seat: seat, Card: card, Position: pos})
 	g.commit()
 	return nil
 }
 
-// CommunicatedCard returns seat's communication while its card is still in the hand (on the
-// table in front of the member), else nil.
-func (a *Attempt) CommunicatedCard(seat int) *Communication {
-	c := a.Comms[seat]
-	if c == nil || !slices.Contains(a.Members[seat].Hand, c.Card) {
-		return nil
+// CommunicatedCards returns seat's communications whose card is still in the hand (on the table
+// in front of the member), in order. Never nil.
+func (a *Attempt) CommunicatedCards(seat int) []Communication {
+	out := []Communication{}
+	for _, c := range a.Comms[seat] {
+		if slices.Contains(a.Members[seat].Hand, c.Card) {
+			out = append(out, c)
+		}
 	}
-	return c
+	return out
+}
+
+// CommunicatedCard returns seat's first communication whose card is still in the hand, else nil.
+func (a *Attempt) CommunicatedCard(seat int) *Communication {
+	if cs := a.CommunicatedCards(seat); len(cs) > 0 {
+		return &cs[0]
+	}
+	return nil
+}
+
+// communicates reports whether card is one of seat's communicated cards on the table.
+func (a *Attempt) communicates(seat int, card Card) bool {
+	return slices.ContainsFunc(a.CommunicatedCards(seat), func(c Communication) bool { return c.Card == card })
 }
 
 // CanSendDistress reports why the commander (seat) may not send or skip the distress signal now,
@@ -236,7 +263,7 @@ func (a *Attempt) draw(rng RNG) {
 		from := a.neighbour(s, DirRight)
 		var pool []Card
 		for _, c := range a.Members[from].Hand {
-			if cm := a.CommunicatedCard(from); cm == nil || cm.Card != c {
+			if !a.communicates(from, c) {
 				pool = append(pool, c)
 			}
 		}
@@ -304,8 +331,10 @@ func (g *Game) Actors() []int {
 	}
 	a := g.Attempt
 	switch a.Step {
-	case StepAdjustTokens, StepPick:
+	case StepAdjustTokens, StepPick, StepAssign:
 		return []int{a.Commander}
+	case StepPredict:
+		return []int{a.actorFor(a.Tasks[g.pendingItem().index].Owner())}
 	case StepPoll:
 		var out []int
 		for _, s := range a.pollers() {
@@ -323,7 +352,7 @@ func (g *Game) Actors() []int {
 		}
 		return out
 	case StepDraft:
-		return []int{a.actorFor(a.DraftTurn())}
+		return []int{a.actorFor(g.draftTurn())}
 	case StepPlay:
 		return []int{a.actorFor(a.turn())}
 	}

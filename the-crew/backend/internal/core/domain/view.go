@@ -8,8 +8,9 @@ import (
 )
 
 // PlayerView is the projection of a game for one player. Before the debrief it never exposes
-// another human's hand, the dummy's hidden cards, the deck, face-down tasks, other players' pass
-// choices or another player's side of an exchange.
+// another human's hand, the dummy's hidden cards, the deck (nor the task deck), face-down tasks,
+// another member's hidden prediction, other players' pass choices or another player's side of an
+// exchange.
 type PlayerView struct {
 	GameID      GameID
 	Revision    int64
@@ -58,21 +59,34 @@ type AttemptView struct {
 	Distress    bool         // the distress signal is active: used for this unfinished mission (rules §9)
 	Actions     Actions      // what the viewer may do now besides the step's action
 	Result      *AttemptResult
+
+	// Deep Sea.
+	Comm               CommMode // this attempt's communication mode
+	Terrain            *Card    // unfamiliar terrain: the card that picked the mode
+	TokensLeft         int      // rapture of the deep: shared sonar tokens left, else -1
+	CommFirstTrickOnly bool     // 10, 13: communication ends with the first trick
+	Chosen             []int    // the members the captain chose to take the tasks
+	Stage, Stages      int      // Q1: the stage (0-based) and how many there are; Stages 0 without
+	Redeals            int      // automatic re-deals before this attempt
+	Takeable           []int    // StepDraft, for the member to take (or the captain for the dummy): the tasks they may take
+	Assignable         [][]int  // StepAssign, for the captain: per task, the seats it may go to
+	Predict            int      // StepPredict: the task being predicted, else -1
 }
 
 // MemberView is a seat in the attempt.
 type MemberView struct {
-	Seat          int
-	PlayerID      PlayerID // "" for the dummy
-	Name          string   // "" for the dummy
-	Dummy         bool
-	CardCount     int
-	TricksWon     int
-	Communication *Communication // shown while the card is still held
-	Communicated  bool
-	Stacks        []StackView // the dummy's stacks
-	MustAct       bool
-	Cards         []Card // debrief only: the cards still held (all hands are revealed)
+	Seat           int
+	PlayerID       PlayerID // "" for the dummy
+	Name           string   // "" for the dummy
+	Dummy          bool
+	CardCount      int
+	TricksWon      int
+	Communication  *Communication  // the first communication shown (its card is still held)
+	Communications []Communication // all shown (rapture of the deep allows several)
+	Communicated   bool
+	Stacks         []StackView // the dummy's stacks
+	MustAct        bool
+	Cards          []Card // debrief only: the cards still held (all hands are revealed)
 }
 
 // StackView is a dummy stack: the face-up card (nil once played) and whether a hidden card lies
@@ -82,7 +96,7 @@ type StackView struct {
 	Hidden bool
 }
 
-// TaskView is a task. Card is nil while the task is face down.
+// TaskView is a task. Card is nil while the task is face down (and for Deep Sea task cards).
 type TaskView struct {
 	ID       int
 	Card     *Card
@@ -90,6 +104,13 @@ type TaskView struct {
 	Owner    int // seat or OwnerUnassigned
 	Status   Status
 	FaceDown bool
+
+	// Deep Sea: the task card (0 and nil while face down) and its difficulty for this crew size.
+	// A hidden prediction (91) of another member shows Count -1 with Predicted true.
+	CardID     int
+	Difficulty int
+	Objective  *Objective
+	Predicted  bool
 }
 
 // ObjectiveView is a special objective with its status.
@@ -124,6 +145,8 @@ type Actions struct {
 	Communicate  []CommOption // empty unless the viewer may communicate now
 	SendDistress bool         // the viewer is the commander and may send or skip the signal
 	Handover     bool         // the viewer is the commander and may hand over a task
+	Pass         bool         // Deep Sea: the viewer may pass in the draft now
+	ReplaceTasks bool         // Deep Sea: the viewer is the captain and may replace displayed tasks
 }
 
 // CommOption is a card the viewer may communicate, with the true statement (PosHidden in a dead
@@ -196,7 +219,20 @@ func (g *Game) attemptView(seat int) *AttemptView {
 		TrickLeader: a.Trick.Leader,
 		Distress:    g.distressActive(),
 		Result:      cloneResult(a.Result),
+		Comm:        a.Comm,
+		Terrain:     cloneCard(a.Terrain),
+		TokensLeft:  a.TokensLeft(),
+		Chosen:      slices.Clone(a.Chosen),
+		Stage:       a.Stage,
+		Redeals:     a.Redeals,
+		Takeable:    []int{},
+		Assignable:  [][]int{},
+		Predict:     -1,
 	}
+	if base, ok := MissionFor(g.Edition, g.Mission); ok {
+		v.Stages = len(base.Stages)
+	}
+	v.CommFirstTrickOnly = g.onlyBeforeFirstTrick()
 	if v.Trick == nil {
 		v.Trick = []Play{}
 	}
@@ -210,7 +246,16 @@ func (g *Game) attemptView(seat int) *AttemptView {
 			v.Playable = g.LegalCards(v.Turn)
 		}
 	case StepDraft:
-		v.Turn = a.DraftTurn()
+		v.Turn = g.draftTurn()
+		if a.actorFor(v.Turn) == seat {
+			v.Takeable = g.Takeable()
+		}
+	case StepAssign:
+		if seat == a.Commander {
+			v.Assignable = g.Assignable()
+		}
+	case StepPredict:
+		v.Predict = g.pendingItem().index
 	}
 	if n := len(a.Tricks); n > 0 {
 		last := a.Tricks[n-1]
@@ -231,14 +276,15 @@ func (g *Game) attemptView(seat int) *AttemptView {
 			Dummy:        mem.Dummy,
 			CardCount:    mem.CardCount(),
 			TricksWon:    won[i],
-			Communicated: a.Comms[i] != nil,
+			Communicated: len(a.Comms[i]) > 0,
 			MustAct:      slices.Contains(actors, i),
 		}
 		if p, _, ok := g.PlayerByID(mem.PlayerID); ok {
 			mv.Name = p.Name
 		}
-		if cm := a.CommunicatedCard(i); cm != nil {
-			c := *cm
+		mv.Communications = a.CommunicatedCards(i)
+		if len(mv.Communications) > 0 {
+			c := mv.Communications[0]
 			mv.Communication = &c
 		}
 		if mem.Dummy {
@@ -256,10 +302,21 @@ func (g *Game) attemptView(seat int) *AttemptView {
 	statuses, objStatuses := a.Statuses()
 	v.Tasks = make([]TaskView, len(a.Tasks))
 	for i, t := range a.Tasks {
-		tv := TaskView{ID: t.ID, Token: t.Token, Owner: t.Owner(), Status: statuses[i], FaceDown: t.FaceDown}
-		if !t.FaceDown || over {
+		tv := TaskView{ID: t.ID, Token: t.Token, Owner: t.Owner(), Status: statuses[i], FaceDown: t.FaceDown, Difficulty: t.Difficulty}
+		switch {
+		case t.FaceDown && !over:
+		case t.CardID == 0:
 			c := t.Card()
 			tv.Card = &c
+		default:
+			o := t.Objective.clone()
+			tv.CardID, tv.Objective = t.CardID, &o
+			if o.Kind == KindPredict {
+				tv.Predicted = o.Count >= 0
+				if o.Hidden && !over && a.actorFor(t.Owner()) != seat {
+					o.Count = -1
+				}
+			}
 		}
 		v.Tasks[i] = tv
 	}
@@ -294,8 +351,8 @@ func (g *Game) attemptView(seat int) *AttemptView {
 	if !over {
 		if g.CanCommunicate(seat) == nil {
 			for _, c := range a.Members[seat].Hand {
-				if pos, ok := StatementFor(a.Members[seat].Hand, c); ok {
-					if m.Comm.DeadZone {
+				if pos, ok := StatementFor(a.Members[seat].Hand, c); ok && !a.communicates(seat, c) {
+					if g.deadZone() {
 						pos = PosHidden
 					}
 					v.Actions.Communicate = append(v.Actions.Communicate, CommOption{Card: c, Position: pos})
@@ -304,6 +361,8 @@ func (g *Game) attemptView(seat int) *AttemptView {
 		}
 		v.Actions.SendDistress = g.CanSendDistress(seat) == nil
 		v.Actions.Handover = g.CanHandover(seat) == nil
+		v.Actions.ReplaceTasks = g.CanReplaceTasks(seat) == nil
+		v.Actions.Pass = a.Step == StepDraft && a.actorFor(g.draftTurn()) == seat && g.CanPass() == nil
 	}
 	return v
 }

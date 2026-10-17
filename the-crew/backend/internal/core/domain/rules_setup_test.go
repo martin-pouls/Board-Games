@@ -267,7 +267,7 @@ func TestRulesDistressLogbook(t *testing.T) {
 		must(t, g.ChoosePassCard(bbID(g, s), bbNonTrump(g, s)))
 	}
 	must(t, g.GiveUp(alice))
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	bbDraft(t, g)
 	// allowed again on a later attempt, and not forced
 	if g.CanSendDistress(g.Attempt.Commander) != nil {

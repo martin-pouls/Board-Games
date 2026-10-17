@@ -171,7 +171,7 @@ func (g *Game) StartMission(by PlayerID, rng RNG) error {
 	if len(g.Players) < MinPlayers {
 		return fmt.Errorf("%w: a mission needs %d to %d players", ErrNotEnoughPlayers, MinPlayers, MaxPlayers)
 	}
-	g.startAttempt(g.firstAttemptNumber(), rng)
+	g.startAttempt(g.firstAttemptNumber(), 0, nil, rng)
 	g.commit()
 	return nil
 }
@@ -187,16 +187,51 @@ func (g *Game) firstAttemptNumber() int {
 	return e.Attempts + 1
 }
 
-// NextAttempt deals a new attempt of the same mission after a lost attempt (host, debrief).
-// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (the attempt was won).
-func (g *Game) NextAttempt(by PlayerID, rng RNG) error {
+// NextAttemptChoice is what the host chooses for the next attempt (Deep Sea; Planet Nine always
+// draws new tasks and counts every attempt).
+type NextAttemptChoice struct {
+	NewTasks  bool // draw new tasks instead of keeping the last attempt's (deep-sea/rules.md §3)
+	Uncounted bool // the lost attempt does not count in the logbook (an unavoidable failure)
+}
+
+// NextAttempt deals a new attempt of the same mission after a lost attempt, or the next stage
+// after a won stage (Q1) (host, debrief).
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (the mission is
+// completed; not counting a won attempt), ErrNotAllowed (Deep Sea choices in Planet Nine).
+func (g *Game) NextAttempt(by PlayerID, choice NextAttemptChoice, rng RNG) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if g.Attempt.Result.Success {
+	a, m := g.Attempt, g.MissionDef()
+	won := a.Result.Success
+	switch {
+	case won && !a.hasNextStage(m):
 		return fmt.Errorf("%w: the mission is completed", ErrInvalidResultChoice)
+	case won && choice.Uncounted:
+		return fmt.Errorf("%w: only a lost attempt can be left uncounted", ErrInvalidResultChoice)
+	case g.Edition != EditionDeepSea && choice != (NextAttemptChoice{}):
+		return fmt.Errorf("%w: only in Deep Sea", ErrNotAllowed)
 	}
-	g.startAttempt(g.Attempt.Number+1, rng)
+	number, stage := a.Number+1, a.Stage
+	if won {
+		stage++
+	}
+	var keep []int
+	if !won && !choice.NewTasks && m.FixedTasks == nil {
+		for _, t := range a.Tasks {
+			if t.CardID > 0 {
+				keep = append(keep, t.CardID)
+			}
+		}
+	}
+	if choice.Uncounted {
+		number = a.Number
+		if e := g.Logbook[g.Mission]; !e.Completed && !m.Uncounted && e.Attempts > 0 {
+			e.Attempts--
+			g.Logbook[g.Mission] = e
+		}
+	}
+	g.startAttempt(number, stage, keep, rng)
 	g.commit()
 	return nil
 }
@@ -208,14 +243,15 @@ func (g *Game) NextMission(by PlayerID, rng RNG) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if !g.Attempt.Result.Success {
+	if !g.Attempt.Result.Success || g.Attempt.hasNextStage(g.MissionDef()) {
 		return fmt.Errorf("%w: the mission is not completed", ErrInvalidResultChoice)
 	}
 	if _, ok := MissionFor(g.Edition, g.Mission+1); !ok {
 		return fmt.Errorf("%w: mission %d is the last one", ErrInvalidMission, g.Mission)
 	}
 	g.Mission++
-	g.startAttempt(g.firstAttemptNumber(), rng)
+	g.Attempt = nil
+	g.startAttempt(g.firstAttemptNumber(), 0, nil, rng)
 	g.commit()
 	return nil
 }
@@ -227,7 +263,7 @@ func (g *Game) BackToLobby(by PlayerID) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if r := g.Attempt.Result; r != nil && r.Success {
+	if r := g.Attempt.Result; r != nil && r.Success && !g.Attempt.hasNextStage(g.MissionDef()) {
 		g.Mission = g.nextUnfinished()
 	}
 	g.Phase = PhaseLobby

@@ -104,7 +104,7 @@ func halfPlayedStack(a *domain.Attempt) bool {
 
 func communicated(a *domain.Attempt) bool {
 	for _, c := range a.Comms {
-		if c != nil {
+		if len(c) > 0 {
 			return true
 		}
 	}
@@ -215,7 +215,7 @@ func TestRoundTripNilAndEmpty(t *testing.T) {
 	g.Logbook = map[int]domain.LogEntry{3: {Attempts: 2, Distress: true, Completed: true}}
 	g.Attempt = &domain.Attempt{
 		Members:  []domain.Member{{PlayerID: "p1", Hand: []domain.Card{}}, {Dummy: true}},
-		Comms:    []*domain.Communication{nil, nil},
+		Comms:    [][]domain.Communication{nil, nil},
 		Silenced: -1,
 	}
 	assertRoundTrip(t, g)

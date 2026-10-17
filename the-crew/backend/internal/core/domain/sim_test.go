@@ -697,7 +697,7 @@ func (s *simRun) followUp(variant int) {
 
 	// Wrong-outcome and non-host calls are rejected without a change.
 	if r.Success {
-		s.try("nextAttempt(won)", func() error { return g.NextAttempt(host, rng) })
+		s.try("nextAttempt(won)", func() error { return g.NextAttempt(host, NextAttemptChoice{}, rng) })
 		if g.Phase != PhaseDebrief {
 			s.failf("NextAttempt after a win left the debrief")
 		}
@@ -723,7 +723,7 @@ func (s *simRun) followUp(variant int) {
 		case 0:
 			key("lost:nextAttempt")
 			want := g.Attempt.Number + 1
-			s.act("nextAttempt", func() error { return g.NextAttempt(host, rng) })
+			s.act("nextAttempt", func() error { return g.NextAttempt(host, NextAttemptChoice{}, rng) })
 			s.runAttempt(want)
 		case 1:
 			key("lost:backToLobby")

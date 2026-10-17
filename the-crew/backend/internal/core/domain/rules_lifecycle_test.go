@@ -62,12 +62,12 @@ func TestRulesLogbook(t *testing.T) {
 	if e := g.Logbook[1]; e.Attempts != 1 || e.Completed || e.Distress || e.Total() != 1 {
 		t.Fatalf("after attempt 1: %+v", e)
 	}
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	if g.Attempt.Number != 2 {
 		t.Fatalf("attempt %d", g.Attempt.Number)
 	}
 	must(t, g.GiveUp(alice))
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	bbDraft(t, g)
 	bbWin(t, g)
 	if e := g.Logbook[1]; e.Attempts != 3 || !e.Completed || e.Total() != 3 {
@@ -91,7 +91,7 @@ func TestRulesLogbook(t *testing.T) {
 	if e := g.Logbook[1]; e.Attempts != 3 || !e.Completed {
 		t.Fatalf("replay lost: %+v", e)
 	}
-	must(t, g.NextAttempt(alice, noShuffle{}))
+	must(t, g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}))
 	bbDraft(t, g)
 	bbWin(t, g)
 	if e := g.Logbook[1]; e.Attempts != 3 || !e.Completed || e.Distress {
@@ -160,7 +160,7 @@ func TestRulesAfterAttempt(t *testing.T) {
 		g := lost(t)
 		before := g.Attempt.Members[0].Hand
 		g.PullEvents()
-		must(t, g.NextAttempt(alice, &fixedIntN{}))
+		must(t, g.NextAttempt(alice, NextAttemptChoice{}, &fixedIntN{}))
 		a := g.Attempt
 		if g.Phase != PhasePlaying || a.Number != 2 || len(a.Tricks) != 0 || a.Result != nil || a.Step != StepDraft {
 			t.Fatalf("phase %s attempt %+v", g.Phase, a)
@@ -175,7 +175,7 @@ func TestRulesAfterAttempt(t *testing.T) {
 	})
 	t.Run("next attempt is refused after a win", func(t *testing.T) {
 		g := won(t)
-		mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextAttempt(alice, noShuffle{}) })
+		mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
 	})
 	t.Run("next mission after a win", func(t *testing.T) {
 		g := won(t)
@@ -209,12 +209,12 @@ func TestRulesAfterAttempt(t *testing.T) {
 		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob) })
 		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.EndGame(bob) })
 		g = lost(t)
-		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextAttempt(bob, noShuffle{}) })
-		mustFail(t, g, ErrUnknownPlayer, func(g *Game) error { return g.NextAttempt("nobody", noShuffle{}) })
+		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextAttempt(bob, NextAttemptChoice{}, noShuffle{}) })
+		mustFail(t, g, ErrUnknownPlayer, func(g *Game) error { return g.NextAttempt("nobody", NextAttemptChoice{}, noShuffle{}) })
 	})
 	t.Run("wrong phase", func(t *testing.T) {
 		g := startMission(t, 4, 1)
-		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextAttempt(alice, noShuffle{}) })
+		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextMission(alice, noShuffle{}) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.BackToLobby(alice) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.EndGame(alice) })

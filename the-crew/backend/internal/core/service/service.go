@@ -284,7 +284,7 @@ func (s *Service) GiveUp(ctx context.Context, id domain.GameID, player domain.Pl
 
 // NextAttempt implements ports.GameService.
 func (s *Service) NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
-	return s.act(ctx, id, func(g *domain.Game) error { return g.NextAttempt(player, s.cfg.NewRNG()) })
+	return s.act(ctx, id, func(g *domain.Game) error { return g.NextAttempt(player, domain.NextAttemptChoice{}, s.cfg.NewRNG()) })
 }
 
 // NextMission implements ports.GameService.

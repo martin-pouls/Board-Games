@@ -32,4 +32,5 @@ var (
 	ErrInvalidDirection    = errors.New("invalid direction")
 	ErrInvalidTokenMove    = errors.New("invalid token move")
 	ErrInvalidResultChoice = errors.New("invalid result choice") // next attempt after a win, next mission after a loss
+	ErrInvalidPrediction   = errors.New("invalid prediction")    // Deep Sea: not 0 to the number of tricks
 )

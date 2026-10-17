@@ -58,7 +58,7 @@ func TestCommunicate(t *testing.T) {
 	}
 	must(t, g.Communicate(carol, c("y1"), PosOnly)) // before trick 2
 	playAll(t, g, "b2")
-	if a := g.Attempt; a.CommunicatedCard(1) != nil || a.Comms[1] == nil {
+	if a := g.Attempt; a.CommunicatedCard(1) != nil || len(a.Comms[1]) == 0 {
 		t.Fatal("b2 was played: no display, communication used")
 	}
 	v, _ := g.ViewFor(dave)
@@ -78,7 +78,7 @@ func TestCommunicateDeadZone(t *testing.T) {
 	g.Attempt.Members[3].Hand = cs("y2 y3 y4 t1")
 	mustFail(t, g, ErrInvalidPosition, func(g *Game) error { return g.Communicate(dave, c("y3"), PosHidden) }) // a middle card never qualifies
 	must(t, g.Communicate(dave, c("y2"), PosHighest))                                                          // the stated position is ignored
-	if cm := g.Attempt.Comms[3]; cm.Position != PosHidden {
+	if cm := g.Attempt.Comms[3][0]; cm.Position != PosHidden {
 		t.Fatalf("dead zone position %q", cm.Position)
 	}
 	v, _ := g.ViewFor(alice)

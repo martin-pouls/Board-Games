@@ -117,7 +117,8 @@ type attemptDTO struct {
 	Objectives      []objectiveDTO   `json:"objectives"`
 	Poll            *pollDTO         `json:"poll"`
 	Silenced        int              `json:"silenced"`
-	Comms           []*commDTO       `json:"comms"`
+	Comms           []*commDTO       `json:"comms"`               // per seat: the first communication
+	MoreComms       [][]commDTO      `json:"moreComms,omitempty"` // per seat: the further ones (rapture of the deep)
 	DistressDecided bool             `json:"distressDecided"`
 	Pass            *passDTO         `json:"pass"`
 	Exchange        *exchangeDTO     `json:"exchange"`
@@ -216,11 +217,14 @@ func attemptToDTO(a *domain.Attempt) *attemptDTO {
 		Members:         mapSlice(a.Members, memberToDTO),
 		Tasks:           mapSlice(a.Tasks, taskToDTO),
 		Objectives:      mapSlice(a.Objectives, objectiveToDTO),
-		Comms: mapSlice(a.Comms, func(c *domain.Communication) *commDTO {
-			return mapPtr(c, func(c domain.Communication) commDTO {
-				return commDTO{Card: cardToDTO(c.Card), Position: string(c.Position), Trick: c.Trick}
-			})
+		Comms: mapSlice(a.Comms, func(cs []domain.Communication) *commDTO {
+			if len(cs) == 0 {
+				return nil
+			}
+			c := commToDTO(cs[0])
+			return &c
 		}),
+		MoreComms: moreCommsToDTO(a.Comms),
 		Tricks: mapSlice(a.Tricks, func(t domain.TrickRecord) trickRecordDTO {
 			return trickRecordDTO{Leader: t.Leader, Plays: mapSlice(t.Plays, playToDTO), Winner: t.Winner}
 		}),
@@ -320,19 +324,15 @@ func attemptFromDTO(d *attemptDTO) *domain.Attempt {
 		return nil
 	}
 	return &domain.Attempt{
-		Number:     d.Number,
-		Members:    mapSlice(d.Members, memberFromDTO),
-		Commander:  d.Commander,
-		Step:       domain.Step(d.Step),
-		Tasks:      mapSlice(d.Tasks, taskFromDTO),
-		Objectives: mapSlice(d.Objectives, objectiveFromDTO),
-		Poll:       mapPtr(d.Poll, func(p pollDTO) domain.Poll { return domain.Poll{Answers: mapSlice(p.Answers, copyBool)} }),
-		Silenced:   d.Silenced,
-		Comms: mapSlice(d.Comms, func(c *commDTO) *domain.Communication {
-			return mapPtr(c, func(c commDTO) domain.Communication {
-				return domain.Communication{Card: cardFromDTO(c.Card), Position: domain.Position(c.Position), Trick: c.Trick}
-			})
-		}),
+		Number:          d.Number,
+		Members:         mapSlice(d.Members, memberFromDTO),
+		Commander:       d.Commander,
+		Step:            domain.Step(d.Step),
+		Tasks:           mapSlice(d.Tasks, taskFromDTO),
+		Objectives:      mapSlice(d.Objectives, objectiveFromDTO),
+		Poll:            mapPtr(d.Poll, func(p pollDTO) domain.Poll { return domain.Poll{Answers: mapSlice(p.Answers, copyBool)} }),
+		Silenced:        d.Silenced,
+		Comms:           commsFromDTO(d.Comms, d.MoreComms),
 		DistressDecided: d.DistressDecided,
 		Pass: mapPtr(d.Pass, func(p passDTO) domain.Pass {
 			return domain.Pass{Direction: domain.Direction(p.Direction), Chosen: mapSlice(p.Chosen, cardPtrFromDTO)}
@@ -350,4 +350,43 @@ func attemptFromDTO(d *attemptDTO) *domain.Attempt {
 			return domain.AttemptResult{Success: r.Success, Reason: domain.Reason(r.Reason), Task: r.Task, Objective: r.Objective, Trick: r.Trick, Seat: r.Seat}
 		}),
 	}
+}
+
+func commToDTO(c domain.Communication) commDTO {
+	return commDTO{Card: cardToDTO(c.Card), Position: string(c.Position), Trick: c.Trick}
+}
+
+func commFromDTO(c commDTO) domain.Communication {
+	return domain.Communication{Card: cardFromDTO(c.Card), Position: domain.Position(c.Position), Trick: c.Trick}
+}
+
+// moreCommsToDTO returns each seat's communications after the first, or nil if there are none.
+func moreCommsToDTO(comms [][]domain.Communication) [][]commDTO {
+	var out [][]commDTO
+	for i, cs := range comms {
+		if len(cs) < 2 {
+			continue
+		}
+		if out == nil {
+			out = make([][]commDTO, len(comms))
+		}
+		out[i] = mapSlice(cs[1:], commToDTO)
+	}
+	return out
+}
+
+// commsFromDTO joins the first and the further communications per seat. Snapshots before Deep
+// Sea only have the first.
+func commsFromDTO(first []*commDTO, more [][]commDTO) [][]domain.Communication {
+	out := make([][]domain.Communication, len(first))
+	for i, c := range first {
+		if c == nil {
+			continue
+		}
+		out[i] = []domain.Communication{commFromDTO(*c)}
+		if i < len(more) {
+			out[i] = append(out[i], mapSlice(more[i], commFromDTO)...)
+		}
+	}
+	return out
 }

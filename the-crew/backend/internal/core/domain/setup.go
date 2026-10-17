@@ -12,8 +12,11 @@ import (
 //  2. the mission's picks: the silenced member (11) and the roles (50): StepPick; the chosen
 //     member of an objective (5, 33, 41): StepPoll, then StepPick;
 //  3. the task distribution: open: StepDraft; commander's decision: StepPoll, then StepPick;
-//     commander's distribution: per task, reveal, StepPoll, StepPick;
-//  4. StepPlay.
+//     commander's distribution: per task, reveal, StepPoll, StepPick; Deep Sea: the draft with
+//     passing (StepDraft), one member (StepPick), volunteers (StepPoll, StepPick, and for two of
+//     them StepAssign), free selection (StepAssign);
+//  4. Deep Sea: the predictions, one task after the other: StepPredict;
+//  5. StepPlay.
 //
 // Only Step and the open Poll are stored; which item is pending is derived by nextItem.
 
@@ -29,6 +32,10 @@ const (
 	itemDraft      //
 	itemDecision   //
 	itemDistribute // index: the task
+	itemOneMember  // Deep Sea 6
+	itemVolunteer  // Deep Sea 10, 13, 14–16, 26: poll, then the captain chooses
+	itemAssign     // Deep Sea: free selection, the split of 26
+	itemPredict    // index: the task
 )
 
 type setupItem struct {
@@ -46,6 +53,8 @@ const (
 	PickObjective  SetupPick = "objective"  // one seat other than the commander
 	PickDecision   SetupPick = "decision"   // one seat other than the commander receives all tasks
 	PickDistribute SetupPick = "distribute" // any seat receives the revealed task
+	PickOneMember  SetupPick = "oneMember"  // Deep Sea 6: any seat receives all tasks
+	PickVolunteers SetupPick = "volunteers" // Deep Sea: Volunteers seats (one: it receives all tasks)
 )
 
 // nextItem returns the first setup item still pending.
@@ -74,8 +83,22 @@ func (a *Attempt) nextItem(m MissionDef) setupItem {
 			return setupItem{kind: itemDecision}
 		case DistCommanderDistribution:
 			return setupItem{kind: itemDistribute, index: i}
+		case DistOneMember:
+			return setupItem{kind: itemOneMember}
+		case DistCaptainOrVolunteer, DistVolunteers:
+			if a.Chosen == nil {
+				return setupItem{kind: itemVolunteer}
+			}
+			return setupItem{kind: itemAssign}
+		case DistFree:
+			return setupItem{kind: itemAssign}
 		}
 		return setupItem{kind: itemDraft}
+	}
+	for i, t := range a.Tasks {
+		if t.Objective.Kind == KindPredict && t.Objective.Count < 0 {
+			return setupItem{kind: itemPredict, index: i}
+		}
 	}
 	return setupItem{kind: itemDone}
 }
@@ -97,6 +120,10 @@ func (g *Game) Pick() SetupPick {
 		return PickDecision
 	case itemDistribute:
 		return PickDistribute
+	case itemOneMember:
+		return PickOneMember
+	case itemVolunteer:
+		return PickVolunteers
 	}
 	return PickNone
 }
@@ -114,16 +141,21 @@ func (g *Game) advanceSetup() {
 	switch it.kind {
 	case itemTokens:
 		a.Step = StepAdjustTokens
-	case itemSilence, itemRoles:
+	case itemSilence, itemRoles, itemOneMember:
 		a.Step = StepPick
-	case itemChosen, itemDecision:
+	case itemChosen, itemDecision, itemVolunteer:
 		g.openPoll()
+	case itemAssign:
+		a.Step = StepAssign
+	case itemPredict:
+		a.Step = StepPredict
 	case itemDistribute:
 		a.Tasks[it.index].FaceDown = false
 		g.openPoll()
 	case itemDraft:
 		a.Step = StepDraft
 	case itemDone:
+		a.setQuotas()
 		a.Step = StepPlay
 		a.Trick = Trick{Leader: a.Commander}
 	}
@@ -239,9 +271,13 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 		return err
 	}
 	it := g.pendingItem()
+	m := g.MissionDef()
 	want := 1
-	if it.kind == itemRoles {
+	switch {
+	case it.kind == itemRoles:
 		want = 2
+	case it.kind == itemVolunteer && m.Volunteers > 1:
+		want = m.Volunteers
 	}
 	if len(seats) != want {
 		return fmt.Errorf("%w: pick %d seat(s)", ErrInvalidSeat, want)
@@ -252,11 +288,11 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 		}
 	}
 	s := seats[0]
-	if it.kind == itemRoles && seats[0] == seats[1] {
-		return fmt.Errorf("%w: the roles need two different members", ErrInvalidSeat)
+	if want == 2 && seats[0] == seats[1] {
+		return fmt.Errorf("%w: pick two different members", ErrInvalidSeat)
 	}
 	for _, s := range seats {
-		if err := a.pickError(it, s); err != nil {
+		if err := a.pickError(m, it, s); err != nil {
 			return err
 		}
 	}
@@ -285,6 +321,14 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 	case itemDistribute:
 		a.Tasks[it.index].Objective.Owner = s
 		g.emit(TaskPicked{TaskID: it.index, Seat: s})
+	case itemOneMember:
+		a.Chosen = []int{s}
+		g.giveAll(s)
+	case itemVolunteer:
+		a.Chosen = slices.Clone(seats)
+		if want == 1 {
+			g.giveAll(s)
+		}
 	}
 	a.Poll = nil
 	g.advanceSetup()
@@ -293,8 +337,10 @@ func (g *Game) PickSeats(by PlayerID, seats []int) error {
 }
 
 // pickError reports why seat s may not be picked for the pending item, or nil.
-func (a *Attempt) pickError(it setupItem, s int) error {
+func (a *Attempt) pickError(m MissionDef, it setupItem, s int) error {
 	switch it.kind {
+	case itemOneMember, itemVolunteer:
+		return a.chooseError(m, s)
 	case itemSilence:
 		if a.Members[s].Dummy {
 			return fmt.Errorf("%w: only a human can be silenced", ErrInvalidSeat)
@@ -319,9 +365,9 @@ func (g *Game) Pickable() []int {
 	if g.Phase != PhasePlaying || a.Step != StepPick {
 		return out
 	}
-	it := g.pendingItem()
+	it, m := g.pendingItem(), g.MissionDef()
 	for s := range a.Members {
-		if a.pickError(it, s) == nil {
+		if a.pickError(m, it, s) == nil {
 			out = append(out, s)
 		}
 	}
@@ -373,12 +419,12 @@ func (g *Game) PickTask(by PlayerID, taskID int) error {
 		return err
 	}
 	a := g.Attempt
-	turn := a.DraftTurn()
+	turn := g.draftTurn()
 	if a.actorFor(turn) != seat {
 		return fmt.Errorf("%w: seat %d picks", ErrNotYourTurn, turn)
 	}
-	if !a.validTask(taskID) || a.Tasks[taskID].Owner() != OwnerUnassigned {
-		return fmt.Errorf("%w: %d", ErrInvalidTask, taskID)
+	if err := a.takeError(g.MissionDef(), turn, taskID); err != nil {
+		return err
 	}
 	a.Tasks[taskID].Objective.Owner = turn
 	g.emit(TaskPicked{TaskID: taskID, Seat: turn})

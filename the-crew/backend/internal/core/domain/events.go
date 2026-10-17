@@ -77,6 +77,19 @@ type AttemptEnded struct {
 	Reason  Reason
 }
 
+// Redealt: Deep Sea: the playing cards were dealt again Times times, because an alignment made a
+// task impossible (not an attempt).
+type Redealt struct{ Times int }
+
+// TaskReplaced: Deep Sea: the captain replaced task TaskID by another card of the same difficulty.
+type TaskReplaced struct{ TaskID int }
+
+// TaskPassed: Deep Sea: Seat passed in the draft.
+type TaskPassed struct{ Seat int }
+
+// Predicted: Deep Sea: Seat predicted Tricks tricks for task TaskID (-1: a hidden prediction).
+type Predicted struct{ TaskID, Seat, Tricks int }
+
 // BackInLobby: the host returned the crew to the lobby.
 type BackInLobby struct{}
 
@@ -100,5 +113,9 @@ func (CardPlayed) isEvent()      {}
 func (TrickWon) isEvent()        {}
 func (CardsDrawn) isEvent()      {}
 func (AttemptEnded) isEvent()    {}
+func (Redealt) isEvent()         {}
+func (TaskReplaced) isEvent()    {}
+func (TaskPassed) isEvent()      {}
+func (Predicted) isEvent()       {}
 func (BackInLobby) isEvent()     {}
 func (GameEnded) isEvent()       {}

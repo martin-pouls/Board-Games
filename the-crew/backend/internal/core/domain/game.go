@@ -62,6 +62,7 @@ type Game struct {
 	Mission   int              // the selected mission (lobby) or the one being played
 	Logbook   map[int]LogEntry // per mission number; never nil
 	Attempt   *Attempt         // nil in the lobby; kept in the debrief for the reveal
+	UsedTasks []int            // Deep Sea: task cards laid out in this session, sorted
 	Revision  int64            // 1 after NewGame; +1 per successful mutator
 	CreatedAt time.Time        // UTC, second precision
 	events    []Event          // pending, not persisted
@@ -76,6 +77,7 @@ func (g *Game) Clone() *Game {
 	c.Players = slices.Clone(g.Players)
 	c.Logbook = maps.Clone(g.Logbook)
 	c.Attempt = g.Attempt.clone()
+	c.UsedTasks = slices.Clone(g.UsedTasks)
 	// Events are immutable values whose slices are never shared with state, so a shallow slice
 	// copy is enough.
 	c.events = slices.Clone(g.events)
@@ -104,9 +106,13 @@ func (g *Game) IsHost(id PlayerID) bool {
 	return id != "" && id == g.HostID
 }
 
-// MissionDef returns the definition of the selected mission.
+// MissionDef returns the definition of the selected mission, with the objectives of the
+// attempt's stage (Q1).
 func (g *Game) MissionDef() MissionDef {
 	m, _ := MissionFor(g.Edition, g.Mission)
+	if g.Attempt != nil {
+		m = m.atStage(g.Attempt.Stage)
+	}
 	return m
 }
 
