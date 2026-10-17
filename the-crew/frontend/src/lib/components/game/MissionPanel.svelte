@@ -73,12 +73,9 @@
 			attempt.distress && { text: 'distress signal used' }
 		].filter((r): r is { text: string; title?: string } => !!r)
 	);
-	const hint = $derived(
-		mission?.faceDownTasks ? 'Win exactly as many tricks as the difficulty of your tasks' : ''
-	);
 </script>
 
-{#if attempt.objectives.length || rules.length || pool || terrain || hint}
+{#if attempt.objectives.length || rules.length || pool || terrain}
 	<section class="flex flex-col gap-1 rounded-xl bg-panel px-3 py-1.5" aria-label="Mission">
 		{#if terrain}
 			<p class="flex items-center gap-1.5 text-xs">
@@ -118,9 +115,6 @@
 					<li class="rounded-full bg-muted px-2 py-0.5" title={r.title}>{r.text}</li>
 				{/each}
 			</ul>
-		{/if}
-		{#if hint}
-			<p class="text-xs text-muted-foreground">{hint}</p>
 		{/if}
 		{#if attempt.objectives.length}
 			<ul class="flex flex-col gap-1 text-sm leading-snug">

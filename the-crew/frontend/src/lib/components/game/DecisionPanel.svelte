@@ -220,17 +220,21 @@
 		>
 			Play {cardLabel(selectedCard)}{forJarvis ? ` for ${terms.dummy}` : ''}
 		</Button>
-	{:else if attempt.step === 'draft' && mine && draftTask && attempt.takeable.includes(draftTask.id)}
+	{:else if attempt.step === 'draft' && mine && draftTask && (attempt.takeable.includes(draftTask.id) || attempt.actions.replaceTasks)}
 		<div class="flex gap-2">
-			<Button
-				class="h-10 flex-1 text-base"
-				{disabled}
-				onclick={() => run(() => client.pickTask(draftTask.id))}
-			>
-				Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
-					? ` for ${terms.dummy}`
-					: ''}
-			</Button>
+			{#if attempt.takeable.includes(draftTask.id)}
+				<Button
+					class="h-10 flex-1 text-base"
+					{disabled}
+					onclick={() => run(() => client.pickTask(draftTask.id))}
+				>
+					Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
+						? ` for ${terms.dummy}`
+						: ''}
+				</Button>
+			{:else}
+				<p class="mr-auto self-center text-sm text-muted-foreground">You cannot take this task.</p>
+			{/if}
 			{#if attempt.actions.replaceTasks}
 				<Button
 					class="h-10"
