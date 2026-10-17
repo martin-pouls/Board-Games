@@ -32,10 +32,15 @@ func terrainMode(c Card) CommMode {
 	return CommRapture
 }
 
-// newDeepSeaTask builds task id from task card card for the crew size.
+// newDeepSeaTask builds task id from task card card for the crew size. A face-down task (Q2)
+// has no condition of its own: only its difficulty counts.
 func newDeepSeaTask(id, card, members int, faceDown bool) Task {
 	tc, _ := TaskCardFor(card)
-	return Task{ID: id, Objective: tc.objectiveFor(members), FaceDown: faceDown, CardID: card, Difficulty: tc.DifficultyFor(members)}
+	o := tc.objectiveFor(members)
+	if faceDown {
+		o = Objective{Kind: KindNone, Owner: OwnerUnassigned}
+	}
+	return Task{ID: id, Objective: o, FaceDown: faceDown, CardID: card, Difficulty: tc.DifficultyFor(members)}
 }
 
 // notForCaptain reports whether the captain may not own task t (cards 4–6).

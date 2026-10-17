@@ -221,8 +221,12 @@ func (h History) trickNumber(t int) int {
 	return t
 }
 
-// Status evaluates o over h. Every objective still open after the last trick has failed.
+// Status evaluates o over h. Every objective still open after the last trick has failed. An
+// objective without an owner yet (during the setup) is open.
 func (o Objective) Status(h History) Status {
+	if o.Owner == OwnerUnassigned {
+		return StatusOpen
+	}
 	s := o.status(h)
 	if s == StatusOpen && h.over() {
 		return StatusFailed
