@@ -210,5 +210,6 @@ All questions are answered; the rules-level ones are in rules.md as **App decisi
 7. All card interpretations confirmed (rules.md §9).
 8. Tonoja works exactly like JARVIS (3-player difficulty column).
 
-One low-risk point to confirm at WP5: Q1 stage B is a new deal after stage A is won, and the captain
-again has to win the tricks (the sheet only says "B) Win exactly 3 tricks …").
+Q1 stage B (WP5): a new deal after stage A is won, the captain again has to win the tricks;
+recorded in rules.md §8. Local ports changed since the plan: the gate took 5178, so Deep Sea uses
+Vite 5179 (backend 8085).

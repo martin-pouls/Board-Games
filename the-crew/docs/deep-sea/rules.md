@@ -37,7 +37,13 @@ ones when the deck runs out.
 - **Passing:** allowed only if, at the start of the selection, there are fewer tasks than members
   (this includes the captain). After one round every task must be assigned, so a member may not pass
   when the remaining members could not take the remaining tasks.
-- **Captain comparison tasks** (cards 4–6): the captain may never take them.
+- **Captain comparison tasks** (cards 4–6): the captain may never take them. **App decision:** a
+  member who may take none of the remaining tasks (the captain facing only cards 4–6) passes, even
+  where passing is otherwise not allowed; the draft then goes on round after round until every task
+  is taken. The captain is never chosen to take all tasks (6, 10, 13, 14–16) when one of them is a
+  captain comparison task.
+- **Mission 19 App decision:** the captain's first task must be one of the highest difficulty among
+  the tasks the captain may take.
 - Mission rules may replace this (§8).
 - **Impossible combinations** (rulebook): if two displayed tasks can't both be met by different
   members and there are too few tasks for one member to take both, replace the most recently
@@ -50,6 +56,9 @@ ones when the deck runs out.
 - **Unavoidable failures** (rulebook rule of thumb: a loss you could not have avoided is not a failed
   attempt). **App decision:** after a loss the host may choose **don't count this attempt**; the
   logbook's attempt count stays as it was.
+- **Predictions (90, 91) App decision:** after the selection the owners predict one after the
+  other, in task order (the captain for Tonoja), 0 to the number of tricks. A hidden prediction is
+  seen only by its owner (and the captain for Tonoja) until the debrief.
 
 ## 4. Communication
 
@@ -103,6 +112,8 @@ card is turned up after a trick once the card on top of it is played.
 Source: fan mission sheet v1d. *D* = total difficulty. Every mission allows the distress signal.
 Free selection = the crew discusses who takes what (no talk about hands).
 **App decision:** the captain makes every "decide together" call in the app and assigns the tasks in free selection (as in Planet Nine); the crew coordinates outside the game.
+**App decision (numbering):** the side quests come after the epilogue in the app's mission list: Q1 is mission 42, Q2 mission 43 (shown as "Q1", "Q2").
+**App decision (Q1, confirmed at WP5):** stage B is a new deal after stage A is won, the captain (submarine 1) again has to win the tricks; a lost stage B is retried as stage B. With 2 players submarine 1 is set aside for a human (as submarine 4 otherwise), so Tonoja is never captain.
 
 | # | D | Comm | Selection / special rules |
 |---|---|---|---|

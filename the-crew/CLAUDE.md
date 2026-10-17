@@ -1,6 +1,8 @@
 # The Crew
 
-**The Crew: The Quest for Planet Nine** (Kosmos), cooperative trick-taking for 2–5 players with all 50 missions; with 2 players the dummy JARVIS joins. Common rules: root [CLAUDE.md](../CLAUDE.md). Rules: [docs/rules.md](docs/rules.md) (rules summary, mission table §14, App decisions). [docs/implementation-plan.md](docs/implementation-plan.md) explains the design and the outlook for *Mission Deep Sea* (§11).
+**The Crew: The Quest for Planet Nine** (Kosmos), cooperative trick-taking for 2–5 players with all 50 missions; with 2 players the dummy JARVIS joins. Common rules: root [CLAUDE.md](../CLAUDE.md). Rules: [docs/rules.md](docs/rules.md) (rules summary, mission table §14, App decisions). [docs/implementation-plan.md](docs/implementation-plan.md) explains the design.
+
+**Two editions, one codebase.** The same code is also deployed as **The Crew: Mission Deep Sea** at `/deep-sea/` ([../deep-sea/](../deep-sea/CLAUDE.md) holds only its deploy files). The edition is fixed per deployment by `EDITION` (`planetNine` | `deepSea`): at build time for the frontend (`__EDITION__`, `src/lib/edition.ts` for terms, `theme-deep-sea.css`; `npm run dev:deep-sea` on :5179), at runtime for the server (default port :8085, `data/deep-sea.db`; a game of the other edition is not found). Deep Sea rules, mission table and the 96 task cards: [docs/deep-sea/rules.md](docs/deep-sea/rules.md); design and work packages: [docs/deep-sea/plan.md](docs/deep-sea/plan.md). A change here deploys both apps. Keep edition switches in few places (`missionTable`, `dealTaskCards`, `nextItem`, `edition.ts`), and the UI terms in `edition.ts` (rocket/submarine, JARVIS/Tonoja, commander/captain).
 
 ## Session, intents and per-player view
 
@@ -17,7 +19,7 @@
 - **One `Attempt` per deal;** a new attempt replaces it. Members are seats (with 2 players seat 2 is the dummy), referenced by seat index on the wire.
 - **The setup is derived:** only `Step` and the open `Poll` are stored; `nextItem` derives the pending setup item from the `MissionDef` and the attempt. `Actors()` is derived per step and never empty while playing.
 - **The RNG is injected** (`Shuffle`, `IntN`). `sim_test.go` plays random legal actions through every mission × 2–5 players and checks card conservation, actors and the hiding rules after every action.
-- **Edition seams for Deep Sea:** `Game.Edition`, the mission table per edition, the open `ObjectiveKind` set. No Planet Nine names in `trick.go`, `objective.go` or `seat.go`: the domain says trump, dummy, commander; the UI says rocket, JARVIS, commander.
+- **Editions:** `Game.Edition`, the mission table per edition (`missions_planet9.go`, `missions_deepsea.go`), the task cards (`tasks_deepsea.go`, `taskcard.go`), the open `ObjectiveKind` set (Deep Sea kinds in `objective_deepsea.go`), the Deep Sea setup in `setup_deepsea.go`. No Planet Nine names in `trick.go`, `objective.go` or `seat.go`: the domain says trump, dummy, commander; the UI says rocket, JARVIS, commander.
 
 ## Look and feel
 
