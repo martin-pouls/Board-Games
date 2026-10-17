@@ -422,8 +422,8 @@ func TestMissionCatalogueDeepSea(t *testing.T) {
 		t.Fatalf("status = %d %s", w.Code, w.Body.String())
 	}
 	c := decode[apidto.MissionCatalogue](t, w)
-	if c.Edition != "deepSea" || c.Missions == nil || len(c.Missions) != 0 {
-		t.Fatalf("catalogue: edition %q, missions %#v", c.Edition, c.Missions)
+	if c.Edition != "deepSea" || len(c.Missions) != domain.Missions(domain.EditionDeepSea) {
+		t.Fatalf("catalogue: edition %q, %d missions", c.Edition, len(c.Missions))
 	}
 }
 
