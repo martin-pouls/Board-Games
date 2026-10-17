@@ -64,8 +64,6 @@ export function objectiveText(o: Objective, players = 0): string {
 		case 'winNoTricks':
 			return 'win no trick';
 		case 'winExactlyTricks':
-			// Deep Sea's side quest Q1 adds the ranks no counted trick may contain.
-			if (o.without.length > 0) return taskPhrase(o, players);
 			return `win exactly ${plural(o.count, 'trick')}${noTrump}`;
 		case 'winOnlyTricks':
 			return `win ${tricksText(o.tricks)} and no other trick${noTrump}`;
@@ -125,17 +123,6 @@ const DISTRIBUTION: Partial<Record<MissionDef['distribution'], string>> = {
 	commanderDecision: `The ${terms.commander} asks who takes the tasks, then decides; one member takes them all.`,
 	commanderDistribution: `The ${terms.commander} reveals the tasks one by one and assigns each after asking the crew; the tasks must be shared out as evenly as possible.`
 };
-
-/** "7", or "Q1" for the side quests: a mission's name in headings (`Mission ${missionLabel(def)}`). */
-export function missionLabel(def: Pick<MissionDef, 'number' | 'label'>): string {
-	return def.label || String(def.number);
-}
-
-/** The label of mission `n` when only its number is at hand; the table may not be loaded yet. */
-export function missionLabelOf(n: number, defs: readonly MissionDef[] | null | undefined): string {
-	const def = defs?.find((d) => d.number === n);
-	return def ? missionLabel(def) : String(n);
-}
 
 /** The briefing of a mission, in the words of this build's edition. */
 export function briefing(m: MissionDef): string[] {
@@ -206,7 +193,6 @@ const FIXED_TASKS: Record<number, string> = {
 };
 
 /** "Stage A", "Stage B". */
-const stageName = (i: number) => `Stage ${String.fromCharCode(65 + i)}`;
 
 function distributionLines(m: MissionDef): string[] {
 	const boss = terms.commander;
@@ -245,15 +231,10 @@ function distributionLines(m: MissionDef): string[] {
 export function deepSeaBriefing(m: MissionDef): string[] {
 	const boss = terms.commander;
 	const lines: string[] = [];
-	const perSize = m.difficultyBy.some((d) => d > 0);
-	const difficulty = perSize
-		? `Difficulty ${m.difficultyBy.join(' / ')} (crew of 3 / 4 / 5)`
-		: m.difficulty > 0
-			? `Difficulty ${m.difficulty}`
-			: '';
+	const difficulty = m.difficulty > 0 ? `Difficulty ${m.difficulty}` : '';
 	const head = [difficulty, COMM_NAMES[m.commMode]].filter(Boolean).join(' · ');
 	if (head) lines.push(head);
-	if (!perSize && m.difficulty === 0 && m.fixedTasks.length === 0 && m.stages === 0) {
+	if (m.difficulty === 0 && m.fixedTasks.length === 0) {
 		lines.push('No task cards.');
 	}
 	if (m.fixedTasks.length > 0) {
@@ -262,29 +243,11 @@ export function deepSeaBriefing(m: MissionDef): string[] {
 			`${cap(numberWord(tasks.length))} fixed tasks, taken as usual: ${tasks.join('; ')}.`
 		);
 	}
-	if (m.faceDownTasks) {
-		lines.push('The task cards stay face down: only their difficulty is visible.');
-	}
 	if (m.distribution !== '') lines.push(...distributionLines(m));
 	if (m.captainSkipped) lines.push(`The ${boss} is skipped in the selection and takes no task.`);
 	if (m.hardestFirst) {
 		lines.push(
 			`The ${boss}'s first task must be one of the displayed tasks with the highest difficulty.`
-		);
-	}
-	const defaultCaptain = m.captainCard.suit === 'trump' && m.captainCard.rank === 4;
-	if (!defaultCaptain) {
-		lines.push(
-			`The holder of ${cardLabel(m.captainCard)} is the ${boss}, not the holder of ${terms.trump} 4.`
-		);
-	}
-	m.stageObjectives.forEach((specs, i) => {
-		const when = i === 0 ? '' : ' (a new deal once the stage before is won)';
-		lines.push(`${stageName(i)}${when}. ${specs.map(specText).join('; ')}.`);
-	});
-	if (m.stages > 0) {
-		lines.push(
-			`If one hand holds all four ${terms.trumps}, the cards are dealt again (not an attempt).`
 		);
 	}
 	for (const s of m.objectives) lines.push(`${specText(s)}.`);

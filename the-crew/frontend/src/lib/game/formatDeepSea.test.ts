@@ -3,38 +3,17 @@ import { terms } from '#lib/edition.js';
 import type { Member, Objective } from '#lib/types.js';
 import { DEEP_SEA_MISSIONS } from './deepSeaMissions.fixture.js';
 import { member as fixtureMember, objective } from './fixtures.js';
-import {
-	deepSeaBriefing,
-	missionLabel,
-	missionLabelOf,
-	objectiveText,
-	resultText,
-	specText,
-	stepText
-} from './format.js';
+import { deepSeaBriefing, objectiveText, resultText, specText, stepText } from './format.js';
 import { TASK_CARDS } from './taskCards.fixture.js';
 import { taskText } from './taskText.js';
 
 // The words differ per edition (submarine / rocket, captain / commander): the expectations use the
 // terms. The briefings are tested with the mission rows as the server sends them.
 const T = terms.trump;
-const Ts = terms.trumps;
 const C = terms.commander;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const mission = (n: number) => DEEP_SEA_MISSIONS[n - 1];
 const brief = (n: number) => deepSeaBriefing(mission(n));
-
-describe('mission labels', () => {
-	it('shows the label of the side quests, else the number', () => {
-		expect(missionLabel(mission(7))).toBe('7');
-		expect(missionLabel(mission(42))).toBe('Q1');
-		expect(missionLabel(mission(43))).toBe('Q2');
-		expect(missionLabelOf(42, DEEP_SEA_MISSIONS)).toBe('Q1');
-		expect(missionLabelOf(5, DEEP_SEA_MISSIONS)).toBe('5');
-		// The table may not be loaded yet.
-		expect(missionLabelOf(42, null)).toBe('42');
-	});
-});
 
 describe('the mission objectives', () => {
 	it.each<[string, number, number, string]>([
@@ -62,21 +41,9 @@ describe('the mission objectives', () => {
 			27,
 			0,
 			'The crew: the yellow 5 must be the last card played in the last trick'
-		],
-		[
-			'Q2: the quota',
-			43,
-			0,
-			'The crew: every member must win exactly as many tricks as the difficulties of their tasks add up to'
 		]
 	])('%s', (_what, n, i, want) => {
 		expect(specText(mission(n).objectives[i])).toBe(want);
-	});
-
-	it('words the stages of Q1', () => {
-		const [a, b] = mission(42).stageObjectives;
-		expect(specText(a[0])).toBe(`The ${C}: win exactly two tricks, none containing a 7, 8 or 9`);
-		expect(specText(b[0])).toBe(`The ${C}: win exactly three tricks, none containing a 7, 8 or 9`);
 	});
 
 	it('words a task objective like its card, without the capital', () => {
@@ -99,7 +66,6 @@ describe('the briefing of a Deep Sea mission', () => {
 		expect(brief(11)[0]).toBe('Difficulty 8 · Rapture of the deep');
 		expect(brief(20)[0]).toBe('Difficulty 10 · Unfamiliar terrain');
 		expect(brief(16)[0]).toBe('Difficulty 6 · No communication');
-		expect(brief(43)[0]).toBe('Difficulty 13 / 10 / 8 (crew of 3 / 4 / 5)');
 	});
 
 	it('explains the communication modes', () => {
@@ -167,23 +133,8 @@ describe('the briefing of a Deep Sea mission', () => {
 		expect(brief(32)[0]).toBe(`Four fixed tasks, taken as usual: ${texts.join('; ')}.`);
 	});
 
-	it('describes the side quests', () => {
-		expect(brief(42)).toEqual([
-			`The holder of ${T} 1 is the ${C}, not the holder of ${T} 4.`,
-			`Stage A. The ${C}: win exactly two tricks, none containing a 7, 8 or 9.`,
-			`Stage B (a new deal once the stage before is won). The ${C}: win exactly three tricks, none containing a 7, 8 or 9.`,
-			`If one hand holds all four ${Ts}, the cards are dealt again (not an attempt).`
-		]);
-		expect(brief(43)).toEqual([
-			'Difficulty 13 / 10 / 8 (crew of 3 / 4 / 5)',
-			'The task cards stay face down: only their difficulty is visible.',
-			expect.stringContaining('Tasks are drafted'),
-			'The crew: every member must win exactly as many tricks as the difficulties of their tasks add up to.'
-		]);
-	});
-
 	it('has a briefing for every mission', () => {
-		expect(DEEP_SEA_MISSIONS).toHaveLength(43);
+		expect(DEEP_SEA_MISSIONS).toHaveLength(41);
 		for (const m of DEEP_SEA_MISSIONS) {
 			const lines = deepSeaBriefing(m);
 			expect(lines.length, `mission ${m.number}`).toBeGreaterThan(0);

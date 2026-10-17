@@ -13,11 +13,10 @@ import (
 )
 
 // The Deep Sea simulation extends sim_test.go: random legal actions, drawn only from what the
-// views and Actors advertise, through every Deep Sea mission (1-41, Q1 = 42 with both stages,
-// Q2 = 43) with 2-5 players, plus illegal calls that must be rejected without a change. After
-// every action the invariants of sim_test.go hold where they apply, and the Deep Sea ones below:
-// ownership of the tasks, the difficulty, hiding of predictions and face-down tasks, the
-// communication modes, the logbook and the Clone.
+// views and Actors advertise, through every Deep Sea mission (1-41) with 2-5 players, plus
+// illegal calls that must be rejected without a change. After every action the invariants of
+// sim_test.go hold where they apply, and the Deep Sea ones below: ownership of the tasks, the
+// difficulty, hiding of predictions, the communication modes, the logbook and the Clone.
 
 const dsMaxActions = 1500
 
@@ -120,18 +119,8 @@ func (s *simRun) checkTaskViewDeepSea(name string, seat int, t Task, tv TaskView
 	s.t.Helper()
 	a := s.g.Attempt
 	over := a.Result != nil
-	if tv.ID != t.ID || tv.Owner != t.Owner() || tv.Difficulty != t.Difficulty || tv.FaceDown != t.FaceDown || tv.Card != nil {
+	if tv.ID != t.ID || tv.Owner != t.Owner() || tv.Difficulty != t.Difficulty || tv.FaceDown || tv.Card != nil {
 		s.failf("%s: view of seat %d: task %d is %+v", name, seat, t.ID, tv)
-	}
-	if t.FaceDown && !over {
-		if tv.CardID != 0 || tv.Objective != nil {
-			s.failf("%s: view of seat %d shows the face-down task %d (card %d, %+v)", name, seat, t.ID, tv.CardID, tv.Objective)
-		}
-		// A face-down task has no condition of its own, so its status says nothing about the card.
-		if t.Objective.Kind != KindNone {
-			s.failf("%s: view of seat %d: face-down task %d has the condition %s", name, seat, t.ID, t.Objective.Kind)
-		}
-		return
 	}
 	if tv.CardID != t.CardID || tv.Objective == nil {
 		s.failf("%s: view of seat %d: task %d card %d / %+v, want card %d", name, seat, t.ID, tv.CardID, tv.Objective, t.CardID)
@@ -175,9 +164,8 @@ func (s *simRun) checkViewDeepSea(name string, seat int, v PlayerView) {
 	if (a.Comm == CommRapture) != (av.TokensLeft >= 0) {
 		s.failf("%s: view of seat %d: tokens left %d in mode %q", name, seat, av.TokensLeft, a.Comm)
 	}
-	base, _ := MissionFor(EditionDeepSea, g.Mission)
-	if av.Stages != len(base.Stages) || av.Stage != a.Stage || av.Redeals != a.Redeals {
-		s.failf("%s: view of seat %d: stage %d/%d redeals %d", name, seat, av.Stage, av.Stages, av.Redeals)
+	if av.Redeals != a.Redeals {
+		s.failf("%s: view of seat %d: redeals %d", name, seat, av.Redeals)
 	}
 	first := g.Mission == 10 || g.Mission == 13
 	wantFirst := first && len(a.Chosen) == 1 && a.Chosen[0] != a.Commander
@@ -206,7 +194,7 @@ func (s *simRun) checkViewDeepSea(name string, seat int, v PlayerView) {
 	if want := !over && seat == a.Commander && g.CanReplaceTasks(seat) == nil; av.Actions.ReplaceTasks != want {
 		s.failf("%s: view of seat %d: Actions.ReplaceTasks %v, want %v", name, seat, av.Actions.ReplaceTasks, want)
 	}
-	if av.Actions.ReplaceTasks && (a.TaskDeck == nil || mdef.FaceDownTasks || mdef.FixedTasks != nil) {
+	if av.Actions.ReplaceTasks && (a.TaskDeck == nil || mdef.FixedTasks != nil) {
 		s.failf("%s: view of seat %d may replace tasks of mission %d", name, seat, g.Mission)
 	}
 	if seat != a.Commander {
@@ -262,7 +250,6 @@ func (s *simRun) checkDeepSea(name string) {
 	base, _ := MissionFor(EditionDeepSea, g.Mission)
 	m := g.MissionDef()
 	n := len(a.Members)
-	humans := len(s.humanSeats())
 
 	// Step consistency.
 	if g.Phase == PhasePlaying {
@@ -310,7 +297,7 @@ func (s *simRun) checkDeepSea(name string) {
 			continue
 		}
 		tc, _ := TaskCardFor(t.CardID)
-		if o == a.Commander && !t.FaceDown && tc.NotForCaptain() {
+		if o == a.Commander && tc.NotForCaptain() {
 			s.failf("%s: the captain owns task %d (card %d, not for the captain)", name, t.ID, t.CardID)
 		}
 		if o == a.Commander && base.CaptainSkipped {
@@ -351,7 +338,7 @@ func (s *simRun) checkDeepSea(name string) {
 		if t.ID >= len(a.Tasks) || a.Tasks[t.ID].CardID != t.CardID {
 			s.failf("%s: task id %d out of place", name, t.ID)
 		}
-		if t.Difficulty != tc.DifficultyFor(n) || t.FaceDown != base.FaceDownTasks {
+		if t.Difficulty != tc.DifficultyFor(n) || t.FaceDown {
 			s.failf("%s: task %d: difficulty %d / faceDown %v for card %d", name, t.ID, t.Difficulty, t.FaceDown, t.CardID)
 		}
 		sum += t.Difficulty
@@ -366,15 +353,15 @@ func (s *simRun) checkDeepSea(name string) {
 			s.failf("%s: fixed tasks %v, want %v", name, got, base.FixedTasks)
 		}
 	case base.DrawsTasks():
-		if sum != base.difficultyFor(n) {
-			s.failf("%s: total difficulty %d, want %d (%d members)", name, sum, base.difficultyFor(n), n)
+		if sum != base.Difficulty {
+			s.failf("%s: total difficulty %d, want %d (%d members)", name, sum, base.Difficulty, n)
 		}
 	default:
 		if len(a.Tasks) != 0 {
 			s.failf("%s: mission %d has %d tasks", name, g.Mission, len(a.Tasks))
 		}
 	}
-	if base.DrawsTasks() && !base.FaceDownTasks {
+	if base.DrawsTasks() {
 		seen := map[int]bool{}
 		for _, id := range a.TaskDeck {
 			if ids[id] || seen[id] {
@@ -398,45 +385,22 @@ func (s *simRun) checkDeepSea(name string) {
 			}
 		}
 	}
-	// Q2: the quota targets add up to the number of tricks once play starts.
-	if base.FaceDownTasks && (a.Step == StepPlay || a.Step == StepPass) {
-		for _, o := range a.Objectives {
-			if o.Kind != KindTrickQuota {
-				continue
-			}
-			total := 0
-			for _, x := range o.Targets {
-				total += x
-			}
-			if len(o.Targets) != n || total != TotalTricks(humans) {
-				s.failf("%s: quota targets %v, want %d tricks", name, o.Targets, TotalTricks(humans))
-			}
-		}
-	}
 
 	// The captain and the re-deal, before the first card.
 	if len(a.Tricks) == 0 && len(a.Trick.Plays) == 0 && a.Result == nil {
-		if !slices.Contains(a.Members[a.Commander].Cards(), m.captainCard()) {
-			s.failf("%s: the captain (seat %d) does not hold %v", name, a.Commander, m.captainCard())
+		if !slices.Contains(a.Members[a.Commander].Cards(), CommanderCard) {
+			s.failf("%s: the captain (seat %d) does not hold %v", name, a.Commander, CommanderCard)
 		}
-		if a.needsRedeal(m) {
+		if a.needsRedeal() {
 			s.failf("%s: an alignment that needs a re-deal is on the table", name)
 		}
 		if a.Members[a.Commander].Dummy {
 			s.failf("%s: the dummy is the captain", name)
 		}
 	}
-	// Mission objectives of the stage.
+	// Mission objectives.
 	if len(a.Objectives) != len(m.Objectives) {
 		s.failf("%s: %d objectives, mission has %d", name, len(a.Objectives), len(m.Objectives))
-	}
-	if g.Mission == 42 {
-		if a.Stage < 0 || a.Stage > 1 || len(a.Objectives) != 1 || a.Objectives[0].Kind != KindWinExactlyTricks ||
-			a.Objectives[0].Count != 2+a.Stage || a.Objectives[0].Owner != a.Commander {
-			s.failf("%s: Q1 stage %d objectives %+v (captain %d)", name, a.Stage, a.Objectives, a.Commander)
-		}
-	} else if a.Stage != 0 {
-		s.failf("%s: stage %d in mission %d", name, a.Stage, g.Mission)
 	}
 
 	// Communication modes.
@@ -804,7 +768,7 @@ func (s *simRun) draftDS(actor int, id PlayerID) {
 	hasTask := slices.ContainsFunc(a.Tasks, func(t Task) bool { return t.Owner() == turn })
 	forbidden := func(t Task) bool {
 		tc, _ := TaskCardFor(t.CardID)
-		return isCaptain && !t.FaceDown && tc.NotForCaptain() // face down (Q2): only the difficulty counts
+		return isCaptain && tc.NotForCaptain()
 	}
 	top := 0
 	for _, t := range a.Tasks {
@@ -1150,7 +1114,6 @@ func (s *simRun) runAttemptDS(wantNumber int) {
 		s.bump("ds:mode:" + string(g.Attempt.Comm))
 	}
 
-	stage := g.Attempt.Stage
 	for n := 0; g.Phase == PhasePlaying; n++ {
 		if n >= dsMaxActions {
 			s.failf("the attempt does not end after %d actions (step %s)", n, g.Attempt.Step)
@@ -1167,9 +1130,6 @@ func (s *simRun) runAttemptDS(wantNumber int) {
 	}
 	if r.Success && len(a.Tricks) == 0 {
 		s.failf("won without a trick")
-	}
-	if base.FaceDownTasks && r.Reason == ReasonTaskFailed {
-		s.failf("a face-down task decided the attempt: %+v", r)
 	}
 	if r.Reason == ReasonTokenOrder {
 		s.failf("token order in Deep Sea: %+v", r)
@@ -1196,23 +1156,16 @@ func (s *simRun) runAttemptDS(wantNumber int) {
 		}
 	}
 
-	hasNext := mission == 42 && stage == 0
 	e1 := g.Logbook[mission]
 	if e0.Completed {
 		if e1 != e0 {
 			s.failf("a replay changed the logbook %+v -> %+v", e0, e1)
 		}
 	} else {
-		want := LogEntry{Attempts: e0.Attempts + b2i(!base.Uncounted), Distress: e0.Distress || s.distres, Completed: r.Success && !hasNext}
+		want := LogEntry{Attempts: e0.Attempts + b2i(!base.Uncounted), Distress: e0.Distress || s.distres, Completed: r.Success}
 		if e1 != want {
 			s.failf("logbook %+v, want %+v", e1, want)
 		}
-	}
-	if hasNext && r.Success {
-		s.bump("ds:q1:stageA")
-	}
-	if mission == 42 && stage == 1 && r.Success {
-		s.bump("ds:q1:completed")
 	}
 }
 
@@ -1234,29 +1187,26 @@ func (s *simRun) followUpDS(more bool) bool {
 	r := a.Result
 	host := alice
 	mission := g.Mission
-	stageWon := r.Success && mission == 42 && a.Stage == 0
-	completed := r.Success && !stageWon
+	completed := r.Success
 
 	// Calls the outcome does not allow, and a guest's calls.
 	switch {
 	case completed:
 		s.expectErr("nextAttempt(completed)", ErrInvalidResultChoice, func() error { return g.NextAttempt(host, NextAttemptChoice{}, rng) })
-	case stageWon:
-		s.expectErr("nextAttempt(stage won, uncounted)", ErrInvalidResultChoice, func() error { return g.NextAttempt(host, NextAttemptChoice{Uncounted: true}, rng) })
-		s.expectErr("nextMission(stage won)", ErrInvalidResultChoice, func() error { return g.NextMission(host, rng) })
+		s.expectErr("backToLobby(won, uncounted)", ErrInvalidResultChoice, func() error { return g.BackToLobby(host, true) })
 	default:
 		s.expectErr("nextMission(lost)", ErrInvalidResultChoice, func() error { return g.NextMission(host, rng) })
 	}
 	s.expectErr("nextAttempt(guest)", ErrNotHost, func() error { return g.NextAttempt(bob, NextAttemptChoice{}, rng) })
 	s.expectErr("nextMission(guest)", ErrNotHost, func() error { return g.NextMission(bob, rng) })
-	s.expectErr("backToLobby(guest)", ErrNotHost, func() error { return g.BackToLobby(bob) })
+	s.expectErr("backToLobby(guest)", ErrNotHost, func() error { return g.BackToLobby(bob, false) })
 	s.expectErr("endGame(guest)", ErrNotHost, func() error { return g.EndGame(bob) })
 	s.expectErr("startMission(debrief)", ErrWrongPhase, func() error { return g.StartMission(host, rng) })
 	s.expectErr("giveUp(debrief)", ErrWrongPhase, func() error { return g.GiveUp(host) })
 
 	lobbyStart := func() {
 		prev := g.Mission
-		s.act("backToLobby", func() error { return g.BackToLobby(host) })
+		s.act("backToLobby", func() error { return g.BackToLobby(host, false) })
 		if g.Phase != PhaseLobby || g.Attempt != nil {
 			s.failf("back in the lobby: phase %s attempt %v", g.Phase, g.Attempt)
 		}
@@ -1288,7 +1238,7 @@ func (s *simRun) followUpDS(more bool) bool {
 			s.act("endGame", func() error { return g.EndGame(host) })
 			s.checkEnded()
 		case 1:
-			s.act("backToLobby", func() error { return g.BackToLobby(host) })
+			s.act("backToLobby", func() error { return g.BackToLobby(host, false) })
 			s.act("endGame", func() error { return g.EndGame(host) })
 			s.checkEnded()
 		}
@@ -1315,20 +1265,6 @@ func (s *simRun) followUpDS(more bool) bool {
 			lobbyStart()
 		}
 		return true
-	case stageWon:
-		if rng.IntN(5) > 0 {
-			s.bump("ds:q1:nextStage")
-			want := a.Number + 1
-			before := g.Logbook[mission]
-			s.act("nextAttempt(stage B)", func() error { return g.NextAttempt(host, NextAttemptChoice{NewTasks: rng.IntN(2) == 0}, rng) })
-			if g.Attempt.Stage != 1 || g.Logbook[mission] != before {
-				s.failf("stage B: stage %d, logbook %+v -> %+v", g.Attempt.Stage, before, g.Logbook[mission])
-			}
-			s.runAttemptDS(want)
-			return true
-		}
-		lobbyStart()
-		return true
 	}
 
 	// Lost.
@@ -1347,7 +1283,6 @@ func (s *simRun) followUpDS(more bool) bool {
 	if choice.Uncounted {
 		want = a.Number
 	}
-	stage := a.Stage
 	s.act(fmt.Sprintf("nextAttempt(%+v)", choice), func() error { return g.NextAttempt(host, choice, rng) })
 	after := g.Logbook[mission]
 	switch {
@@ -1358,9 +1293,6 @@ func (s *simRun) followUpDS(more bool) bool {
 		s.bump("ds:uncounted")
 	case after != before:
 		s.failf("nextAttempt changed the logbook %+v -> %+v", before, after)
-	}
-	if g.Attempt.Stage != stage {
-		s.failf("stage %d -> %d after a loss", stage, g.Attempt.Stage)
 	}
 	var newCards []int
 	for _, t := range g.Attempt.Tasks {
@@ -1401,10 +1333,7 @@ func runGameDS(t *testing.T, st *simStats, mission, players int, seed uint64) {
 	s.g = newDeepSeaCrew(t, players)
 	g := s.g
 	s.rollouts = 0
-	switch {
-	case mission == 42:
-		s.rollouts = 12
-	case seed%5 == 2:
+	if seed%5 == 2 {
 		s.rollouts = 3
 	}
 	s.act("setOptions", func() error { return g.SetOptions(alice, Options{Distress: seed%2 == 1}) })
@@ -1415,8 +1344,7 @@ func runGameDS(t *testing.T, st *simStats, mission, players int, seed uint64) {
 	number := 1
 	s.runAttemptDS(number)
 	for n := 1; ; n++ {
-		more := n < limit || (g.Mission == 42 && g.Attempt.Result.Success && g.Attempt.Stage == 0 && n < limit+3)
-		if !s.followUpDS(more) || g.Phase != PhaseDebrief {
+		if !s.followUpDS(n < limit) || g.Phase != PhaseDebrief {
 			break
 		}
 	}
@@ -1463,7 +1391,7 @@ func TestSimulationDeepSea(t *testing.T) {
 		"ds:replace", "ds:pass", "ds:draft", "ds:assign", "ds:poll", "ds:predict:hidden", "ds:predict:open",
 		"ds:pick:oneMember", "ds:pick:volunteers", "ds:distress", "ds:comm", "ds:comm:repeat", "ds:rapture:multi",
 		"ds:mode:currents", "ds:mode:rapture", "ds:mode:none", "ds:redeal", "ds:uncounted", "ds:sameTasks", "ds:newTasks",
-		"ds:nextMission", "ds:replay", "ds:q1:stageA", "ds:q1:nextStage", "ds:q1:completed",
+		"ds:nextMission", "ds:replay",
 	} {
 		if st.followUp[key] == 0 {
 			t.Errorf("coverage: %s never happened", key)

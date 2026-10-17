@@ -722,7 +722,7 @@ func (s *simRun) followUp(variant int) {
 			s.failf("NextMission after a loss left the debrief")
 		}
 	}
-	if err := s.try("backToLobby(bob)", func() error { return g.BackToLobby(bob) }); err == nil {
+	if err := s.try("backToLobby(bob)", func() error { return g.BackToLobby(bob, false) }); err == nil {
 		s.failf("a non-host sent the crew back to the lobby")
 	}
 
@@ -742,7 +742,7 @@ func (s *simRun) followUp(variant int) {
 			s.runAttempt(want)
 		case 1:
 			key("lost:backToLobby")
-			s.act("backToLobby", func() error { return g.BackToLobby(host) })
+			s.act("backToLobby", func() error { return g.BackToLobby(host, false) })
 			if g.Phase != PhaseLobby || g.Attempt != nil || g.Mission != mission {
 				s.failf("back in the lobby: phase %s mission %d attempt %v", g.Phase, g.Mission, g.Attempt)
 			}
@@ -766,14 +766,14 @@ func (s *simRun) followUp(variant int) {
 			s.runAttempt(startNumber())
 		} else {
 			key("won:backToLobby(last)")
-			s.act("backToLobby", func() error { return g.BackToLobby(host) })
+			s.act("backToLobby", func() error { return g.BackToLobby(host, false) })
 			if g.Phase != PhaseLobby || g.Mission < 1 || g.Mission > Missions(g.Edition) {
 				s.failf("back in the lobby: phase %s mission %d", g.Phase, g.Mission)
 			}
 		}
 	case 1:
 		key("won:replay")
-		s.act("backToLobby", func() error { return g.BackToLobby(host) })
+		s.act("backToLobby", func() error { return g.BackToLobby(host, false) })
 		if want := g.nextUnfinished(); g.Mission != want {
 			s.failf("lobby mission %d, want the next unfinished one %d", g.Mission, want)
 		}

@@ -58,8 +58,6 @@ type Objective struct {
 	InOneTrick bool        `json:"inOneTrick"` //
 	Hidden     bool        `json:"hidden"`     // predict: the prediction is secret until the debrief
 	Parts      []Objective `json:"parts"`      // never null; kind "all": every part (same owner)
-	Targets    []int       `json:"targets"`    // never null; trickQuota: per seat
-	Without    []int       `json:"without"`    // never null; ranks
 }
 
 // CardMatch selects cards: a suit ("" = any colour; "trump" = submarines) and/or a rank (0 = any).
@@ -79,7 +77,6 @@ type ObjectiveSpec struct {
 // MissionDef is one row of the mission table.
 type MissionDef struct {
 	Number       int             `json:"number"`
-	Label        string          `json:"label"` // shown instead of the number ("Q1"), else ""
 	Tasks        int             `json:"tasks"`
 	Tokens       []string        `json:"tokens"`       // never null; placement order
 	Distribution string          `json:"distribution"` // "" | "open" | "commanderDecision" | "commanderDistribution" | Deep Sea: "draft" | "oneMember" | "captainOrVolunteer" | "volunteers" | "free"
@@ -91,18 +88,13 @@ type MissionDef struct {
 	Objectives   []ObjectiveSpec `json:"objectives"`
 
 	// Deep Sea.
-	CommMode        string            `json:"commMode"`        // "" (normal) | "currents" | "rapture" | "unfamiliar" | "none"
-	Difficulty      int               `json:"difficulty"`      // total difficulty of the drawn task cards; 0 = none drawn
-	DifficultyBy    []int             `json:"difficultyBy"`    // always 3 entries (crew of 3, 4, 5); all 0 unless the mission sets it per crew size (Q2)
-	Volunteers      int               `json:"volunteers"`      // distribution "volunteers": how many members take the tasks
-	CaptainSkipped  bool              `json:"captainSkipped"`  // the captain receives no task
-	HardestFirst    bool              `json:"hardestFirst"`    // the captain's first task is one of the highest difficulty
-	FixedTasks      []int             `json:"fixedTasks"`      // never null; task card numbers laid out instead of drawing
-	FaceDownTasks   bool              `json:"faceDownTasks"`   // only the difficulty of the tasks is visible
-	Uncounted       bool              `json:"uncounted"`       // the logbook counts no attempts
-	CaptainCard     Card              `json:"captainCard"`     // the card whose holder is captain (trump 4 unless the mission says otherwise)
-	Stages          int               `json:"stages"`          // Q1: number of stages; 0 without
-	StageObjectives [][]ObjectiveSpec `json:"stageObjectives"` // never null; the objectives added in each stage
+	CommMode       string `json:"commMode"`       // "" (normal) | "currents" | "rapture" | "unfamiliar" | "none"
+	Difficulty     int    `json:"difficulty"`     // total difficulty of the drawn task cards; 0 = none drawn
+	Volunteers     int    `json:"volunteers"`     // distribution "volunteers": how many members take the tasks
+	CaptainSkipped bool   `json:"captainSkipped"` // the captain receives no task
+	HardestFirst   bool   `json:"hardestFirst"`   // the captain's first task is one of the highest difficulty
+	FixedTasks     []int  `json:"fixedTasks"`     // never null; task card numbers laid out instead of drawing
+	Uncounted      bool   `json:"uncounted"`      // the logbook counts no attempts
 }
 
 // MissionCatalogue is the body of GET /api/missions.
@@ -261,8 +253,6 @@ type Attempt struct {
 	TokensLeft         int     `json:"tokensLeft"`         // rapture of the deep: shared sonar tokens left, else -1
 	CommFirstTrickOnly bool    `json:"commFirstTrickOnly"` // communication ends with the first trick
 	Chosen             []int   `json:"chosen"`             // never null; the members the captain chose to take the tasks
-	Stage              int     `json:"stage"`              // Q1: 0-based stage
-	Stages             int     `json:"stages"`             // Q1: number of stages; 0 without
 	Redeals            int     `json:"redeals"`            // automatic re-deals before this attempt
 	Takeable           []int   `json:"takeable"`           // never null; step draft, for the one who picks: the task ids they may take
 	Assignable         [][]int `json:"assignable"`         // never null; step assign, for the captain: per task id the seats it may go to
@@ -342,7 +332,7 @@ type Event struct {
 	Number     *int   `json:"number,omitempty"`    // attemptStarted: attempt number; trickWon: trick number
 	Times      *int   `json:"times,omitempty"`     // redealt
 	Tricks     *int   `json:"tricks,omitempty"`    // predicted: the number; -1 = a hidden prediction
-	Commander  *int   `json:"commander,omitempty"` // attemptStarted
+	Commander  *int   `json:"commander,omitempty"` // attemptStarted, redealt
 	Seat       *int   `json:"seat,omitempty"`      // pollAnswered, taskPicked, passCardChosen, communicated, cardPlayed, trickWon, taskPassed, predicted
 	Seats      []int  `json:"seats,omitempty"`     // picked
 	TaskID     *int   `json:"taskId,omitempty"`    // taskPicked, taskHandedOver, taskReplaced, predicted

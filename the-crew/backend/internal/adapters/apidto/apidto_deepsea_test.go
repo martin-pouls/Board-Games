@@ -12,13 +12,12 @@ import (
 
 func TestDeepSeaCatalogue(t *testing.T) {
 	c := Catalogue(domain.EditionDeepSea)
-	if c.Edition != "deepSea" || len(c.Missions) != 43 {
+	if c.Edition != "deepSea" || len(c.Missions) != 41 {
 		t.Fatalf("catalogue = %s %d", c.Edition, len(c.Missions))
 	}
 	assertNoNullsExcept(t, c, map[string]bool{"holder": true, "with": true, "target": true})
 	m := func(n int) MissionDef { return c.Missions[n-1] }
-	if x := m(3); x.Difficulty != 3 || x.Distribution != "draft" || x.CommMode != "" || x.Label != "" || x.CaptainCard != (Card{"trump", 4}) ||
-		len(x.DifficultyBy) != 3 || x.FixedTasks == nil || x.StageObjectives == nil {
+	if x := m(3); x.Difficulty != 3 || x.Distribution != "draft" || x.CommMode != "" || x.FixedTasks == nil {
 		t.Errorf("mission 3 = %+v", x)
 	}
 	if x := m(9); x.CommMode != "currents" {
@@ -51,15 +50,8 @@ func TestDeepSeaCatalogue(t *testing.T) {
 	if x := m(33); !x.Uncounted || x.Distribution != "free" {
 		t.Errorf("mission 33 = %+v", x)
 	}
-	if x := m(42); x.Label != "Q1" || x.Stages != 2 || len(x.StageObjectives) != 2 || x.CaptainCard != (Card{"trump", 1}) ||
-		x.StageObjectives[1][0].Count != 3 || !slices.Equal(x.StageObjectives[1][0].Without, []int{7, 8, 9}) || x.StageObjectives[0][0].OwnerRule != "commander" {
-		t.Errorf("mission 42 = %+v", x)
-	}
-	if x := m(43); x.Label != "Q2" || !x.FaceDownTasks || !slices.Equal(x.DifficultyBy, []int{13, 10, 8}) {
-		t.Errorf("mission 43 = %+v", x)
-	}
 	// A Planet Nine mission has the neutral Deep Sea values.
-	if x := Catalogue(domain.EditionPlanetNine).Missions[0]; x.Difficulty != 0 || x.CommMode != "" || x.Stages != 0 || x.Uncounted || x.CaptainCard != (Card{"trump", 4}) {
+	if x := Catalogue(domain.EditionPlanetNine).Missions[0]; x.Difficulty != 0 || x.CommMode != "" || x.Uncounted {
 		t.Errorf("planet nine mission 1 = %+v", x)
 	}
 }
@@ -72,15 +64,14 @@ func TestFromObjectiveDeepSeaFields(t *testing.T) {
 			{Kind: domain.KindWinCount, Cmp: domain.CmpAtLeast, Count: 2, Suits: []domain.Suit{domain.SuitPink}, Ranks: []domain.Rank{8, 9}},
 		},
 		Where: domain.WhereSumBetween, Max: 12, Exact: true, InOneTrick: true, Hidden: true,
-		Targets: []int{1, 2}, Without: []domain.Rank{7},
 	}
 	got := fromObjective(o)
 	want := Objective{
 		Kind: "all", Owner: 2, Cards: []Card{}, Tricks: []int{}, Suits: []string{}, Ranks: []int{}, Where: "sumBetween", Max: 12,
-		Exact: true, InOneTrick: true, Hidden: true, Targets: []int{1, 2}, Without: []int{7},
+		Exact: true, InOneTrick: true, Hidden: true,
 		Parts: []Objective{
-			{Kind: "winWith", Cards: []Card{}, Tricks: []int{}, Suits: []string{}, Ranks: []int{}, With: &CardMatch{"trump", 3}, Target: &CardMatch{"", 9}, Parts: []Objective{}, Targets: []int{}, Without: []int{}},
-			{Kind: "winCount", Cmp: "atLeast", Count: 2, Cards: []Card{}, Tricks: []int{}, Suits: []string{"pink"}, Ranks: []int{8, 9}, Parts: []Objective{}, Targets: []int{}, Without: []int{}},
+			{Kind: "winWith", Cards: []Card{}, Tricks: []int{}, Suits: []string{}, Ranks: []int{}, With: &CardMatch{"trump", 3}, Target: &CardMatch{"", 9}, Parts: []Objective{}},
+			{Kind: "winCount", Cmp: "atLeast", Count: 2, Cards: []Card{}, Tricks: []int{}, Suits: []string{"pink"}, Ranks: []int{8, 9}, Parts: []Objective{}},
 		},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -88,7 +79,7 @@ func TestFromObjectiveDeepSeaFields(t *testing.T) {
 	}
 	// An unset card match is null, not an empty match; the slices are never null.
 	s := mustJSON(t, fromObjective(domain.Objective{Kind: domain.KindWinWith}))
-	for _, frag := range []string{`"with":null`, `"target":null`, `"suits":[]`, `"ranks":[]`, `"parts":[]`, `"targets":[]`, `"without":[]`} {
+	for _, frag := range []string{`"with":null`, `"target":null`, `"suits":[]`, `"ranks":[]`, `"parts":[]`} {
 		if !strings.Contains(s, frag) {
 			t.Errorf("%s is missing %s", s, frag)
 		}
@@ -97,7 +88,7 @@ func TestFromObjectiveDeepSeaFields(t *testing.T) {
 
 // The views of every Deep Sea mission, crew size and step carry no unexpected null.
 func TestDeepSeaViewsNeverHaveUnexpectedNulls(t *testing.T) {
-	for mission := 1; mission <= 43; mission++ {
+	for mission := 1; mission <= domain.Missions(domain.EditionDeepSea); mission++ {
 		for _, n := range []int{2, 3, 5} {
 			rng := gametest.NewRNG(uint64(mission*7 + n))
 			g := gametest.NewDeepSeaGame(t, n, mission, rng)
@@ -144,7 +135,7 @@ func TestDeepSeaPredictionOnTheWire(t *testing.T) {
 		return 0, false
 	}
 	id, _ := pending()
-	if v := viewOf(t, g, 0).Attempt; v.Predict != -1 || v.Takeable == nil || v.Assignable == nil || v.Chosen == nil || v.TokensLeft != -1 || v.Stages != 0 {
+	if v := viewOf(t, g, 0).Attempt; v.Predict != -1 || v.Takeable == nil || v.Assignable == nil || v.Chosen == nil || v.TokensLeft != -1 {
 		t.Fatalf("setup view = %+v", v)
 	}
 	for g.Attempt.Step != domain.StepPredict {
@@ -173,29 +164,7 @@ func TestDeepSeaPredictionOnTheWire(t *testing.T) {
 	}
 }
 
-// Q2: the face-down tasks show only their difficulty before the debrief, then the whole card.
-func TestDeepSeaFaceDownTasksOnTheWire(t *testing.T) {
-	rng := gametest.NewRNG(3)
-	g := gametest.NewDeepSeaGame(t, 3, 43, rng)
-	check := func(debrief bool) {
-		t.Helper()
-		for seat := range 3 {
-			for _, task := range viewOf(t, g, seat).Attempt.Tasks {
-				if debrief != (task.CardID != 0 && task.Objective != nil) || task.Difficulty == 0 {
-					t.Fatalf("seat %d task = %s (debrief %v)", seat, mustJSON(t, task), debrief)
-				}
-				if !debrief && !task.FaceDown {
-					t.Fatalf("task not face down: %+v", task)
-				}
-			}
-		}
-	}
-	check(false)
-	gametest.ToEnd(t, g, rng)
-	check(true)
-}
-
-func TestDeepSeaActionsAndStages(t *testing.T) {
+func TestDeepSeaActions(t *testing.T) {
 	rng := gametest.NewRNG(2)
 	g := gametest.NewDeepSeaGame(t, 3, 5, rng)
 	cmd := g.Attempt.Commander
@@ -210,11 +179,6 @@ func TestDeepSeaActionsAndStages(t *testing.T) {
 	}
 	if len(v.Takeable) == 0 {
 		t.Fatalf("takeable = %v", v.Takeable)
-	}
-	// Q1 reports its stages.
-	q1 := gametest.NewDeepSeaGame(t, 3, 42, gametest.NewRNG(1))
-	if a := viewOf(t, q1, 0).Attempt; a.Stages != 2 || a.Stage != 0 {
-		t.Fatalf("Q1 stages = %d/%d", a.Stage, a.Stages)
 	}
 	// Rapture of the deep: tokens left and the mode.
 	r := gametest.NewDeepSeaGame(t, 5, 11, gametest.NewRNG(1))

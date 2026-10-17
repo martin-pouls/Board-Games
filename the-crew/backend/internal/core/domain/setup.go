@@ -155,7 +155,6 @@ func (g *Game) advanceSetup() {
 	case itemDraft:
 		a.Step = StepDraft
 	case itemDone:
-		a.setQuotas()
 		a.Step = StepPlay
 		a.Trick = Trick{Leader: a.Commander}
 	}

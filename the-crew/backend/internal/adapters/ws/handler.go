@@ -139,7 +139,7 @@ func (b *backend) Handle(ctx context.Context, gameID, playerID string, _ wire.Co
 	case apidto.CmdNextMission:
 		err = b.svc.NextMission(ctx, id, p)
 	case apidto.CmdBackToLobby:
-		err = b.svc.BackToLobby(ctx, id, p)
+		err = b.svc.BackToLobby(ctx, id, p, msg.Uncounted)
 	case apidto.CmdEndGame:
 		err = b.svc.EndGame(ctx, id, p)
 	default:

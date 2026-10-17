@@ -29,7 +29,7 @@
 		if (def.deadZone || def.commMode === 'currents') out.push('deadZone');
 		if (def.fromTrick > 1) out.push('disruption');
 		if (def.commMode && def.commMode !== 'currents') out.push('comm');
-		if (def.objectives.length > 0 || def.stages > 0) out.push('objective');
+		if (def.objectives.length > 0) out.push('objective');
 		if (CAPTAIN_DECIDES.includes(def.distribution)) out.push('commander');
 		return out;
 	}
@@ -43,7 +43,6 @@
 	import UserStar from '@lucide/svelte/icons/user-star';
 	import Waves from '@lucide/svelte/icons/waves';
 	import { missionCount } from '#lib/edition.js';
-	import { missionLabelOf } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { LogEntry } from '#lib/types.js';
 
@@ -81,7 +80,7 @@
 
 	function label(n: number): string {
 		const marks = missionMarkers(defs.get(n)).map((k) => MARKERS[k].label.toLowerCase());
-		return `Mission ${missionLabelOf(n, missions)}: ${stateText(entries.get(n))}${marks.length ? `; ${marks.join(', ')}` : ''}`;
+		return `Mission ${n}: ${stateText(entries.get(n))}${marks.length ? `; ${marks.join(', ')}` : ''}`;
 	}
 
 	const cellClass =
@@ -109,7 +108,7 @@
 			{@render marker(kind)}
 		{/each}
 	</span>
-	<span class="font-display text-base font-bold">{missionLabelOf(n, missions)}</span>
+	<span class="font-display text-base font-bold">{n}</span>
 	<span
 		class={cn(
 			'mt-1 flex h-3 items-center gap-px text-[0.68rem] font-semibold',

@@ -11,11 +11,6 @@ import (
 // agreed for the mission table) without looking at missions_deepsea.go.
 // TestDeepSeaMissionTable compares every field of every mission.
 
-const (
-	dsQ1 = 42
-	dsQ2 = 43
-)
-
 type expDeepSeaMission struct {
 	n          int
 	diff       int // D; 0 = no task cards
@@ -34,7 +29,7 @@ func dsCrew(o Objective) []ObjectiveSpec {
 	return []ObjectiveSpec{{Objective: o, Owner: OwnerRuleCrew}}
 }
 
-// expectedDeepSeaMissions lists missions 1..41; Q1 and Q2 are built in expectedDeepSeaMission.
+// expectedDeepSeaMissions lists missions 1..41.
 var expectedDeepSeaMissions = func() []expDeepSeaMission {
 	m := []expDeepSeaMission{
 		{n: 1, diff: 1, dist: DistDraft},
@@ -78,29 +73,8 @@ var expectedDeepSeaMissions = func() []expDeepSeaMission {
 	return m
 }()
 
-// expectedDeepSeaMission builds the full expected MissionDef of mission n (1..43).
+// expectedDeepSeaMission builds the full expected MissionDef of mission n (1..41).
 func expectedDeepSeaMission(n int) MissionDef {
-	switch n {
-	case dsQ1:
-		stage := func(count int) []ObjectiveSpec {
-			return []ObjectiveSpec{{
-				Owner:     OwnerRuleCommander,
-				Objective: Objective{Kind: KindWinExactlyTricks, Count: count, Without: []Rank{7, 8, 9}},
-			}}
-		}
-		return MissionDef{
-			Number: dsQ1, Label: "Q1", Poll: PollYesNo,
-			CaptainCard: Card{SuitTrump, 1},
-			Redeal:      [][]Card{{dsSub(1), dsSub(2), dsSub(3), dsSub(4)}},
-			Stages:      [][]ObjectiveSpec{stage(2), stage(3)},
-		}
-	case dsQ2:
-		return MissionDef{
-			Number: dsQ2, Label: "Q2", Poll: PollYesNo,
-			Distribution: DistDraft, DifficultyBy: [3]int{13, 10, 8}, FaceDownTasks: true,
-			Objectives: dsCrew(Objective{Kind: KindTrickQuota}),
-		}
-	}
 	e := expectedDeepSeaMissions[n-1]
 	return MissionDef{
 		Number: n, Poll: PollYesNo,
@@ -121,7 +95,7 @@ func TestDeepSeaMissionTable(t *testing.T) {
 		}
 	}
 	var all []string
-	for n := 1; n <= 43; n++ {
+	for n := 1; n <= 41; n++ {
 		want := expectedDeepSeaMission(n)
 		got, ok := MissionFor(EditionDeepSea, n)
 		if !ok {
@@ -138,10 +112,10 @@ func TestDeepSeaMissionTable(t *testing.T) {
 }
 
 func TestDeepSeaMissionCount(t *testing.T) {
-	if got := Missions(EditionDeepSea); got != 43 {
-		t.Errorf("Missions(DeepSea) = %d, want 43", got)
+	if got := Missions(EditionDeepSea); got != 41 {
+		t.Errorf("Missions(DeepSea) = %d, want 41", got)
 	}
-	for _, n := range []int{-1, 0, 44, 100} {
+	for _, n := range []int{-1, 0, 42, 100} {
 		if _, ok := MissionFor(EditionDeepSea, n); ok {
 			t.Errorf("MissionFor(DeepSea, %d) succeeded", n)
 		}

@@ -78,8 +78,8 @@ type AttemptEnded struct {
 }
 
 // Redealt: Deep Sea: the playing cards were dealt again Times times, because an alignment made a
-// task impossible (not an attempt).
-type Redealt struct{ Times int }
+// task impossible (not an attempt). Commander is the captain after the re-deal.
+type Redealt struct{ Times, Commander int }
 
 // TaskReplaced: Deep Sea: the captain replaced task TaskID by another card of the same difficulty.
 type TaskReplaced struct{ TaskID int }

@@ -258,7 +258,7 @@
 		</p>
 	{/if}
 
-	{#if attempt.step === 'draft' && mine && attempt.actions.pass && !draftTask}
+	{#if attempt.step === 'draft' && mine && attempt.actions.pass}
 		<Button
 			class="h-10"
 			variant="secondary"
@@ -268,8 +268,9 @@
 			Pass{forJarvis ? ` for ${terms.dummy}` : ''}
 		</Button>
 	{/if}
-	{#if attempt.actions.replaceTasks && attempt.step !== 'draft'}
-		<!-- Before the first choice the captain may swap a displayed task for another of the same difficulty. -->
+	{#if attempt.actions.replaceTasks && (attempt.step !== 'draft' || !mine)}
+		<!-- Before the first choice the captain may swap a displayed task for another of the same
+		     difficulty (in the draft also while another member is on turn, e.g. mission 25). -->
 		<div class="flex items-center gap-2 text-sm">
 			<span class="mr-auto text-muted-foreground">
 				{tappedTask ? 'Replace the tapped task?' : 'Tap a task to replace it.'}

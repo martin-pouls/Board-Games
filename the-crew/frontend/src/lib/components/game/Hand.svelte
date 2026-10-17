@@ -11,7 +11,7 @@
 	let {
 		cards,
 		selected = null,
-		marked = null,
+		marked = [],
 		enabled = () => false,
 		dealing = false,
 		deal,
@@ -20,8 +20,8 @@
 	}: {
 		cards: Card[];
 		selected?: Card | null;
-		/** A card set aside (the chosen pass card, the communicated card), shown with a ring. */
-		marked?: Card | null;
+		/** Cards set aside (the chosen pass card, the communicated cards), shown with a ring. */
+		marked?: Card[];
 		/** Whether a card can be picked now; others are dimmed while any card is enabled. */
 		enabled?: (c: Card) => boolean;
 		/** A fresh deal: cards come in one after another. */
@@ -56,7 +56,7 @@
 		{#each cards as card, i (cardKey(card))}
 			{@const on = enabled(card)}
 			{@const isSelected = sameCard(card, selected)}
-			{@const isMarked = sameCard(card, marked)}
+			{@const isMarked = marked.some((m) => sameCard(card, m))}
 			<li
 				class="relative shrink-0"
 				style:margin-left={i === 0 ? '0' : `${step - CARD_WIDTH}px`}

@@ -204,7 +204,7 @@ func TestMissionFlow(t *testing.T) {
 		t.Fatalf("logbook = %+v", e)
 	}
 	do(f.svc.GiveUp(ctx, id, host.PlayerID))
-	do(f.svc.BackToLobby(ctx, id, host.PlayerID))
+	do(f.svc.BackToLobby(ctx, id, host.PlayerID, false))
 	v = view(host.PlayerID)
 	if v.Phase != domain.PhaseLobby || v.Attempt != nil || v.Mission != 1 {
 		t.Fatalf("back in the lobby: %+v", v)

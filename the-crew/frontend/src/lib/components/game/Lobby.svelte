@@ -17,7 +17,6 @@
 	import { terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
-	import { missionLabel } from '#lib/game/format.js';
 	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 
 	import type { GameClient } from '#lib/game/client.js';
@@ -230,9 +229,7 @@
 				disabled={!canStart}
 				onclick={() => run(() => client.startMission())}
 			>
-				{view.players.length < 2
-					? 'Waiting for a crew member…'
-					: `Start mission ${def ? missionLabel(def) : view.mission}`}
+				{view.players.length < 2 ? 'Waiting for a crew member…' : `Start mission ${view.mission}`}
 			</Button>
 		{:else}
 			<p class="flex h-12 items-center justify-center gap-2 text-muted-foreground">

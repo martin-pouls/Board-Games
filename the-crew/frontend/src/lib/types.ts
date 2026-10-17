@@ -67,9 +67,7 @@ export type ObjectiveKind =
 	| 'moreSuit'
 	| 'all'
 	| 'leaderStaysAhead'
-	| 'lastCardPlayed'
-	| 'trickQuota'
-	| 'none';
+	| 'lastCardPlayed';
 /** The relation of a Deep Sea objective; "" when the kind has none. */
 export type Comparison = '' | 'more' | 'fewer' | 'equal' | 'moreThanAll' | 'exactly' | 'atLeast';
 /** What every card of a trick must meet (`winTrickWhere`); "" otherwise. */
@@ -122,10 +120,6 @@ export interface Objective {
 	hidden: boolean;
 	/** all: every part (same owner). */
 	parts: Objective[];
-	/** trickQuota: the tricks each seat must win. */
-	targets: number[];
-	/** winExactlyTricks: no counted trick may contain a colour card of these ranks. */
-	without: number[];
 }
 export type OwnerRule = 'crew' | 'commander' | 'chosen' | 'roleA' | 'roleB' | 'leftOfHolder';
 /** A special objective of a mission: a template plus the rule for its owner. */
@@ -156,8 +150,6 @@ export type PollKind = 'yesNo' | 'wellIll';
 /** One row of the mission table. */
 export interface MissionDef {
 	number: number;
-	/** Shown instead of the number ("Q1"), else "". */
-	label: string;
 	tasks: number;
 	/** In placement order. */
 	tokens: Token[];
@@ -175,8 +167,6 @@ export interface MissionDef {
 	commMode: CommMode;
 	/** Total difficulty of the drawn task cards; 0 = none drawn. */
 	difficulty: number;
-	/** Always 3 entries (crew of 3, 4, 5); all 0 unless the mission sets it per crew size (Q2). */
-	difficultyBy: number[];
 	/** Distribution "volunteers": how many members take the tasks. */
 	volunteers: number;
 	/** The captain receives no task. */
@@ -185,16 +175,8 @@ export interface MissionDef {
 	hardestFirst: boolean;
 	/** Task card numbers laid out instead of drawing. */
 	fixedTasks: number[];
-	/** Only the difficulty of the tasks is visible. */
-	faceDownTasks: boolean;
 	/** The logbook counts no attempts. */
 	uncounted: boolean;
-	/** The card whose holder is the captain (trump 4 unless the mission says otherwise). */
-	captainCard: Card;
-	/** Q1: number of stages; 0 without. */
-	stages: number;
-	/** The objectives added in each stage. */
-	stageObjectives: ObjectiveSpec[][];
 }
 /** GET /api/missions. */
 export interface MissionCatalogue {
@@ -368,10 +350,6 @@ export interface Attempt {
 	commFirstTrickOnly: boolean;
 	/** The members the captain chose to take the tasks. */
 	chosen: number[];
-	/** Q1: the 0-based stage. */
-	stage: number;
-	/** Q1: number of stages; 0 without. */
-	stages: number;
 	/** Automatic re-deals before this attempt. */
 	redeals: number;
 	/** Step draft, for the one who picks: the task ids they may take. */
@@ -438,7 +416,7 @@ export type GameEvent =
 	| { type: 'cardPlayed'; seat: number; card: Card }
 	| { type: 'trickWon'; number: number; seat: number }
 	| { type: 'cardsDrawn' }
-	| { type: 'redealt'; times: number }
+	| { type: 'redealt'; times: number; commander: number }
 	| { type: 'taskReplaced'; taskId: number }
 	| { type: 'taskPassed'; seat: number }
 	/** `tricks` is -1 for a hidden prediction. */
@@ -503,5 +481,6 @@ export type ClientCommand =
 	/** Deep Sea: after a loss, draw new tasks and/or do not count the attempt; absent = false. */
 	| { type: 'nextAttempt'; newTasks?: boolean; uncounted?: boolean }
 	| { type: 'nextMission' }
-	| { type: 'backToLobby' }
+	/** Deep Sea: after a loss, do not count the attempt; absent = false. */
+	| { type: 'backToLobby'; uncounted?: boolean }
 	| { type: 'endGame' };

@@ -111,8 +111,6 @@ func fromObjective(o domain.Objective) Objective {
 		InOneTrick:   o.InOneTrick,
 		Hidden:       o.Hidden,
 		Parts:        make([]Objective, len(o.Parts)),
-		Targets:      ints(o.Targets),
-		Without:      fromRanks(o.Without),
 	}
 	for i, s := range o.Suits {
 		out.Suits[i] = string(s)
@@ -181,8 +179,6 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 		TokensLeft:         a.TokensLeft,
 		CommFirstTrickOnly: a.CommFirstTrickOnly,
 		Chosen:             ints(a.Chosen),
-		Stage:              a.Stage,
-		Stages:             a.Stages,
 		Redeals:            a.Redeals,
 		Takeable:           ints(a.Takeable),
 		Assignable:         make([][]int, len(a.Assignable)),
@@ -273,7 +269,6 @@ func fromAttempt(a *domain.AttemptView) *Attempt {
 func FromMission(m domain.MissionDef) MissionDef {
 	out := MissionDef{
 		Number:       m.Number,
-		Label:        m.Label,
 		Tasks:        m.Tasks,
 		Tokens:       make([]string, 0, len(m.Tokens)),
 		Distribution: string(m.Distribution),
@@ -284,18 +279,13 @@ func FromMission(m domain.MissionDef) MissionDef {
 		Poll:         string(m.Poll),
 		Objectives:   make([]ObjectiveSpec, 0, len(m.Objectives)),
 
-		CommMode:        string(m.Comm.Mode),
-		Difficulty:      m.Difficulty,
-		DifficultyBy:    m.DifficultyBy[:],
-		Volunteers:      m.Volunteers,
-		CaptainSkipped:  m.CaptainSkipped,
-		HardestFirst:    m.HardestFirst,
-		FixedTasks:      ints(m.FixedTasks),
-		FaceDownTasks:   m.FaceDownTasks,
-		Uncounted:       m.Uncounted,
-		CaptainCard:     FromCard(captainCard(m)),
-		Stages:          len(m.Stages),
-		StageObjectives: make([][]ObjectiveSpec, len(m.Stages)),
+		CommMode:       string(m.Comm.Mode),
+		Difficulty:     m.Difficulty,
+		Volunteers:     m.Volunteers,
+		CaptainSkipped: m.CaptainSkipped,
+		HardestFirst:   m.HardestFirst,
+		FixedTasks:     ints(m.FixedTasks),
+		Uncounted:      m.Uncounted,
 	}
 	for _, t := range m.Tokens {
 		out.Tokens = append(out.Tokens, string(t))
@@ -304,18 +294,7 @@ func FromMission(m domain.MissionDef) MissionDef {
 		out.Setup = append(out.Setup, string(s))
 	}
 	out.Objectives = fromSpecs(m.Objectives)
-	for i, st := range m.Stages {
-		out.StageObjectives[i] = fromSpecs(st)
-	}
 	return out
-}
-
-// captainCard is the card whose holder is the captain (the commander).
-func captainCard(m domain.MissionDef) domain.Card {
-	if m.CaptainCard == (domain.Card{}) {
-		return domain.CommanderCard
-	}
-	return m.CaptainCard
 }
 
 // fromSpecs maps the special objectives of a mission; the result is never nil.
@@ -414,7 +393,7 @@ func FromEvent(e domain.Event) (Event, bool) {
 	case domain.AttemptEnded:
 		return Event{Type: EventAttemptEnded, Success: ptr(e.Success), Reason: string(e.Reason)}, true
 	case domain.Redealt:
-		return Event{Type: EventRedealt, Times: ptr(e.Times)}, true
+		return Event{Type: EventRedealt, Times: ptr(e.Times), Commander: ptr(e.Commander)}, true
 	case domain.TaskReplaced:
 		return Event{Type: EventTaskReplaced, TaskID: ptr(e.TaskID)}, true
 	case domain.TaskPassed:

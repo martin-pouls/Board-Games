@@ -32,15 +32,10 @@ func terrainMode(c Card) CommMode {
 	return CommRapture
 }
 
-// newDeepSeaTask builds task id from task card card for the crew size. A face-down task (Q2)
-// has no condition of its own: only its difficulty counts.
-func newDeepSeaTask(id, card, members int, faceDown bool) Task {
+// newDeepSeaTask builds task id from task card card for the crew size.
+func newDeepSeaTask(id, card, members int) Task {
 	tc, _ := TaskCardFor(card)
-	o := tc.objectiveFor(members)
-	if faceDown {
-		o = Objective{Kind: KindNone, Owner: OwnerUnassigned}
-	}
-	return Task{ID: id, Objective: o, FaceDown: faceDown, CardID: card, Difficulty: tc.DifficultyFor(members)}
+	return Task{ID: id, Objective: tc.objectiveFor(members), CardID: card, Difficulty: tc.DifficultyFor(members)}
 }
 
 // notForCaptain reports whether the captain may not own task t (cards 4–6).
@@ -88,7 +83,7 @@ func (g *Game) dealTaskCards(a *Attempt, m MissionDef, keep []int, rng RNG) {
 		ids = slices.Clone(keep)
 		deck := g.taskDeck(ids, rng)
 		if ids == nil {
-			target, sum := m.difficultyFor(n), 0
+			target, sum := m.Difficulty, 0
 			rest := []int{}
 			for _, id := range deck {
 				tc, _ := TaskCardFor(id)
@@ -101,19 +96,17 @@ func (g *Game) dealTaskCards(a *Attempt, m MissionDef, keep []int, rng RNG) {
 			}
 			deck = rest
 		}
-		if !m.FaceDownTasks {
-			a.TaskDeck = deck
-		}
+		a.TaskDeck = deck
 		g.markUsed(ids)
 	}
 	for i, id := range ids {
-		a.Tasks = append(a.Tasks, newDeepSeaTask(i, id, n, m.FaceDownTasks))
+		a.Tasks = append(a.Tasks, newDeepSeaTask(i, id, n))
 	}
 }
 
-// redealRules returns the alignments that force a re-deal: the mission's and those of the tasks.
-func (a *Attempt) redealRules(m MissionDef) [][]Card {
-	rules := slices.Clone(m.Redeal)
+// redealRules returns the alignments of the tasks that force a re-deal.
+func (a *Attempt) redealRules() [][]Card {
+	var rules [][]Card
 	for _, t := range a.Tasks {
 		if tc, ok := TaskCardFor(t.CardID); ok {
 			rules = append(rules, tc.Redeal...)
@@ -123,8 +116,8 @@ func (a *Attempt) redealRules(m MissionDef) [][]Card {
 }
 
 // needsRedeal reports whether one hand holds all cards of a re-deal rule (rules §2, §6).
-func (a *Attempt) needsRedeal(m MissionDef) bool {
-	rules := a.redealRules(m)
+func (a *Attempt) needsRedeal() bool {
+	rules := a.redealRules()
 	for i := range a.Members {
 		held := a.Members[i].Cards()
 		for _, r := range rules {
@@ -137,25 +130,32 @@ func (a *Attempt) needsRedeal(m MissionDef) bool {
 }
 
 // redealIfNeeded deals the playing cards again while an alignment makes a task impossible. It is
-// not an attempt. Emits Redealt.
-func (g *Game) redealIfNeeded(m MissionDef, rng RNG) {
+// not an attempt. Returns the number of re-deals; the caller emits Redealt.
+func (g *Game) redealIfNeeded(m MissionDef, rng RNG) int {
 	a := g.Attempt
 	n := 0
-	for ; n < maxRedeals && a.needsRedeal(m); n++ {
-		a.Members = deal(g.Players, m.captainCard(), rng)
-		a.setCommander(m)
+	for ; n < maxRedeals && a.needsRedeal(); n++ {
+		a.Members = deal(g.Players, rng)
+		a.setCommander()
 	}
 	if n > 0 {
 		a.Redeals += n
 		a.resolveObjectives(m)
-		g.emit(Redealt{Times: n})
+	}
+	return n
+}
+
+// emitRedealt reports n re-deals (none: nothing) with the captain they left.
+func (g *Game) emitRedealt(n int) {
+	if n > 0 {
+		g.emit(Redealt{Times: n, Commander: g.Attempt.Commander})
 	}
 }
 
-// setCommander makes the holder of the mission's captain card the commander.
-func (a *Attempt) setCommander(m MissionDef) {
+// setCommander makes the holder of the commander card the commander.
+func (a *Attempt) setCommander() {
 	for i, mem := range a.Members {
-		if mem.holds(m.captainCard()) || (mem.Dummy && slices.Contains(mem.Cards(), m.captainCard())) {
+		if mem.holds(CommanderCard) {
 			a.Commander = i
 		}
 	}
@@ -220,11 +220,10 @@ func (g *Game) ReplaceTask(by PlayerID, taskID int, rng RNG) error {
 	}
 	id := a.TaskDeck[k]
 	a.TaskDeck = append(slices.Delete(slices.Clone(a.TaskDeck), k, k+1), old.CardID)
-	a.Tasks[taskID] = newDeepSeaTask(taskID, id, n, false)
+	a.Tasks[taskID] = newDeepSeaTask(taskID, id, n)
 	g.markUsed([]int{id})
 	g.emit(TaskReplaced{TaskID: taskID})
-	m := g.MissionDef()
-	g.redealIfNeeded(m, rng)
+	g.emitRedealt(g.redealIfNeeded(g.MissionDef(), rng))
 	a.Poll = nil
 	g.advanceSetup()
 	g.commit()
@@ -510,22 +509,6 @@ func (g *Game) Predict(by PlayerID, taskID, tricks int) error {
 	return nil
 }
 
-// setQuotas fills the targets of Q2's trick quota: each seat's tasks' total difficulty.
-func (a *Attempt) setQuotas() {
-	for i, o := range a.Objectives {
-		if o.Kind != KindTrickQuota {
-			continue
-		}
-		targets := make([]int, len(a.Members))
-		for _, t := range a.Tasks {
-			if s := t.Owner(); s >= 0 {
-				targets[s] += t.Difficulty
-			}
-		}
-		a.Objectives[i].Targets = targets
-	}
-}
-
 // --- Communication modes (rules §4) ---
 
 // deadZone reports whether communications show no position (Planet Nine's dead zone, Deep Sea's
@@ -555,15 +538,4 @@ func (a *Attempt) TokensLeft() int {
 func (g *Game) onlyBeforeFirstTrick() bool {
 	a := g.Attempt
 	return g.MissionDef().Distribution == DistCaptainOrVolunteer && len(a.Chosen) == 1 && a.Chosen[0] != a.Commander
-}
-
-// hasNextStage reports whether the mission has a stage after the attempt's (Q1).
-func (a *Attempt) hasNextStage(m MissionDef) bool { return a.Stage+1 < len(m.Stages) }
-
-// atStage returns m with the objectives of stage appended (Q1).
-func (m MissionDef) atStage(stage int) MissionDef {
-	if stage < len(m.Stages) {
-		m.Objectives = append(slices.Clone(m.Objectives), m.Stages[stage]...)
-	}
-	return m
 }

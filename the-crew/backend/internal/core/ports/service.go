@@ -61,7 +61,9 @@ type GameService interface {
 	NextAttempt(ctx context.Context, id domain.GameID, player domain.PlayerID, choice domain.NextAttemptChoice) error
 	// NextMission starts the next mission after a win (host, debrief).
 	NextMission(ctx context.Context, id domain.GameID, player domain.PlayerID) error
-	BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID) error
+	// BackToLobby returns the crew to the lobby (host, debrief); uncounted (Deep Sea, after a loss)
+	// takes the lost attempt back out of the logbook.
+	BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID, uncounted bool) error
 	// EndGame lets the host close the session for everyone (phase "ended").
 	EndGame(ctx context.Context, id domain.GameID, player domain.PlayerID) error
 }

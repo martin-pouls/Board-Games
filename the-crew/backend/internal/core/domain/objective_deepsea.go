@@ -421,17 +421,3 @@ func (o Objective) lastCardPlayed(h History) Status {
 	}
 	return StatusOpen
 }
-
-// trickQuota (Q2): every seat wins exactly Targets[seat] tricks; open until the targets are set.
-func (o Objective) trickQuota(h History) Status {
-	if o.Targets == nil {
-		return StatusOpen
-	}
-	won, rem := h.wonCounts(), h.remaining()
-	for s, n := range won {
-		if n > o.Targets[s] || n+rem < o.Targets[s] {
-			return StatusFailed
-		}
-	}
-	return decided(h.over(), false)
-}

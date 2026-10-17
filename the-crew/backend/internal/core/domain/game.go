@@ -106,13 +106,9 @@ func (g *Game) IsHost(id PlayerID) bool {
 	return id != "" && id == g.HostID
 }
 
-// MissionDef returns the definition of the selected mission, with the objectives of the
-// attempt's stage (Q1).
+// MissionDef returns the definition of the selected mission.
 func (g *Game) MissionDef() MissionDef {
 	m, _ := MissionFor(g.Edition, g.Mission)
-	if g.Attempt != nil {
-		m = m.atStage(g.Attempt.Stage)
-	}
 	return m
 }
 

@@ -11,8 +11,6 @@ import {
 	commOptions,
 	communicationOf,
 	gameView,
-	objective,
-	objectiveView,
 	seeded,
 	shuffled,
 	table,
@@ -22,12 +20,10 @@ import {
 } from './fixtures.js';
 import { TASK_CARDS } from './taskCards.fixture.js';
 import {
-	OWNER_CREW,
 	OWNER_UNASSIGNED,
 	type Card,
 	type Communication,
 	type MissionDef,
-	type ObjectiveView,
 	type PlayerView,
 	type Poll,
 	type Status,
@@ -494,59 +490,6 @@ function playTerrain(humans: number): PlayerView {
 	});
 }
 
-// ---------------------------------------------------------------------------------- side quests
-
-/** Q1, stage B (a new deal): the holder of submarine 1 is the captain and must win exactly three tricks. */
-function q1StageB(humans: number): PlayerView {
-	const t = table({
-		humans,
-		commander: 0,
-		captainCard: card('trump', 1),
-		seed: 271,
-		tricks: 2,
-		plays: 0
-	});
-	const stage = deepSeaMission(42).stageObjectives[1][0];
-	const objectives: ObjectiveView[] = [
-		objectiveView(
-			objective(stage.kind, { count: stage.count, without: stage.without, owner: t.commander })
-		)
-	];
-	return dsView(t, 42, {
-		viewer: 0,
-		number: 3,
-		objectives,
-		extra: { stage: 1, stages: 2 }
-	});
-}
-
-/** Q2: the task cards stay face down, only their difficulty shows; the quota adds up to the tricks. */
-function q2FaceDown(humans: number): PlayerView {
-	const t = table({ humans, commander: 0, seed: 281, tricks: 2, plays: 1 });
-	const total = deepSeaMission(43).difficultyBy[t.seats - 3];
-	const ids = drawCards(t.seats, total, 14, { count: 5 });
-	const tasks: Task[] = ids.map((cardId, i) => ({
-		id: i,
-		card: null,
-		token: '',
-		owner: (t.commander + i) % t.seats,
-		status: 'open',
-		faceDown: true,
-		cardId: 0,
-		difficulty: TASK_CARDS[cardId - 1].difficulty[t.seats - 3],
-		objective: null,
-		predicted: false
-	}));
-	const targets = Array.from({ length: t.seats }, (_, s) =>
-		tasks.filter((x) => x.owner === s).reduce((n, x) => n + x.difficulty, 0)
-	);
-	return dsView(t, 43, {
-		viewer: 0,
-		tasks,
-		objectives: [objectiveView(objective('trickQuota', { owner: OWNER_CREW, targets }))]
-	});
-}
-
 // ---------------------------------------------------------------------------------- debrief
 
 /** Mission 9 lost in trick 5: a task can no longer be met. The host picks same or new tasks. */
@@ -634,8 +577,6 @@ const SITUATIONS: Record<string, (humans: number) => PlayerView> = {
 	dsPlayRapture: playRapture,
 	dsPlayCurrents: playCurrents,
 	dsPlayTerrain: playTerrain,
-	dsQ1StageB: q1StageB,
-	dsQ2FaceDown: q2FaceDown,
 	dsDebriefLost: debriefLost,
 	dsDebriefLostEpilogue: debriefLostEpilogue,
 	dsDebriefWon: debriefWon

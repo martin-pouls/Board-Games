@@ -1,7 +1,8 @@
 import { createSessionStore } from '@board-games/shared/session.js';
+import { storagePrefix } from './edition.js';
 
 export type { StoredSession, SessionStorageLike } from '@board-games/shared/session.js';
 
-/** The Crew's sessions in localStorage (`the-crew:session:<CODE>`, `the-crew:nickname`). */
-export const sessions = createSessionStore('the-crew', () => globalThis.localStorage);
+/** The sessions in localStorage (`<storagePrefix>:session:<CODE>`, `<storagePrefix>:nickname`). */
+export const sessions = createSessionStore(storagePrefix, () => globalThis.localStorage);
 export default sessions;

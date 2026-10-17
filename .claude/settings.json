@@ -1,3 +1,10 @@
 {
+  "enabledPlugins": {
+    "gopls-lsp@anthropic-plugin-directory": true,
+    "typescript-lsp@anthropic-plugin-directory": true,
+    "claude-md-management@anthropic-plugin-directory": true,
+    "claude-code-setup@anthropic-plugin-directory": true,
+    "frontend-design@anthropic-plugin-directory": true
+  },
   "outputStyle": "Concise"
 }

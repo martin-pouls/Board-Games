@@ -36,8 +36,6 @@ function o(kind: Objective['kind'], over: Partial<Objective> = {}): Objective {
 		inOneTrick: false,
 		hidden: false,
 		parts: [],
-		targets: [],
-		without: [],
 		...over
 	};
 }

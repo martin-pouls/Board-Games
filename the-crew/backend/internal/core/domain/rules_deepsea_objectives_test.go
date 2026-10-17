@@ -2,8 +2,8 @@ package domain
 
 import "testing"
 
-// Rules deep-sea/rules.md §8: the mission-level crew objectives (missions 8, 12, 21, 23, 27) and
-// the side quests Q1 and Q2. The history DSL is explained in rules_deepsea_tasks_test.go.
+// Rules deep-sea/rules.md §8: the mission-level crew objectives (missions 8, 12, 21, 23, 27).
+// The history DSL is explained in rules_deepsea_tasks_test.go.
 func TestRulesDeepSeaMissionObjectives(t *testing.T) {
 	balance := func(rank Rank) Objective {
 		return Objective{Kind: KindCrewBalance, Owner: OwnerCrew, Count: 1, Rank: rank}
@@ -11,13 +11,6 @@ func TestRulesDeepSeaMissionObjectives(t *testing.T) {
 	neverLead := Objective{Kind: KindNeverLead, Owner: OwnerCrew, Suits: []Suit{SuitPink, SuitTrump}}
 	ahead := Objective{Kind: KindLeaderStaysAhead, Owner: OwnerCrew}
 	yellow5 := Objective{Kind: KindLastCardPlayed, Owner: OwnerCrew, Cards: []Card{{SuitYellow, 5}}}
-	q1 := func(n int) Objective {
-		return Objective{Kind: KindWinExactlyTricks, Owner: 0, Count: n, Without: []Rank{7, 8, 9}}
-	}
-	quota := func(targets ...int) Objective {
-		return Objective{Kind: KindTrickQuota, Owner: OwnerCrew, Targets: targets}
-	}
-
 	cases := []tkCase{
 		// 8: at no point may a member have won two more 9s than any other member (dummy included)
 		tkm("mission08", "a lead of one is allowed", balance(9), tkF, "0|p9", "1|b9", "2|g9", "0|y9", "~1"),
@@ -58,31 +51,6 @@ func TestRulesDeepSeaMissionObjectives(t *testing.T) {
 		tkm("mission27", "another card is played last", yellow5, tkX, "~1:12", "0:g9 1:b1 2:y1=0"),
 		tkm("mission27", "it is the left-over card (3 players)", yellow5, tkX, "~1").lft("y5"),
 		tkm("mission27", "open", yellow5, tkO, "~1:5"),
-
-		// Q1: the captain wins exactly 2 (stage B: 3) tricks, none containing a 7, 8 or 9
-		tkm("Q1", "two clean tricks", q1(2), tkF, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "~1"),
-		tkm("Q1", "a submarine is fine", q1(2), tkF, "0:t4 1:y1 2:y2=0", "0:y5 1:b1 2:b2=0", "~1"),
-		tkm("Q1", "a 7 in a counted trick", q1(2), tkX, "0:y7 1:y1 2:y2=0"),
-		tkm("Q1", "an off-colour 9 in a counted trick", q1(2), tkX, "0:y5 1:g9 2:y1=0"),
-		tkm("Q1", "an 8 played by another member", q1(2), tkX, "0:y5 1:b8 2:y1=0"),
-		tkm("Q1", "three tricks", q1(2), tkX, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "0:g5 1:g1 2:g2=0"),
-		tkm("Q1", "one trick at the end", q1(2), tkX, "0:y5 1:y1 2:y2=0", "~1"),
-		tkm("Q1", "one clean trick is open", q1(2), tkO, "0:y5 1:y1 2:y2=0"),
-		tkm("Q1", "7-9 cards in tricks of other members are fine", q1(2), tkF, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "1|p9 p8 p7", "~1"),
-		tkm("Q1", "stage B: three clean tricks", q1(3), tkF, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "0:g5 1:g1 2:g2=0", "~1"),
-		tkm("Q1", "stage B: an 8 in the third trick", q1(3), tkX, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "0:g8 1:g1 2:g2=0"),
-		tkm("Q1", "stage B: two tricks only", q1(3), tkX, "0:y5 1:y1 2:y2=0", "0:b5 1:b1 2:b2=0", "~1"),
-
-		// Q2: every member wins exactly as many tricks as the sum of the difficulties of the cards
-		// selected (the dummy is a member); open while the targets are unknown
-		tkm("Q2", "everyone hits the target", quota(5, 5, 3), tkF, "~0:5", "~1:5", "~2:3"),
-		tkm("Q2", "4 members", quota(3, 3, 2, 2), tkF, "~0:3", "~1:3", "~2:2", "~3:2").mem(4),
-		tkm("Q2", "a member with no cards wins no trick", quota(0, 6, 7), tkF, "~1:6", "~2:7"),
-		tkm("Q2", "a member with no cards wins a trick", quota(0, 6, 7), tkX, "~0:1"),
-		tkm("Q2", "one trick too many", quota(5, 5, 3), tkX, "~0:6"),
-		tkm("Q2", "the dummy misses its target", quota(5, 5, 3), tkX, "~0:5", "~1:4", "~2:4"),
-		tkm("Q2", "on the way", quota(5, 5, 3), tkO, "~0:2"),
-		tkm("Q2", "targets not set yet", Objective{Kind: KindTrickQuota, Owner: OwnerCrew}, tkO, "~0:2"),
 	}
 	tkRun(t, cases)
 	t.Logf("%d mission objective cases", len(cases))

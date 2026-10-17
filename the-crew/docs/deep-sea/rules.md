@@ -50,7 +50,7 @@ ones when the deck runs out.
   revealed one with another of the same difficulty. **App decision:** no automatic check. Before the
   first pick, the captain may **replace** any displayed task: it goes back into the deck and the next
   card of the same difficulty (for this player count) takes its place. Any number of times, not an
-  attempt. Not in missions with fixed tasks (32) or face-down tasks (Q2).
+  attempt. Not in missions with fixed tasks (32).
 - **After a failed attempt:** the crew may keep the same tasks or draw new ones. **App decision:**
   the host chooses in the debrief.
 - **Unavoidable failures** (rulebook rule of thumb: a loss you could not have avoided is not a failed
@@ -112,8 +112,7 @@ card is turned up after a trick once the card on top of it is played.
 Source: fan mission sheet v1d. *D* = total difficulty. Every mission allows the distress signal.
 Free selection = the crew discusses who takes what (no talk about hands).
 **App decision:** the captain makes every "decide together" call in the app and assigns the tasks in free selection (as in Planet Nine); the crew coordinates outside the game.
-**App decision (numbering):** the side quests come after the epilogue in the app's mission list: Q1 is mission 42, Q2 mission 43 (shown as "Q1", "Q2").
-**App decision (Q1, confirmed at WP5):** stage B is a new deal after stage A is won, the captain (submarine 1) again has to win the tricks; a lost stage B is retried as stage B. With 2 players submarine 1 is set aside for a human (as submarine 4 otherwise), so Tonoja is never captain.
+**App decision:** the sheet's two side quests (Q1: two stages with submarine 1 as captain; Q2: face-down tasks and trick quotas) are left out; the app has missions 1–41.
 
 | # | D | Comm | Selection / special rules |
 |---|---|---|---|
@@ -149,8 +148,6 @@ Free selection = the crew discusses who takes what (no talk about hands).
 | 30 | 16 | normal | Free selection. |
 | 31 | 17 | normal | Free selection. |
 | 32 | — | normal | Fixed tasks, selected as usual: "I will win 0 tricks", "I will win exactly 3 tricks, in a row", "I will win 2 tricks in a row", "I will win the first & last trick". |
-| Q1 | — | normal | Side quest, no task cards. The holder of **submarine 1** is the captain (not submarine 4). Re-deal if the captain has all four submarines (not an attempt). Stage A: the captain must win exactly 2 tricks and none of them may contain a 7, 8 or 9. Once A is won, stage B (a new deal): the same with exactly 3 tricks. **App decision:** the two stages are played one after the other; Q1 is complete in the logbook when B is won; attempts of both stages add up. |
-| Q2 | 3p 13 / 4p 10 / 5p 8 | normal | Side quest. Task cards are drawn as usual but stay **face down**: only their difficulty (the back) is visible. Selection as usual. Each member must win exactly as many tricks as the sum of the difficulties of the cards they selected (no cards: no tricks). The totals equal the number of tricks (13 / 10 / 8). 2 players: the 3-player value. |
 | 33–41 | 18…26 | normal | Epilogue: free selection, attempts are not counted, the distress signal is tracked. |
 
 **Volunteer missions (14, 15, 16, 26):** the captain asks each member clockwise once; only "yes" or

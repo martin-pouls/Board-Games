@@ -53,11 +53,6 @@
 			: null
 	);
 	const terrain = $derived(attempt.terrain);
-	const stage = $derived(
-		attempt.stages > 0
-			? `Stage ${String.fromCharCode(65 + attempt.stage)} of ${attempt.stages}`
-			: ''
-	);
 
 	const rules = $derived(
 		[
@@ -69,7 +64,6 @@
 				title: 'The tasks were passed on: communicate before trick 1 or never'
 			},
 			mission && mission.fromTrick > 1 && { text: `comms from trick ${mission.fromTrick}` },
-			stage && { text: stage, title: 'Side quest with stages: each stage is a new deal' },
 			attempt.distress && { text: 'distress signal used' }
 		].filter((r): r is { text: string; title?: string } => !!r)
 	);

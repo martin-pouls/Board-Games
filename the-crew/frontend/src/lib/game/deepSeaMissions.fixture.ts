@@ -1,6 +1,5 @@
-// The 43 Deep Sea mission rows as the server sends them (generated once from the domain's
-// missions_deepsea.go through the wire mapping; rules.md §8 is the source). Q1 and Q2 are the
-// last two rows.
+// The 41 Deep Sea mission rows as the server sends them (generated once from the domain's
+// missions_deepsea.go through the wire mapping; rules.md §8 is the source).
 import { OWNER_UNASSIGNED, type MissionDef } from '#lib/types.js';
 import { def, spec } from './fixtures.js';
 
@@ -101,35 +100,5 @@ export const DEEP_SEA_MISSIONS: MissionDef[] = [
 	def(38, { poll: 'yesNo', distribution: 'free', difficulty: 23, uncounted: true }),
 	def(39, { poll: 'yesNo', distribution: 'free', difficulty: 24, uncounted: true }),
 	def(40, { poll: 'yesNo', distribution: 'free', difficulty: 25, uncounted: true }),
-	def(41, { poll: 'yesNo', distribution: 'free', difficulty: 26, uncounted: true }),
-	def(42, {
-		poll: 'yesNo',
-		label: 'Q1',
-		captainCard: { suit: 'trump', rank: 1 },
-		stages: 2,
-		stageObjectives: [
-			[
-				spec('winExactlyTricks', 'commander', {
-					owner: OWNER_UNASSIGNED,
-					count: 2,
-					without: [7, 8, 9]
-				})
-			],
-			[
-				spec('winExactlyTricks', 'commander', {
-					owner: OWNER_UNASSIGNED,
-					count: 3,
-					without: [7, 8, 9]
-				})
-			]
-		]
-	}),
-	def(43, {
-		poll: 'yesNo',
-		label: 'Q2',
-		distribution: 'draft',
-		objectives: [spec('trickQuota', 'crew', { owner: OWNER_UNASSIGNED })],
-		difficultyBy: [13, 10, 8],
-		faceDownTasks: true
-	})
+	def(41, { poll: 'yesNo', distribution: 'free', difficulty: 26, uncounted: true })
 ];

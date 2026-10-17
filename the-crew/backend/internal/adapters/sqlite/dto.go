@@ -66,8 +66,6 @@ type objectiveDTO struct {
 	InOneTrick bool           `json:"inOneTrick,omitempty"`
 	Hidden     bool           `json:"hidden,omitempty"`
 	Parts      []objectiveDTO `json:"parts"`
-	Targets    []int          `json:"targets"`
-	Without    []int          `json:"without"`
 }
 
 type cardMatchDTO struct {
@@ -157,7 +155,6 @@ type attemptDTO struct {
 	TaskDeck []int    `json:"taskDeck"`
 	Passes   int      `json:"passes,omitempty"`
 	Chosen   []int    `json:"chosen"`
-	Stage    int      `json:"stage,omitempty"`
 	Redeals  int      `json:"redeals,omitempty"`
 }
 
@@ -277,7 +274,6 @@ func attemptToDTO(a *domain.Attempt) *attemptDTO {
 		TaskDeck: mapSlice(a.TaskDeck, intCopy),
 		Passes:   a.Passes,
 		Chosen:   mapSlice(a.Chosen, intCopy),
-		Stage:    a.Stage,
 		Redeals:  a.Redeals,
 	}
 	return d
@@ -337,9 +333,7 @@ func objectiveToDTO(o domain.Objective) objectiveDTO {
 		Ranks: mapSlice(o.Ranks, func(r domain.Rank) int { return int(r) }),
 		With:  cardMatchToDTO(o.With), Target: cardMatchToDTO(o.Target),
 		Where: string(o.Where), Max: o.Max, Exact: o.Exact, InOneTrick: o.InOneTrick, Hidden: o.Hidden,
-		Parts:   mapSlice(o.Parts, objectiveToDTO),
-		Targets: mapSlice(o.Targets, intCopy),
-		Without: mapSlice(o.Without, func(r domain.Rank) int { return int(r) }),
+		Parts: mapSlice(o.Parts, objectiveToDTO),
 	}
 }
 
@@ -353,9 +347,7 @@ func objectiveFromDTO(d objectiveDTO) domain.Objective {
 		Ranks: mapSlice(d.Ranks, func(r int) domain.Rank { return domain.Rank(r) }),
 		With:  cardMatchFromDTO(d.With), Target: cardMatchFromDTO(d.Target),
 		Where: domain.TrickCondition(d.Where), Max: d.Max, Exact: d.Exact, InOneTrick: d.InOneTrick, Hidden: d.Hidden,
-		Parts:   mapSlice(d.Parts, objectiveFromDTO),
-		Targets: mapSlice(d.Targets, intCopy),
-		Without: mapSlice(d.Without, func(r int) domain.Rank { return domain.Rank(r) }),
+		Parts: mapSlice(d.Parts, objectiveFromDTO),
 	}
 }
 
@@ -430,7 +422,6 @@ func attemptFromDTO(d *attemptDTO) *domain.Attempt {
 		TaskDeck: mapSlice(d.TaskDeck, intCopy),
 		Passes:   d.Passes,
 		Chosen:   mapSlice(d.Chosen, intCopy),
-		Stage:    d.Stage,
 		Redeals:  d.Redeals,
 	}
 }

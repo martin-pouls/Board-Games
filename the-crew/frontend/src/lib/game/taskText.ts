@@ -129,7 +129,7 @@ function predictPhrase(o: Objective, players: number, predicted: boolean): strin
 		const total = TOTAL_TRICKS[Math.min(Math.max(players, 3), 5)];
 		const range = players > 0 ? ` (0 to ${total})` : '';
 		return o.hidden
-			? `predict how many tricks you will win${range}, kept hidden`
+			? `predict how many tricks you will win${range} and keep it secret`
 			: `predict how many tricks you will win${range}`;
 	}
 	const n = o.count >= 0 ? plural(o.count, 'trick') : '? tricks';
@@ -199,12 +199,8 @@ export function taskPhrase(o: Objective, players: number, predicted = o.count >=
 			return predictPhrase(o, players, predicted);
 		case 'winNoTricks':
 			return "don't win any tricks";
-		case 'winExactlyTricks': {
-			const base = `win exactly ${numberWord(o.count)} ${trickWord(o.count)}`;
-			if (o.without.length === 0) return base;
-			const article = o.without[0] === 8 ? 'an' : 'a';
-			return `${base}, none containing ${article} ${listText(o.without.map(String), 'or')}`;
-		}
+		case 'winExactlyTricks':
+			return `win exactly ${numberWord(o.count)} ${trickWord(o.count)}`;
 		case 'avoidTricks':
 			return o.tricks.length === 1
 				? `don't win ${tricksPhrase(o.tricks)}`
@@ -217,7 +213,7 @@ export function taskPhrase(o: Objective, players: number, predicted = o.count >=
 			return `win only ${tricksPhrase(o.tricks)}`;
 		case 'consecutive':
 			return o.exact
-				? `win exactly ${numberWord(o.count)} tricks, all in a row`
+				? `win exactly ${numberWord(o.count)} tricks, ${o.count === 2 ? 'both' : 'all'} in a row`
 				: `win ${numberWord(o.count)} consecutive tricks`;
 		case 'winWith':
 			return winWithPhrase(o);
@@ -253,10 +249,6 @@ export function taskPhrase(o: Objective, players: number, predicted = o.count >=
 			return 'whoever wins the first trick must always have won more tricks than every other member';
 		case 'lastCardPlayed':
 			return `${o.cards.length ? cardNoun(o.cards[0]) : 'the card'} must be the last card played in the last trick`;
-		case 'trickQuota':
-			return 'every member must win exactly as many tricks as the difficulties of their tasks add up to';
-		case 'none':
-			return 'its difficulty adds to the tricks you must win';
 		default:
 			// Planet Nine's own kinds are phrased by objectiveText (format.ts).
 			return o.kind;

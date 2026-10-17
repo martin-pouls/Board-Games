@@ -313,8 +313,8 @@ func (s *Service) NextMission(ctx context.Context, id domain.GameID, player doma
 }
 
 // BackToLobby implements ports.GameService.
-func (s *Service) BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID) error {
-	return s.act(ctx, id, func(g *domain.Game) error { return g.BackToLobby(player) })
+func (s *Service) BackToLobby(ctx context.Context, id domain.GameID, player domain.PlayerID, uncounted bool) error {
+	return s.act(ctx, id, func(g *domain.Game) error { return g.BackToLobby(player, uncounted) })
 }
 
 // EndGame implements ports.GameService.

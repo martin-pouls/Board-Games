@@ -12,6 +12,7 @@
 		open = $bindable(false),
 		options,
 		deadZone,
+		tokensLeft = -1,
 		disabled,
 		oncommunicate
 	}: {
@@ -19,6 +20,8 @@
 		/** The cards the viewer may communicate now, each with its true statement. */
 		options: CommOption[];
 		deadZone: boolean;
+		/** Rapture of the deep: the crew's shared tokens left; -1 otherwise (once per attempt). */
+		tokensLeft?: number;
 		disabled: boolean;
 		/** Resolves to false when the server refused; the sheet then stays open. */
 		oncommunicate: (o: CommOption) => Promise<boolean>;
@@ -40,7 +43,10 @@
 		<Dialog.Header>
 			<Dialog.Title>Communicate a card</Dialog.Title>
 			<Dialog.Description>
-				Once per attempt. The card goes face up in front of you until you play it.
+				{tokensLeft >= 0
+					? `Rapture of the deep: takes one of the crew's ${terms.commToken}s (${tokensLeft} left); you may communicate again while any are left.`
+					: 'Once per attempt.'}
+				The card goes face up in front of you until you play it.
 				{deadZone
 					? 'Dead zone: nobody learns whether it is your highest, only or lowest card of its colour.'
 					: 'Everyone sees whether it is your highest, only or lowest card of its colour.'}

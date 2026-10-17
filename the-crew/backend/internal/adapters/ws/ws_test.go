@@ -202,7 +202,7 @@ func (f *fakeService) NextAttempt(ctx context.Context, id domain.GameID, p domai
 func (f *fakeService) NextMission(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
 	return f.rec(ctx, id, "NextMission")
 }
-func (f *fakeService) BackToLobby(ctx context.Context, id domain.GameID, p domain.PlayerID) error {
+func (f *fakeService) BackToLobby(ctx context.Context, id domain.GameID, p domain.PlayerID, uncounted bool) error {
 	return f.rec(ctx, id, "BackToLobby")
 }
 

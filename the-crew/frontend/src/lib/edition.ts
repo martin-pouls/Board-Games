@@ -52,6 +52,12 @@ export const editionTerms: Record<Edition, Terms> = {
 	}
 };
 
+/**
+ * The localStorage prefix of this build's edition. Both editions run on the same production
+ * origin, so each keeps its sessions and preferences apart (`the-crew:…`, `deep-sea:…`).
+ */
+export const storagePrefix = edition === 'deepSea' ? 'deep-sea' : 'the-crew';
+
 /** The terms of this build's edition. */
 export const terms: Terms = editionTerms[edition];
 
@@ -60,11 +66,5 @@ export function cap(s: string): string {
 	return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** The number of missions of this edition (Deep Sea: 41, then the side quests Q1 = 42, Q2 = 43). */
-export const missionCount = edition === 'deepSea' ? 43 : 50;
-
-/** The name of mission n in this edition: its number, or "Q1" / "Q2" for Deep Sea's side quests. */
-export function missionName(n: number): string {
-	if (edition === 'deepSea' && n > 41) return `Q${n - 41}`;
-	return String(n);
-}
+/** The number of missions of this edition (Deep Sea: without the side quests Q1 and Q2). */
+export const missionCount = edition === 'deepSea' ? 41 : 50;

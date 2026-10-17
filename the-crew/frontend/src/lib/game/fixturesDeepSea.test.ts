@@ -56,15 +56,6 @@ describe('Deep Sea fixtures', () => {
 		expect(at('dsPlayRapture3').tokensLeft).toBe(0);
 		expect(at('dsPlayCurrents3').members[1].communication?.position).toBe('');
 		expect(at('dsPlayTerrain3').terrain).toEqual({ suit: 'green', rank: 5 });
-		// Side quests.
-		const q1 = deepSeaFixtures.dsQ1StageB3();
-		expect(q1.missionDef).toMatchObject({ number: 42, label: 'Q1', stages: 2 });
-		expect(q1.attempt).toMatchObject({ stage: 1, stages: 2 });
-		expect(q1.attempt!.objectives[0]).toMatchObject({ kind: 'winExactlyTricks', count: 3 });
-		const q2 = at('dsQ2FaceDown3');
-		expect(q2.tasks.every((t) => t.faceDown && t.objective === null)).toBe(true);
-		expect(q2.objectives[0].kind).toBe('trickQuota');
-		expect(q2.objectives[0].targets.reduce((a, b) => a + b, 0)).toBe(q2.totalTricks);
 		// Debriefs.
 		expect(at('dsDebriefLost3').result).toMatchObject({ success: false, reason: 'taskFailed' });
 		const epilogue = deepSeaFixtures.dsDebriefLostEpilogue3();
@@ -80,26 +71,20 @@ describe('Deep Sea fixtures', () => {
 
 		it('is a Deep Sea view of a Deep Sea mission', () => {
 			expect(v.edition).toBe('deepSea');
-			expect(v.mission).toBeLessThanOrEqual(43);
+			expect(v.mission).toBeLessThanOrEqual(41);
 			expect(def.number).toBe(v.mission);
-			expect(def.label).toBe(v.mission > 41 ? `Q${v.mission - 41}` : '');
-			expect(def.captainCard).toEqual({ suit: 'trump', rank: v.mission === 42 ? 1 : 4 });
 			expect(a.members[a.commander].dummy).toBe(false);
 			// Before the first card is played, the captain holds the captain's card.
 			if (a.trickNumber === 1 && a.trick.length === 0) {
-				expect(a.hand.some((c) => c.suit === 'trump' && c.rank === def.captainCard.rank)).toBe(
-					a.seat === a.commander
-				);
+				expect(a.hand.some((c) => c.suit === 'trump' && c.rank === 4)).toBe(a.seat === a.commander);
 			}
 		});
 
 		it('has tasks whose difficulties add up to the mission', () => {
-			const by = def.difficultyBy[seats - 3];
-			const total = by > 0 ? by : def.difficulty;
 			const sum = a.tasks.reduce((n, t) => n + t.difficulty, 0);
-			if (def.difficulty > 0 || by > 0) expect(sum).toBe(total);
+			if (def.difficulty > 0) expect(sum).toBe(def.difficulty);
 			else expect(a.tasks).toHaveLength(0);
-			if (def.faceDownTasks) expect(a.tasks.every((t) => t.faceDown)).toBe(true);
+			expect(a.tasks.some((t) => t.faceDown)).toBe(false);
 			// A card is never laid out twice.
 			const ids = a.tasks.filter((t) => t.cardId > 0).map((t) => t.cardId);
 			expect(new Set(ids).size).toBe(ids.length);
@@ -168,9 +153,6 @@ describe('Deep Sea fixtures', () => {
 		});
 
 		it('has consistent selection fields', () => {
-			expect(a.stages).toBe(def.stages);
-			if (a.stages > 0) expect(a.stage).toBeLessThan(a.stages);
-			else expect(a.stage).toBe(0);
 			expect(a.chosen.every((s) => s >= 0 && s < seats)).toBe(true);
 			const free = a.tasks.filter((t) => t.owner === OWNER_UNASSIGNED).map((t) => t.id);
 			// Takeable: only for the one picking in the draft, among the unassigned tasks.

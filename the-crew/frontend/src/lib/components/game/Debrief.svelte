@@ -7,10 +7,10 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Switch } from '#lib/components/ui/switch/index.js';
-	import { edition, missionCount, missionName as nameOf } from '#lib/edition.js';
+	import { edition, missionCount } from '#lib/edition.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardKey } from '#lib/game/cards.js';
-	import { missionLabel, resultText, seatName } from '#lib/game/format.js';
+	import { resultText, seatName } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, PlayerView } from '#lib/types.js';
 	import EditionGlyph from './EditionGlyph.svelte';
@@ -43,15 +43,11 @@
 	const host = $derived(view.players.find((p) => p.id === view.hostId));
 	const entry = $derived(view.logbook.find((e) => e.mission === view.mission));
 	const disabled = $derived(busy || !connected);
-	const missionName = $derived(view.missionDef ? missionLabel(view.missionDef) : view.mission);
 	const lastMission = $derived(view.mission >= missionCount);
-	// Deep Sea: Q1's next stage after a won stage; same or new tasks and "don't count" after a loss.
-	const nextStage = $derived(won && attempt.stage + 1 < attempt.stages);
+	// Deep Sea: same or new tasks and "don't count" after a loss.
 	const deepSea = edition === 'deepSea';
 	const cardTasks = $derived(
-		deepSea &&
-			!view.missionDef?.fixedTasks.length &&
-			attempt.tasks.some((t) => t.cardId > 0 || t.faceDown)
+		deepSea && !view.missionDef?.fixedTasks.length && attempt.tasks.some((t) => t.cardId > 0)
 	);
 	const canUncount = $derived(deepSea && !won && !view.missionDef?.uncounted && !entry?.completed);
 	let uncounted = $state(false);
@@ -86,16 +82,12 @@
 		</span>
 		<div class="min-w-0">
 			<h2 class="font-display text-lg leading-tight font-bold">
-				{nextStage
-					? `Stage ${attempt.stage + 1} of ${attempt.stages} accomplished`
-					: won
-						? `Mission ${missionName} accomplished`
-						: `Attempt ${attempt.number} failed`}
+				{won ? `Mission ${view.mission} accomplished` : `Attempt ${attempt.number} failed`}
 			</h2>
 			<p class="text-sm leading-snug">{reason}</p>
 			{#if entry}
 				<p class="text-xs text-muted-foreground">
-					Logbook: mission {missionName}, {entry.attempts}
+					Logbook: mission {view.mission}, {entry.attempts}
 					{entry.attempts === 1 ? 'attempt' : 'attempts'}{entry.distress
 						? ' + 1 for the distress signal'
 						: ''}{entry.completed ? ' · completed' : ''}
@@ -134,11 +126,7 @@
 			</div>
 		{/if}
 		<div class="grid grid-cols-2 gap-2">
-			{#if nextStage}
-				<Button class="h-11" {disabled} onclick={() => run(() => client.nextAttempt())}>
-					<EditionGlyph kind="mission" />Stage {attempt.stage + 2}
-				</Button>
-			{:else if won}
+			{#if won}
 				<Button
 					class="h-11"
 					disabled={disabled || lastMission}
@@ -146,7 +134,7 @@
 				>
 					<EditionGlyph kind="mission" />{lastMission
 						? 'Last mission'
-						: `Mission ${nameOf(view.mission + 1)}`}
+						: `Mission ${view.mission + 1}`}
 				</Button>
 			{:else if cardTasks}
 				<Button class="h-11" {disabled} onclick={() => nextAttempt(false)}>
@@ -164,7 +152,7 @@
 				class={cn('h-11', !won && cardTasks && 'col-span-2')}
 				variant="secondary"
 				{disabled}
-				onclick={() => run(() => client.backToLobby())}
+				onclick={() => run(() => client.backToLobby(canUncount && uncounted))}
 			>
 				<House />Lobby
 			</Button>

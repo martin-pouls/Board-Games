@@ -34,7 +34,7 @@ const (
 	CmdAssignTask     = "assignTask"     // Deep Sea: taskId, seat
 	CmdNextAttempt    = "nextAttempt"    // Deep Sea: optional newTasks, uncounted (absent = false)
 	CmdNextMission    = "nextMission"    //
-	CmdBackToLobby    = "backToLobby"    //
+	CmdBackToLobby    = "backToLobby"    // Deep Sea: optional uncounted (absent = false)
 	CmdEndGame        = "endGame"        //
 )
 

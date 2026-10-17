@@ -66,7 +66,6 @@ type AttemptView struct {
 	TokensLeft         int      // rapture of the deep: shared sonar tokens left, else -1
 	CommFirstTrickOnly bool     // 10, 13: communication ends with the first trick
 	Chosen             []int    // the members the captain chose to take the tasks
-	Stage, Stages      int      // Q1: the stage (0-based) and how many there are; Stages 0 without
 	Redeals            int      // automatic re-deals before this attempt
 	Takeable           []int    // StepDraft, for the member to take (or the captain for the dummy): the tasks they may take
 	Assignable         [][]int  // StepAssign, for the captain: per task, the seats it may go to
@@ -223,14 +222,10 @@ func (g *Game) attemptView(seat int) *AttemptView {
 		Terrain:     cloneCard(a.Terrain),
 		TokensLeft:  a.TokensLeft(),
 		Chosen:      slices.Clone(a.Chosen),
-		Stage:       a.Stage,
 		Redeals:     a.Redeals,
 		Takeable:    []int{},
 		Assignable:  [][]int{},
 		Predict:     -1,
-	}
-	if base, ok := MissionFor(g.Edition, g.Mission); ok {
-		v.Stages = len(base.Stages)
 	}
 	v.CommFirstTrickOnly = g.onlyBeforeFirstTrick()
 	if v.Trick == nil {

@@ -97,7 +97,7 @@ func TestDistressCountsInLogbook(t *testing.T) {
 		t.Fatalf("logbook %+v", e)
 	}
 	// A replay of the completed mission starts without an active signal.
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	must(t, g.SelectMission(alice, 1))
 	must(t, g.StartMission(alice, noShuffle{}))
 	if v, _ := g.ViewFor(bob); v.Attempt.Distress {
@@ -108,8 +108,8 @@ func TestDistressCountsInLogbook(t *testing.T) {
 func TestBackToLobbyAndReplay(t *testing.T) {
 	g := startMission(t, 4, 1)
 	winMissionOne(t, g)
-	mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob) })
-	must(t, g.BackToLobby(alice))
+	mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob, false) })
+	must(t, g.BackToLobby(alice, false))
 	if g.Phase != PhaseLobby || g.Attempt != nil || g.Mission != 2 {
 		t.Fatalf("phase %s mission %d", g.Phase, g.Mission)
 	}
@@ -132,24 +132,24 @@ func TestBackToLobbyAndReplay(t *testing.T) {
 		t.Fatalf("logbook changed by a replay: %+v", e)
 	}
 	// A lost replay of a completed mission keeps it selected (rules §16).
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	must(t, g.SelectMission(alice, 1))
 	must(t, g.StartMission(alice, noShuffle{}))
 	lose(t, g)
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Mission != 1 {
 		t.Fatalf("after a lost replay the mission stays selected, got %d", g.Mission)
 	}
 	must(t, g.StartMission(alice, noShuffle{}))
 	winMissionOne(t, g)
 	// An unfinished mission continues its count from the lobby.
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Mission != 2 {
 		t.Fatalf("next unfinished %d", g.Mission)
 	}
 	must(t, g.StartMission(alice, noShuffle{}))
 	lose(t, g)
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Mission != 2 {
 		t.Fatal("after a loss the mission stays selected")
 	}

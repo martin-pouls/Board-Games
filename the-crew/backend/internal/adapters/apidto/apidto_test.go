@@ -740,7 +740,7 @@ func TestFromEvents(t *testing.T) {
 		{domain.CardsDrawn{}, `{"type":"cardsDrawn"}`},
 		{domain.AttemptEnded{Success: false, Reason: domain.ReasonTaskFailed}, `{"type":"attemptEnded","success":false,"reason":"taskFailed"}`},
 		{domain.AttemptEnded{Success: true, Reason: domain.ReasonCompleted}, `{"type":"attemptEnded","success":true,"reason":"completed"}`},
-		{domain.Redealt{Times: 2}, `{"type":"redealt","times":2}`},
+		{domain.Redealt{Times: 2, Commander: 1}, `{"type":"redealt","times":2,"commander":1}`},
 		{domain.TaskReplaced{TaskID: 0}, `{"type":"taskReplaced","taskId":0}`},
 		{domain.TaskPassed{Seat: 0}, `{"type":"taskPassed","seat":0}`},
 		{domain.Predicted{TaskID: 1, Seat: 2, Tricks: 0}, `{"type":"predicted","taskId":1,"seat":2,"tricks":0}`},

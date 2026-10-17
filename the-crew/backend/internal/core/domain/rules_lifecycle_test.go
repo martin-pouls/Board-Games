@@ -74,7 +74,7 @@ func TestRulesLogbook(t *testing.T) {
 		t.Fatalf("after the win: %+v", e)
 	}
 	// back to the lobby: the next unfinished mission is selected
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Phase != PhaseLobby || g.Mission != 2 || g.Attempt != nil {
 		t.Fatalf("phase %s mission %d", g.Phase, g.Mission)
 	}
@@ -98,11 +98,11 @@ func TestRulesLogbook(t *testing.T) {
 		t.Fatalf("replay won: %+v", e)
 	}
 	// an unfinished mission keeps its attempts across the lobby
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	must(t, g.SelectMission(alice, 3))
 	must(t, g.StartMission(alice, noShuffle{}))
 	must(t, g.GiveUp(alice))
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Mission != 3 {
 		t.Fatalf("after a loss the mission stays selected: %d", g.Mission)
 	}
@@ -119,7 +119,7 @@ func TestRulesLogbook(t *testing.T) {
 		t.Fatalf("logbook 3: %+v", e)
 	}
 	// 1 and 3 are done: the lobby preselects 2
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	if g.Mission != 2 {
 		t.Fatalf("preselected %d, want 2", g.Mission)
 	}
@@ -130,7 +130,7 @@ func TestRulesLogbookReplayWithDistress(t *testing.T) {
 	g := withDistress(bbReady(t, 3, 1))
 	bbWin(t, g)
 	before := g.Logbook[1]
-	must(t, g.BackToLobby(alice))
+	must(t, g.BackToLobby(alice, false))
 	must(t, g.SelectMission(alice, 1))
 	must(t, g.StartMission(alice, noShuffle{}))
 	bbDraft(t, g)
@@ -198,7 +198,7 @@ func TestRulesAfterAttempt(t *testing.T) {
 		must(t, g.StartMission(alice, noShuffle{}))
 		bbWin(t, g)
 		mustFail(t, g, ErrInvalidMission, func(g *Game) error { return g.NextMission(alice, noShuffle{}) })
-		must(t, g.BackToLobby(alice))
+		must(t, g.BackToLobby(alice, false))
 		if g.Mission != 1 {
 			t.Fatalf("preselected %d, want the first unfinished mission 1", g.Mission)
 		}
@@ -206,7 +206,7 @@ func TestRulesAfterAttempt(t *testing.T) {
 	t.Run("only the host", func(t *testing.T) {
 		g := won(t)
 		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextMission(bob, noShuffle{}) })
-		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob) })
+		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob, false) })
 		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.EndGame(bob) })
 		g = lost(t)
 		mustFail(t, g, ErrNotHost, func(g *Game) error { return g.NextAttempt(bob, NextAttemptChoice{}, noShuffle{}) })
@@ -216,14 +216,14 @@ func TestRulesAfterAttempt(t *testing.T) {
 		g := startMission(t, 4, 1)
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.NextMission(alice, noShuffle{}) })
-		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.BackToLobby(alice) })
+		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.BackToLobby(alice, false) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.EndGame(alice) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.StartMission(alice, noShuffle{}) })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.SelectMission(alice, 2) })
 	})
 	t.Run("back to the lobby after a loss keeps the mission", func(t *testing.T) {
 		g := lost(t)
-		must(t, g.BackToLobby(alice))
+		must(t, g.BackToLobby(alice, false))
 		if g.Mission != 1 || g.Phase != PhaseLobby || g.Attempt != nil {
 			t.Fatalf("mission %d phase %s", g.Mission, g.Phase)
 		}
@@ -232,7 +232,7 @@ func TestRulesAfterAttempt(t *testing.T) {
 		g := won(t)
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.AddPlayer(erin, "Erin") })
 		mustFail(t, g, ErrWrongPhase, func(g *Game) error { return g.Leave(bob) })
-		must(t, g.BackToLobby(alice))
+		must(t, g.BackToLobby(alice, false))
 		must(t, g.AddPlayer(erin, "Erin"))
 		must(t, g.Leave(bob))
 	})

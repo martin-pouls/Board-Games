@@ -42,7 +42,7 @@ func dssTasks(g *Game, ids ...int) {
 	a := g.Attempt
 	a.Tasks = nil
 	for i, id := range ids {
-		a.Tasks = append(a.Tasks, newDeepSeaTask(i, id, len(a.Members), g.MissionDef().FaceDownTasks))
+		a.Tasks = append(a.Tasks, newDeepSeaTask(i, id, len(a.Members)))
 	}
 	a.Passes, a.Chosen, a.Poll = 0, nil, nil
 	a.Trick, a.Tricks = Trick{}, nil
@@ -127,13 +127,13 @@ func TestDeepSeaDrawToDifficulty(t *testing.T) {
 						t.Fatalf("m%d n%d: card %d not marked used", mission, n, task.CardID)
 					}
 				}
-				if want := m.difficultyFor(len(a.Members)); sum != want {
+				if want := m.Difficulty; sum != want {
 					t.Fatalf("m%d n%d seed %d: difficulty %d, want %d", mission, n, seed, sum, want)
 				}
 				ids := dssCards(g)
 				all := append(slices.Clone(ids), a.TaskDeck...)
 				slices.Sort(all)
-				if (!m.FaceDownTasks && len(slices.Compact(all)) != TaskCards) || (m.FaceDownTasks != (a.TaskDeck == nil)) {
+				if len(slices.Compact(all)) != TaskCards {
 					t.Fatalf("m%d n%d: tasks %v and deck (%d) are not the 96 cards", mission, n, ids, len(a.TaskDeck))
 				}
 			}
@@ -187,12 +187,23 @@ func TestDeepSeaSameTasksAndUncounted(t *testing.T) {
 	}
 }
 
+func TestDeepSeaUncountedBackToLobby(t *testing.T) {
+	g := dssStart(t, 4, 5, 1)
+	must(t, g.GiveUp(alice))
+	mustFail(t, g, ErrNotHost, func(g *Game) error { return g.BackToLobby(bob, true) })
+	must(t, g.BackToLobby(alice, true))
+	if e := g.Logbook[5]; e.Attempts != 0 || g.Phase != PhaseLobby || g.Mission != 5 {
+		t.Fatalf("logbook %+v, phase %s, mission %d", e, g.Phase, g.Mission)
+	}
+}
+
 func TestDeepSeaChoicesNotInPlanetNine(t *testing.T) {
 	g := startMission(t, 3, 1)
 	must(t, g.GiveUp(alice))
 	mustFail(t, g, ErrNotAllowed, func(g *Game) error {
 		return g.NextAttempt(alice, NextAttemptChoice{Uncounted: true}, noShuffle{})
 	})
+	mustFail(t, g, ErrNotAllowed, func(g *Game) error { return g.BackToLobby(alice, true) })
 }
 
 func TestDeepSeaDraftPassing(t *testing.T) {
@@ -444,93 +455,11 @@ func TestDeepSeaReplaceTask(t *testing.T) {
 	bbFailAny(t, g, func(g *Game) error { return g.ReplaceTask(dssID(g, c), 0, noShuffle{}) }, ErrNotAllowed, ErrWrongPhase)
 }
 
-func TestDeepSeaRedealQ1(t *testing.T) {
-	redealt := false
-	for seed := uint64(1); seed <= 1500; seed++ {
-		g := dssStart(t, 4, 42, seed)
-		a := g.Attempt
-		if a.needsRedeal(g.MissionDef()) {
-			t.Fatalf("seed %d: a hand holds all four submarines", seed)
-		}
-		if !slices.Contains(a.Members[a.Commander].Cards(), Card{SuitTrump, 1}) {
-			t.Fatalf("seed %d: the captain does not hold submarine 1", seed)
-		}
-		if o := a.Objectives[0]; o.Owner != a.Commander || o.Count != 2 {
-			t.Fatalf("seed %d: stage A objective %+v", seed, o)
-		}
-		redealt = redealt || a.Redeals > 0
-	}
-	if !redealt {
-		t.Fatal("no seed needed a re-deal")
-	}
-	// Two players: submarine 1 is set aside for a human, so the captain is never the dummy.
-	for seed := uint64(1); seed <= 50; seed++ {
-		g := dssStart(t, 2, 42, seed)
-		if g.Attempt.Members[g.Attempt.Commander].Dummy {
-			t.Fatalf("seed %d: the dummy is captain", seed)
-		}
-	}
-}
-
-func TestDeepSeaStagesQ1(t *testing.T) {
-	g := dssStart(t, 3, 42, 1)
-	won := &AttemptResult{Success: true, Reason: ReasonCompleted, Task: -1, Objective: -1, Seat: -1}
-	g.endAttempt(won)
-	if e := g.Logbook[42]; e.Completed || e.Attempts != 1 {
-		t.Fatalf("after stage A: %+v", e)
-	}
-	mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextMission(alice, noShuffle{}) })
-	must(t, g.NextAttempt(alice, NextAttemptChoice{}, dssRNG(2)))
-	if a := g.Attempt; a.Stage != 1 || a.Number != 2 || a.Objectives[0].Count != 3 {
-		t.Fatalf("stage B: stage %d attempt %d objective %+v", a.Stage, a.Number, a.Objectives[0])
-	}
-	g.endAttempt(&AttemptResult{Reason: ReasonGaveUp, Task: -1, Objective: -1, Seat: 0})
-	must(t, g.NextAttempt(alice, NextAttemptChoice{}, dssRNG(3)))
-	if g.Attempt.Stage != 1 {
-		t.Fatal("a lost stage B is played again")
-	}
-	g.endAttempt(won)
-	if e := g.Logbook[42]; !e.Completed || e.Attempts != 3 {
-		t.Fatalf("after stage B: %+v", e)
-	}
-	mustFail(t, g, ErrInvalidResultChoice, func(g *Game) error { return g.NextAttempt(alice, NextAttemptChoice{}, noShuffle{}) })
-}
-
 func TestDeepSeaEpilogueUncounted(t *testing.T) {
 	g := dssStart(t, 3, 33, 1)
 	must(t, g.GiveUp(alice))
 	if e := g.Logbook[33]; e.Attempts != 0 {
 		t.Fatalf("epilogue logbook %+v", e)
-	}
-}
-
-func TestDeepSeaFaceDownQ2(t *testing.T) {
-	g := dssStart(t, 4, 43, 1)
-	a := g.Attempt
-	sum := 0
-	for _, task := range a.Tasks {
-		sum += task.Difficulty
-		if !task.FaceDown {
-			t.Fatal("Q2 tasks are face down")
-		}
-	}
-	if sum != 10 || g.CanReplaceTasks(a.Commander) == nil {
-		t.Fatalf("difficulty %d, replace allowed %v", sum, g.CanReplaceTasks(a.Commander) == nil)
-	}
-	v, _ := g.ViewFor(bob)
-	for _, tv := range v.Attempt.Tasks {
-		if tv.CardID != 0 || tv.Objective != nil || tv.Difficulty == 0 {
-			t.Fatalf("face-down task view %+v", tv)
-		}
-	}
-	dssDraftRest(t, g)
-	targets := a.Objectives[0].Targets
-	total := 0
-	for _, n := range targets {
-		total += n
-	}
-	if total != 10 || len(targets) != 4 {
-		t.Fatalf("quotas %v", targets)
 	}
 }
 

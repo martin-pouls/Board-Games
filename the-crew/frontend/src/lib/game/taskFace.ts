@@ -21,7 +21,7 @@ export type Seg =
 export interface Face {
 	head: string;
 	rows: Seg[][];
-	/** Small print at the bottom ("no submarines in the trick"). */
+	/** Small print at the bottom ("no submarine in the trick"). */
 	note?: string;
 }
 
@@ -74,44 +74,37 @@ function tricksWords(tricks: number[]): string {
 }
 
 function trickWhereFace(o: Objective): Face {
-	const note = `no ${terms.trumps}`;
+	const note = `no ${terms.trump} in the trick`;
 	const head = 'I win a trick';
+	const num = (value: number): Seg => ({ t: 'num', value });
 	switch (o.where) {
 		case 'below':
-			return { head, rows: [[text('all cards lower than')], [{ t: 'num', value: o.count }]], note };
+			return { head, rows: [[text('with all cards lower than')], [num(o.count)]], note };
 		case 'above':
-			return {
-				head,
-				rows: [[text('all cards greater than')], [{ t: 'num', value: o.count }]],
-				note
-			};
+			return { head, rows: [[text('with all cards greater than')], [num(o.count)]], note };
 		case 'even':
 		case 'odd': {
 			const ranks = o.where === 'even' ? [2, 4, 6, 8] : [1, 3, 5, 7, 9];
 			return {
 				head,
 				rows: [
-					[text(`only ${o.where} values`)],
+					[text(`with only ${o.where} numbers`)],
 					[cards(ranks.map((r) => ({ suit: 'any', rank: r })))]
 				],
 				note
 			};
 		}
 		case 'sumAtLeast':
-			return { head, rows: [[text('total value at least')], [{ t: 'num', value: o.count }]], note };
+			return { head, rows: [[text('with a total value of at least')], [num(o.count)]], note };
 		case 'sumBelow':
-			return {
-				head,
-				rows: [[text('total value lower than')], [{ t: 'num', value: o.count }]],
-				note
-			};
+			return { head, rows: [[text('with a total value lower than')], [num(o.count)]], note };
 		case 'sumBetween': {
 			const nums: Seg[] = [];
 			for (let v = o.count; v <= o.max; v++) {
 				if (nums.length) nums.push(text('or'));
-				nums.push({ t: 'num', value: v });
+				nums.push(num(v));
 			}
-			return { head, rows: [[text('total value')], nums], note };
+			return { head, rows: [[text('with a total value of')], nums], note };
 		}
 		case '':
 			return { head, rows: [] };
@@ -131,7 +124,7 @@ function allFace(o: Objective, players: number, predicted: boolean): Face {
 		b.kind === 'winCards' &&
 		b.cards.length === 1
 	) {
-		return { head: 'I win', rows: [[cards(b.cards)], [text(`no other ${terms.trump}`)]] };
+		return { head: 'I win', rows: [[cards(b.cards)], [text(`and no other ${terms.trump}`)]] };
 	}
 	if (o.parts.every((p) => p.kind === 'winCount' && p.cmp === a.cmp && p.count > 0)) {
 		const head = a.cmp === 'atLeast' ? 'I win at least' : 'I win exactly';
@@ -202,33 +195,17 @@ export function taskFace(o: Objective, players: number, predicted = o.count >= 0
 		case 'winExactlyTricks':
 			return {
 				head: 'I win exactly',
-				rows: [
-					[text(String(o.count), true), text(o.count === 1 ? 'trick' : 'tricks')],
-					...(o.without.length
-						? [
-								[
-									text('none with'),
-									cards(o.without.map((r) => ({ suit: 'any' as const, rank: r })))
-								]
-							]
-						: [])
-				]
+				rows: [[text(String(o.count), true), text(o.count === 1 ? 'trick' : 'tricks')]]
 			};
 		case 'avoidTricks':
 			return {
-				head: 'I win',
+				head: "I don't win",
 				rows: [
-					[
-						text(
-							o.tricks.length === 1
-								? `not ${tricksWords(o.tricks)}`
-								: `none of ${tricksWords(o.tricks)}`
-						)
-					]
+					[text(o.tricks.length === 1 ? tricksWords(o.tricks) : `any of ${tricksWords(o.tricks)}`)]
 				]
 			};
 		case 'noConsecutive':
-			return { head: 'I win', rows: [[text('never'), text('2', true), text('tricks in a row')]] };
+			return { head: 'I never win', rows: [[text('2', true), text('tricks in a row')]] };
 		case 'winTricks':
 			return { head: 'I win', rows: [[text(tricksWords(o.tricks))]] };
 		case 'winOnlyTricks':
@@ -237,7 +214,10 @@ export function taskFace(o: Objective, players: number, predicted = o.count >= 0
 			return o.exact
 				? {
 						head: 'I win exactly',
-						rows: [[text(String(o.count), true), text('tricks')], [text('and all in a row')]]
+						rows: [
+							[text(String(o.count), true), text('tricks')],
+							[text(o.count === 2 ? 'both in a row' : 'all in a row')]
+						]
 					}
 				: { head: 'I win', rows: [[text(String(o.count), true), text('tricks in a row')]] };
 		case 'winWith': {
@@ -278,13 +258,13 @@ export function taskFace(o: Objective, players: number, predicted = o.count >= 0
 					[cards([whole(o.suits[0])]), text('as'), cards([whole(o.suits[1])])],
 					...(o.inOneTrick ? [[text('in one trick')]] : [])
 				],
-				note: '0 and 0 does not count'
+				note: "0 and 0 doesn't count"
 			};
 		case 'moreSuit':
 			return {
 				head: 'I win more',
 				rows: [[cards([whole(o.suits[0])]), text('than'), cards([whole(o.suits[1])])]],
-				note: o.suits[1] ? `0 ${o.suits[1]} is fine` : undefined
+				note: o.suits[1] ? `0 ${o.suits[1]} cards is fine` : undefined
 			};
 		case 'all':
 			return allFace(o, players, predicted);

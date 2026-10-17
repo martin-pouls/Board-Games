@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
-	import { briefing, missionLabel } from '#lib/game/format.js';
+	import { briefing } from '#lib/game/format.js';
 	import type { LogEntry, MissionDef } from '#lib/types.js';
 
 	let {
@@ -20,12 +20,11 @@
 	} = $props();
 
 	const lines = $derived(def ? briefing(def) : []);
-	const name = $derived(def ? missionLabel(def) : String(mission));
 </script>
 
-<section aria-label={`Mission ${name} briefing`}>
+<section aria-label={`Mission ${mission} briefing`}>
 	<h3 class="flex flex-wrap items-center gap-x-2 text-base font-semibold">
-		Mission {name}
+		Mission {mission}
 		{#if entry?.completed}
 			<span class="flex items-center gap-0.5 text-sm font-medium text-success">
 				<Check class="size-4" strokeWidth={3} />Completed

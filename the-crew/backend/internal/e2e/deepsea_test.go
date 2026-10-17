@@ -96,13 +96,6 @@ func (c *crewT) checkDeepSea(seat int, v apidto.PlayerView, g *domain.Game) {
 		if w.Difficulty != st.Difficulty || w.Card != nil {
 			t.Fatalf("player %d: task %d = %+v, server has difficulty %d and no Planet Nine card", seat, i, w, st.Difficulty)
 		}
-		if st.FaceDown && !over {
-			// Only the difficulty of a face-down task is known.
-			if w.CardID != 0 || w.Objective != nil || !w.FaceDown {
-				t.Fatalf("player %d sees the face-down task %d: %+v", seat, i, w)
-			}
-			continue
-		}
 		if w.CardID != st.CardID || w.Objective == nil || !onTable[w.CardID] {
 			t.Fatalf("player %d: task %d = %+v, server has card %d", seat, i, w, st.CardID)
 		}
@@ -210,10 +203,10 @@ func TestDeepSeaHiddenPredictionAfterDraftWithPass(t *testing.T) {
 			// The lobby: the catalogue is Deep Sea's, a Planet Nine mission number is out of range.
 			var cat apidto.MissionCatalogue
 			c.a.call(t, http.MethodGet, "/api/missions", "", nil, &cat, http.StatusOK)
-			if cat.Edition != "deepSea" || len(cat.Missions) != 43 || cat.Missions[41].Label != "Q1" {
+			if cat.Edition != "deepSea" || len(cat.Missions) != 41 {
 				t.Fatalf("catalogue = %s, %d missions", cat.Edition, len(cat.Missions))
 			}
-			c.reject(0, apidto.ClientMessage{Type: apidto.CmdSelectMission, Mission: ptr(44)}, "invalid_mission")
+			c.reject(0, apidto.ClientMessage{Type: apidto.CmdSelectMission, Mission: ptr(42)}, "invalid_mission")
 			c.reject(0, apidto.ClientMessage{Type: apidto.CmdPassTask}, "wrong_phase")
 			c.run(0, apidto.ClientMessage{Type: apidto.CmdSelectMission, Mission: ptr(5)})
 			if v := c.rest(1); v.Edition != "deepSea" || v.MissionDef == nil || v.MissionDef.Difficulty != 5 || v.MissionDef.Distribution != "draft" {
@@ -225,7 +218,7 @@ func TestDeepSeaHiddenPredictionAfterDraftWithPass(t *testing.T) {
 			g := c.sync()
 			cmd := g.Attempt.Commander
 			v := c.rest(cmd)
-			if v.Attempt.Step != "draft" || !slices.Contains(v.Attempt.Actors, cmd) || !v.Attempt.Actions.ReplaceTasks || !v.Attempt.Actions.Pass || v.Attempt.Stages != 0 || v.Attempt.Comm != "" {
+			if v.Attempt.Step != "draft" || !slices.Contains(v.Attempt.Actors, cmd) || !v.Attempt.Actions.ReplaceTasks || !v.Attempt.Actions.Pass || v.Attempt.Comm != "" {
 				t.Fatalf("captain's view = %+v", v.Attempt)
 			}
 			for k := range c.ps {
@@ -483,35 +476,6 @@ func TestDeepSeaRaptureCommunication(t *testing.T) {
 		}
 	}
 	c.playToDebrief()
-}
-
-// Side quest 2: the tasks stay face down for the crew until the debrief.
-func TestDeepSeaFaceDownTasksStayHidden(t *testing.T) {
-	c := newCrewIn(t, deepSea, 3, 3)
-	c.run(0, apidto.ClientMessage{Type: apidto.CmdSelectMission, Mission: ptr(43)})
-	c.run(0, apidto.ClientMessage{Type: apidto.CmdStartMission})
-	v := c.rest(1)
-	if v.Attempt.Stage != 0 || v.MissionDef.Label != "Q2" || !v.MissionDef.FaceDownTasks {
-		t.Fatalf("Q2 view: %+v", v.MissionDef)
-	}
-	total := 0
-	for _, task := range v.Attempt.Tasks {
-		if !task.FaceDown || task.CardID != 0 || task.Objective != nil || task.Difficulty == 0 {
-			t.Fatalf("task = %+v", task)
-		}
-		total += task.Difficulty
-	}
-	if total != 13 {
-		t.Fatalf("difficulty of the face-down tasks = %d, want 13 for three players", total)
-	}
-	c.playToDebrief()
-	for k := range c.ps {
-		for _, task := range c.rest(k).Attempt.Tasks {
-			if task.CardID == 0 || task.Objective == nil {
-				t.Fatalf("player %d: task not revealed in the debrief: %+v", k, task)
-			}
-		}
-	}
 }
 
 // A server serves the games of its own edition only: the other's are not found, over REST and

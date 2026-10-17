@@ -1,10 +1,8 @@
 package domain
 
 // The Deep Sea missions, transcribed row by row from deep-sea/rules.md §8. Data only. Real-time
-// missions use their untimed variant (14–16, 26). The side quests follow the epilogue: Q1 is
-// mission 42, Q2 mission 43.
-
-var submarines = []Card{{SuitTrump, 1}, {SuitTrump, 2}, {SuitTrump, 3}, {SuitTrump, 4}}
+// missions use their untimed variant (14–16, 26). The side quests Q1 and Q2 are left out (App
+// decision).
 
 // draw is a Deep Sea mission drawing task cards of total difficulty d, taken in the draft.
 func draw(d int) MissionDef { return MissionDef{Difficulty: d, Distribution: DistDraft} }
@@ -14,15 +12,8 @@ func (m MissionDef) volunteers(n int) MissionDef {
 	m.Distribution, m.Volunteers = DistVolunteers, n
 	return m
 }
-func (m MissionDef) free() MissionDef          { return m.dist(DistFree) }
-func (m MissionDef) epilogue() MissionDef      { m.Uncounted = true; return m.free() }
-func (m MissionDef) label(l string) MissionDef { m.Label = l; return m }
-
-// sideQuest1Stage is Q1's stage objective: the captain wins exactly n tricks without a 7, 8 or 9.
-func sideQuest1Stage(n int) []ObjectiveSpec {
-	return []ObjectiveSpec{owned(OwnerRuleCommander,
-		Objective{Kind: KindWinExactlyTricks, Count: n, Without: []Rank{7, 8, 9}})}
-}
+func (m MissionDef) free() MissionDef     { return m.dist(DistFree) }
+func (m MissionDef) epilogue() MissionDef { m.Uncounted = true; return m.free() }
 
 var deepSea = numbered([]MissionDef{
 	/* 1 */ draw(1),
@@ -66,16 +57,6 @@ var deepSea = numbered([]MissionDef{
 	/* 39 */ draw(24).epilogue(),
 	/* 40 */ draw(25).epilogue(),
 	/* 41 */ draw(26).epilogue(),
-	/* 42 */ MissionDef{
-		CaptainCard: Card{SuitTrump, 1},
-		Redeal:      [][]Card{submarines},
-		Stages:      [][]ObjectiveSpec{sideQuest1Stage(2), sideQuest1Stage(3)},
-	}.label("Q1"),
-	/* 43 */ MissionDef{
-		DifficultyBy:  [3]int{13, 10, 8},
-		FaceDownTasks: true,
-		Distribution:  DistDraft,
-	}.label("Q2").objective(crew(Objective{Kind: KindTrickQuota})),
 })
 
 func withHardestFirst(m MissionDef) MissionDef   { m.HardestFirst = true; return m }

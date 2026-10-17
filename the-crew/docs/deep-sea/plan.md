@@ -205,11 +205,10 @@ All questions are answered; the rules-level ones are in rules.md as **App decisi
    leak information); the captain may **replace** displayed tasks before the first pick.
 4. **"Decide together" and free selection:** the captain decides / assigns in the app, as in Planet
    Nine; the crew coordinates outside the game. Volunteer polls work like Planet Nine's polls.
-5. **Side quests Q1/Q2: included** (rules.md §8).
+5. **Side quests Q1/Q2:** first included, later removed (they did not play well; rules.md §8).
 6. **Unavoidable failures:** after a loss the host may choose "don't count this attempt".
 7. All card interpretations confirmed (rules.md §9).
 8. Tonoja works exactly like JARVIS (3-player difficulty column).
 
-Q1 stage B (WP5): a new deal after stage A is won, the captain again has to win the tricks;
-recorded in rules.md §8. Local ports changed since the plan: the gate took 5178, so Deep Sea uses
+Local ports changed since the plan: the gate took 5178, so Deep Sea uses
 Vite 5179 (backend 8085).

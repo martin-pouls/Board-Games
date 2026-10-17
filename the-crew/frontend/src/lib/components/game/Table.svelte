@@ -18,7 +18,6 @@
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { byTokenOrder, cardLabel, sameCard } from '#lib/game/cards.js';
-	import { missionLabel } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import {
 		OWNER_UNASSIGNED,
@@ -104,8 +103,10 @@
 		selected = sameCard(c, selected) ? null : c;
 	}
 
-	// Deep Sea: before the first choice the captain may tap a displayed task to replace it.
-	const replacing = $derived(attempt.actions.replaceTasks && step !== 'draft');
+	// Deep Sea: before the first choice the captain may tap a displayed task to replace it. On their
+	// own draft turn a tapped task offers both Take and Replace; otherwise (also in mission 25, where
+	// the captain drafts last) a tap only selects it for replacing.
+	const replacing = $derived(attempt.actions.replaceTasks && (step !== 'draft' || !mine));
 	function taskEnabled(t: Task): boolean {
 		if (!ready) return false;
 		if (replacing) return t.owner === OWNER_UNASSIGNED;
@@ -116,10 +117,10 @@
 	}
 	function pickTask(t: Task) {
 		// Like a card: tap to select, tap again (or confirm in the decision panel) to take it.
-		if (step === 'draft') {
-			if (selectedTasks[0] === t.id && attempt.takeable.includes(t.id))
-				void run(() => client.pickTask(t.id));
-			else selectedTasks = [t.id];
+		if (step === 'draft' && !replacing) {
+			if (selectedTasks[0] !== t.id) selectedTasks = [t.id];
+			else if (attempt.takeable.includes(t.id)) void run(() => client.pickTask(t.id));
+			else selectedTasks = [];
 			return;
 		}
 		if (replacing || step === 'assign') {
@@ -193,9 +194,7 @@
 			class={cn('size-2 rounded-full', connected ? 'bg-success' : 'animate-pulse bg-amber-500')}
 			title={connected ? 'Connected' : 'Reconnecting'}
 		></span>
-		<span class="ml-1.5 truncate font-display text-base font-bold"
-			>Mission {mission ? missionLabel(mission) : view.mission}</span
-		>
+		<span class="ml-1.5 truncate font-display text-base font-bold">Mission {view.mission}</span>
 		<HeaderButton
 			class="ml-auto"
 			icon={BookOpen}
@@ -301,7 +300,7 @@
 				cards={attempt.hand}
 				deal={`${view.gameId}:${view.mission}:${attempt.number}`}
 				{selected}
-				marked={attempt.pass?.chosen ?? me?.communication?.card ?? null}
+				marked={attempt.pass?.chosen ? [attempt.pass.chosen] : myComms.map((c) => c.card)}
 				enabled={handEnabled}
 				{dealing}
 				onpick={pickCard}
@@ -316,6 +315,7 @@
 	bind:open={commOpen}
 	options={attempt.actions.communicate}
 	deadZone={(mission?.deadZone ?? false) || attempt.comm === 'currents'}
+	tokensLeft={attempt.comm === 'rapture' ? attempt.tokensLeft : -1}
 	disabled={!ready}
 	oncommunicate={(o) => run(() => client.communicate(o.card, o.position))}
 />

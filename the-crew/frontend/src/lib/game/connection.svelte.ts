@@ -107,8 +107,9 @@ export class GameConnection extends GameSocket<PlayerView, GameEvent, ClientComm
 	nextMission(): Promise<void> {
 		return this.send({ type: 'nextMission' });
 	}
-	backToLobby(): Promise<void> {
-		return this.send({ type: 'backToLobby' });
+	/** Deep Sea: `uncounted` leaves the lost attempt out of the logbook; false sends no flag. */
+	backToLobby(uncounted = false): Promise<void> {
+		return this.send(uncounted ? { type: 'backToLobby', uncounted } : { type: 'backToLobby' });
 	}
 	endGame(): Promise<void> {
 		return this.send({ type: 'endGame' });

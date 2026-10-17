@@ -90,7 +90,6 @@ type ObjectiveSpec struct {
 // MissionDef is one row of the mission table (rules §14; Deep Sea: deep-sea/rules.md §8).
 type MissionDef struct {
 	Number       int
-	Label        string  // shown instead of the number ("Q1"); "" = the number
 	Tasks        int     // task cards to draw
 	Tokens       []Token // in placement order: the first drawn tasks carry them
 	Distribution Distribution
@@ -101,39 +100,16 @@ type MissionDef struct {
 	Objectives   []ObjectiveSpec
 
 	// Deep Sea.
-	Difficulty     int               // total difficulty of the task cards to draw
-	DifficultyBy   [3]int            // Q2: the total by crew size 3/4/5 (overrides Difficulty)
-	FixedTasks     []int             // 32: these task cards instead of drawing
-	FaceDownTasks  bool              // Q2: only the difficulty of the tasks is visible
-	Volunteers     int               // DistVolunteers: how many members take the tasks
-	CaptainSkipped bool              // 25: the captain receives no task
-	HardestFirst   bool              // 19: the captain's first task is one of the highest difficulty
-	CaptainCard    Card              // the card that makes its holder captain; zero = CommanderCard
-	Redeal         [][]Card          // re-deal if one hand holds all cards of one entry (Q1)
-	Stages         [][]ObjectiveSpec // Q1: the objectives of each stage, played one after the other
-	Uncounted      bool              // epilogue: the logbook counts no attempts
+	Difficulty     int   // total difficulty of the task cards to draw
+	FixedTasks     []int // 32: these task cards instead of drawing
+	Volunteers     int   // DistVolunteers: how many members take the tasks
+	CaptainSkipped bool  // 25: the captain receives no task
+	HardestFirst   bool  // 19: the captain's first task is one of the highest difficulty
+	Uncounted      bool  // epilogue: the logbook counts no attempts
 }
 
 // DrawsTasks reports whether the mission draws Deep Sea task cards by difficulty.
-func (m MissionDef) DrawsTasks() bool {
-	return m.Difficulty > 0 || m.DifficultyBy != [3]int{}
-}
-
-// difficultyFor is the total difficulty to draw with the given number of crew members.
-func (m MissionDef) difficultyFor(members int) int {
-	if m.DifficultyBy != [3]int{} {
-		return m.DifficultyBy[crewColumn(members)]
-	}
-	return m.Difficulty
-}
-
-// captainCard is the card whose holder is the commander.
-func (m MissionDef) captainCard() Card {
-	if m.CaptainCard == (Card{}) {
-		return CommanderCard
-	}
-	return m.CaptainCard
-}
+func (m MissionDef) DrawsTasks() bool { return m.Difficulty > 0 }
 
 // Has reports whether the mission has the setup action a.
 func (m MissionDef) Has(a SetupAction) bool { return slices.Contains(m.Setup, a) }

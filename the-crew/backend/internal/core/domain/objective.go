@@ -52,8 +52,6 @@ const (
 	KindAll               ObjectiveKind = "all"               // every one of Parts (owned by the owner)
 	KindLeaderStaysAhead  ObjectiveKind = "leaderStaysAhead"  // the first trick's winner always has more tricks than every other member
 	KindLastCardPlayed    ObjectiveKind = "lastCardPlayed"    // Cards[0] is the last card played in the last trick
-	KindTrickQuota        ObjectiveKind = "trickQuota"        // Q2: every seat wins exactly Targets[seat] tricks
-	KindNone              ObjectiveKind = "none"              // no condition: Q2's face-down tasks
 )
 
 // Comparison is the relation of a Deep Sea objective.
@@ -125,8 +123,7 @@ type Objective struct {
 	NotWithTrump bool   // winExactlyTricks, winOnlyTricks: no counted trick may be won by trump
 	Ordered      bool   // crewWinWithEach: Cards win in their order
 
-	// Deep Sea. crewBalance with Rank counts the won colour cards of that rank instead of tricks;
-	// winExactlyTricks with Without: no counted trick may contain a colour card of these ranks.
+	// Deep Sea. crewBalance with Rank counts the won colour cards of that rank instead of tricks.
 	Cmp        Comparison     // cmpTricks, cmpCaptain, winCount
 	Suits      []Suit         // winCount, neverLead, equalSuits, moreSuit
 	Ranks      []Rank         // winCount: colour cards of these ranks
@@ -138,8 +135,6 @@ type Objective struct {
 	InOneTrick bool           // equalSuits
 	Hidden     bool           // predict: the prediction is secret until the end
 	Parts      []Objective    // all
-	Targets    []int          // trickQuota: per seat
-	Without    []Rank         // winExactlyTricks
 }
 
 func (o Objective) clone() Objective {
@@ -148,8 +143,6 @@ func (o Objective) clone() Objective {
 	c.Tricks = slices.Clone(o.Tricks)
 	c.Suits = slices.Clone(o.Suits)
 	c.Ranks = slices.Clone(o.Ranks)
-	c.Targets = slices.Clone(o.Targets)
-	c.Without = slices.Clone(o.Without)
 	if o.Parts != nil {
 		c.Parts = make([]Objective, len(o.Parts))
 		for i, p := range o.Parts {
@@ -306,10 +299,6 @@ func (o Objective) status(h History) Status {
 		return o.leaderStaysAhead(h)
 	case KindLastCardPlayed:
 		return o.lastCardPlayed(h)
-	case KindTrickQuota:
-		return o.trickQuota(h)
-	case KindNone:
-		return StatusFulfilled
 	}
 	panic("domain: unknown objective kind " + string(o.Kind))
 }
@@ -348,9 +337,9 @@ func (o Objective) winNoTricks(h History) Status {
 	return StatusOpen
 }
 
-// winExactlyTricks (mission 33; Deep Sea 83, 84, 87, Q1). Fulfilled: after the last trick, the
-// owner won exactly Count, none by trump if NotWithTrump, none containing a colour card of a rank
-// in Without. Fails: a trick too many, a forbidden trick, or too few tricks left to reach Count.
+// winExactlyTricks (mission 33; Deep Sea 83, 84, 87). Fulfilled: after the last trick, the owner
+// won exactly Count, none by trump if NotWithTrump. Fails: a trick too many, a forbidden trick,
+// or too few tricks left to reach Count.
 func (o Objective) winExactlyTricks(h History) Status {
 	won := 0
 	for _, t := range h.Tricks {
@@ -358,9 +347,6 @@ func (o Objective) winExactlyTricks(h History) Status {
 			continue
 		}
 		if o.NotWithTrump && t.WinningCard().IsTrump() {
-			return StatusFailed
-		}
-		if slices.ContainsFunc(t.Plays, func(p Play) bool { return !p.Card.IsTrump() && slices.Contains(o.Without, p.Card.Rank) }) {
 			return StatusFailed
 		}
 		won++

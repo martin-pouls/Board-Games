@@ -46,7 +46,7 @@ type Task struct {
 	ID        int // its index in Attempt.Tasks (layout order)
 	Objective Objective
 	Token     Token
-	FaceDown  bool // drawn but not revealed yet (commander's decision and distribution); Q2: for good
+	FaceDown  bool // drawn but not revealed yet (commander's decision and distribution)
 	// Deep Sea: the task card and its difficulty for this crew size; 0 for Planet Nine.
 	CardID     int
 	Difficulty int
@@ -98,7 +98,6 @@ type Attempt struct {
 	TaskDeck []int    // task cards not on the table, in draw order (replacing takes from it)
 	Passes   int      // passes in the draft
 	Chosen   []int    // the members the captain chose to take the tasks (6, 10, 13, 14–16, 26)
-	Stage    int      // Q1: 0 = stage A, 1 = stage B
 	Redeals  int      // automatic re-deals of this attempt (not attempts)
 }
 
@@ -302,20 +301,19 @@ func (a *Attempt) anyCommunicated() bool {
 	return slices.ContainsFunc(a.Comms, func(c []Communication) bool { return len(c) > 0 })
 }
 
-// startAttempt deals attempt number of the selected mission at stage (Q1), lays out the tasks
+// startAttempt deals attempt number of the selected mission, lays out the tasks
 // (Deep Sea: keep, when set, are the task cards of the last attempt) and enters the setup. RNG
 // use order: the terrain card (unfamiliar terrain), the deck (2 players: the dummy's deck, then
 // the players' deck), the extra card's seat (3 players), the task deck, then any re-deals.
-func (g *Game) startAttempt(number, stage int, keep []int, rng RNG) {
-	base, _ := MissionFor(g.Edition, g.Mission)
-	m := base.atStage(stage)
-	a := &Attempt{Number: number, Silenced: -1, Stage: stage, Comm: m.Comm.Mode}
+func (g *Game) startAttempt(number int, keep []int, rng RNG) {
+	m, _ := MissionFor(g.Edition, g.Mission)
+	a := &Attempt{Number: number, Silenced: -1, Comm: m.Comm.Mode}
 	if a.Comm == CommUnfamiliar {
 		t := drawTerrain(rng)
 		a.Terrain, a.Comm = &t, terrainMode(t)
 	}
-	a.Members = deal(g.Players, m.captainCard(), rng)
-	a.setCommander(m)
+	a.Members = deal(g.Players, rng)
+	a.setCommander()
 	a.Comms = make([][]Communication, len(a.Members))
 
 	if m.Tasks > 0 {
@@ -337,8 +335,10 @@ func (g *Game) startAttempt(number, stage int, keep []int, rng RNG) {
 
 	g.Phase = PhasePlaying
 	g.Attempt = a
+	// Re-deal first, so the event names the final captain.
+	redeals := g.redealIfNeeded(m, rng)
 	g.emit(AttemptStarted{Mission: g.Mission, Number: number, Commander: a.Commander})
-	g.redealIfNeeded(m, rng)
+	g.emitRedealt(redeals)
 	g.advanceSetup()
 }
 
@@ -373,8 +373,8 @@ func (a *Attempt) resolveObjectives(m MissionDef) {
 }
 
 // deal shuffles and deals the 40 cards to the players (rules §4, §12). With 2 players the dummy
-// takes seat 2 and the captain card (trump 4; Deep Sea Q1: trump 1) is set aside for a human.
-func deal(players []Player, captain Card, rng RNG) []Member {
+// takes seat 2 and the commander card is set aside for a human.
+func deal(players []Player, rng RNG) []Member {
 	shuffle := func(cs []Card) {
 		rng.Shuffle(len(cs), func(i, j int) { cs[i], cs[j] = cs[j], cs[i] })
 	}
@@ -384,14 +384,14 @@ func deal(players []Player, captain Card, rng RNG) []Member {
 		members[i] = Member{PlayerID: p.ID, Hand: []Card{}}
 	}
 	if n == 2 {
-		deck, _ := removeCard(NewDeck(), captain)
+		deck, _ := removeCard(NewDeck(), CommanderCard)
 		shuffle(deck)
 		dummy := Member{Dummy: true, Stacks: make([]DummyStack, DummyStacks)}
 		for i := range DummyStacks {
 			down, up := deck[i], deck[DummyStacks+i]
 			dummy.Stacks[i] = DummyStack{Down: &down, Up: &up}
 		}
-		rest := append(slices.Clone(deck[2*DummyStacks:]), captain)
+		rest := append(slices.Clone(deck[2*DummyStacks:]), CommanderCard)
 		shuffle(rest)
 		half := len(rest) / 2
 		members[0].Hand, members[1].Hand = rest[:half], rest[half:]
@@ -576,8 +576,7 @@ func (a *Attempt) winnerOf(c Card) int {
 }
 
 // endAttempt moves to the debrief and writes the logbook (attempts of a replay of a completed
-// mission are not counted, nor those of the Deep Sea epilogue). With stages (Q1) the mission is
-// completed when the last stage is won.
+// mission are not counted, nor those of the Deep Sea epilogue).
 func (g *Game) endAttempt(r *AttemptResult) {
 	a := g.Attempt
 	a.Result = r
@@ -589,7 +588,7 @@ func (g *Game) endAttempt(r *AttemptResult) {
 		if !m.Uncounted {
 			e.Attempts++
 		}
-		e.Completed = r.Success && !a.hasNextStage(m)
+		e.Completed = r.Success
 		g.Logbook[g.Mission] = e
 	}
 	g.emit(AttemptEnded{Success: r.Success, Reason: r.Reason})

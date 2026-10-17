@@ -165,27 +165,16 @@ func TestRoundTripDeepSeaUnfamiliarTerrainAndDebrief(t *testing.T) {
 	}
 }
 
-// TestRoundTripDeepSeaStagesFaceDownAndRedeals covers the states that are hard to reach by
-// playing: Q1's stage B, Q2's face-down tasks, a re-dealt attempt and the captain's choices.
-func TestRoundTripDeepSeaStagesFaceDownAndRedeals(t *testing.T) {
-	q1 := gametest.NewDeepSeaGame(t, 3, 42, gametest.NewRNG(1))
-	q1.Attempt.Stage, q1.Attempt.Redeals = 1, 3
-	q1.Attempt.Chosen = []int{2, 0}
-	assertRoundTrip(t, q1)
-	if got := roundTrip(t, q1).Attempt; got.Stage != 1 || got.Redeals != 3 || !slices.Equal(got.Chosen, []int{2, 0}) {
-		t.Fatalf("stage %d redeals %d chosen %v", got.Stage, got.Redeals, got.Chosen)
+// TestRoundTripDeepSeaRedealsAndChosen covers the states that are hard to reach by playing: a
+// re-dealt attempt and the captain's choices.
+func TestRoundTripDeepSeaRedealsAndChosen(t *testing.T) {
+	g := gametest.NewDeepSeaGame(t, 3, 26, gametest.NewRNG(1))
+	g.Attempt.Redeals = 3
+	g.Attempt.Chosen = []int{2, 0}
+	assertRoundTrip(t, g)
+	if got := roundTrip(t, g).Attempt; got.Redeals != 3 || !slices.Equal(got.Chosen, []int{2, 0}) {
+		t.Fatalf("redeals %d chosen %v", got.Redeals, got.Chosen)
 	}
-
-	q2 := gametest.NewDeepSeaGame(t, 4, 43, gametest.NewRNG(2))
-	for _, task := range q2.Attempt.Tasks {
-		if !task.FaceDown || task.CardID == 0 || task.Difficulty == 0 {
-			t.Fatalf("Q2 task %+v", task)
-		}
-	}
-	if q2.Attempt.TaskDeck != nil {
-		t.Fatalf("Q2 keeps a task deck: %v", q2.Attempt.TaskDeck)
-	}
-	assertRoundTrip(t, q2)
 }
 
 // TestRoundTripNestedObjectives keeps every Deep Sea objective field, the recursive parts of an
@@ -205,10 +194,10 @@ func TestRoundTripNestedObjectives(t *testing.T) {
 		Tasks: []domain.Task{
 			{ID: 0, Objective: all, CardID: 12, Difficulty: 4},
 			{ID: 1, Objective: domain.Objective{Kind: domain.KindWinCount, Cmp: domain.CmpAtLeast, Count: 3, Suits: []domain.Suit{domain.SuitPink, domain.SuitBlue}, Ranks: []domain.Rank{9}}, CardID: 3, Difficulty: 2},
-			{ID: 2, Objective: domain.Objective{Kind: domain.KindEqualSuits, Suits: []domain.Suit{domain.SuitGreen, domain.SuitYellow}, InOneTrick: true, Exact: true, Hidden: true, Without: []domain.Rank{7, 8}}},
+			{ID: 2, Objective: domain.Objective{Kind: domain.KindEqualSuits, Suits: []domain.Suit{domain.SuitGreen, domain.SuitYellow}, InOneTrick: true, Exact: true, Hidden: true}},
 			{ID: 3, Objective: domain.Objective{Kind: domain.KindPredict, Count: -1, Hidden: true}, CardID: 91, Difficulty: 4},
 		},
-		Objectives: []domain.Objective{{Kind: domain.KindTrickQuota, Owner: domain.OwnerCrew, Targets: []int{1, 0, 2}}},
+		Objectives: []domain.Objective{{Kind: domain.KindCrewBalance, Owner: domain.OwnerCrew, Count: 1, Rank: 9}},
 		Comm:       domain.CommCurrents,
 		Terrain:    &domain.Card{Suit: domain.SuitBlue, Rank: 5},
 		TaskDeck:   []int{},
@@ -305,7 +294,7 @@ func TestHandWrittenOldSnapshotLoads(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := g.Attempt
-	if g.UsedTasks != nil || a.Comm != domain.CommNormal || a.Terrain != nil || a.TaskDeck != nil || a.Passes != 0 || a.Chosen != nil || a.Stage != 0 || a.Redeals != 0 {
+	if g.UsedTasks != nil || a.Comm != domain.CommNormal || a.Terrain != nil || a.TaskDeck != nil || a.Passes != 0 || a.Chosen != nil || a.Redeals != 0 {
 		t.Fatalf("Deep Sea fields are not zero: %+v", a)
 	}
 	if o := a.Tasks[0].Objective; o.Cmp != "" || o.Suits != nil || o.With != (domain.CardMatch{}) || o.Parts != nil || a.Tasks[0].CardID != 0 {

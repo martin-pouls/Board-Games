@@ -171,7 +171,7 @@ func (g *Game) StartMission(by PlayerID, rng RNG) error {
 	if len(g.Players) < MinPlayers {
 		return fmt.Errorf("%w: a mission needs %d to %d players", ErrNotEnoughPlayers, MinPlayers, MaxPlayers)
 	}
-	g.startAttempt(g.firstAttemptNumber(), 0, nil, rng)
+	g.startAttempt(g.firstAttemptNumber(), nil, rng)
 	g.commit()
 	return nil
 }
@@ -194,8 +194,7 @@ type NextAttemptChoice struct {
 	Uncounted bool // the lost attempt does not count in the logbook (an unavoidable failure)
 }
 
-// NextAttempt deals a new attempt of the same mission after a lost attempt, or the next stage
-// after a won stage (Q1) (host, debrief).
+// NextAttempt deals a new attempt of the same mission after a lost attempt (host, debrief).
 // Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (the mission is
 // completed; not counting a won attempt), ErrNotAllowed (Deep Sea choices in Planet Nine).
 func (g *Game) NextAttempt(by PlayerID, choice NextAttemptChoice, rng RNG) error {
@@ -205,19 +204,14 @@ func (g *Game) NextAttempt(by PlayerID, choice NextAttemptChoice, rng RNG) error
 	a, m := g.Attempt, g.MissionDef()
 	won := a.Result.Success
 	switch {
-	case won && !a.hasNextStage(m):
+	case won:
 		return fmt.Errorf("%w: the mission is completed", ErrInvalidResultChoice)
-	case won && choice.Uncounted:
-		return fmt.Errorf("%w: only a lost attempt can be left uncounted", ErrInvalidResultChoice)
 	case g.Edition != EditionDeepSea && choice != (NextAttemptChoice{}):
 		return fmt.Errorf("%w: only in Deep Sea", ErrNotAllowed)
 	}
-	number, stage := a.Number+1, a.Stage
-	if won {
-		stage++
-	}
+	number := a.Number + 1
 	var keep []int
-	if !won && !choice.NewTasks && m.FixedTasks == nil {
+	if !choice.NewTasks && m.FixedTasks == nil {
 		for _, t := range a.Tasks {
 			if t.CardID > 0 {
 				keep = append(keep, t.CardID)
@@ -226,12 +220,9 @@ func (g *Game) NextAttempt(by PlayerID, choice NextAttemptChoice, rng RNG) error
 	}
 	if choice.Uncounted {
 		number = a.Number
-		if e := g.Logbook[g.Mission]; !e.Completed && !m.Uncounted && e.Attempts > 0 {
-			e.Attempts--
-			g.Logbook[g.Mission] = e
-		}
+		g.uncountAttempt()
 	}
-	g.startAttempt(number, stage, keep, rng)
+	g.startAttempt(number, keep, rng)
 	g.commit()
 	return nil
 }
@@ -243,7 +234,7 @@ func (g *Game) NextMission(by PlayerID, rng RNG) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if !g.Attempt.Result.Success || g.Attempt.hasNextStage(g.MissionDef()) {
+	if !g.Attempt.Result.Success {
 		return fmt.Errorf("%w: the mission is not completed", ErrInvalidResultChoice)
 	}
 	if _, ok := MissionFor(g.Edition, g.Mission+1); !ok {
@@ -251,19 +242,40 @@ func (g *Game) NextMission(by PlayerID, rng RNG) error {
 	}
 	g.Mission++
 	g.Attempt = nil
-	g.startAttempt(g.firstAttemptNumber(), 0, nil, rng)
+	g.startAttempt(g.firstAttemptNumber(), nil, rng)
 	g.commit()
 	return nil
 }
 
+// uncountAttempt takes the ended attempt back out of the logbook (Deep Sea: an unavoidable loss).
+func (g *Game) uncountAttempt() {
+	if e := g.Logbook[g.Mission]; !e.Completed && !g.MissionDef().Uncounted && e.Attempts > 0 {
+		e.Attempts--
+		g.Logbook[g.Mission] = e
+	}
+}
+
 // BackToLobby returns the crew to the lobby (host, debrief). After a won attempt, the next
-// unfinished mission is selected; after a loss the mission stays selected (rules §16). Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase.
-// Emits BackInLobby.
-func (g *Game) BackToLobby(by PlayerID) error {
+// unfinished mission is selected; after a loss the mission stays selected (rules §16).
+// uncounted (Deep Sea, after a loss) takes the lost attempt back out of the logbook, as in
+// NextAttempt.
+// Errors: ErrUnknownPlayer, ErrNotHost, ErrWrongPhase, ErrInvalidResultChoice (not counting a
+// won attempt), ErrNotAllowed (uncounted in Planet Nine). Emits BackInLobby.
+func (g *Game) BackToLobby(by PlayerID, uncounted bool) error {
 	if err := g.requireHostIn(by, PhaseDebrief); err != nil {
 		return err
 	}
-	if r := g.Attempt.Result; r != nil && r.Success && !g.Attempt.hasNextStage(g.MissionDef()) {
+	won := g.Attempt.Result != nil && g.Attempt.Result.Success
+	if uncounted {
+		switch {
+		case won:
+			return fmt.Errorf("%w: only a lost attempt can be left uncounted", ErrInvalidResultChoice)
+		case g.Edition != EditionDeepSea:
+			return fmt.Errorf("%w: only in Deep Sea", ErrNotAllowed)
+		}
+		g.uncountAttempt()
+	}
+	if won {
 		g.Mission = g.nextUnfinished()
 	}
 	g.Phase = PhaseLobby

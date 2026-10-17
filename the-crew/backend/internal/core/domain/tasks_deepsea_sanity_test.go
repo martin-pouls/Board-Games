@@ -10,7 +10,7 @@ func TestDeepSeaTasksSanity(t *testing.T) {
 		KindCrewBalance, KindCardInLastTrick, KindCmpTricks, KindCmpCaptain, KindPredict,
 		KindAvoidTricks, KindNoConsecutive, KindConsecutive, KindWinWith, KindWinTrickWhere,
 		KindWinCount, KindWinEachColour, KindWinAllOfAnyColour, KindNeverLead, KindEqualSuits,
-		KindMoreSuit, KindAll, KindLeaderStaysAhead, KindLastCardPlayed, KindTrickQuota, KindNone,
+		KindMoreSuit, KindAll, KindLeaderStaysAhead, KindLastCardPlayed,
 	} {
 		kinds[k] = true
 	}

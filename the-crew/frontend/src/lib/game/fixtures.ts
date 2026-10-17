@@ -153,8 +153,6 @@ export function objective(kind: ObjectiveKind, over: Partial<Objective> = {}): O
 		inOneTrick: false,
 		hidden: false,
 		parts: [],
-		targets: [],
-		without: [],
 		...over
 	};
 }
@@ -174,7 +172,6 @@ export function spec(
 export function def(number: number, over: Partial<MissionDef> = {}): MissionDef {
 	return {
 		number,
-		label: '',
 		tasks: 0,
 		tokens: [],
 		distribution: '',
@@ -186,16 +183,11 @@ export function def(number: number, over: Partial<MissionDef> = {}): MissionDef 
 		objectives: [],
 		commMode: '',
 		difficulty: 0,
-		difficultyBy: [0, 0, 0],
 		volunteers: 0,
 		captainSkipped: false,
 		hardestFirst: false,
 		fixedTasks: [],
-		faceDownTasks: false,
 		uncounted: false,
-		captainCard: { suit: 'trump', rank: 4 },
-		stages: 0,
-		stageObjectives: [],
 		...over
 	};
 }
@@ -308,7 +300,7 @@ export const turnOf = (t: Table) => (t.leader + t.trick.length) % t.seats;
 /** The seat that makes the decisions for `seat`: the commander for JARVIS. */
 export const actorFor = (t: Table, seat: number) => (isDummy(t, seat) ? t.commander : seat);
 
-function deal(humans: number, rand: Rand, captain: Card = ROCKET_4): Table {
+function deal(humans: number, rand: Rand): Table {
 	const jarvis = humans === 2;
 	const seats = jarvis ? 3 : humans;
 	const hands: Card[][] = Array.from({ length: seats }, () => []);
@@ -316,12 +308,12 @@ function deal(humans: number, rand: Rand, captain: Card = ROCKET_4): Table {
 	if (jarvis) {
 		// JARVIS: seven face-down cards with a face-up card on each; the rocket 4 goes to the humans.
 		const rest = shuffled(
-			fullDeck().filter((c) => !sameCard(c, captain)),
+			fullDeck().filter((c) => !sameCard(c, ROCKET_4)),
 			rand
 		);
 		const theirs = rest.splice(0, 14);
 		for (let i = 0; i < 7; i++) piles.push({ down: theirs[i], up: theirs[7 + i] });
-		const cards = shuffled([...rest, captain], rand);
+		const cards = shuffled([...rest, ROCKET_4], rand);
 		hands[0] = cards.slice(0, 13);
 		hands[1] = cards.slice(13);
 	} else {
@@ -331,7 +323,7 @@ function deal(humans: number, rand: Rand, captain: Card = ROCKET_4): Table {
 		// 3 players: the 40th card goes to a random seat.
 		for (const c of cards.slice(seats * each)) hands[Math.floor(rand() * seats)].push(c);
 	}
-	const holder = hands.findIndex((h) => h.some((c) => sameCard(c, captain)));
+	const holder = hands.findIndex((h) => h.some((c) => sameCard(c, ROCKET_4)));
 	return {
 		humans,
 		seats,
@@ -350,13 +342,13 @@ function deal(humans: number, rand: Rand, captain: Card = ROCKET_4): Table {
 	};
 }
 
-/** Moves the captain's card into the hand of `seat`, who becomes the commander and leads. */
-function setCommander(t: Table, seat: number, captain: Card = ROCKET_4) {
-	const holder = t.hands.findIndex((h) => h.some((c) => sameCard(c, captain)));
+/** Moves the commander's card into the hand of `seat`, who becomes the commander and leads. */
+function setCommander(t: Table, seat: number) {
+	const holder = t.hands.findIndex((h) => h.some((c) => sameCard(c, ROCKET_4)));
 	if (holder !== seat) {
 		const swapped = t.hands[seat][0];
-		t.hands[holder] = sorted(t.hands[holder].map((c) => (sameCard(c, captain) ? swapped : c)));
-		t.hands[seat] = sorted(t.hands[seat].map((c) => (c === swapped ? captain : c)));
+		t.hands[holder] = sorted(t.hands[holder].map((c) => (sameCard(c, ROCKET_4) ? swapped : c)));
+		t.hands[seat] = sorted(t.hands[seat].map((c) => (c === swapped ? ROCKET_4 : c)));
 	}
 	t.commander = seat;
 	t.leader = seat;
@@ -437,8 +429,6 @@ export interface TableSpec {
 	humans: number;
 	/** The holder of the captain's card; random if omitted. */
 	commander?: number;
-	/** The card that makes its holder the commander: rocket 4 (submarine 4) unless given. */
-	captainCard?: Card;
 	seed: number;
 	/** Tricks to play out first (at least; exactly, if no `turn`). */
 	tricks?: number;
@@ -455,8 +445,8 @@ export interface TableSpec {
 
 export function table(s: TableSpec): Table {
 	for (let seed = s.seed; seed < s.seed + 2000; seed++) {
-		const t = deal(s.humans, seeded(seed), s.captainCard);
-		if (s.commander !== undefined) setCommander(t, s.commander, s.captainCard);
+		const t = deal(s.humans, seeded(seed));
+		if (s.commander !== undefined) setCommander(t, s.commander);
 		t.drawAfterFirstTrick = s.draw ?? false;
 		if (!run(t, () => t.tricks.length >= (s.tricks ?? 0))) continue;
 		const arrived =
@@ -714,8 +704,6 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 		tokensLeft: -1,
 		commFirstTrickOnly: false,
 		chosen: [],
-		stage: 0,
-		stages: 0,
 		redeals: 0,
 		takeable: [],
 		assignable: [],

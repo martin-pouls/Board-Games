@@ -100,9 +100,9 @@ const EXPECTED: Record<number, string> = {
 	86: 'Win three consecutive tricks',
 	87: 'Win exactly four tricks',
 	88: 'Win exactly three tricks, all in a row',
-	89: 'Win exactly two tricks, all in a row',
+	89: 'Win exactly two tricks, both in a row',
 	90: 'Predict how many tricks you will win (0 to 13)',
-	91: 'Predict how many tricks you will win (0 to 13), kept hidden',
+	91: 'Predict how many tricks you will win (0 to 13) and keep it secret',
 	92: 'Win the same number of pink and yellow cards (more than 0)',
 	93: 'Win the same number of green and yellow cards in one trick (more than 0)',
 	94: 'Win the same number of pink and blue cards in one trick (more than 0)',
@@ -168,7 +168,9 @@ describe('predictions', () => {
 		expect(taskText(open, 3)).toBe('Predict how many tricks you will win (0 to 13)');
 		expect(taskText(open, 4)).toBe('Predict how many tricks you will win (0 to 10)');
 		expect(taskText(open, 5)).toBe('Predict how many tricks you will win (0 to 8)');
-		expect(taskText(hidden, 5)).toBe('Predict how many tricks you will win (0 to 8), kept hidden');
+		expect(taskText(hidden, 5)).toBe(
+			'Predict how many tricks you will win (0 to 8) and keep it secret'
+		);
 	});
 
 	it('shows an open prediction', () => {
@@ -198,7 +200,7 @@ describe('predictions', () => {
 			...over
 		});
 		expect(taskTextOf(task({}), 3)).toBe(
-			'Predict how many tricks you will win (0 to 13), kept hidden'
+			'Predict how many tricks you will win (0 to 13) and keep it secret'
 		);
 		expect(taskTextOf(task({ predicted: true }), 3)).toBe(
 			'Win exactly ? tricks (prediction hidden)'
