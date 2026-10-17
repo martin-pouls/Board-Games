@@ -6,7 +6,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardKey } from '#lib/game/cards.js';
-	import { resultText, seatName } from '#lib/game/format.js';
+	import { missionLabel, resultText, seatName } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, PlayerView } from '#lib/types.js';
 	import EditionGlyph from './EditionGlyph.svelte';
@@ -39,6 +39,7 @@
 	const host = $derived(view.players.find((p) => p.id === view.hostId));
 	const entry = $derived(view.logbook.find((e) => e.mission === view.mission));
 	const disabled = $derived(busy || !connected);
+	const missionName = $derived(view.missionDef ? missionLabel(view.missionDef) : view.mission);
 	const lastMission = $derived(view.mission >= 50);
 	const reason = $derived(
 		result
@@ -67,12 +68,12 @@
 		</span>
 		<div class="min-w-0">
 			<h2 class="font-display text-lg leading-tight font-bold">
-				{won ? `Mission ${view.mission} accomplished` : `Attempt ${attempt.number} failed`}
+				{won ? `Mission ${missionName} accomplished` : `Attempt ${attempt.number} failed`}
 			</h2>
 			<p class="text-sm leading-snug">{reason}</p>
 			{#if entry}
 				<p class="text-xs text-muted-foreground">
-					Logbook: mission {entry.mission}, {entry.attempts}
+					Logbook: mission {missionName}, {entry.attempts}
 					{entry.attempts === 1 ? 'attempt' : 'attempts'}{entry.distress
 						? ' + 1 for the distress signal'
 						: ''}{entry.completed ? ' · completed' : ''}

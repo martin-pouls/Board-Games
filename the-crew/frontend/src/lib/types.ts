@@ -49,7 +49,37 @@ export type ObjectiveKind =
 	| 'crewWinWithEach'
 	| 'crewNeverWinWith'
 	| 'crewBalance'
-	| 'cardInLastTrick';
+	| 'cardInLastTrick'
+	// Deep Sea
+	| 'cmpTricks'
+	| 'cmpCaptain'
+	| 'predict'
+	| 'avoidTricks'
+	| 'noConsecutive'
+	| 'consecutive'
+	| 'winWith'
+	| 'winTrickWhere'
+	| 'winCount'
+	| 'winEachColour'
+	| 'winAllOfAnyColour'
+	| 'neverLead'
+	| 'equalSuits'
+	| 'moreSuit'
+	| 'all'
+	| 'leaderStaysAhead'
+	| 'lastCardPlayed'
+	| 'trickQuota'
+	| 'none';
+/** The relation of a Deep Sea objective; "" when the kind has none. */
+export type Comparison = '' | 'more' | 'fewer' | 'equal' | 'moreThanAll' | 'exactly' | 'atLeast';
+/** What every card of a trick must meet (`winTrickWhere`); "" otherwise. */
+export type TrickCondition =
+	'' | 'below' | 'above' | 'even' | 'odd' | 'sumAtLeast' | 'sumBelow' | 'sumBetween';
+/** Selects cards: a suit ("" = any colour, trump = submarines) and/or a rank (0 = any). */
+export interface CardMatch {
+	suit: Suit | '';
+	rank: number;
+}
 /** The whole crew owns an objective. */
 export const OWNER_CREW = -1;
 /** An objective's owner is not chosen yet. */
@@ -70,6 +100,32 @@ export interface Objective {
 	rank: number;
 	notWithTrump: boolean;
 	ordered: boolean;
+
+	// Deep Sea. Empty, zero or null when the kind does not use the field.
+	cmp: Comparison;
+	/** winCount, neverLead, equalSuits, moreSuit. */
+	suits: Suit[];
+	/** winCount: colour cards of these ranks. */
+	ranks: number[];
+	/** winWith: the winning card. */
+	with: CardMatch | null;
+	/** winWith: another card in the trick. */
+	target: CardMatch | null;
+	/** winTrickWhere, with `count` (and `max` for sumBetween). */
+	where: TrickCondition;
+	max: number;
+	/** consecutive: exactly `count` tricks in total, all in a row. */
+	exact: boolean;
+	/** equalSuits: within one trick. */
+	inOneTrick: boolean;
+	/** predict: the prediction is secret until the debrief. */
+	hidden: boolean;
+	/** all: every part (same owner). */
+	parts: Objective[];
+	/** trickQuota: the tricks each seat must win. */
+	targets: number[];
+	/** winExactlyTricks: no counted trick may contain a colour card of these ranks. */
+	without: number[];
 }
 export type OwnerRule = 'crew' | 'commander' | 'chosen' | 'roleA' | 'roleB' | 'leftOfHolder';
 /** A special objective of a mission: a template plus the rule for its owner. */
@@ -80,12 +136,28 @@ export interface ObjectiveSpec extends Objective {
 	/** The objective's card is the card of the task with this token. */
 	taskToken?: Token;
 }
-export type Distribution = '' | 'open' | 'commanderDecision' | 'commanderDistribution';
+export type Distribution =
+	| ''
+	| 'open'
+	| 'commanderDecision'
+	| 'commanderDistribution'
+	// Deep Sea
+	| 'draft'
+	| 'oneMember'
+	| 'captainOrVolunteer'
+	| 'volunteers'
+	| 'free';
+/** Deep Sea communication mode of a mission: "" = normal. */
+export type CommMode = '' | 'currents' | 'rapture' | 'unfamiliar' | 'none';
+/** The mode of an attempt: unfamiliar terrain has been resolved by the terrain card. */
+export type AttemptComm = Exclude<CommMode, 'unfamiliar'>;
 export type SetupAction = 'swapTokens' | 'moveToken' | 'silenceMember' | 'drawAfterFirstTrick';
 export type PollKind = 'yesNo' | 'wellIll';
 /** One row of the mission table. */
 export interface MissionDef {
 	number: number;
+	/** Shown instead of the number ("Q1"), else "". */
+	label: string;
 	tasks: number;
 	/** In placement order. */
 	tokens: Token[];
@@ -97,6 +169,32 @@ export interface MissionDef {
 	setup: SetupAction[];
 	poll: PollKind | '';
 	objectives: ObjectiveSpec[];
+
+	// Deep Sea.
+	/** "" = normal. */
+	commMode: CommMode;
+	/** Total difficulty of the drawn task cards; 0 = none drawn. */
+	difficulty: number;
+	/** Always 3 entries (crew of 3, 4, 5); all 0 unless the mission sets it per crew size (Q2). */
+	difficultyBy: number[];
+	/** Distribution "volunteers": how many members take the tasks. */
+	volunteers: number;
+	/** The captain receives no task. */
+	captainSkipped: boolean;
+	/** The captain's first task is one of the highest difficulty. */
+	hardestFirst: boolean;
+	/** Task card numbers laid out instead of drawing. */
+	fixedTasks: number[];
+	/** Only the difficulty of the tasks is visible. */
+	faceDownTasks: boolean;
+	/** The logbook counts no attempts. */
+	uncounted: boolean;
+	/** The card whose holder is the captain (trump 4 unless the mission says otherwise). */
+	captainCard: Card;
+	/** Q1: number of stages; 0 without. */
+	stages: number;
+	/** The objectives added in each stage. */
+	stageObjectives: ObjectiveSpec[][];
 }
 /** GET /api/missions. */
 export interface MissionCatalogue {
@@ -126,8 +224,10 @@ export interface Member {
 	dummy: boolean;
 	cardCount: number;
 	tricksWon: number;
-	/** While the communicated card is still held. */
+	/** The first communication while its card is still held. */
 	communication: Communication | null;
+	/** All communications whose card is still held, in order (rapture of the deep allows several). */
+	communications: Communication[];
 	/** Once per attempt. */
 	communicated: boolean;
 	/** The dummy's stacks; [] for a human. */
@@ -139,13 +239,26 @@ export interface Member {
 export type Status = 'open' | 'fulfilled' | 'failed';
 export interface Task {
 	id: number;
-	/** Null while face down. */
+	/** Null while face down and for Deep Sea task cards. */
 	card: Card | null;
 	token: Token;
 	/** A seat, or OWNER_UNASSIGNED. */
 	owner: number;
 	status: Status;
 	faceDown: boolean;
+
+	// Deep Sea.
+	/** The task card number 1..96; 0 for Planet Nine and while face down. */
+	cardId: number;
+	/** Shown even face down; 0 for Planet Nine. */
+	difficulty: number;
+	/**
+	 * The card's objective; null for Planet Nine and while face down. The objective of a hidden
+	 * prediction of another member has count -1 until the debrief.
+	 */
+	objective: Objective | null;
+	/** A prediction task: the number has been noted. */
+	predicted: boolean;
 }
 export interface ObjectiveView extends Objective {
 	status: Status;
@@ -182,6 +295,10 @@ export interface Actions {
 	communicate: CommOption[];
 	sendDistress: boolean;
 	handover: boolean;
+	/** Deep Sea: the viewer may pass in the draft now. */
+	pass: boolean;
+	/** Deep Sea: the viewer is the captain and may replace displayed tasks. */
+	replaceTasks: boolean;
 }
 export interface Play {
 	seat: number;
@@ -203,8 +320,10 @@ export interface AttemptResult {
 	seat: number;
 }
 /** "" in the debrief. */
-export type Step = 'adjustTokens' | 'poll' | 'pick' | 'draft' | 'pass' | 'play' | '';
-export type PickKind = 'silence' | 'roles' | 'objective' | 'decision' | 'distribute' | '';
+export type Step =
+	'adjustTokens' | 'poll' | 'pick' | 'draft' | 'assign' | 'predict' | 'pass' | 'play' | '';
+export type PickKind =
+	'silence' | 'roles' | 'objective' | 'decision' | 'distribute' | 'oneMember' | 'volunteers' | '';
 export interface Attempt {
 	number: number;
 	/** The viewer's seat. */
@@ -237,6 +356,30 @@ export interface Attempt {
 	distress: boolean;
 	actions: Actions;
 	result: AttemptResult | null;
+
+	// Deep Sea.
+	/** This attempt's communication mode (never "unfamiliar": the terrain card has decided). */
+	comm: AttemptComm;
+	/** Unfamiliar terrain: the colour card that picked the mode, else null. */
+	terrain: Card | null;
+	/** Rapture of the deep: shared sonar tokens left, else -1. */
+	tokensLeft: number;
+	/** Communication ends with the first trick (10, 13 when the tasks were passed on). */
+	commFirstTrickOnly: boolean;
+	/** The members the captain chose to take the tasks. */
+	chosen: number[];
+	/** Q1: the 0-based stage. */
+	stage: number;
+	/** Q1: number of stages; 0 without. */
+	stages: number;
+	/** Automatic re-deals before this attempt. */
+	redeals: number;
+	/** Step draft, for the one who picks: the task ids they may take. */
+	takeable: number[];
+	/** Step assign, for the captain: per task id the seats it may go to. */
+	assignable: number[][];
+	/** Step predict: the task id being predicted, else -1. */
+	predict: number;
 }
 /** The host-selectable lobby settings. */
 export interface GameOptions {
@@ -295,6 +438,11 @@ export type GameEvent =
 	| { type: 'cardPlayed'; seat: number; card: Card }
 	| { type: 'trickWon'; number: number; seat: number }
 	| { type: 'cardsDrawn' }
+	| { type: 'redealt'; times: number }
+	| { type: 'taskReplaced'; taskId: number }
+	| { type: 'taskPassed'; seat: number }
+	/** `tricks` is -1 for a hidden prediction. */
+	| { type: 'predicted'; taskId: number; seat: number; tricks: number }
 	| { type: 'attemptEnded'; success: boolean; reason: Reason }
 	| { type: 'backInLobby' }
 	| { type: 'gameEnded'; byPlayerId: string };
@@ -326,7 +474,8 @@ export type GameErrorCode =
 	| 'not_allowed'
 	| 'invalid_direction'
 	| 'invalid_token_move'
-	| 'invalid_result_choice';
+	| 'invalid_result_choice'
+	| 'invalid_prediction';
 export type ApiErrorCode = CommonErrorCode | ClientErrorCode | GameErrorCode;
 export type ErrorBody = SharedErrorBody<ApiErrorCode>;
 export type ServerMessage = SharedServerMessage<PlayerView, GameEvent, ApiErrorCode>;
@@ -347,7 +496,12 @@ export type ClientCommand =
 	| { type: 'communicate'; card: Card; position: Position }
 	| { type: 'playCard'; card: Card }
 	| { type: 'giveUp' }
-	| { type: 'nextAttempt' }
+	| { type: 'passTask' }
+	| { type: 'replaceTask'; taskId: number }
+	| { type: 'predict'; taskId: number; tricks: number }
+	| { type: 'assignTask'; taskId: number; seat: number }
+	/** Deep Sea: after a loss, draw new tasks and/or do not count the attempt; absent = false. */
+	| { type: 'nextAttempt'; newTasks?: boolean; uncounted?: boolean }
 	| { type: 'nextMission' }
 	| { type: 'backToLobby' }
 	| { type: 'endGame' };

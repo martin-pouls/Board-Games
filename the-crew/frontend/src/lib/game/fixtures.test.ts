@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { cardKey, sameCard } from './cards.js';
-import { FIXTURE_MISSIONS, fixtures, fullDeck, missionDef } from './fixtures.js';
+import {
+	FIXTURE_MISSIONS,
+	fixtures as planetNineFixtures,
+	fullDeck,
+	missionDef
+} from './fixtures.js';
+import { deepSeaFixtures } from './fixturesDeepSea.js';
 import { OWNER_CREW, OWNER_UNASSIGNED, type Card, type PlayerView } from '#lib/types.js';
+
+// Both editions' fixtures go through the same checks; the Deep Sea ones have more below.
+const fixtures = { ...planetNineFixtures, ...deepSeaFixtures };
 
 const TOTAL_TRICKS: Record<number, number> = { 2: 13, 3: 13, 4: 10, 5: 8 };
 
@@ -16,7 +25,7 @@ function visibleCards(v: PlayerView): Card[] {
 	const cards: Card[] = [...a.hand, ...a.trick.map((p) => p.card)];
 	if (a.lastTrick) cards.push(...a.lastTrick.plays.map((p) => p.card));
 	for (const m of a.members) {
-		if (m.communication) cards.push(m.communication.card);
+		cards.push(...m.communications.map((c) => c.card));
 		if (m.seat === a.seat) continue;
 		// A debrief reveals everything a member still holds, which includes JARVIS's face-up cards.
 		if (m.cards) cards.push(...m.cards);
@@ -144,10 +153,23 @@ describe('fixtures', () => {
 				expect(mine).toEqual(a.hand);
 			}
 			for (const t of a.tasks) {
-				expect(t.card === null).toBe(t.faceDown && !over);
+				// Deep Sea task cards have an objective instead of a playing card.
+				const deepSea = v.edition === 'deepSea';
+				expect(t.card === null).toBe(deepSea || (t.faceDown && !over));
 				expect(t.owner === OWNER_UNASSIGNED || (t.owner >= 0 && t.owner < a.members.length)).toBe(
 					true
 				);
+				if (!deepSea) {
+					expect([t.cardId, t.difficulty, t.objective, t.predicted]).toEqual([0, 0, null, false]);
+				} else if (t.faceDown && !over) {
+					expect([t.cardId, t.objective, t.predicted]).toEqual([0, null, false]);
+					expect(t.difficulty).toBeGreaterThan(0);
+				} else {
+					expect(t.cardId).toBeGreaterThanOrEqual(1);
+					expect(t.cardId).toBeLessThanOrEqual(96);
+					expect(t.difficulty).toBeGreaterThan(0);
+					expect(t.objective?.owner).toBe(t.owner);
+				}
 			}
 			for (const o of a.objectives) {
 				const ok =
@@ -163,7 +185,15 @@ describe('fixtures', () => {
 			expect(a.lastTrick !== null).toBe(a.trickNumber > 1);
 			// Communication is not offered mid-trick, over, or outside play.
 			if (a.trick.length > 0 || over || a.step !== 'play') {
-				expect(a.actions).toEqual({ communicate: [], sendDistress: false, handover: false });
+				expect(a.actions.communicate).toEqual([]);
+				expect(a.actions.sendDistress).toBe(false);
+				expect(a.actions.handover).toBe(false);
+			}
+			// Passing and replacing are for the draft (replacing: any step of the selection).
+			if (a.actions.pass) expect(a.step).toBe('draft');
+			if (a.actions.replaceTasks) {
+				expect(['draft', 'poll', 'pick', 'assign']).toContain(a.step);
+				expect(a.seat).toBe(a.commander);
 			}
 		});
 	});

@@ -31,6 +31,7 @@
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Target from '@lucide/svelte/icons/target';
 	import UserStar from '@lucide/svelte/icons/user-star';
+	import { missionLabelOf } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { LogEntry } from '#lib/types.js';
 
@@ -68,7 +69,7 @@
 
 	function label(n: number): string {
 		const marks = missionMarkers(defs.get(n)).map((k) => MARKERS[k].label.toLowerCase());
-		return `Mission ${n}: ${stateText(entries.get(n))}${marks.length ? `; ${marks.join(', ')}` : ''}`;
+		return `Mission ${missionLabelOf(n, missions)}: ${stateText(entries.get(n))}${marks.length ? `; ${marks.join(', ')}` : ''}`;
 	}
 
 	const cellClass =
@@ -94,7 +95,7 @@
 			{@render marker(kind)}
 		{/each}
 	</span>
-	<span class="font-display text-base font-bold">{n}</span>
+	<span class="font-display text-base font-bold">{missionLabelOf(n, missions)}</span>
 	<span
 		class={cn(
 			'mt-1 flex h-3 items-center gap-px text-[0.68rem] font-semibold',

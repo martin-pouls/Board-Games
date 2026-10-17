@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { terms } from '#lib/edition.js';
-	import { briefing } from '#lib/game/format.js';
+	import { briefing, missionLabel } from '#lib/game/format.js';
 	import type { MissionDef } from '#lib/types.js';
 
 	let { open = $bindable(false), mission }: { open?: boolean; mission: MissionDef | null } =
@@ -20,7 +20,7 @@
 		<div class="flex flex-col gap-3 text-sm leading-snug">
 			{#if mission}
 				<section>
-					<h3 class="mb-1 font-semibold">Mission {mission.number}</h3>
+					<h3 class="mb-1 font-semibold">Mission {missionLabel(mission)}</h3>
 					<ul class="list-disc pl-5">
 						{#each briefing(mission) as line (line)}
 							<li>{line}</li>

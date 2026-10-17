@@ -1,5 +1,5 @@
 import { commonErrorMessages } from '@board-games/shared/errors.js';
-import { cap, terms } from '#lib/edition.js';
+import { cap, edition, terms } from '#lib/edition.js';
 import type { ApiErrorCode } from '#lib/types.js';
 
 const messages: Record<ApiErrorCode, string> = {
@@ -24,13 +24,17 @@ const messages: Record<ApiErrorCode, string> = {
 	invalid_position: "That statement isn't true for this card.",
 	invalid_seat: "That crew member can't be chosen.",
 	invalid_task: "That task can't be chosen.",
-	uneven_distribution: 'The tasks must be shared out as evenly as possible.',
+	uneven_distribution:
+		edition === 'deepSea'
+			? 'Every volunteer must take at least one task.'
+			: 'The tasks must be shared out as evenly as possible.',
 	cannot_pass_trump: `${cap(terms.trumps)} can't be passed.`,
 	already_answered: 'You have already answered.',
 	not_allowed: "That isn't allowed in this mission.",
 	invalid_direction: 'Choose left or right.',
 	invalid_token_move: "That token can't be moved there.",
-	invalid_result_choice: "That isn't possible after this result."
+	invalid_result_choice: "That isn't possible after this result.",
+	invalid_prediction: "That isn't a possible number of tricks."
 };
 
 export function errorText(code: ApiErrorCode): string {

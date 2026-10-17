@@ -18,6 +18,7 @@
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import { byTokenOrder, cardLabel, sameCard } from '#lib/game/cards.js';
+	import { missionLabel } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import {
 		OWNER_UNASSIGNED,
@@ -172,7 +173,9 @@
 			class={cn('size-2 rounded-full', connected ? 'bg-success' : 'animate-pulse bg-amber-500')}
 			title={connected ? 'Connected' : 'Reconnecting'}
 		></span>
-		<span class="ml-1.5 truncate font-display text-base font-bold">Mission {view.mission}</span>
+		<span class="ml-1.5 truncate font-display text-base font-bold"
+			>Mission {mission ? missionLabel(mission) : view.mission}</span
+		>
 		<HeaderButton
 			class="ml-auto"
 			icon={BookOpen}

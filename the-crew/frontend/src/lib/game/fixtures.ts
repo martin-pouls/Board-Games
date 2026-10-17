@@ -2,7 +2,8 @@
 //
 // The views come from a tiny deterministic table simulation (deal, legal cards, tricks, JARVIS's
 // stacks, mission 12's draw), so card counts, tricks won, hands and the trick shown always agree.
-// The seeds are fixed; every function returns a fresh object.
+// The seeds are fixed; every function returns a fresh object. The Deep Sea views are in
+// fixturesDeepSea.ts, built from the same table simulation.
 import { cardKey, sameCard } from './cards.js';
 import type {
 	Actions,
@@ -55,18 +56,18 @@ export function fullDeck(): Card[] {
 }
 
 /** Colours in the order pink, blue, green, yellow, rockets; ascending within a colour. */
-function sorted(cards: Card[]): Card[] {
+export function sorted(cards: Card[]): Card[] {
 	return [...cards].sort(
 		(a, b) => SUIT_ORDER.indexOf(a.suit) - SUIT_ORDER.indexOf(b.suit) || a.rank - b.rank
 	);
 }
 
-const ROCKET_4 = card('trump', 4);
+export const ROCKET_4 = card('trump', 4);
 
 // ---------------------------------------------------------------------------------- builders
 
-const NAMES = ['Alice', 'Bob', 'Cleo', 'Dan', 'Eva'];
-const idOf = (seat: number) => NAMES[seat].toLowerCase();
+export const NAMES = ['Alice', 'Bob', 'Cleo', 'Dan', 'Eva'];
+export const idOf = (seat: number) => NAMES[seat].toLowerCase();
 
 /** A human member at a seat. Override what the test needs. */
 export function member(seat: number, over: Partial<Member> = {}): Member {
@@ -78,6 +79,7 @@ export function member(seat: number, over: Partial<Member> = {}): Member {
 		cardCount: 0,
 		tricksWon: 0,
 		communication: null,
+		communications: [],
 		communicated: false,
 		stacks: [],
 		mustAct: false,
@@ -140,15 +142,28 @@ export function objective(kind: ObjectiveKind, over: Partial<Objective> = {}): O
 		rank: 0,
 		notWithTrump: false,
 		ordered: false,
+		cmp: '',
+		suits: [],
+		ranks: [],
+		with: null,
+		target: null,
+		where: '',
+		max: 0,
+		exact: false,
+		inOneTrick: false,
+		hidden: false,
+		parts: [],
+		targets: [],
+		without: [],
 		...over
 	};
 }
 
-function objectiveView(o: Objective, status: Status = 'open'): ObjectiveView {
+export function objectiveView(o: Objective, status: Status = 'open'): ObjectiveView {
 	return { ...o, status };
 }
 
-function spec(
+export function spec(
 	kind: ObjectiveKind,
 	ownerRule: OwnerRule,
 	over: Partial<ObjectiveSpec> = {}
@@ -156,9 +171,10 @@ function spec(
 	return { ...objective(kind), ownerRule, holder: null, ...over };
 }
 
-function def(number: number, over: Partial<MissionDef> = {}): MissionDef {
+export function def(number: number, over: Partial<MissionDef> = {}): MissionDef {
 	return {
 		number,
+		label: '',
 		tasks: 0,
 		tokens: [],
 		distribution: '',
@@ -168,6 +184,18 @@ function def(number: number, over: Partial<MissionDef> = {}): MissionDef {
 		setup: [],
 		poll: '',
 		objectives: [],
+		commMode: '',
+		difficulty: 0,
+		difficultyBy: [0, 0, 0],
+		volunteers: 0,
+		captainSkipped: false,
+		hardestFirst: false,
+		fixedTasks: [],
+		faceDownTasks: false,
+		uncounted: false,
+		captainCard: { suit: 'trump', rank: 4 },
+		stages: 0,
+		stageObjectives: [],
 		...over
 	};
 }
@@ -220,7 +248,7 @@ export function missionDef(n: number): MissionDef {
 type Rand = () => number;
 
 /** mulberry32: a small seeded generator. */
-function seeded(seed: number): Rand {
+export function seeded(seed: number): Rand {
 	let a = seed >>> 0;
 	return () => {
 		a = (a + 0x6d2b79f5) >>> 0;
@@ -231,7 +259,7 @@ function seeded(seed: number): Rand {
 	};
 }
 
-function shuffled<T>(xs: readonly T[], rand: Rand): T[] {
+export function shuffled<T>(xs: readonly T[], rand: Rand): T[] {
 	const out = [...xs];
 	for (let i = out.length - 1; i > 0; i--) {
 		const j = Math.floor(rand() * (i + 1));
@@ -240,7 +268,7 @@ function shuffled<T>(xs: readonly T[], rand: Rand): T[] {
 	return out;
 }
 
-function pick<T>(xs: readonly T[], rand: Rand): T {
+export function pick<T>(xs: readonly T[], rand: Rand): T {
 	return xs[Math.floor(rand() * xs.length)];
 }
 
@@ -249,7 +277,7 @@ interface Pile {
 	down: Card | null;
 }
 
-interface Table {
+export interface Table {
 	/** Humans at the table. */
 	humans: number;
 	/** Seats: the humans, plus JARVIS (seat 2) with two humans. */
@@ -271,16 +299,16 @@ interface Table {
 	rand: Rand;
 }
 
-const TOTAL_TRICKS: Record<number, number> = { 3: 13, 4: 10, 5: 8 };
+export const TOTAL_TRICKS: Record<number, number> = { 3: 13, 4: 10, 5: 8 };
 
-const isDummy = (t: Table, seat: number) => t.jarvis && seat === 2;
+export const isDummy = (t: Table, seat: number) => t.jarvis && seat === 2;
 const nameOf = (t: Table, seat: number) => (isDummy(t, seat) ? '' : NAMES[seat]);
-const turnOf = (t: Table) => (t.leader + t.trick.length) % t.seats;
+export const turnOf = (t: Table) => (t.leader + t.trick.length) % t.seats;
 
 /** The seat that makes the decisions for `seat`: the commander for JARVIS. */
-const actorFor = (t: Table, seat: number) => (isDummy(t, seat) ? t.commander : seat);
+export const actorFor = (t: Table, seat: number) => (isDummy(t, seat) ? t.commander : seat);
 
-function deal(humans: number, rand: Rand): Table {
+function deal(humans: number, rand: Rand, captain: Card = ROCKET_4): Table {
 	const jarvis = humans === 2;
 	const seats = jarvis ? 3 : humans;
 	const hands: Card[][] = Array.from({ length: seats }, () => []);
@@ -288,12 +316,12 @@ function deal(humans: number, rand: Rand): Table {
 	if (jarvis) {
 		// JARVIS: seven face-down cards with a face-up card on each; the rocket 4 goes to the humans.
 		const rest = shuffled(
-			fullDeck().filter((c) => !sameCard(c, ROCKET_4)),
+			fullDeck().filter((c) => !sameCard(c, captain)),
 			rand
 		);
 		const theirs = rest.splice(0, 14);
 		for (let i = 0; i < 7; i++) piles.push({ down: theirs[i], up: theirs[7 + i] });
-		const cards = shuffled([...rest, ROCKET_4], rand);
+		const cards = shuffled([...rest, captain], rand);
 		hands[0] = cards.slice(0, 13);
 		hands[1] = cards.slice(13);
 	} else {
@@ -303,7 +331,7 @@ function deal(humans: number, rand: Rand): Table {
 		// 3 players: the 40th card goes to a random seat.
 		for (const c of cards.slice(seats * each)) hands[Math.floor(rand() * seats)].push(c);
 	}
-	const holder = hands.findIndex((h) => h.some((c) => sameCard(c, ROCKET_4)));
+	const holder = hands.findIndex((h) => h.some((c) => sameCard(c, captain)));
 	return {
 		humans,
 		seats,
@@ -322,26 +350,26 @@ function deal(humans: number, rand: Rand): Table {
 	};
 }
 
-/** Moves the rocket 4 into the hand of `seat`, who becomes the commander and leads. */
-function setCommander(t: Table, seat: number) {
-	const holder = t.hands.findIndex((h) => h.some((c) => sameCard(c, ROCKET_4)));
+/** Moves the captain's card into the hand of `seat`, who becomes the commander and leads. */
+function setCommander(t: Table, seat: number, captain: Card = ROCKET_4) {
+	const holder = t.hands.findIndex((h) => h.some((c) => sameCard(c, captain)));
 	if (holder !== seat) {
 		const swapped = t.hands[seat][0];
-		t.hands[holder] = sorted(t.hands[holder].map((c) => (sameCard(c, ROCKET_4) ? swapped : c)));
-		t.hands[seat] = sorted(t.hands[seat].map((c) => (c === swapped ? ROCKET_4 : c)));
+		t.hands[holder] = sorted(t.hands[holder].map((c) => (sameCard(c, captain) ? swapped : c)));
+		t.hands[seat] = sorted(t.hands[seat].map((c) => (c === swapped ? captain : c)));
 	}
 	t.commander = seat;
 	t.leader = seat;
 }
 
 /** Cards still held by a seat; for JARVIS both layers of its stacks. */
-function held(t: Table, seat: number): Card[] {
+export function held(t: Table, seat: number): Card[] {
 	if (!isDummy(t, seat)) return t.hands[seat];
 	return t.piles.flatMap((p) => [p.up, p.down].filter((c): c is Card => c !== null));
 }
 
 /** What the seat may play now: its hand, or JARVIS's face-up cards; follow suit applies. */
-function legal(t: Table, seat: number): Card[] {
+export function legal(t: Table, seat: number): Card[] {
 	const pool = isDummy(t, seat) ? t.piles.flatMap((p) => (p.up ? [p.up] : [])) : t.hands[seat];
 	if (t.trick.length === 0) return pool;
 	const led = t.trick[0].card.suit;
@@ -405,10 +433,12 @@ function run(t: Table, stop: () => boolean): boolean {
 	return true;
 }
 
-interface TableSpec {
+export interface TableSpec {
 	humans: number;
-	/** The holder of the rocket 4; random if omitted. */
+	/** The holder of the captain's card; random if omitted. */
 	commander?: number;
+	/** The card that makes its holder the commander: rocket 4 (submarine 4) unless given. */
+	captainCard?: Card;
 	seed: number;
 	/** Tricks to play out first (at least; exactly, if no `turn`). */
 	tricks?: number;
@@ -423,10 +453,10 @@ interface TableSpec {
 	accept?: (t: Table) => boolean;
 }
 
-function table(s: TableSpec): Table {
+export function table(s: TableSpec): Table {
 	for (let seed = s.seed; seed < s.seed + 2000; seed++) {
-		const t = deal(s.humans, seeded(seed));
-		if (s.commander !== undefined) setCommander(t, s.commander);
+		const t = deal(s.humans, seeded(seed), s.captainCard);
+		if (s.commander !== undefined) setCommander(t, s.commander, s.captainCard);
 		t.drawAfterFirstTrick = s.draw ?? false;
 		if (!run(t, () => t.tricks.length >= (s.tricks ?? 0))) continue;
 		const arrived =
@@ -450,7 +480,7 @@ function statement(hand: Card[], c: Card): Position | null {
 	return null;
 }
 
-function commOptions(hand: Card[], deadZone: boolean): CommOption[] {
+export function commOptions(hand: Card[], deadZone: boolean): CommOption[] {
 	const out: CommOption[] = [];
 	for (const c of hand) {
 		const position = statement(hand, c);
@@ -460,7 +490,12 @@ function commOptions(hand: Card[], deadZone: boolean): CommOption[] {
 }
 
 /** A communication already made by `seat`: its first communicable card. */
-function communicationOf(t: Table, seat: number, deadZone: boolean, trick: number): Communication {
+export function communicationOf(
+	t: Table,
+	seat: number,
+	deadZone: boolean,
+	trick: number
+): Communication {
 	const [first] = commOptions(t.hands[seat], deadZone);
 	return { card: first.card, position: first.position, trick };
 }
@@ -488,7 +523,11 @@ function makeTasks(t: Table, o: TaskOpts): Task[] {
 			token: o.tokens?.[tasks.length] ?? '',
 			owner,
 			status,
-			faceDown: false
+			faceDown: false,
+			cardId: 0,
+			difficulty: 0,
+			objective: null,
+			predicted: false
 		});
 	};
 	let k = t.tricks.length - 1;
@@ -530,7 +569,7 @@ function hasColourTricks(t: Table, k: number): boolean {
 	return recent.length === k && recent.every((tr) => tr.plays.some((p) => p.card.suit !== 'trump'));
 }
 
-interface AttemptOpts {
+export interface AttemptOpts {
 	viewer: number;
 	mission: number;
 	step?: Step;
@@ -547,9 +586,17 @@ interface AttemptOpts {
 	silenced?: number;
 	pickable?: number[];
 	/** Communications made, by seat. */
-	comms?: Record<number, Communication>;
+	comms?: Record<number, Communication | Communication[]>;
 	result?: AttemptResult | null;
 	distress?: boolean;
+	/** Deep Sea: the mission row (default: the Planet Nine row of `mission`). */
+	def?: MissionDef;
+	/** Deep Sea view: the edition field and the logbook line. */
+	deepSea?: boolean;
+	actions?: Partial<Actions>;
+	/** Overrides for the attempt's remaining fields (the Deep Sea ones, mostly). */
+	extra?: Partial<Attempt>;
+	logbookEntry?: Partial<LogEntry>;
 }
 
 /** Who the attempt waits for in a step. */
@@ -557,7 +604,11 @@ function defaultActors(t: Table, step: Step, turn: number, o: AttemptOpts): numb
 	switch (step) {
 		case 'adjustTokens':
 		case 'pick':
+		case 'assign':
 			return [t.commander];
+		case 'predict':
+			// The fixture says who predicts.
+			return [];
 		case 'poll':
 			return (o.poll?.answers ?? []).flatMap((a, s) =>
 				a === null && s !== t.commander && !isDummy(t, s) ? [s] : []
@@ -573,14 +624,16 @@ function defaultActors(t: Table, step: Step, turn: number, o: AttemptOpts): numb
 }
 
 function attemptOf(t: Table, o: AttemptOpts): Attempt {
-	const m = missionDef(o.mission);
+	const m = o.def ?? missionDef(o.mission);
 	const step: Step = o.step ?? (o.result ? '' : 'play');
 	const over = !!o.result;
 	const turn = step === 'play' ? turnOf(t) : step === 'draft' ? (o.draftTurn ?? -1) : -1;
 	const actors = o.actors ?? defaultActors(t, step, turn, o);
 	const hand = t.hands[o.viewer];
 	const prePlay = step === 'play' && t.tricks.length === 0 && t.trick.length === 0;
-	const comms = o.comms ?? {};
+	const comms = Object.fromEntries(
+		Object.entries(o.comms ?? {}).map(([seat, c]) => [seat, Array.isArray(c) ? c : [c]])
+	) as Record<number, Communication[]>;
 
 	const members: Member[] = [...Array(t.seats).keys()].map((seat) => {
 		const dummy = isDummy(t, seat);
@@ -593,7 +646,8 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 			dummy,
 			cardCount: held(t, seat).length,
 			tricksWon: t.tricks.filter((tr) => tr.winner === seat).length,
-			communication: comms[seat] ?? null,
+			communication: comms[seat]?.[0] ?? null,
+			communications: comms[seat] ?? [],
 			communicated: seat in comms,
 			stacks,
 			mustAct: actors.includes(seat),
@@ -601,7 +655,13 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 		});
 	});
 
-	const actions: Actions = { communicate: [], sendDistress: false, handover: false };
+	const actions: Actions = {
+		communicate: [],
+		sendDistress: false,
+		handover: false,
+		pass: false,
+		replaceTasks: false
+	};
 	if (!over && step === 'play') {
 		const canCommunicate =
 			t.trick.length === 0 &&
@@ -647,13 +707,25 @@ function attemptOf(t: Table, o: AttemptOpts): Attempt {
 			plays: lastTrick.plays.map((p) => ({ seat: p.seat, card: { ...p.card } }))
 		},
 		distress: o.distress ?? false,
-		actions,
-		result: o.result ?? null
+		actions: { ...actions, ...o.actions },
+		result: o.result ?? null,
+		comm: '',
+		terrain: null,
+		tokensLeft: -1,
+		commFirstTrickOnly: false,
+		chosen: [],
+		stage: 0,
+		stages: 0,
+		redeals: 0,
+		takeable: [],
+		assignable: [],
+		predict: -1,
+		...o.extra
 	};
 }
 
 /** A running attempt or its debrief, as seen by `o.viewer`. */
-function gameView(t: Table, o: AttemptOpts): PlayerView {
+export function gameView(t: Table, o: AttemptOpts): PlayerView {
 	const attempt = attemptOf(t, o);
 	const won = !!o.result?.success;
 	const entry: LogEntry = {
@@ -661,14 +733,16 @@ function gameView(t: Table, o: AttemptOpts): PlayerView {
 		attempts: attempt.number,
 		distress: attempt.distress,
 		completed: won,
-		total: attempt.number + (attempt.distress ? 1 : 0)
+		total: attempt.number + (attempt.distress ? 1 : 0),
+		...o.logbookEntry
 	};
 	return baseView(t.humans, o.viewer, {
 		phase: o.result ? 'debrief' : 'playing',
 		mission: o.mission,
-		missionDef: missionDef(o.mission),
+		missionDef: o.def ?? missionDef(o.mission),
 		logbook: logbook([entry]),
-		attempt
+		attempt,
+		...(o.deepSea ? { edition: 'deepSea' } : {})
 	});
 }
 

@@ -9,9 +9,11 @@
 	import Lobby from '#lib/components/game/Lobby.svelte';
 	import Table from '#lib/components/game/Table.svelte';
 	import { GameConnection } from '#lib/game/connection.svelte.js';
-	import { leaveGame } from '#lib/api.js';
+	import { getMissions, leaveGame } from '#lib/api.js';
 	import { terms } from '#lib/edition.js';
 	import { errorText } from '#lib/errors.js';
+	import { missionLabelOf } from '#lib/game/format.js';
+	import type { MissionDef } from '#lib/types.js';
 	import { ApiError } from '#lib/api.js';
 	import { sessions } from '#lib/session.js';
 	import { toast } from 'svelte-sonner';
@@ -50,6 +52,16 @@
 	});
 
 	const view = $derived(conn?.view ?? null);
+
+	// The mission table names the side quests ("Q1") in the logbook of an ended game.
+	let missions = $state<MissionDef[] | null>(null);
+	$effect(() => {
+		if (view?.phase !== 'ended' || missions) return;
+		getMissions().then(
+			(c) => (missions = c.missions),
+			() => {}
+		);
+	});
 
 	async function leave() {
 		const c = conn;
@@ -115,7 +127,7 @@
 							<ul class="flex flex-col divide-y divide-border text-sm">
 								{#each view.logbook as e (e.mission)}
 									<li class="flex items-baseline gap-2 py-1.5">
-										<span class="font-medium">Mission {e.mission}</span>
+										<span class="font-medium">Mission {missionLabelOf(e.mission, missions)}</span>
 										<span class="text-muted-foreground">
 											{e.attempts}
 											{e.attempts === 1 ? 'attempt' : 'attempts'}{e.distress

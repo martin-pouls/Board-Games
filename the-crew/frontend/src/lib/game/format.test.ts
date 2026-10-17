@@ -10,21 +10,11 @@ import {
 	specText,
 	trickText
 } from './format.js';
+import { def, objective } from './fixtures.js';
 import type { Card, Member, MissionDef, Objective, ObjectiveSpec } from '#lib/types.js';
 
 const card = (suit: Card['suit'], rank: number): Card => ({ suit, rank });
-const obj = (o: Partial<Objective>): Objective => ({
-	kind: 'winCards',
-	owner: -1,
-	cards: [],
-	count: 0,
-	tricks: [],
-	suit: '',
-	rank: 0,
-	notWithTrump: false,
-	ordered: false,
-	...o
-});
+const obj = (o: Partial<Objective>): Objective => objective(o.kind ?? 'winCards', o);
 const member = (seat: number, name: string, dummy = false): Member => ({
 	seat,
 	playerId: dummy ? '' : name,
@@ -33,25 +23,14 @@ const member = (seat: number, name: string, dummy = false): Member => ({
 	cardCount: 0,
 	tricksWon: 0,
 	communication: null,
+	communications: [],
 	communicated: false,
 	stacks: [],
 	mustAct: false,
 	cards: null
 });
 const members = [member(0, 'Alice'), member(1, 'Bob'), member(2, '', true)];
-const mission = (m: Partial<MissionDef>): MissionDef => ({
-	number: 1,
-	tasks: 0,
-	tokens: [],
-	distribution: '',
-	deadZone: false,
-	fromTrick: 0,
-	golden: false,
-	setup: [],
-	poll: 'yesNo',
-	objectives: [],
-	...m
-});
+const mission = (m: Partial<MissionDef>): MissionDef => def(1, { poll: 'yesNo', ...m });
 
 describe('seatName', () => {
 	it('names you, players and JARVIS', () => {

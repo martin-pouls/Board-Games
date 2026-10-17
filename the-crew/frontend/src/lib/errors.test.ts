@@ -20,7 +20,11 @@ const codes: ApiErrorCode[] = [
 	'internal',
 	'network',
 	'disconnected',
-	'timeout'
+	'timeout',
+	'invalid_prediction',
+	'uneven_distribution',
+	'invalid_task',
+	'invalid_seat'
 ];
 
 describe('errorText', () => {
