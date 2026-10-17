@@ -1,6 +1,6 @@
 /** A game listed on the start page. Each game is its own app, served by Caddy next to this one. */
 export interface Game {
-	id: 'the-game' | 'regicide' | 'fox-duet' | 'the-crew';
+	id: 'the-game' | 'regicide' | 'fox-duet' | 'the-crew' | 'deep-sea';
 	name: string;
 	/** Absolute path of the game's app on the same host in production (outside this app's base path). */
 	path: `/${string}/`;
@@ -50,6 +50,16 @@ export const games: Game[] = [
 		players: '2–5 players',
 		tagline: 'Cooperative trick-taking through 50 missions. No talking about your cards.',
 		features: ['50 missions', '2 players with JARVIS']
+	},
+	{
+		id: 'deep-sea',
+		name: 'The Crew: Mission Deep Sea',
+		path: '/deep-sea/',
+		devPort: 5179,
+		players: '2–5 players',
+		tagline:
+			'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.',
+		features: ['Missions with task cards', '2 players with Tonoja']
 	}
 ];
 

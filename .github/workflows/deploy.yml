@@ -117,11 +117,12 @@ jobs:
         with:
           persist-credentials: false
       # shared/ itself is checked in test-shared. Apps without a backend or frontend (the start
-      # page, the gate) skip those steps.
+      # page, the gate) skip those steps, and so does deep-sea: it has no code of its own, the
+      # the-crew job (planned together with it) tests the code it is built from.
       - name: Uses shared/frontend?
         id: shared
         run: |
-          if grep -q "^COPY shared/frontend" "${{ matrix.app }}/Dockerfile"; then echo "frontend=true"; else echo "frontend=false"; fi >>"$GITHUB_OUTPUT"
+          if grep -qs "^COPY shared/frontend" "${{ matrix.app }}/Dockerfile"; then echo "frontend=true"; else echo "frontend=false"; fi >>"$GITHUB_OUTPUT"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         if: hashFiles(format('{0}/backend/go.mod', matrix.app)) != ''
         with:

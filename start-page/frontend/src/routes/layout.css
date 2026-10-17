@@ -13,7 +13,8 @@
  * A card table: pale linen in light mode, green felt in dark mode (the theme is set before first
  * paint by the script in app.html). Each game tile borrows the identity of its game, in the same
  * mode: The Game is blue + orange, Regicide parchment/castle + gold, Fox Duet moss green + fox orange on parchment,
- * The Crew indigo ink + coral on mission paper (midnight navy + cyan in dark mode).
+ * The Crew indigo ink + coral on mission paper (midnight navy + cyan in dark mode),
+ * Mission Deep Sea teal-navy ink + coral on sea-foam (abyssal blue + turquoise in dark mode).
  */
 :root {
 	--background: oklch(0.965 0.012 120);
@@ -59,6 +60,11 @@
 	--crew-ink: oklch(0.32 0.11 275);
 	--crew-accent: oklch(0.7 0.17 40);
 	--crew-text: oklch(0.52 0.17 35);
+	/* Mission Deep Sea */
+	--deep-tile: oklch(0.96 0.025 190);
+	--deep-ink: oklch(0.3 0.07 215);
+	--deep-accent: oklch(0.72 0.15 30);
+	--deep-text: oklch(0.5 0.14 28);
 }
 
 .dark {
@@ -97,6 +103,10 @@
 	--crew-ink: oklch(0.26 0.08 268);
 	--crew-accent: oklch(0.82 0.12 210);
 	--crew-text: oklch(0.84 0.11 210);
+	--deep-tile: oklch(0.19 0.04 235);
+	--deep-ink: oklch(0.22 0.06 240);
+	--deep-accent: oklch(0.85 0.12 195);
+	--deep-text: oklch(0.86 0.11 195);
 }
 
 @theme inline {
@@ -120,6 +130,10 @@
 	--color-crew-ink: var(--crew-ink);
 	--color-crew-accent: var(--crew-accent);
 	--color-crew-text: var(--crew-text);
+	--color-deep-tile: var(--deep-tile);
+	--color-deep-ink: var(--deep-ink);
+	--color-deep-accent: var(--deep-accent);
+	--color-deep-text: var(--deep-text);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

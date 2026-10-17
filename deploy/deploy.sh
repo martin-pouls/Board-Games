@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fallback deploy, for when GitHub Actions (.github/workflows/deploy.yml, the normal way) is not
 # available. Deploys apps of the committed HEAD as root over your own key: for each app upload its
-# subtree and shared/, build its image on the server (native arm64, tagged local-<rev>), restart
+# subtree and the other top-level directories its Dockerfile copies from (shared/; for deep-sea,
+# which builds the-crew's Dockerfile, also the-crew/), build its image on the server (native arm64, tagged local-<rev>), restart
 # its container and install its Caddy snippet; then reload Caddy once. "caddy" first installs the
 # shared proxy from deploy/caddy/ into /opt/caddy. Uncommitted changes are not deployed. The next CI
 # deploy replaces it again.
@@ -11,9 +12,9 @@
 #   deploy/deploy.sh regicide              # one app
 #   deploy/deploy.sh caddy the-game        # several
 #
-# An app is a top-level directory with <app>/Dockerfile, <app>/deploy/compose.yaml and
-# <app>/deploy/<app>.caddy. Its source lands in /opt/board-games/<app>/src/<app> on the server,
-# next to src/shared.
+# An app is a top-level directory with <app>/deploy/compose.yaml (which names its Dockerfile, in
+# the app or in another app's directory) and <app>/deploy/<app>.caddy. Its source lands in
+# /opt/board-games/<app>/src/<app> on the server, next to src/shared.
 set -euo pipefail
 
 HOST=${DEPLOY_HOST:-root@yoshi-und-kruemli.de}
@@ -28,6 +29,23 @@ all_apps() {
 		git cat-file -e "HEAD:$d/deploy/compose.yaml" 2>/dev/null && echo "$d"
 	done
 	return 0
+}
+
+# The top-level directories app $1 is built from, one per line: its own and every one its
+# Dockerfile (the one named by "dockerfile:" in its deploy/compose.yaml) copies from. Same rule as
+# .github/scripts/plan-deploy.sh; deep-sea has no Dockerfile of its own and builds the-crew's.
+src_dirs() {
+	local df
+	df=$(git show "HEAD:$1/deploy/compose.yaml" | sed -n 's/^[[:space:]]*dockerfile:[[:space:]]*\([^[:space:]#]*\).*/\1/p' | head -n1)
+	df=${df//[\"\']/}
+	{
+		echo "$1"
+		git show "HEAD:${df:-$1/Dockerfile}" 2>/dev/null | awk '$1 == "COPY" && !/--from/ {
+			n = 0
+			for (i = 2; i <= NF; i++) if ($i !~ /^--/) src[++n] = $i
+			for (i = 1; i < n; i++) { split(src[i], p, "/"); if (p[1] != "" && p[1] != ".") print p[1] }
+		}'
+	} | sort -u
 }
 
 caddy=
@@ -68,10 +86,11 @@ ssh -i "$KEY" "$HOST" '[ -f /opt/caddy/compose.yaml ] && docker network inspect 
 
 for app in "${apps[@]}"; do
 	echo "==> $app"
-	[ -z "$(git status --porcelain -- "$app" shared)" ] ||
-		echo "warning: uncommitted changes in $app/ or shared/ are not deployed" >&2
-	# The repo layout is kept (src/<app>, src/shared): apps that use shared/ build from src.
-	git -c core.autocrlf=false archive --format=tar HEAD "$app" shared | ssh -i "$KEY" "$HOST" "set -eu
+	mapfile -t dirs < <(src_dirs "$app")
+	[ -z "$(git status --porcelain -- "${dirs[@]}")" ] ||
+		echo "warning: uncommitted changes in ${dirs[*]} are not deployed" >&2
+	# The repo layout is kept (src/<app>, src/shared, ...): the app builds from src.
+	git -c core.autocrlf=false archive --format=tar HEAD "${dirs[@]}" | ssh -i "$KEY" "$HOST" "set -eu
 dir=/opt/board-games/$app
 rm -rf \$dir/src.new
 mkdir -p \$dir/src.new

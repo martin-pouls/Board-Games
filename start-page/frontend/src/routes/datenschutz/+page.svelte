@@ -229,9 +229,9 @@
 	</p>
 	<p>
 		Spiele werden nach der letzten Aktivität automatisch mit allen zugehörigen Daten gelöscht: in
-		der Regel nach sieben Tagen, bei Spielen mit fortlaufender Kampagne nach 30 Tagen, damit der
-		Fortschritt erhalten bleibt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO: Die Daten sind
-		nötig, um Ihnen das gewünschte Spiel bereitzustellen.
+		der Regel nach sieben Tagen, bei Spielen mit fortlaufender Kampagne (The Crew, The Crew: Mission
+		Deep Sea) nach 30 Tagen, damit der Fortschritt erhalten bleibt. Rechtsgrundlage ist Art. 6 Abs.
+		1 lit. b DSGVO: Die Daten sind nötig, um Ihnen das gewünschte Spiel bereitzustellen.
 	</p>
 
 	<h3>Lokaler Speicher im Browser</h3>
@@ -244,8 +244,8 @@
 		<li>den zuletzt verwendeten Spielernamen,</li>
 		<li>die gewählte Sortierung Ihrer Handkarten (Regicide),</li>
 		<li>
-			die zuletzt gewählten Spieleinstellungen als Gastgeber (The Game, The Crew) und den zuletzt
-			gewählten Schwierigkeitsgrad (Fox Duet),
+			die zuletzt gewählten Spieleinstellungen als Gastgeber (The Game, The Crew, Mission Deep Sea)
+			und den zuletzt gewählten Schwierigkeitsgrad (Fox Duet),
 		</li>
 		<li>Ihre Wahl zwischen hellem und dunklem Design.</li>
 	</ul>

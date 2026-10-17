@@ -5,7 +5,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { sharedAlias, sharedDedupe, sharedRoot, sharedSrc } from '../../shared/frontend/vite.js';
 
 // Sub-path the start page is served under in production (BASE_PATH=/board-games behind Caddy);
-// empty in dev. The games live next to it at /the-game, /regicide, /fox-duet and /the-crew; in dev the tiles link to
+// empty in dev. The games live next to it at /the-game, /regicide, /fox-duet, /the-crew and /deep-sea; in dev the tiles link to
 // the games' own dev servers instead (see src/lib/games.ts).
 const base = (process.env.BASE_PATH ?? '') as '' | `/${string}`;
 
@@ -28,7 +28,7 @@ export default defineConfig({
 	resolve: { alias: { [sharedAlias]: sharedSrc }, dedupe: sharedDedupe },
 	server: {
 		fs: { allow: [sharedRoot] },
-		// Fixed local port (The Game 5173, Regicide 5174, start page 5175, Fox Duet 5176, The Crew 5177).
+		// Fixed local port (The Game 5173, Regicide 5174, start page 5175, Fox Duet 5176, The Crew 5177, Deep Sea 5179).
 		port: 5175,
 		strictPort: true
 	},

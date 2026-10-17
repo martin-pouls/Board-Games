@@ -76,7 +76,9 @@
 						game.id === 'fox-duet' &&
 							'bg-fox-tile ring-fox-orange/30 group-hover:ring-fox-orange/80',
 						game.id === 'the-crew' &&
-							'bg-crew-tile ring-crew-accent/30 group-hover:ring-crew-accent/80'
+							'bg-crew-tile ring-crew-accent/30 group-hover:ring-crew-accent/80',
+						game.id === 'deep-sea' &&
+							'bg-deep-tile ring-deep-accent/30 group-hover:ring-deep-accent/80'
 					]}
 				>
 					{#if game.id === 'the-game'}
@@ -153,6 +155,54 @@
 								</g>
 							</svg>
 						</div>
+					{:else if game.id === 'deep-sea'}
+						<div
+							class="relative flex h-36 items-center justify-center bg-linear-to-b from-deep-ink via-deep-ink to-deep-tile"
+							aria-hidden="true"
+						>
+							<svg
+								viewBox="0 0 32 32"
+								class="size-20 text-deep-accent transition group-hover:scale-105"
+							>
+								<circle cx="5" cy="8" r="1.1" fill="white" fill-opacity="0.55" />
+								<circle cx="8" cy="4.5" r="0.7" fill="white" fill-opacity="0.45" />
+								<circle cx="27" cy="9" r="0.9" fill="white" fill-opacity="0.5" />
+								<circle cx="29" cy="24" r="0.7" fill="white" fill-opacity="0.4" />
+								<path
+									d="M19 4h5v2.5h-3v3h-2z"
+									fill="currentColor"
+									stroke="currentColor"
+									stroke-width="1"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M11 10.5h7v3h-7z"
+									fill="currentColor"
+									stroke="currentColor"
+									stroke-width="1"
+									stroke-linejoin="round"
+								/>
+								<ellipse cx="15" cy="18.5" rx="11" ry="5.5" fill="currentColor" />
+								<path
+									d="M25 16.5 29 13.5v10l-4-3z"
+									fill="currentColor"
+									stroke="currentColor"
+									stroke-width="1"
+									stroke-linejoin="round"
+								/>
+								<circle cx="9" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
+								<circle cx="14" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
+								<circle cx="19" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
+								<path
+									d="M6 28.5c1.2-1.6 2.8-1.6 4 0s2.8 1.6 4 0 2.8-1.6 4 0 2.8 1.6 4 0"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1"
+									stroke-linecap="round"
+									stroke-opacity="0.5"
+								/>
+							</svg>
+						</div>
 					{:else}
 						<div
 							class="relative flex h-36 items-center justify-center bg-linear-to-br from-castle via-castle-banner to-castle"
@@ -178,7 +228,8 @@
 									'text-2xl font-bold',
 									game.id === 'regicide' && 'font-display tracking-wide text-gold',
 									game.id === 'fox-duet' && 'text-fox-text',
-									game.id === 'the-crew' && 'text-crew-text'
+									game.id === 'the-crew' && 'text-crew-text',
+									game.id === 'deep-sea' && 'text-deep-text'
 								]}
 							>
 								{game.name}
@@ -202,7 +253,9 @@
 										? 'text-fox-text'
 										: game.id === 'the-crew'
 											? 'text-crew-text'
-											: 'text-gold'
+											: game.id === 'deep-sea'
+												? 'text-deep-text'
+												: 'text-gold'
 							]}
 						>
 							Play {game.name}

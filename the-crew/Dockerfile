@@ -5,6 +5,11 @@
 # The build context is the repository root (the app uses shared/), so paths below are from the
 # root. The image keeps the repo layout (/src/the-crew, /src/shared): the app finds shared/ at
 # ../../shared as it does in a checkout. Dockerfile.dockerignore next to this file applies.
+#
+# Two apps are built from this file: The Crew (the defaults) and Mission Deep Sea
+# (deep-sea/deploy/compose.yaml: EDITION=deepSea, DB_FILE=deep-sea.db). EDITION is built into the
+# SPA and set as the server's EDITION; DB_FILE names the SQLite file in /data (the final stage has
+# no shell, so it is not derived from EDITION).
 
 FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS web
 WORKDIR /src/the-crew/frontend
@@ -15,7 +20,9 @@ COPY shared/frontend/ /src/shared/frontend/
 COPY the-crew/frontend/ ./
 # Sub-path the SPA is served under (see vite.config.ts); empty = site root.
 ARG BASE_PATH=""
-RUN BASE_PATH="$BASE_PATH" npm run build
+# planetNine | deepSea: the edition of the game the SPA is built for.
+ARG EDITION=planetNine
+RUN EDITION="$EDITION" BASE_PATH="$BASE_PATH" npm run build
 
 FROM golang:1.27-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS api
 WORKDIR /src/the-crew/backend
@@ -34,7 +41,9 @@ COPY --from=api /out/server /app/server
 COPY --from=web /src/the-crew/frontend/build /app/static
 # Owned by nonroot so a fresh named volume mounted here is writable.
 COPY --from=api --chown=65532:65532 /out/data /data
-ENV ADDR=:8080 DB_PATH=/data/the-crew.db STATIC_DIR=/app/static
+ARG EDITION=planetNine
+ARG DB_FILE=the-crew.db
+ENV ADDR=:8080 EDITION=$EDITION DB_PATH=/data/$DB_FILE STATIC_DIR=/app/static
 EXPOSE 8080
 VOLUME /data
 ENTRYPOINT ["/app/server"]

@@ -9,6 +9,7 @@ Web implementations of cooperative board and card games, played live in the brow
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
 | The Crew | [the-crew/](the-crew/) | `/the-crew/` | "The Crew: The Quest for Planet Nine" (Kosmos), 2–5 players (2 with JARVIS), 50 missions. See [the-crew/CLAUDE.md](the-crew/CLAUDE.md). |
+| Deep Sea | [deep-sea/](deep-sea/) | `/deep-sea/` | "The Crew: Mission Deep Sea" (Kosmos), 2–5 players. **No code of its own**: the-crew built with `EDITION=deepSea`, own deploy. See [deep-sea/CLAUDE.md](deep-sea/CLAUDE.md). |
 | Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). See [gate/CLAUDE.md](gate/CLAUDE.md). |
 
 This file holds the rules common to all apps. Each game's CLAUDE.md adds its domain model, per-player view and look. **Read it before working on that game.**
@@ -17,13 +18,15 @@ This file holds the rules common to all apps. Each game's CLAUDE.md adds its dom
 
 ## Repository layout
 
-Top level: `.github/` (CD), `deploy/` (shared Caddy proxy, server scripts, local prod-like stack), `shared/`, `start-page/`, `gate/`, and one directory per game. Every game has the same shape: `backend/` (Go, hexagonal, see Architecture), `frontend/` (SvelteKit SPA; `src/lib/components/ui/` is generated shadcn-svelte, don't hand-edit heavily), `docs/rules.md`, `Dockerfile`, `deploy/`.
+Top level: `.github/` (CD), `deploy/` (shared Caddy proxy, server scripts, local prod-like stack), `shared/`, `start-page/`, `gate/`, and one directory per game (except `deep-sea/`, see Shared code). Every game has the same shape: `backend/` (Go, hexagonal, see Architecture), `frontend/` (SvelteKit SPA; `src/lib/components/ui/` is generated shadcn-svelte, don't hand-edit heavily), `docs/rules.md`, `Dockerfile`, `deploy/`.
 
 The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS mirror). API JSON uses camelCase.
 
 ## Shared code
 
-**Apps are independent, except for [shared/](shared/README.md).** Each game has its own Go module, npm project, image, database and deploy. No app imports from another app. Backend: `replace github.com/martin-pouls/shared/backend => ../../shared/backend` in `go.mod`. Frontend: compiled as source via the alias `@board-games/shared`.
+**Apps are independent, except for [shared/](shared/README.md) and Deep Sea.** Each game has its own Go module, npm project, image, database and deploy. No app imports from another app. Backend: `replace github.com/martin-pouls/shared/backend => ../../shared/backend` in `go.mod`. Frontend: compiled as source via the alias `@board-games/shared`.
+
+**The one exception: [deep-sea/](deep-sea/CLAUDE.md) has no code.** It holds only `deploy/` and a CLAUDE.md. Its image builds `the-crew/Dockerfile` with `EDITION=deepSea` (build args in `deep-sea/deploy/compose.yaml`), so it is the same code as The Crew under its own URL, container, database and tile. Consequence for CI: an app depends on every top-level directory its Dockerfile (named by `dockerfile:` in its `deploy/compose.yaml`) copies from, so a change in `the-crew/` or `shared/` redeploys Deep Sea too.
 
 - **What goes there:** code that is identical in every game, changes only for plumbing reasons and has no game-specific behaviour. Today: the lobby REST/WS/session/persistence plumbing (incl. WS view publishing, bearer auth, typed IDs, the SQLite snapshot repository), the page frame, the home and join pages, the remembered-games list, the lobby's leave/end actions, connection banner, card motion and new-card marks.
 - **What stays in the game:** rules, domain and DTOs, the service, WS command dispatch, and the Lobby/Table/GameOver screens: everything that defines how a game plays or feels. Differences are props, snippets or parameters, never switches on game names.
@@ -72,6 +75,7 @@ Backend env vars: `ADDR` (default: the game's backend port below; the images set
 | Regicide | `:5174` | `:8081` |
 | Fox Duet | `:5176` | `:8082` |
 | The Crew | `:5177` | `:8084` |
+| Deep Sea | `:5179` | `:8085` |
 | Start page | `:5175` | — |
 | Gate | `:5178` (login page only) | `:8083` |
 
@@ -86,7 +90,7 @@ Hetzner arm64 Ubuntu box (root via `~/.ssh/hetzner_ed25519`), one container per 
 - **Base path:** every frontend is built with `BASE_PATH=/<path>` (build arg in `<app>/deploy/compose.yaml`). Routes use `resolve()`; game API and WS URLs use `__BASE_PATH__`, never a bare `/api` or `/ws`. Links between apps are absolute paths with `rel="external"`.
 - **Each app ships a Caddy snippet** `<app>/deploy/<app>.caddy` (`handle_path`, prefix stripped, so servers stay path-agnostic). A game's snippet has `import gate`, which puts it behind the password gate.
 - **The deploy script trusts nothing from the caller** ([deploy/server/board-games-deploy](deploy/server/board-games-deploy)): only a commit SHA on `main` and app names; config comes from its own clone of `main`. Keep it that way. After changing `deploy/server/` or `deploy/setup-server.sh`, re-run `deploy/setup-server.sh`.
-- **Adding an app:** use the `add-app` skill (`.claude/skills/add-app/`). CI picks up any top-level directory with a Dockerfile and `deploy/`.
+- **Adding an app:** use the `add-app` skill (`.claude/skills/add-app/`). CI picks up any top-level directory with `deploy/compose.yaml`; the Dockerfile it names (`dockerfile:`) decides what it depends on.
 - **Git Bash gotcha:** it rewrites `/regicide`-like env values into Windows paths. For a local base-path build use `MSYS2_ENV_CONV_EXCL=BASE_PATH BASE_PATH=/regicide npm run build`.
 
 ## Conventions and gotchas

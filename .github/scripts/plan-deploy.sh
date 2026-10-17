@@ -11,23 +11,44 @@
 #              is caught up by the next one. Everything when BASE is empty or not an ancestor of
 #              HEAD (first run, rewritten history).
 #
-# An app is a top-level directory with deploy/compose.yaml (the same rule as deploy/deploy.sh).
-# An app uses shared/ when its Dockerfile copies it; a change in shared/ counts for each of them.
+# An app is a top-level directory with deploy/compose.yaml (the same rule as deploy/deploy.sh); it
+# needs no Dockerfile of its own. An app depends on its own directory and on every top-level
+# directory its Dockerfile copies from the build context (COPY without --from), where the
+# Dockerfile is the one named by "dockerfile:" in its deploy/compose.yaml (relative to the build
+# context, the repository root). So a change in shared/ counts for every app that copies it, and a
+# change in the-crew/ also counts for deep-sea, which builds the-crew/Dockerfile.
 # A shared part is checked when it changed since BASE, and on runs without BASE (manual, first)
 # when one of the apps uses it.
 set -euo pipefail
 
+# The Dockerfile app $1 is built from.
+dockerfile_of() {
+	local f
+	f=$(sed -n 's/^[[:space:]]*dockerfile:[[:space:]]*\([^[:space:]#]*\).*/\1/p' "$1/deploy/compose.yaml" | head -n1)
+	f=${f//[\"\']/}
+	echo "${f:-$1/Dockerfile}"
+}
+
+# The top-level directories the Dockerfile $1 copies from the build context, one per line.
+copy_dirs() {
+	awk '$1 == "COPY" && !/--from/ {
+		n = 0
+		for (i = 2; i <= NF; i++) if ($i !~ /^--/) src[++n] = $i
+		for (i = 1; i < n; i++) { split(src[i], p, "/"); if (p[1] != "" && p[1] != ".") print p[1] }
+	}' "$1" 2>/dev/null || true
+}
+
 all=()
-users=() # apps built with shared/
+declare -A deps # app -> space-separated top-level directories whose changes redeploy it
 for d in */; do
 	d=${d%/}
 	[ -f "$d/deploy/compose.yaml" ] || continue
 	all+=("$d")
-	grep -q '^COPY shared/' "$d/Dockerfile" 2>/dev/null && users+=("$d")
+	deps[$d]=" $d $(copy_dirs "$(dockerfile_of "$d")" | sort -u | tr '\n' ' ')"
 done
 
 # Whether app $1 is built with shared/$2.
-uses() { grep -q "^COPY shared/$2" "$1/Dockerfile" 2>/dev/null; }
+uses() { grep -q "^COPY shared/$2" "$(dockerfile_of "$1")" 2>/dev/null; }
 
 is_app() {
 	local a
@@ -57,13 +78,9 @@ if [ -n "${REQUESTED:-}" ]; then
 elif [ -n "${BASE:-}" ] && git merge-base --is-ancestor "$BASE" HEAD 2>/dev/null; then
 	echo "changes since $BASE:"
 	while read -r d; do
-		if [ "$d" = shared ]; then
-			for u in "${users[@]}"; do
-				[[ " ${apps[*]} " == *" $u "* ]] || apps+=("$u")
-			done
-		elif is_app "$d" && [[ " ${apps[*]} " != *" $d "* ]]; then
-			apps+=("$d")
-		fi
+		for a in "${all[@]}"; do
+			if [[ "${deps[$a]}" == *" $d "* && " ${apps[*]-} " != *" $a "* ]]; then apps+=("$a"); fi
+		done
 	done < <(git diff --name-only "$BASE" HEAD | cut -d/ -f1 | sort -u)
 	changed_shared=$(git diff --name-only "$BASE" HEAD -- shared/)
 	[ -z "$(git diff --name-only "$BASE" HEAD -- deploy/caddy/)" ] || caddy=true
