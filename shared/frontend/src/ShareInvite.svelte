@@ -2,6 +2,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
 	import Share2 from '@lucide/svelte/icons/share-2';
+	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from './ui/button/index.js';
 	import { Input } from './ui/input/index.js';
@@ -9,8 +10,10 @@
 	/**
 	 * title is the game's name, shown as the card's heading and used for navigator.share.
 	 * link is the absolute join URL (the game builds it with resolve('/join/[code]')).
+	 * badge is shown right after the title (e.g. the edition or variant being set up).
 	 */
-	let { code, link, title }: { code: string; link: string; title: string } = $props();
+	let { code, link, title, badge }: { code: string; link: string; title: string; badge?: Snippet } =
+		$props();
 
 	const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
@@ -72,7 +75,10 @@
 
 <div class="flex flex-col gap-3">
 	<div class="flex items-center gap-2">
-		<h2 class="min-w-0 flex-1 truncate text-2xl font-semibold">{title}</h2>
+		<div class="flex min-w-0 flex-1 items-center gap-2">
+			<h2 class="min-w-0 truncate text-2xl font-semibold">{title}</h2>
+			{@render badge?.()}
+		</div>
 		<span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Code</span>
 		<span class="font-mono text-base font-bold tracking-[0.2em] select-all">{code}</span>
 		<Button

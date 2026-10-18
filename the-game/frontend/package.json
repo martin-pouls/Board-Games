@@ -18,6 +18,7 @@
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@fontsource-variable/inter": "^5.3.0",
+		"@fontsource-variable/league-gothic": "^5.3.0",
 		"@internationalized/date": "^3.12.4",
 		"@lucide/svelte": "^1.55.0",
 		"@sveltejs/adapter-static": "^4.0.0",

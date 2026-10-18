@@ -24,4 +24,18 @@ Keep every concept open for further card kinds (the mini-expansions Joker, Zehne
 
 ## Look and feel
 
-shadcn base colour `zinc` tinted toward blue, Inter. The accents are the blue and orange of The Game Extreme, which are also the ascending (sky) and descending (amber) pile colours: a blue primary and two soft page glows (`--glow-up`, `--glow-down` in `routes/layout.css`). Violet is reserved for Infinity commands. The start page tile uses the same colours. On phones the in-game header shortens the EXTREME badge to "EXT" so Rules and Give up fit at 360 px. Card motion: plays fly from the hand onto the pile (undo flies back), other players' plays come from the top edge, refills drop into the hand; cards are keyed by value (`lib/game/motion.ts`), so a card keeps its key between hand and pile.
+The Game Extreme, made calm. Tokens in `routes/layout.css`, background mirrored in `app.html` and `+layout.svelte`.
+
+- **Palette:** a plain pale blue-grey table (no page glows). The box's blue and orange are the pile colours: `--up-*` and `--down-*` (mat edge, soft tint, label text, solid direction pill and its ink). Green (`--go*`) means "your turn" and "played this turn". `--extreme` is the orange tape of the EXTREME tag.
+- **Type:** Inter for all UI, League Gothic (`font-display`) only for card values and the home page's start values.
+- **Cards (`GameCard`):** navy face (`--card-face`) with a cream numeral, sized by an inherited `--w`. The value appears in the top left and bottom right corners, with the kind mark (Infinity or lightning) below it. Commands use their printed badges (`CommandBadge`): Infinity as a blue square, lightning as an orange triangle pointing down. `mode="start"` shows an empty pile's start value as a dashed outline. `mode="mini"` (28 px) is used in the turn bar and on the results screen.
+- **Piles:** 2 × 2, each a mat that is the whole tap target. A solid arrow pill sits top left and a green "+N" (cards played there this turn) sits top right. There is no card count. `Board` computes one card size for all piles from the grid, so the card clears the pills; pile size never changes during a game. Bound pile: dashed green outline. Legal pile: solid green outline. Skull: red edge and "Cover!".
+- **Below the piles, all at fixed heights:**
+  - Turn bar (48 px): whose turn; then your count with dots, or the other player's plays as mini cards; then the rules in force as badges (`turnStatus().rules`).
+  - Button row (48 px): Undo and End turn, or "Waiting for X to play."
+  - One-row hand: card width comes from the game's hand size, cards overlap so the corner value and half the numeral stay visible, and covered cards drop their bottom corner value. New cards get `NewCardMark dot="corner-left"`.
+  - There is no hint line under the hand.
+- **Header:** on phones the EXTREME tag shortens to "EXT", so Rules and Give up fit at 360 px.
+- **Player strip:** one row. Names truncate, your own pill says "You", the active player's pill is green, and there is no crown in game.
+- **No communication:** a blue Infinity glow around the screen (`NoCommunicationFrame`).
+- **Card motion:** plays fly from the hand onto the pile (undo flies back), other players' plays come in from the top edge, and refills drop into the hand. Cards are keyed by value (`lib/game/motion.ts`), so a card keeps its key between the hand and the pile.

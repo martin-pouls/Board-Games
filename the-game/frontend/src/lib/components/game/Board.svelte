@@ -64,6 +64,27 @@
 			a.direction === b.direction ? a.index - b.index : a.direction === 'up' ? -1 : 1
 		)
 	);
+	// Pile card size: one --w for all four piles, from the grid's size, which stays the same all
+	// game (the hand's height depends only on the hand size). The card sits between the corner
+	// pills or, when that gives a bigger card, below them.
+	const GAP = 8;
+	/** Corner pill: inset 6 px, 28 × 22 px; the card keeps 4 px from it and 6 px from the mat edge. */
+	const PILL_SIDE = 6 + 28 + 4;
+	const PILL_BOTTOM = 6 + 22 + 4;
+	const PAD = 6;
+	const MAX_PILE_CARD = 112;
+	let gridW = $state(0);
+	let gridH = $state(0);
+	const pileCard = $derived.by(() => {
+		const w = (gridW - GAP) / 2;
+		const h = (gridH - GAP) / 2;
+		const beside = Math.min(w - 2 * PILL_SIDE, (h - 2 * PAD) / 1.4);
+		const below = Math.min(w - 2 * PAD, (h - PILL_BOTTOM - PAD) / 1.4);
+		const size = Math.max(0, Math.floor(Math.min(MAX_PILE_CARD, Math.max(beside, below))));
+		// Below the pills: pushed down only as far as needed to clear them.
+		const top = size > beside ? Math.max(0, 2 * PILL_BOTTOM - (h - size * 1.4)) : 0;
+		return { size, top };
+	});
 	const playsByPile = $derived(
 		(view.turn?.plays ?? []).reduce<Record<number, number>>((acc, p) => {
 			acc[p.pile] = (acc[p.pile] ?? 0) + 1;
@@ -162,7 +183,7 @@
 		<HeaderButton icon={House} label="Home" href={resolve('/')} />
 		<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 		<span
-			class={cn('size-2 rounded-full', connected ? 'bg-emerald-500' : 'animate-pulse bg-amber-500')}
+			class={cn('size-2 rounded-full', connected ? 'bg-go' : 'animate-pulse bg-extreme')}
 			title={connected ? 'Connected' : 'Reconnecting'}
 		></span>
 		{#if view.options.pro}
@@ -170,7 +191,7 @@
 		{/if}
 		{#if extreme}
 			<span
-				class="rounded bg-violet-600 px-1.5 py-0.5 text-xs font-semibold text-white"
+				class="ml-1 -rotate-3 bg-extreme px-1.5 py-0.5 text-xs font-extrabold tracking-wide text-extreme-ink"
 				title="Extreme"
 			>
 				<!-- Abbreviated on phones, where the header row has room for nothing more. -->
@@ -205,7 +226,13 @@
 
 	<PlayerStrip players={view.players} online={client.online} showCounts={view.phase !== 'lobby'} />
 
-	<div class="grid max-h-[34rem] min-h-56 flex-1 grid-cols-2 grid-rows-2 gap-2 sm:gap-3">
+	<div
+		bind:clientWidth={gridW}
+		bind:clientHeight={gridH}
+		class="grid max-h-[34rem] min-h-56 flex-1 grid-cols-2 grid-rows-2 gap-2"
+		style:--w="{pileCard.size}px"
+		style:--mt="{pileCard.top}px"
+	>
 		{#each piles as pile (pile.index)}
 			{@const legal = selectedCard?.legalPiles.includes(pile.index) ?? false}
 			{@const playable = interactive && !!selectedCard}
@@ -222,14 +249,9 @@
 		{/each}
 	</div>
 
-	<!--
-		The panel keeps its full height from the start (turn bar, a hand of full-size cards, the tip),
-		so the piles don't shrink when the hand gets fewer, taller cards. Until then the room shows as
-		space between the piles and the turn bar. Each rule shows once: Infinity commands on their
-		pile, the turn's rules in the turn bar's two fixed lines.
-	-->
+	<!-- Turn bar, buttons and hand: fixed heights all game, so the piles never resize. -->
 	<div
-		class="sticky bottom-0 -mx-3 mt-auto flex min-h-[calc(11.25rem+max(0.25rem,env(safe-area-inset-bottom)))] flex-col justify-end gap-1 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
+		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-2 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
 	>
 		{#if controls}
 			{@render controls()}
@@ -244,12 +266,14 @@
 				ongiveup={() => (confirmGiveUp = true)}
 			/>
 		{/if}
-		<Hand cards={view.hand} deal={view.gameId} {selected} {interactive} {onselect} />
-		<p class="h-4 text-center text-xs text-muted-foreground">
-			{#if myTurn && !selectedCard && view.turn?.cardsPlayed === 0 && view.hand.length > 0}
-				Tap a card, then a highlighted pile.
-			{/if}
-		</p>
+		<Hand
+			cards={view.hand}
+			handSize={view.rules.handSize}
+			deal={view.gameId}
+			{selected}
+			{interactive}
+			{onselect}
+		/>
 	</div>
 </div>
 

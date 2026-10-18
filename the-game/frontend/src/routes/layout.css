@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/inter';
+@import '@fontsource-variable/league-gothic';
 
 /* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
 @source '../../../../shared/frontend/src';
@@ -9,30 +10,32 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Zinc tinted toward blue, with a blue glow from the top left and an orange one from the bottom
- * right: the colours of The Game Extreme, which are also those of the ascending (sky) and
- * descending (amber) piles. The theme is set before first paint by the script in app.html.
+ * The Game Extreme, made calm: a pale blue-grey table, navy cards with cream League Gothic
+ * numerals, and the box's two colours for the piles (blue up, orange down). Command badges keep
+ * their printed colours: Infinity a blue square, lightning an orange triangle. Green means "your
+ * turn" and "played this turn". The theme is set before first paint by the script in app.html
+ * (mirror --background there and in +layout.svelte).
  */
 
 :root {
-	--background: oklch(0.975 0.008 245);
-	--foreground: oklch(0.18 0.03 260);
-	--card: oklch(0.995 0.003 245);
+	--background: oklch(0.965 0.012 245);
+	--foreground: oklch(0.2 0.035 258);
+	--card: oklch(0.99 0.004 245);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.47 0.16 255);
+	--primary: oklch(0.47 0.12 252);
 	--primary-foreground: oklch(0.985 0.005 245);
-	--secondary: oklch(0.935 0.015 245);
-	--secondary-foreground: oklch(0.25 0.04 260);
-	--muted: oklch(0.935 0.015 245);
-	--muted-foreground: oklch(0.5 0.03 255);
-	--accent: oklch(0.93 0.02 245);
-	--accent-foreground: oklch(0.25 0.04 260);
+	--secondary: oklch(0.925 0.018 245);
+	--secondary-foreground: oklch(0.25 0.04 258);
+	--muted: oklch(0.925 0.018 245);
+	--muted-foreground: oklch(0.48 0.03 255);
+	--accent: oklch(0.91 0.022 245);
+	--accent-foreground: oklch(0.25 0.04 258);
 	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.18 0.03 260 / 11%);
-	--input: oklch(0.18 0.03 260 / 16%);
-	--ring: oklch(0.55 0.15 250 / 60%);
+	--border: oklch(0.2 0.035 258 / 14%);
+	--input: oklch(0.2 0.035 258 / 18%);
+	--ring: oklch(0.5 0.12 250 / 60%);
 	--chart-1: oklch(0.87 0 0);
 	--chart-2: oklch(0.556 0 0);
 	--chart-3: oklch(0.439 0 0);
@@ -48,30 +51,57 @@
 	--sidebar-border: oklch(0.92 0.004 286.32);
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 
-	/* Tints of the two glows of the page background. */
-	--glow-up: oklch(0.86 0.07 235 / 55%);
-	--glow-down: oklch(0.9 0.07 65 / 45%);
+	/* Piles: the mat's edge and tint, text in the pile colour, and the solid direction pill. */
+	--up: oklch(0.5 0.11 250);
+	--up-soft: oklch(0.5 0.11 250 / 7%);
+	--up-label: oklch(0.42 0.11 252);
+	--up-tab: oklch(0.5 0.11 250);
+	--up-tab-ink: oklch(0.98 0.015 90);
+	--down: oklch(0.62 0.17 45);
+	--down-soft: oklch(0.62 0.17 45 / 8%);
+	--down-label: oklch(0.5 0.15 45);
+	--down-tab: oklch(0.69 0.16 48);
+	--down-tab-ink: oklch(0.22 0.045 258);
+	/* Card faces: navy with cream numerals. */
+	--card-face: oklch(0.26 0.045 258);
+	--card-ink: oklch(0.95 0.03 90);
+	--card-edge: oklch(0.95 0.03 90 / 26%);
+	--card-shade: oklch(0.12 0.03 258 / 40%);
+	/* Command badges on a card, and on the page (turn bar, rules). */
+	--infinity: oklch(0.6 0.13 245);
+	--infinity-ink: oklch(0.98 0.015 90);
+	--lightning: oklch(0.72 0.17 48);
+	--lightning-ink: oklch(0.22 0.045 258);
+	--infinity-page: oklch(0.5 0.12 250);
+	--lightning-page: oklch(0.66 0.18 44);
+	/* Your turn, and the cards played this turn. */
+	--go: oklch(0.6 0.17 150);
+	--go-ink: oklch(0.45 0.13 150);
+	--go-soft: oklch(0.6 0.17 150 / 10%);
+	/* The EXTREME tag: orange tape. */
+	--extreme: oklch(0.72 0.17 48);
+	--extreme-ink: oklch(0.22 0.045 258);
 	/* Marks cards that just came into the hand (NewCardMark). */
-	--new-card: oklch(0.72 0.16 60);
+	--new-card: oklch(0.85 0.16 95);
 }
 
 .dark {
-	--background: oklch(0.155 0.02 262);
-	--foreground: oklch(0.97 0.005 250);
-	--card: oklch(0.205 0.024 262);
+	--background: oklch(0.165 0.022 258);
+	--foreground: oklch(0.96 0.008 250);
+	--card: oklch(0.205 0.025 258);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.8 0.11 235);
+	--primary: oklch(0.78 0.1 240);
 	--primary-foreground: oklch(0.2 0.04 260);
-	--secondary: oklch(0.27 0.025 262);
+	--secondary: oklch(0.235 0.028 258);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.27 0.025 262);
+	--muted: oklch(0.235 0.028 258);
 	--muted-foreground: oklch(0.72 0.025 250);
-	--accent: oklch(0.29 0.03 262);
+	--accent: oklch(0.27 0.03 258);
 	--accent-foreground: var(--foreground);
 	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
+	--border: oklch(1 0 0 / 12%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.7 0.12 240 / 60%);
 	--chart-1: oklch(0.87 0 0);
@@ -88,13 +118,62 @@
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 
-	--glow-up: oklch(0.33 0.08 250 / 55%);
-	--glow-down: oklch(0.32 0.065 50 / 24%);
-	--new-card: oklch(0.78 0.15 65);
+	--up: oklch(0.66 0.12 245);
+	--up-soft: oklch(0.66 0.12 245 / 10%);
+	--up-label: oklch(0.78 0.1 245);
+	--up-tab: oklch(0.7 0.11 245);
+	--up-tab-ink: oklch(0.22 0.045 258);
+	--down: oklch(0.72 0.16 50);
+	--down-soft: oklch(0.72 0.16 50 / 10%);
+	--down-label: oklch(0.8 0.13 55);
+	--down-tab: oklch(0.74 0.15 52);
+	--down-tab-ink: oklch(0.22 0.045 258);
+	--card-face: oklch(0.3 0.048 258);
+	--card-ink: oklch(0.95 0.03 90);
+	--card-edge: oklch(1 0 0 / 16%);
+	--card-shade: oklch(0.08 0.02 258 / 55%);
+	--infinity: oklch(0.6 0.13 245);
+	--infinity-ink: oklch(0.98 0.015 90);
+	--lightning: oklch(0.72 0.17 48);
+	--lightning-ink: oklch(0.22 0.045 258);
+	--infinity-page: oklch(0.6 0.13 245);
+	--lightning-page: oklch(0.72 0.17 48);
+	--go: oklch(0.72 0.17 150);
+	--go-ink: oklch(0.8 0.15 150);
+	--go-soft: oklch(0.72 0.17 150 / 12%);
+	--extreme: oklch(0.72 0.17 48);
+	--extreme-ink: oklch(0.22 0.045 258);
+	--new-card: oklch(0.88 0.16 95);
 }
 
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
+	/* Card values only (and the start values on the home page). */
+	--font-display: 'League Gothic Variable', 'Inter Variable', sans-serif;
+	--color-up: var(--up);
+	--color-up-soft: var(--up-soft);
+	--color-up-label: var(--up-label);
+	--color-up-tab: var(--up-tab);
+	--color-up-tab-ink: var(--up-tab-ink);
+	--color-down: var(--down);
+	--color-down-soft: var(--down-soft);
+	--color-down-label: var(--down-label);
+	--color-down-tab: var(--down-tab);
+	--color-down-tab-ink: var(--down-tab-ink);
+	--color-card-face: var(--card-face);
+	--color-card-ink: var(--card-ink);
+	--color-card-edge: var(--card-edge);
+	--color-infinity: var(--infinity);
+	--color-infinity-ink: var(--infinity-ink);
+	--color-lightning: var(--lightning);
+	--color-lightning-ink: var(--lightning-ink);
+	--color-infinity-page: var(--infinity-page);
+	--color-lightning-page: var(--lightning-page);
+	--color-go: var(--go);
+	--color-go-ink: var(--go-ink);
+	--color-go-soft: var(--go-soft);
+	--color-extreme: var(--extreme);
+	--color-extreme-ink: var(--extreme-ink);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -141,33 +220,6 @@
 	}
 	body {
 		@apply bg-background text-foreground;
-	}
-	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
-	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
-	   the status bar and the area around its toolbar with the plain background colour, so the
-	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
-	body::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-		mask-image: linear-gradient(
-			to bottom,
-			transparent,
-			rgb(0 0 0 / 0.12) 2rem,
-			rgb(0 0 0 / 0.45) 4rem,
-			rgb(0 0 0 / 0.82) 6rem,
-			#000 8rem,
-			#000 calc(100% - 8rem),
-			rgb(0 0 0 / 0.82) calc(100% - 6rem),
-			rgb(0 0 0 / 0.45) calc(100% - 4rem),
-			rgb(0 0 0 / 0.12) calc(100% - 2rem),
-			transparent
-		);
-		background:
-			radial-gradient(ellipse 90% 55% at 0% 0%, var(--glow-up), transparent 70%) no-repeat,
-			radial-gradient(ellipse 100% 60% at 100% 100%, var(--glow-down), transparent 75%) no-repeat;
 	}
 	html {
 		@apply font-sans;

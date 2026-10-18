@@ -42,9 +42,10 @@
 <Board {client} {view} readonly>
 	{#snippet controls()}
 		{#if isHost}
-			<div class="flex flex-col gap-2 rounded-xl bg-muted/60 p-3">
-				<p class="text-sm font-medium">Look at your cards, discuss, then choose who starts.</p>
-				<div class="grid grid-cols-2 gap-2">
+			<!-- About the turn bar's height, so the piles keep their size. -->
+			<div class="flex flex-col gap-2 rounded-xl bg-muted p-2.5">
+				<p class="px-0.5 text-sm font-medium">Discuss your cards, then choose who starts.</p>
+				<div class="grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-2">
 					{#each players as p (p.id)}
 						<Button
 							variant="outline"
@@ -59,7 +60,7 @@
 			</div>
 		{:else}
 			<p
-				class="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-muted/60 px-3 text-center text-sm text-muted-foreground"
+				class="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-muted px-3 text-center text-sm text-muted-foreground"
 			>
 				<LoaderCircle class="size-4 shrink-0 animate-spin" />
 				Look at your cards and discuss. Waiting for {host?.name ?? 'the host'} to choose who starts.

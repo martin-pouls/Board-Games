@@ -7,16 +7,19 @@
 	import { cardKey } from '#lib/game/motion.js';
 	import { cn } from '#lib/utils.js';
 	import type { HandCard } from '#lib/types.js';
-	import CommandIcon from './CommandIcon.svelte';
+	import GameCard from './GameCard.svelte';
 
 	let {
 		cards,
+		handSize,
 		selected = null,
 		interactive = false,
 		deal,
 		onselect
 	}: {
 		cards: HandCard[];
+		/** The game's hand size: it sizes the cards, so they keep their size all game. */
+		handSize: number;
 		selected?: number | null;
 		interactive?: boolean;
 		/** Identifies the deal; when it changes, no card counts as just drawn. */
@@ -47,23 +50,42 @@
 		shown = keys;
 	});
 	const arrivalDelay = (key: string) => motion.dealDelay(Math.max(0, arrived.indexOf(key)));
+
+	/*
+	 * One row. A full hand fits the width with the cards overlapping so that the corner value and
+	 * the left half of the numeral stay visible (VISIBLE of a card); fewer cards spread out up to
+	 * GAP apart. The card width depends only on the hand size, so the hand never changes height.
+	 */
+	const VISIBLE = 0.8;
+	const GAP = 6;
+	const MAX_W = 84;
+	/** Room above the cards for the lifted selected card and the new-card dot. */
+	const TOP = 12;
+	let width = $state(0);
+	const w = $derived(Math.min(MAX_W, Math.floor(width / (VISIBLE * (handSize - 1) + 1))));
+	const step = $derived(items.length > 1 ? Math.min(w + GAP, (width - w) / (items.length - 1)) : 0);
+	const offset = $derived((width - (w + step * (items.length - 1))) / 2);
 </script>
 
 <!--
-	Always rendered, so the last card to leave the hand still flies. One implicit row (no column
-	count in the style): leaving cards are taken out of the flow by animate:flip, and a column
-	count updated after that would briefly wrap the hand into a tall column.
+	Always rendered, so the last card to leave the hand still flies. Cards are placed absolutely
+	(leaving cards stay where they were while the rest close up via animate:flip).
 -->
 <ul
-	class="grid auto-cols-[minmax(0,3.5rem)] grid-flow-col justify-center gap-1 pt-2"
+	bind:clientWidth={width}
+	class="relative w-full shrink-0"
+	style:height="{w * 1.4 + TOP}px"
+	style:--w="{w}px"
 	aria-label="Your hand"
 >
-	{#each items as { c, key } (key)}
+	{#each items as { c, key }, i (key)}
 		{@const isSelected = selected === c.value}
 		{@const noMove = interactive && c.legalPiles.length === 0}
 		{@const info = c.command ? commandInfo(c.command) : undefined}
 		<li
-			class="min-w-0"
+			class="absolute"
+			style:top="{TOP}px"
+			style:left="{Math.round(offset + i * step)}px"
 			animate:flip={motion.flip}
 			in:receive={{ key, offstage: 'top', delay: arrivalDelay(key) }}
 			out:send={{ key, offstage: 'top' }}
@@ -75,34 +97,29 @@
 				aria-label={`Card ${c.value}${info ? `, ${info.label}` : ''}${noMove ? ', no legal pile' : ''}`}
 				onclick={() => onselect?.(c)}
 				class={cn(
-					'relative flex aspect-[2/3] w-full flex-col items-center justify-center gap-0.5 rounded-lg border-2 bg-card text-lg font-bold text-card-foreground tabular-nums shadow-sm transition-all duration-150 select-none sm:text-xl',
+					'block rounded-[calc(var(--w)*0.1)] transition-[translate,opacity] duration-150 select-none',
 					'[touch-action:manipulation] [-webkit-tap-highlight-color:transparent] disabled:cursor-default',
-					info?.kind === 'lightning' && 'border-red-400 dark:border-red-500',
-					info?.kind === 'infinity' && 'border-violet-400 dark:border-violet-500',
-					!info && 'border-border',
-					isSelected && '-translate-y-2 border-primary shadow-md ring-2 ring-primary',
+					isSelected &&
+						'-translate-y-[calc(var(--w)*0.1)] outline-3 outline-offset-2 outline-primary',
 					noMove && !isSelected && 'opacity-45'
 				)}
 			>
-				{#if fresh.has(key)}
-					<NewCardMark dot="corner-right" />
-				{/if}
-				<span class="leading-none">{c.value}</span>
-				{#if c.command}
-					<CommandIcon
-						command={c.command}
-						class={cn(
-							'size-3.5 sm:size-4',
-							info?.kind === 'lightning'
-								? 'text-red-600 dark:text-red-400'
-								: 'text-violet-600 dark:text-violet-400'
-						)}
-					/>
-				{/if}
+				<GameCard
+					value={c.value}
+					command={c.command}
+					overlap={i > 0 && step < w}
+					covered={i < items.length - 1 && step < w}
+				>
+					{#if fresh.has(key)}
+						<NewCardMark dot="corner-left" ring="var(--card-face)" />
+					{/if}
+				</GameCard>
 			</button>
 		</li>
 	{/each}
+	{#if items.length === 0}
+		<li class="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
+			No cards in hand.
+		</li>
+	{/if}
 </ul>
-{#if items.length === 0}
-	<p class="py-4 text-center text-sm text-muted-foreground">No cards in hand.</p>
-{/if}

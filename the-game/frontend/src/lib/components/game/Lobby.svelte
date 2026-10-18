@@ -92,7 +92,22 @@
 				code={view.gameId}
 				link={`${globalThis.location?.origin ?? ''}${resolve('/join/[code]', { code: view.gameId })}`}
 				title="The Game"
-			/>
+			>
+				{#snippet badge()}
+					{#if extreme}
+						<!-- The game header's tag; abbreviated on phones, where it shares the row with the code,
+						 and left out on narrower ones (the Extreme switch below says it too). -->
+						<span
+							class="shrink-0 -rotate-3 bg-extreme px-1.5 py-0.5 text-xs font-extrabold tracking-wide text-extreme-ink max-[389px]:hidden"
+							title="Extreme"
+						>
+							<span class="sm:hidden" aria-hidden="true">EXT</span><span class="max-sm:sr-only"
+								>EXTREME</span
+							>
+						</span>
+					{/if}
+				{/snippet}
+			</ShareInvite>
 		</Card.Content>
 	</Card.Root>
 
@@ -108,14 +123,14 @@
 						<span
 							class={cn(
 								'size-2.5 shrink-0 rounded-full',
-								isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+								isOnline ? 'bg-go' : 'bg-muted-foreground/40'
 							)}
 							title={isOnline ? 'Online' : 'Offline'}
 						></span>
 						<span class="truncate text-base">{p.name}</span>
 						{#if p.isYou}<span class="text-sm text-muted-foreground">(you)</span>{/if}
 						{#if p.isHost}
-							<Crown class="ml-auto size-4 shrink-0 text-amber-500" aria-label="Host" />
+							<Crown class="ml-auto size-4 shrink-0 text-down-label" aria-label="Host" />
 						{/if}
 					</li>
 				{/each}

@@ -1,15 +1,14 @@
 <script lang="ts">
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
-	import Layers from '@lucide/svelte/icons/layers';
 	import Skull from '@lucide/svelte/icons/skull';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import { getCardMotion, type CardMotionParams } from '@board-games/shared/cardMotion.js';
 	import { commandInfo } from '#lib/game/commands.js';
 	import { pileTopKey } from '#lib/game/motion.js';
 	import { cn } from '#lib/utils.js';
 	import type { Pile } from '#lib/types.js';
-	import CommandChip from './CommandChip.svelte';
-	import CommandIcon from './CommandIcon.svelte';
+	import GameCard from './GameCard.svelte';
 
 	let {
 		pile,
@@ -35,7 +34,8 @@
 
 	// Card motion: your own card flies in from your hand (same key there) and back on undo; other
 	// players' cards come in from their hidden hands above (and go back up on their undo). A top
-	// that gets covered just goes; one uncovered by an undo fades back in place.
+	// that gets covered stays underneath while the new card slides over it; one uncovered by an
+	// undo fades back in place.
 	const { send, receive } = getCardMotion();
 	// The cards on the pile before the latest update (bookkeeping, not rendered).
 	let lastCount = -1;
@@ -45,12 +45,29 @@
 		const uncovered = count < lastCount;
 		lastCount = count;
 		return [
-			{ key: pileTopKey(pile), value: pile.topValue, start: !pile.topCard, count, uncovered }
+			{
+				key: pileTopKey(pile),
+				value: pile.topValue,
+				command: pile.topCard?.command,
+				active: pile.commandActive,
+				start: !pile.topCard,
+				count,
+				uncovered
+			}
 		];
 	});
-	/** A leaving top flies only when an undo took it back; a covered one goes at once. */
+	/** Longest card flight (the shared default): a covered top stays until the new one has landed. */
+	const LANDING = 450;
+	/**
+	 * A leaving top flies only when an undo took it back. A covered one stays put underneath until
+	 * the new card has slid over it.
+	 */
 	function leave(node: Element, params: CardMotionParams & { taken: boolean }) {
-		return params.taken ? send(node, params) : () => ({ duration: 0 });
+		if (params.taken) return send(node, params);
+		return () => ({
+			duration: prefersReducedMotion.current ? 0 : LANDING,
+			css: () => 'z-index: 0'
+		});
 	}
 
 	const up = $derived(pile.direction === 'up');
@@ -61,34 +78,55 @@
 			(command
 				? `, ${commandInfo(command).label}${pile.commandActive ? ' (active)' : ' (no effect any more)'}`
 				: '') +
+			(playsThisTurn > 0 ? `, ${playsThisTurn} played this turn` : '') +
 			(skull ? ', skull must be covered' : '') +
 			(bound ? ', all cards this turn go here' : '') +
 			(highlight ? ', tap to play here' : '')
 	);
 </script>
 
+<!--
+	A mat in the pile's colour, the whole tap target. Top left a solid pill with the direction,
+	top right a green pill with the cards played here this turn (the same green as the turn bar's
+	dots). The board sizes the card (--w, --mt) so it clears both pills; the pile never resizes.
+-->
 <button
 	type="button"
 	{disabled}
 	{onclick}
 	aria-label={label}
 	class={cn(
-		'[container-type:size] relative flex h-full min-h-24 w-full [touch-action:manipulation] flex-col rounded-2xl border-2 p-2 text-left shadow-sm transition-all duration-150 select-none [-webkit-tap-highlight-color:transparent]',
+		'relative grid h-full min-h-0 w-full [touch-action:manipulation] place-items-center rounded-[14px] pt-(--mt) transition-[outline-color,box-shadow] duration-150 select-none [-webkit-tap-highlight-color:transparent]',
 		up
-			? 'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100'
-			: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100',
-		bound &&
-			'outline-2 outline-offset-2 outline-emerald-500 outline-dashed dark:outline-emerald-400',
-		skull && 'border-red-500 ring-[3px] ring-red-500/50 dark:border-red-400 dark:ring-red-400/50',
-		highlight &&
-			'border-emerald-500 shadow-lg ring-[3px] ring-emerald-500/60 dark:border-emerald-400 dark:ring-emerald-400/60',
-		dimmed && 'opacity-35 saturate-50',
-		disabled && !dimmed && 'cursor-default'
+			? 'bg-up-soft shadow-[inset_0_0_0_1.5px_var(--up)] [--pile-label:var(--up-label)] [--pile:var(--up)]'
+			: 'bg-down-soft shadow-[inset_0_0_0_1.5px_var(--down)] [--pile-label:var(--down-label)] [--pile:var(--down)]',
+		bound && 'outline-2 outline-offset-2 outline-go outline-dashed',
+		highlight && 'outline-3 outline-offset-2 outline-go outline-solid',
+		skull && 'shadow-[inset_0_0_0_2.5px_var(--destructive)]',
+		disabled && 'cursor-default'
 	)}
 >
+	<span
+		class={cn(
+			'absolute top-1.5 left-1.5 flex h-[22px] w-7 items-center justify-center rounded-full',
+			up ? 'bg-up-tab text-up-tab-ink' : 'bg-down-tab text-down-tab-ink'
+		)}
+		aria-hidden="true"
+	>
+		{#if up}<ArrowUp class="size-4" strokeWidth={2.6} />{:else}<ArrowDown
+				class="size-4"
+				strokeWidth={2.6}
+			/>{/if}
+	</span>
+	{#if playsThisTurn > 0}
+		<span
+			class="absolute top-1.5 right-1.5 flex h-[22px] min-w-7 items-center justify-center rounded-full bg-go-soft px-[7px] text-xs font-bold text-go-ink tabular-nums shadow-[inset_0_0_0_1px_var(--go)]"
+			aria-hidden="true">+{playsThisTurn}</span
+		>
+	{/if}
 	{#if skull}
 		<span
-			class="absolute -top-2 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[0.65rem] leading-none font-bold text-white shadow-sm motion-safe:animate-pulse"
+			class="absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-xs leading-none font-bold text-white shadow-sm motion-safe:animate-pulse"
 			aria-hidden="true"
 		>
 			<Skull class="size-3" />
@@ -96,65 +134,21 @@
 		</span>
 	{/if}
 
-	<span class="flex items-center justify-between gap-1 text-xs font-semibold">
-		<span class="flex min-w-0 items-center gap-0.5">
-			{#if up}<ArrowUp class="size-4 shrink-0" />{:else}<ArrowDown class="size-4 shrink-0" />{/if}
-			<span class="truncate tabular-nums">{up ? '1 → 99' : '100 → 2'}</span>
-			{#if bound}
-				<CommandIcon
-					command="singlePile"
-					class="ml-0.5 size-4 text-emerald-600 dark:text-emerald-400"
-				/>
-			{/if}
-		</span>
-		<span
-			class="flex shrink-0 items-center gap-0.5 tabular-nums opacity-70"
-			title="Cards on this pile"
-		>
-			<Layers class="size-3.5" aria-hidden="true" />{pile.cardCount}
-		</span>
-	</span>
-
 	<!-- One grid cell, so a top flying back to a hand doesn't push the uncovered one aside. -->
-	<span class="grid flex-1 place-items-center">
+	<span class={cn('grid transition-opacity duration-150', dimmed && 'opacity-35')}>
 		{#each tops as t (t.key)}
 			<span
+				class="relative z-1 [grid-area:1/1]"
 				in:receive={{ key: t.key, offstage: t.uncovered ? 'none' : 'top' }}
 				out:leave={{ key: t.key, offstage: 'top', taken: pile.cardCount < t.count }}
-				class={cn(
-					'block leading-none font-bold tracking-tight tabular-nums [grid-area:1/1]',
-					up ? 'text-sky-700 dark:text-sky-300' : 'text-amber-700 dark:text-amber-300',
-					t.start && 'opacity-40'
-				)}
-				style="font-size: clamp(1.75rem, min(34cqw, 48cqh), 5.5rem)"
 			>
-				{t.value}
+				<GameCard
+					value={t.value}
+					command={t.command}
+					inactive={!t.active}
+					mode={t.start ? 'start' : 'face'}
+				/>
 			</span>
 		{/each}
 	</span>
-
-	{#if command}
-		<span class="flex h-5 min-w-0 items-center justify-between gap-1 text-[0.7rem] font-medium">
-			{#if command === 'noCommunication' && pile.commandActive}
-				<!-- the loudest rule (with the screen's glow): full name, solid -->
-				<CommandChip
-					{command}
-					size="xs"
-					label={commandInfo(command).label}
-					class="min-w-0 bg-violet-600 text-white dark:bg-violet-500 dark:text-white"
-				/>
-			{:else}
-				<CommandChip {command} size="xs" muted={!pile.commandActive} class="min-w-0" />
-			{/if}
-			{#if playsThisTurn > 0}
-				<span class="shrink-0 whitespace-nowrap tabular-nums opacity-70"
-					>+{playsThisTurn}<span class="@max-[10.5rem]:hidden">&nbsp;this turn</span></span
-				>
-			{/if}
-		</span>
-	{:else}
-		<span class="h-4 text-center text-[0.7rem] font-medium opacity-70">
-			{#if playsThisTurn > 0}+{playsThisTurn} this turn{/if}
-		</span>
-	{/if}
 </button>

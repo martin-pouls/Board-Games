@@ -15,7 +15,7 @@
 	<title>The Game</title>
 </svelte:head>
 
-<ModeWatcher themeColors={{ light: '#f3f6fa', dark: '#0d1119' }} />
+<ModeWatcher themeColors={{ light: '#edf5fb', dark: '#080f18' }} />
 <Toaster />
 <AppFrame
 	url={page.url}

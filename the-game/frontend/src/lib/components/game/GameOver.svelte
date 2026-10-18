@@ -19,7 +19,7 @@
 	import type { PlayerView } from '#lib/types.js';
 	import { commandInfo } from '#lib/game/commands.js';
 	import Board from './Board.svelte';
-	import CommandIcon from './CommandIcon.svelte';
+	import GameCard from './GameCard.svelte';
 
 	let { client, view }: { client: GameClient; view: PlayerView } = $props();
 
@@ -64,7 +64,7 @@
 
 <Board {client} {view} readonly>
 	{#snippet controls()}
-		<div class="flex min-h-14 items-center gap-3 rounded-xl bg-muted/60 px-3 py-1.5">
+		<div class="flex min-h-14 items-center gap-3 rounded-xl bg-muted px-3 py-1.5">
 			<p class="min-w-0 flex-1 leading-snug font-semibold">
 				{resultHeadline(view)}
 			</p>
@@ -90,7 +90,7 @@
 			>
 				<div class="flex flex-col items-center gap-1 text-center">
 					{#if won || result.excellent}
-						<Trophy class={cn('size-10', won ? 'text-amber-500' : 'text-sky-500')} />
+						<Trophy class={cn('size-10', won ? 'text-down' : 'text-up')} />
 					{/if}
 					<h2 id="game-over-title" class="text-2xl font-bold">{resultHeadline(view)}</h2>
 					{#if reason}<p class="text-muted-foreground">{reason}</p>{/if}
@@ -117,20 +117,11 @@
 								</span>
 								<span class="flex flex-wrap gap-1">
 									{#each p.revealedHand ?? [] as c (c.value)}
-										<span
-											class={cn(
-												'flex h-8 w-7 flex-col items-center justify-center rounded border bg-background text-xs leading-none font-bold tabular-nums',
-												c.command &&
-													(commandInfo(c.command).kind === 'lightning'
-														? 'border-red-400 dark:border-red-500'
-														: 'border-violet-400 dark:border-violet-500')
-											)}
-										>
-											{c.value}
-											{#if c.command}
-												<CommandIcon command={c.command} class="size-2.5 opacity-80" />
-												<span class="sr-only">, {commandInfo(c.command).label}</span>
-											{/if}
+										<span>
+											<GameCard value={c.value} command={c.command} mode="mini" />
+											<span class="sr-only"
+												>{c.value}{c.command ? `, ${commandInfo(c.command).label}` : ''}</span
+											>
 										</span>
 									{:else}
 										<span class="text-sm text-muted-foreground">No cards left</span>

@@ -2,7 +2,7 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { COMMANDS } from '#lib/game/commands.js';
 	import type { CommandName } from '#lib/types.js';
-	import CommandIcon from './CommandIcon.svelte';
+	import CommandBadge from './CommandBadge.svelte';
 
 	let {
 		open = $bindable(false),
@@ -21,8 +21,8 @@
 {#snippet commandList(list: typeof commands)}
 	<ul class="flex flex-col gap-1">
 		{#each list as [name, c] (name)}
-			<li class="flex items-start gap-1.5">
-				<CommandIcon command={name} class="mt-0.5" />
+			<li class="flex items-start gap-2">
+				<CommandBadge command={name} class="-mt-0.5" />
 				<span><b>{c.label}:</b> {c.description}</span>
 			</li>
 		{/each}
@@ -56,6 +56,7 @@
 					<li>End your turn to draw back up to your hand size.</li>
 					<li>Once the draw pile is empty: at least 1 card; empty hands are skipped.</li>
 					<li>Until you end your turn, you can undo this turn's cards.</li>
+					<li>A green <b>+1</b> on a pile counts the cards played there this turn.</li>
 				</ul>
 			</section>
 			<section>

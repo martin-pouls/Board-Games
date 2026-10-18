@@ -84,6 +84,8 @@ export interface TurnStatus {
 	line: { text: string; tone: 'muted' | 'warn'; dots: boolean };
 	/** Draw only one is visible: shown on the End turn button, where it takes effect. */
 	drawOnlyOne: boolean;
+	/** The rules in force this turn, as badges in the turn bar: lightning first, then Infinity. */
+	rules: CommandName[];
 }
 
 export function turnStatus(view: PlayerView, isMyTurn: boolean): TurnStatus | null {
@@ -123,10 +125,23 @@ export function turnStatus(view: PlayerView, isMyTurn: boolean): TurnStatus | nu
 		line = { text: `${played} played`, tone: 'muted', dots: isMyTurn };
 	}
 
+	const exactly = c.stopPlayed ? null : c.exactCount;
+	const visible = new Set(view.activeCommands.map((a) => a.command));
+	const inForce: Partial<Record<CommandName, boolean>> = {
+		stop: c.stopPlayed,
+		exactlyThree: exactly !== null,
+		noCommunication: view.communicationRestricted || visible.has('noCommunication'),
+		noBackwardsTrick: visible.has('noBackwardsTrick'),
+		singlePile: c.singlePile,
+		drawOnlyOne: visible.has('drawOnlyOne')
+	};
+	const rules = (Object.keys(COMMANDS) as CommandName[]).filter((name) => inForce[name]);
+
 	return {
 		singlePile,
-		exactly: c.stopPlayed ? null : c.exactCount,
+		exactly,
 		line,
-		drawOnlyOne: view.activeCommands.some((a) => a.command === 'drawOnlyOne')
+		drawOnlyOne: visible.has('drawOnlyOne'),
+		rules
 	};
 }
