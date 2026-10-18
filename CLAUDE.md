@@ -90,7 +90,7 @@ In dev the start page links to each game's frontend port (`devPort` in `start-pa
 
 **Claude Code hooks** ([.claude/settings.json](.claude/settings.json), scripts in `.claude/hooks/`): every edited file is formatted (gofmt, or the app's Prettier), and edits to committed migrations are blocked (they have already run on the server; add the next `NNNN_name.sql`).
 
-**Agents and MCP:** the `rules-auditor` agent (`.claude/agents/`) audits one game's domain against its docs/rules.md (use it after rule changes). `.mcp.json` provides `playwright` (fixture screenshots) and `svelte` (Svelte 5 / SvelteKit docs: look things up there instead of guessing at runes APIs).
+**Agents and MCP:** the `rules-auditor` agent (`.claude/agents/`) audits one game's domain against its docs/rules.md (use it after rule changes). Design: the `design-guidelines` skill holds the UI rules (loaded on UI work), `game-theme` builds a game's look, and `/visual-review <game>` (user-run, with the `visual-reviewer` agent) audits one game through fixture screenshots. New game, edition or variant: `/implement-game` (user-run) orchestrates the `rules-writer`, `game-planner` (both Opus), `game-implementer` (Sonnet, Opus for the hard packages) and `rules-test-writer` agents; its handover state is the game's rules.md and implementation plan. Rulebooks and box/card photos go in `<game>/docs/reference/`, which is gitignored (the repo is public). `.mcp.json` provides `playwright` (fixture screenshots) and `svelte` (Svelte 5 / SvelteKit docs: look things up there instead of guessing at runes APIs).
 
 ## Deployment
 

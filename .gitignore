@@ -27,6 +27,10 @@ data/
 
 # Frontend dependencies and build output are ignored per app in <app>/frontend/.gitignore.
 
+# Publisher material (rulebooks, box and card photos) for rules and theme work: local only, the repo
+# is public. <game>/docs/reference/, or <base>/docs/<edition>/reference/.
+**/docs/**/reference/
+
 # Playwright MCP screenshots and snapshots
 .playwright-mcp/
 

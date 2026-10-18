@@ -1,7 +1,7 @@
 # Mission Deep Sea — rules reference
 
 Status: from the rulebook, the fan mission sheet v1d and the community task-card list (see
-[plan.md](plan.md) §0); the user's answers of 2026-10-11 are in. This is the source of truth for Deep
+[implementation-plan.md](implementation-plan.md) §0); the user's answers of 2026-10-11 are in. This is the source of truth for Deep
 Sea. Interpretations we chose are marked **App decision**. Where nothing is said, Planet Nine's [../rules.md](../rules.md) applies (tricks
 §5, communication §8, distress signal §9, two players §12, attempts §15, app decisions §16).
 
@@ -166,7 +166,7 @@ included; if it is not the captain, communication is allowed only before the fir
 
 ## 9. Task cards
 
-Difficulty = 3/4/5 crew members. *Kind* is the proposed objective kind (plan.md §3); existing Planet
+Difficulty = 3/4/5 crew members. *Kind* is the proposed objective kind (implementation-plan.md §3); existing Planet
 Nine kinds in `code`, new ones in **bold**. Card numbers are our own (list order of the source).
 
 ### Trick counts and comparisons

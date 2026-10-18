@@ -439,7 +439,7 @@ The orchestrator **reviews every diff** before building on it. Parallel subagent
 
 ## 11. Deep Sea outlook
 
-**Superseded (2026-10-11) by [deep-sea/plan.md](deep-sea/plan.md):** Deep Sea becomes a second deployment of this codebase (own URL, theme and container), not a lobby edition switch. The task cards and the logbook are transcribed in [deep-sea/rules.md](deep-sea/rules.md).
+**Superseded (2026-10-11) by [deep-sea/implementation-plan.md](deep-sea/implementation-plan.md):** Deep Sea becomes a second deployment of this codebase (own URL, theme and container), not a lobby edition switch. The task cards and the logbook are transcribed in [deep-sea/rules.md](deep-sea/rules.md).
 
 From the Deep Sea rulebook (read once for this plan; not needed again until Deep Sea is built):
 
