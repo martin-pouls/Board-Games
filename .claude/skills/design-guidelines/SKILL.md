@@ -29,7 +29,7 @@ When rules pull apart: **playability > clarity > familiarity across games > look
 - **Copy:** English, sentence case, plain verbs. An action keeps its name through the flow ("Leave" → "Left"). No apologies.
 
 ## Phone first, desktop works
-- **Targets:** iPhone 13 (390×844), iPhone 16 (393×852), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
+- **Targets:** iPhone 13 (390×844), the same phone in Safari with its toolbars showing (390×664: the height a player really gets, so check the game screen there), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
 - **Game screen: no scrolling** at the targets, neither page nor panels (dialogs like RulesHelp may scroll). Use `dvh`/`svh`, never `vh`. Pinned edges respect `env(safe-area-inset-*)`.
 - **No layout jumps:** reserve space for hints, banners and changing counts; fixed-size card slots; tabular numbers.
 - **Thumb zone:** your hand and the action button at the bottom, shared state above. Touch targets ≥ 44 px; overlapping cards still need a clear tap area. No hover-only information. No gestures without a visible alternative.
@@ -38,6 +38,7 @@ When rules pull apart: **playability > clarity > familiarity across games > look
 
 ## Information
 - Each piece of information once, clearly. Deliberate exceptions for rules that need emphasis (The Game's "no talking").
+- On the game screen, card size beats labels: a tab, heading, scale or hint line that makes the cards smaller has to earn it.
 - The game decides the hierarchy: what the player must decide **now** is visible without tapping (The Crew: tasks and communication; Regicide: enemy health and attack).
 - What just happened stays readable for a player who looked away: last play, new-card marks, card motion.
 - Colour is never the only carrier: suits also differ by symbol. Text contrast ≥ 4.5:1, icons and marks ≥ 3:1, in light **and** dark.
