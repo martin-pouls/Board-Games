@@ -172,6 +172,7 @@ export const otherTurnView: PlayerView = makeView({
 	],
 	hand: hand('2H 5D 5C 8C 9S KD AH'),
 	enemy: enemyOf('QH', { plays: [{ by: 'p1', cards: '6D' }] }),
+	castleCount: 7,
 	tavernCount: 26,
 	discardCount: 3,
 	lastTurn: { playerId: 'p2', played: null, discarded: cards('KD') },
@@ -182,6 +183,7 @@ export const otherTurnView: PlayerView = makeView({
 export const discardView: PlayerView = makeView({
 	hand: hand('3C 6D 7H 8D 9C 10S KS'),
 	enemy: enemyOf('QH', { plays: [{ by: 'p1', cards: '8H', blocked: ['hearts'] }] }),
+	castleCount: 7,
 	tavernCount: 22,
 	discardCount: 6,
 	lastTurn: { playerId: 'p1', played: cards('8H'), discarded: null },
@@ -197,6 +199,7 @@ export const chooseNextChooserView: PlayerView = makeView({
 	],
 	hand: hand('2H 5D 5C 8C 9S KD'),
 	enemy: enemyOf('KC', { plays: [{ by: 'p1', cards: 'X' }] }),
+	castleCount: 3,
 	turn: turn({ number: 7, step: 'chooseNext', canYield: false })
 });
 
@@ -211,10 +214,11 @@ export const chooseNextOtherView: PlayerView = makeView({
 	hostId: 'p1',
 	hand: hand('3D 4H 8S 9C 10H QD'),
 	enemy: enemyOf('KC', { plays: [{ by: 'p2', cards: 'X' }] }),
+	castleCount: 3,
 	turn: turn({ number: 7, activePlayerId: 'p2', step: 'chooseNext', canYield: false })
 });
 
-/** Ben just defeated the Jack of hearts with 10♣ and plays on against the Queen. */
+/** Ben just defeated the last Jack, of hearts, exactly with 10♣ and plays on against a Queen. */
 export const afterDefeatView: PlayerView = makeView({
 	players: [
 		player('p1', 'Anna', 0, { isYou: true }),
@@ -222,7 +226,7 @@ export const afterDefeatView: PlayerView = makeView({
 	],
 	hand: hand('3H 4S 6D 9D 9S 10S'),
 	enemy: enemyOf('QH'),
-	castleCount: 10,
+	castleCount: 7,
 	tavernCount: 24,
 	discardCount: 9,
 	lastTurn: {
@@ -233,6 +237,43 @@ export const afterDefeatView: PlayerView = makeView({
 		discarded: null
 	},
 	turn: turn({ number: 8, activePlayerId: 'p2' })
+});
+
+/** Like afterDefeatView, but 7♣ 7♦ (doubled to 28) overshot: the Jack went to the discard pile. */
+export const afterOverkillView: PlayerView = makeView({
+	...afterDefeatView,
+	discardCount: 12,
+	lastTurn: {
+		playerId: 'p2',
+		played: cards('7C 7D'),
+		defeated: card('JH'),
+		exact: false,
+		discarded: null
+	}
+});
+
+/** Four players with longer names: the header and the plays against the enemy at their widest. */
+export const fourPlayerView: PlayerView = makeView({
+	players: [
+		player('p1', 'Anna', 0, { isYou: true, handCount: 5 }),
+		player('p2', 'Benedikt', 1, { handCount: 4, yieldedLastTurn: true }),
+		player('p3', 'Charlotte', 2, { isActive: true, handCount: 5 }),
+		player('p4', 'Dan', 3, { handCount: 3 })
+	],
+	hand: hand('3H 4S 6D 9D 10S'),
+	enemy: enemyOf('KS', {
+		plays: [
+			{ by: 'p1', cards: '5C 5D' },
+			{ by: 'p2', cards: '2H 2D 2S' },
+			{ by: 'p3', cards: 'AC 9H' },
+			{ by: 'p4', cards: '7D' }
+		]
+	}),
+	castleCount: 2,
+	tavernCount: 12,
+	discardCount: 31,
+	lastTurn: { playerId: 'p2', played: null, discarded: cards('2C 3D 4H 5S 6C 7H') },
+	turn: turn({ number: 33, activePlayerId: 'p3' })
 });
 
 export const soloPlayView: PlayerView = makeView({
@@ -248,6 +289,7 @@ export const soloDiscardShortView: PlayerView = makeView({
 	players: [player('p1', 'Anna', 0, { isYou: true, isActive: true, handCount: 4 })],
 	hand: hand('2H 3D 4C 5S'),
 	enemy: enemyOf('KH'),
+	castleCount: 3,
 	soloJestersLeft: 1,
 	turn: turn({ number: 30, step: 'discard', canYield: true, damageToCover: 20 })
 });
@@ -318,6 +360,8 @@ export const fixtures = Object.fromEntries(
 		chooseNextChooserView,
 		chooseNextOtherView,
 		afterDefeatView,
+		afterOverkillView,
+		fourPlayerView,
 		soloPlayView,
 		soloDiscardShortView,
 		wonSoloView,

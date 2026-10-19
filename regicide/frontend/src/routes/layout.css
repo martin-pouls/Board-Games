@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
-@import '@fontsource-variable/cinzel';
-@import '@fontsource-variable/eb-garamond';
+@import '@fontsource-variable/cabin';
+@import '@fontsource-variable/alegreya';
 
 /* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
 @source '../../../../shared/frontend/src';
@@ -10,28 +10,31 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Castle theme in two lights: parchment and ink by day, a dark hall by night. The theme is set
- * before first paint by the script in app.html and kept by mode-watcher afterwards.
+ * Mist: the blue Regicide box made quiet. A pale blue-green table with misty ridges at the top,
+ * slate ink, off-white card stock, muted card red and black, a red for the enemy's health and a
+ * green Jester. The cards carry the boldness: Alegreya ranks, Jacks, Queens and Kings standing on
+ * the ridges. Cabin for everything else. The theme is set before first paint by the script in
+ * app.html (mirror --background there and in +layout.svelte).
  */
 :root {
-	--background: oklch(0.93 0.025 82);
-	--foreground: oklch(0.25 0.035 290);
-	--card: oklch(0.97 0.018 85);
+	--background: oklch(0.945 0.02 195);
+	--foreground: oklch(0.27 0.035 240);
+	--card: oklch(0.98 0.008 195);
 	--card-foreground: var(--foreground);
-	--popover: oklch(0.97 0.018 85);
+	--popover: oklch(0.98 0.008 195);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.55 0.12 72);
-	--primary-foreground: oklch(0.99 0.01 85);
-	--secondary: oklch(0.89 0.03 80);
+	--primary: oklch(0.44 0.06 240);
+	--primary-foreground: oklch(0.98 0.008 200);
+	--secondary: oklch(0.89 0.022 205);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.9 0.025 82);
-	--muted-foreground: oklch(0.46 0.035 70);
-	--accent: oklch(0.88 0.045 305);
+	--muted: oklch(0.9 0.02 200);
+	--muted-foreground: oklch(0.46 0.035 225);
+	--accent: oklch(0.9 0.025 200);
 	--accent-foreground: var(--foreground);
-	--destructive: oklch(0.54 0.21 25);
-	--border: oklch(0.55 0.12 72 / 28%);
-	--input: oklch(0.25 0.035 290 / 18%);
-	--ring: oklch(0.55 0.12 72 / 60%);
+	--destructive: oklch(0.5 0.15 18);
+	--border: oklch(0.27 0.035 240 / 16%);
+	--input: oklch(0.27 0.035 240 / 22%);
+	--ring: oklch(0.44 0.06 240 / 60%);
 	--radius: 0.5rem;
 	--chart-1: oklch(0.87 0 0);
 	--chart-2: oklch(0.556 0 0);
@@ -48,39 +51,55 @@
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 
 	/* Game tokens */
-	--parchment: oklch(0.985 0.012 85);
-	--ink: oklch(0.22 0.02 60);
-	--suit-red: oklch(0.52 0.2 25);
-	--suit-black: oklch(0.22 0.02 260);
-	--gold: var(--primary);
-	--health: oklch(0.55 0.2 25);
-	--shield: oklch(0.52 0.12 235);
-	--jester: oklch(0.55 0.2 330);
-	/* Tint of the glow at the top of the page. */
-	--glow: oklch(0.85 0.06 300 / 55%);
+	/* Card stock, its edge and shadow. The suit inks are the same in both modes. */
+	--stock: oklch(0.985 0.006 95);
+	--stock-edge: oklch(0.27 0.035 240 / 30%);
+	--card-shade: oklch(0.27 0.035 240 / 18%);
+	--suit-red: oklch(0.47 0.13 15);
+	--suit-black: oklch(0.3 0.025 245);
+	/* The ridges behind J, Q and K, lightest first. */
+	--ridge-1: oklch(0.86 0.035 190);
+	--ridge-2: oklch(0.76 0.045 195);
+	--ridge-3: oklch(0.6 0.05 215);
+	/* The misty ridges at the top of the page, farthest first. */
+	--mist-1: oklch(0.91 0.025 192);
+	--mist-2: oklch(0.88 0.03 195);
+	--mist-3: oklch(0.85 0.035 200);
+	--health: oklch(0.5 0.15 18);
+	--health-foreground: oklch(0.98 0.01 20);
+	--shield: oklch(0.5 0.08 225);
+	/* The Jester in the UI, and the darker one printed on its card. */
+	--jester: oklch(0.52 0.11 145);
+	--jester-foreground: oklch(0.98 0.01 145);
+	--jester-card: oklch(0.52 0.11 145);
+	--online: oklch(0.6 0.12 160);
+	--reconnecting: oklch(0.7 0.14 70);
+	--medal-gold: oklch(0.64 0.13 80);
+	--medal-silver: oklch(0.6 0.02 240);
+	--medal-bronze: oklch(0.56 0.1 50);
 	/* Marks cards that just came into the hand (NewCardMark). */
 	--new-card: oklch(0.62 0.13 185);
 }
 
 .dark {
-	--background: oklch(0.17 0.02 285);
-	--foreground: oklch(0.93 0.03 85);
-	--card: oklch(0.22 0.025 285);
+	--background: oklch(0.2 0.025 225);
+	--foreground: oklch(0.94 0.012 195);
+	--card: oklch(0.245 0.03 222);
 	--card-foreground: var(--foreground);
-	--popover: oklch(0.22 0.025 285);
+	--popover: oklch(0.245 0.03 222);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.78 0.13 85);
-	--primary-foreground: oklch(0.2 0.03 60);
-	--secondary: oklch(0.29 0.03 285);
+	--primary: oklch(0.8 0.06 195);
+	--primary-foreground: oklch(0.22 0.03 230);
+	--secondary: oklch(0.3 0.03 222);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.26 0.02 285);
-	--muted-foreground: oklch(0.72 0.03 80);
-	--accent: oklch(0.33 0.06 305);
+	--muted: oklch(0.29 0.03 222);
+	--muted-foreground: oklch(0.74 0.03 205);
+	--accent: oklch(0.32 0.035 215);
 	--accent-foreground: var(--foreground);
-	--destructive: oklch(0.6 0.2 25);
-	--border: oklch(0.78 0.13 85 / 18%);
-	--input: oklch(1 0 0 / 12%);
-	--ring: oklch(0.78 0.13 85 / 60%);
+	--destructive: oklch(0.64 0.15 18);
+	--border: oklch(1 0 0 / 13%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.8 0.06 195 / 60%);
 	--radius: 0.5rem;
 	--chart-1: oklch(0.87 0 0);
 	--chart-2: oklch(0.556 0 0);
@@ -97,29 +116,56 @@
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 
 	/* Game tokens */
-	--parchment: oklch(0.94 0.03 85);
-	--ink: oklch(0.22 0.02 60);
-	--suit-red: oklch(0.52 0.2 25);
-	--suit-black: oklch(0.22 0.02 260);
-	--gold: var(--primary);
-	--health: oklch(0.58 0.2 25);
-	--shield: oklch(0.68 0.11 235);
-	--jester: oklch(0.66 0.2 330);
-	--glow: oklch(0.25 0.05 300 / 60%);
+	--stock: oklch(0.94 0.01 95);
+	--stock-edge: oklch(0 0 0 / 30%);
+	--card-shade: oklch(0 0 0 / 40%);
+	--suit-red: oklch(0.47 0.13 15);
+	--suit-black: oklch(0.3 0.025 245);
+	--ridge-1: oklch(0.82 0.035 190);
+	--ridge-2: oklch(0.7 0.045 198);
+	--ridge-3: oklch(0.55 0.05 215);
+	--mist-1: oklch(0.235 0.03 215);
+	--mist-2: oklch(0.265 0.035 210);
+	--mist-3: oklch(0.3 0.04 205);
+	--health: oklch(0.64 0.15 18);
+	--health-foreground: oklch(0.2 0.03 20);
+	--shield: oklch(0.74 0.08 215);
+	--jester: oklch(0.74 0.12 145);
+	--jester-foreground: oklch(0.2 0.03 145);
+	--jester-card: oklch(0.5 0.11 145);
+	--online: oklch(0.72 0.13 160);
+	--reconnecting: oklch(0.78 0.14 75);
+	--medal-gold: oklch(0.8 0.13 85);
+	--medal-silver: oklch(0.8 0.02 240);
+	--medal-bronze: oklch(0.68 0.1 55);
 	--new-card: oklch(0.76 0.12 185);
 }
 
 @theme inline {
-	--font-sans: 'EB Garamond Variable', Georgia, serif;
-	--font-display: 'Cinzel Variable', 'Times New Roman', serif;
-	--color-parchment: var(--parchment);
-	--color-ink: var(--ink);
+	--font-sans: 'Cabin Variable', system-ui, sans-serif;
+	--font-display: 'Alegreya Variable', Georgia, serif;
+	--color-stock: var(--stock);
+	--color-stock-edge: var(--stock-edge);
+	--color-card-shade: var(--card-shade);
 	--color-suit-red: var(--suit-red);
 	--color-suit-black: var(--suit-black);
-	--color-gold: var(--gold);
+	--color-ridge-1: var(--ridge-1);
+	--color-ridge-2: var(--ridge-2);
+	--color-ridge-3: var(--ridge-3);
+	--color-mist-1: var(--mist-1);
+	--color-mist-2: var(--mist-2);
+	--color-mist-3: var(--mist-3);
 	--color-health: var(--health);
+	--color-health-foreground: var(--health-foreground);
 	--color-shield: var(--shield);
 	--color-jester: var(--jester);
+	--color-jester-foreground: var(--jester-foreground);
+	--color-jester-card: var(--jester-card);
+	--color-online: var(--online);
+	--color-reconnecting: var(--reconnecting);
+	--color-medal-gold: var(--medal-gold);
+	--color-medal-silver: var(--medal-silver);
+	--color-medal-bronze: var(--medal-bronze);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -167,40 +213,13 @@
 	body {
 		@apply bg-background text-foreground;
 	}
-	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
-	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
-	   the status bar and the area around its toolbar with the plain background colour, so the
-	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
-	body::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-		mask-image: linear-gradient(
-			to bottom,
-			transparent,
-			rgb(0 0 0 / 0.12) 2rem,
-			rgb(0 0 0 / 0.45) 4rem,
-			rgb(0 0 0 / 0.82) 6rem,
-			#000 8rem,
-			#000 calc(100% - 8rem),
-			rgb(0 0 0 / 0.82) calc(100% - 6rem),
-			rgb(0 0 0 / 0.45) calc(100% - 4rem),
-			rgb(0 0 0 / 0.12) calc(100% - 2rem),
-			transparent
-		);
-		background: radial-gradient(ellipse at top, var(--glow), transparent 60%) no-repeat;
-	}
 	html {
 		@apply font-sans;
-		/* Garamond defaults to old-style figures. */
-		font-variant-numeric: lining-nums tabular-nums;
 	}
 	h1,
 	h2,
 	h3 {
-		@apply font-display tracking-wide;
+		@apply font-display;
 	}
 	/* No double-tap zoom delay on phones. */
 	button,
@@ -208,4 +227,10 @@
 	[role='button'] {
 		touch-action: manipulation;
 	}
+}
+
+/* Suit symbols: the UI fonts have none, so they come from a system font (text style, not emoji). */
+.suit-glyph {
+	font-family: system-ui, 'Segoe UI Symbol', sans-serif;
+	font-style: normal;
 }

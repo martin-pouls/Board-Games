@@ -35,9 +35,9 @@
 	const connected = $derived(client.status === 'open');
 
 	const MEDAL_COLOR: Record<Grade, string> = {
-		gold: 'text-gold',
-		silver: 'text-slate-500 dark:text-slate-300',
-		bronze: 'text-amber-700'
+		gold: 'text-medal-gold',
+		silver: 'text-medal-silver',
+		bronze: 'text-medal-bronze'
 	};
 	const GRADE_NOTE: Record<Grade, string> = {
 		gold: 'no Jester used',

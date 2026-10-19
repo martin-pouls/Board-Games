@@ -1,10 +1,15 @@
+<!--
+	A card face. Number cards: rank and suit in the top left corner, one big suit in the middle.
+	Jacks, Queens and Kings: the rank letter in the middle, where the suit sits on a number card,
+	standing on three misty ridges. The Jester: its cap, in the corner and in the middle. The
+	smallest size shows the corner only. Sizes inside the face are in card widths (cqw), so every
+	size keeps the same proportions.
+-->
 <script lang="ts">
-	import Crown from '@lucide/svelte/icons/crown';
-	import Drama from '@lucide/svelte/icons/drama';
-	import Swords from '@lucide/svelte/icons/swords';
 	import { cn } from '#lib/utils.js';
 	import { cardName, isRed, rankLabel, suitGlyph } from '#lib/game/format.js';
 	import type { Card } from '#lib/types.js';
+	import JesterHat from './JesterHat.svelte';
 
 	let {
 		card,
@@ -15,8 +20,8 @@
 		onclick
 	}: {
 		card: Card;
-		/** 'fluid' fills its container (hand grid). */
-		size?: 'xs' | 'sm' | 'md' | 'lg' | 'fluid';
+		/** xs 34 px (stacks against the enemy), sm 48 px (last turn), md 72 px (hand), lg 100 px (enemy). */
+		size?: 'xs' | 'sm' | 'md' | 'lg';
 		selected?: boolean;
 		dimmed?: boolean;
 		disabled?: boolean;
@@ -31,28 +36,23 @@
 	const red = $derived(isRed(card.suit));
 	const name = $derived(cardName(card));
 
-	const dims: Record<string, string> = {
-		xs: 'w-8 text-xs',
-		sm: 'w-11 text-sm',
-		md: 'w-14 text-base',
-		lg: 'w-19 text-lg',
-		fluid: 'w-full text-sm'
-	};
-	const centre: Record<string, string> = {
-		xs: 'text-base',
-		sm: 'text-xl',
-		md: 'text-3xl',
-		lg: 'text-5xl',
-		fluid: 'text-2xl'
-	};
+	const widths: Record<string, string> = { xs: 'w-8.5', sm: 'w-12', md: 'w-18', lg: 'w-25' };
+
+	// The ridges in a 100 × 140 card, lightest (farthest) first. The letter's foot rests on the
+	// first one; the darker ones stay below the tails of J and Q.
+	const RIDGES = [
+		'M0 100 L14 92 L26 96 L42 87 L56 93 L70 88 L84 94 L100 90 V140 H0Z',
+		'M0 117 L18 109 L32 113 L48 105 L62 111 L76 106 L90 111 L100 108 V140 H0Z',
+		'M0 129 L12 123 L28 127 L44 119 L58 125 L76 120 L100 126 V140 H0Z'
+	];
+	const RIDGE_FILLS = ['fill-ridge-1', 'fill-ridge-2', 'fill-ridge-3'];
 
 	const classes = $derived(
 		cn(
-			'relative block aspect-[5/7] shrink-0 overflow-hidden rounded-lg border border-ink/70 ring-1 ring-gold/40 select-none ring-inset',
-			dims[size],
-			jester ? 'bg-jester/15 text-jester' : 'bg-parchment',
-			!jester && (red ? 'text-suit-red' : 'text-suit-black'),
-			selected && '-translate-y-3 ring-2 ring-gold',
+			'face relative block aspect-[5/7] shrink-0 overflow-hidden bg-stock shadow-[0_1px_3px_var(--card-shade)] ring-1 ring-stock-edge select-none',
+			widths[size],
+			jester ? 'jester' : red ? 'text-suit-red' : 'text-suit-black',
+			selected && '-translate-y-3 ring-[2.5px] ring-primary',
 			dimmed && 'opacity-50',
 			onclick && !disabled && 'cursor-pointer transition-transform',
 			disabled && 'cursor-not-allowed'
@@ -62,30 +62,31 @@
 
 {#snippet face()}
 	{#if jester}
-		<span class="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-			<Drama class={size === 'xs' ? 'size-3' : size === 'lg' ? 'size-8' : 'size-5'} />
-			{#if size !== 'xs'}
-				<span class="font-display text-[0.6em] font-bold tracking-wide">Jester</span>
-			{/if}
-		</span>
+		<JesterHat class={size === 'xs' ? 'absolute top-1 left-[3px] size-4' : 'jester-index'} />
+		{#if size !== 'xs'}
+			<JesterHat class="jester-big" />
+		{/if}
 	{:else}
-		<span
-			class="absolute top-0.5 left-1 flex flex-col items-center leading-none"
-			style="font-family: system-ui, sans-serif"
-		>
-			<span class="font-display font-bold">{label}</span>
-			<span>{glyph}</span>
+		<span class={cn('index', size === 'xs' && 'index-xs')}>
+			<b class="font-display">{label}</b>
+			<i class="suit-glyph">{glyph}</i>
 		</span>
 		{#if size !== 'xs'}
-			<span class="absolute inset-0 flex items-center justify-center">
-				{#if royal}
-					{@const Icon = card.rank === 11 ? Swords : Crown}
-					<Icon class="absolute size-2/3 text-gold opacity-30" />
-					<span class="font-display font-bold {centre[size]}">{label}</span>
-				{:else}
-					<span class={centre[size]} style="font-family: system-ui, sans-serif">{glyph}</span>
-				{/if}
-			</span>
+			{#if royal}
+				<svg
+					class="absolute inset-0 size-full"
+					viewBox="0 0 100 140"
+					preserveAspectRatio="none"
+					aria-hidden="true"
+				>
+					{#each RIDGES as d, i (i)}
+						<path {d} class={RIDGE_FILLS[i]} />
+					{/each}
+				</svg>
+				<span class="middle royal font-display font-bold">{label}</span>
+			{:else}
+				<span class="middle suit-glyph">{glyph}</span>
+			{/if}
 		{/if}
 	{/if}
 {/snippet}
@@ -106,3 +107,74 @@
 		{@render face()}
 	</div>
 {/if}
+
+<style>
+	/* cqw inside the face; the face's own corners can't use it (they would follow the parent). */
+	/* A stacking context of its own, so the middle and the index never paint over a card on top. */
+	.face {
+		isolation: isolate;
+		container-type: inline-size;
+		border-radius: 9% / 6.43%;
+	}
+	.index {
+		position: absolute;
+		top: 4%;
+		left: 6%;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6cqw;
+	}
+	.index b {
+		font-size: 30cqw;
+		font-weight: 700;
+		line-height: 0.82;
+		letter-spacing: -0.02em;
+	}
+	.index i {
+		font-size: 21cqw;
+		line-height: 1;
+	}
+	.index-xs b {
+		font-size: 12px;
+	}
+	.index-xs i {
+		font-size: 10px;
+	}
+	/* The suit of a number card and the letter of a royal share one box, so they line up. */
+	.middle {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		display: grid;
+		place-items: center;
+		padding-top: 12%;
+		font-size: 46cqw;
+		line-height: 1;
+	}
+	.middle.royal {
+		font-size: 50cqw;
+	}
+	.jester {
+		--j1: var(--jester-card);
+		--j2: color-mix(in oklab, var(--jester-card) 68%, black);
+		--j2-opacity: 1;
+	}
+	.face :global(.jester-index) {
+		position: absolute;
+		top: 5%;
+		left: 6%;
+		z-index: 2;
+		width: 27cqw;
+		height: 27cqw;
+	}
+	.face :global(.jester-big) {
+		position: absolute;
+		/* Centred by offsets, not a translate: a transformed SVG inside a rotated card renders blurry. */
+		left: 20cqw;
+		top: calc(50% - 24cqw);
+		width: 60cqw;
+		height: 60cqw;
+	}
+</style>

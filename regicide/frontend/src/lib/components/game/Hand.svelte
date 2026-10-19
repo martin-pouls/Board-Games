@@ -61,26 +61,27 @@
 
 <div class="flex flex-col">
 	<!--
-		Always rendered, so the last cards to leave the hand still fly. One implicit row (no column
-		count in the style): leaving cards are taken out of the flow by animate:flip, and a column
-		count updated after that would briefly wrap the hand into a tall column.
+		Always rendered, so the last cards to leave the hand still fly. One row of cards that keep
+		their size, like The Game's: side by side while they fit, then each card after the first is
+		pulled left over the one before, just enough for the row to fit the width. Leaving cards are
+		taken out of the flow by animate:flip.
 	-->
 	{#key dealNo}
 		<div
-			class="grid auto-cols-[minmax(0,4.5rem)] grid-flow-col justify-center gap-1 pt-3"
+			class="hand flex justify-center pt-3"
+			style:--n={items.length}
 			in:receive={{ key: `hand-${dealNo}`, offstage: 'top' }}
 		>
 			{#each items as { card, key }, i (key)}
 				{@const isSelected = selected.includes(i)}
 				<div
-					class="relative rounded-lg"
+					class="relative shrink-0 rounded-[6.5px]"
 					animate:flip={motion.flip}
 					in:receive={{ key, offstage: 'top', delay: arrivalDelay(key) }}
 					out:send={{ key, offstage: 'top' }}
 				>
 					<PlayingCard
 						{card}
-						size="fluid"
 						selected={isSelected}
 						dimmed={hint?.(i) === 'dim' && !isSelected}
 						disabled={!interactive}
@@ -88,7 +89,8 @@
 					/>
 					{#if fresh.has(key)}
 						<NewCardMark
-							ring="var(--parchment)"
+							dot="corner-left"
+							ring="var(--stock)"
 							class={isSelected ? '-translate-y-3 transition-transform' : 'transition-transform'}
 						/>
 					{/if}
@@ -97,8 +99,17 @@
 		</div>
 	{/key}
 	{#if cards.length === 0}
-		<p class="flex h-20 items-center justify-center text-sm text-muted-foreground">
+		<p class="flex h-[100.8px] items-center justify-center text-sm text-muted-foreground">
 			No cards in hand.
 		</p>
 	{/if}
 </div>
+
+<style>
+	.hand {
+		container-type: inline-size;
+	}
+	.hand > :not(:first-child) {
+		margin-left: calc(min(76px, (100cqw - 72px) / max(var(--n) - 1, 1)) - 72px);
+	}
+</style>

@@ -4,6 +4,17 @@
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 </script>
 
+<!-- On a little card face, since the suit colours are made for the cards (in dark mode too). -->
+{#snippet suit(glyph: string, red: boolean)}
+	<span
+		class={[
+			'suit-glyph inline-grid size-[18px] place-items-center rounded-[4px] bg-stock align-[-3px] text-[13px] ring-1 ring-stock-edge',
+			red ? 'text-suit-red' : 'text-suit-black'
+		]}
+		aria-hidden="true">{glyph}&#xFE0E;</span
+	>
+{/snippet}
+
 <Dialog.Root bind:open>
 	<Dialog.Content class="max-h-[85dvh] overflow-y-auto">
 		<Dialog.Header>
@@ -16,12 +27,19 @@
 			<section>
 				<h3 class="mb-1 font-semibold">Suit powers</h3>
 				<ul class="list-disc pl-5">
-					<li><b>♥ Heal:</b> shuffle the discard, move that many cards under the Tavern.</li>
 					<li>
-						<b>♦ Draw:</b> that many cards, one at a time clockwise from you (full hands skip).
+						<b>{@render suit('♥', true)} Heal:</b> shuffle the discard, move that many cards under the
+						Tavern.
 					</li>
-					<li><b>♣ Double damage:</b> the play deals twice its value.</li>
-					<li><b>♠ Shield:</b> reduces the enemy attack for the rest of the fight, cumulative.</li>
+					<li>
+						<b>{@render suit('♦', true)} Draw:</b> that many cards, one at a time clockwise from you (full
+						hands skip).
+					</li>
+					<li><b>{@render suit('♣', false)} Double damage:</b> the play deals twice its value.</li>
+					<li>
+						<b>{@render suit('♠', false)} Shield:</b> reduces the enemy attack for the rest of the fight,
+						cumulative.
+					</li>
 				</ul>
 				<p class="mt-1 text-muted-foreground">
 					Hearts resolve before Diamonds. Each suit counts once per play. An enemy is immune to the

@@ -7,7 +7,6 @@
 	import { resolve } from '$app/paths';
 	import Crown from '@lucide/svelte/icons/crown';
 	import House from '@lucide/svelte/icons/house';
-	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { errorText } from '#lib/errors.js';
@@ -96,7 +95,7 @@
 						<span
 							class={cn(
 								'size-2.5 shrink-0 rounded-full',
-								isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+								isOnline ? 'bg-online' : 'bg-muted-foreground/40'
 							)}
 							title={isOnline ? 'Online' : 'Offline'}
 						></span>
@@ -164,9 +163,8 @@
 				Start game ({plural(view.players.length, 'player')})
 			</Button>
 		{:else}
-			<p class="flex h-12 items-center justify-center gap-2 text-muted-foreground">
-				<LoaderCircle class="size-4 animate-spin" />
-				Waiting for {host?.name ?? 'the host'} to start…
+			<p class="flex h-12 items-center justify-center text-muted-foreground">
+				Waiting for {host?.name ?? 'the host'} to start the game.
 			</p>
 		{/if}
 	</div>

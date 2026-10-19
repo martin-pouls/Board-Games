@@ -7,6 +7,7 @@
 	import { cn } from '#lib/utils.js';
 	import type { Card, PlayerView } from '#lib/types.js';
 	import SoloJesterButton from './SoloJesterButton.svelte';
+	import TurnBanner from './TurnBanner.svelte';
 
 	let {
 		client,
@@ -14,7 +15,8 @@
 		selected,
 		busy,
 		connected,
-		run
+		run,
+		turnKey
 	}: {
 		client: GameClient;
 		view: PlayerView;
@@ -22,39 +24,40 @@
 		busy: boolean;
 		connected: boolean;
 		run: Runner;
+		turnKey: string;
 	} = $props();
 
 	const required = $derived(view.turn?.damageToCover ?? 0);
 	const check = $derived(checkDiscard(selected, required));
-	const fill = $derived(required > 0 ? Math.min(100, (check.sum / required) * 100) : 100);
 	const handShort = $derived(handValue(view.hand) < required && view.soloJestersLeft > 0);
-	const label = $derived.by(() => {
-		if (handShort) return "Can't cover: use a Jester";
-		if (!check.ok && check.problem === 'superfluous') {
-			return discardProblemText(check, required, selected);
-		}
-		return `Take ${required}`;
-	});
 </script>
 
-<div class="flex items-center gap-2">
-	<div class="flex min-w-0 flex-1 flex-col gap-1" aria-live="polite">
-		<div class="flex items-baseline justify-between gap-2 text-sm">
-			<span class={cn('truncate', handShort && 'text-jester')} title={label}>{label}</span>
-			<span class={cn('tabular-nums', check.ok && 'font-semibold text-primary')}>
-				{check.sum} / {required}
-			</span>
-		</div>
-		<div class="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-			<div
-				class={cn('h-full transition-[width]', check.ok ? 'bg-primary' : 'bg-health')}
-				style="width: {fill}%"
-			></div>
-		</div>
-	</div>
+<TurnBanner
+	title={handShort ? `Can't cover ${required}` : `Discard ${required} or more`}
+	mine
+	{turnKey}
+>
+	{#if handShort}
+		<span class="text-xs font-semibold text-jester">Use a Jester</span>
+	{:else if !check.ok && check.problem === 'superfluous'}
+		<span class="truncate text-xs text-muted-foreground">
+			{discardProblemText(check, required, selected)}
+		</span>
+	{:else}
+		<span
+			class={cn(
+				'text-xs tabular-nums',
+				check.ok ? 'font-bold text-foreground' : 'text-muted-foreground'
+			)}
+		>
+			Selected {check.sum} of {required}
+		</span>
+	{/if}
+</TurnBanner>
+<div class="flex h-11 gap-2">
 	<SoloJesterButton {client} {view} {busy} {connected} {run} />
 	<Button
-		class="h-9 px-4 text-base"
+		class="h-11 flex-1 text-base"
 		disabled={!connected || busy || !check.ok}
 		onclick={() => run(() => client.discard(selected))}
 	>

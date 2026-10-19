@@ -1,5 +1,8 @@
+<!--
+	The action area above the hand, split like The Game's: the turn bar, then the turn's buttons,
+	or who we're waiting for (plain text, no spinner).
+-->
 <script lang="ts">
-	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import type { GameClient } from '#lib/game/client.js';
 	import type { Runner } from '#lib/game/selection.js';
 	import type { Card, PlayerView } from '#lib/types.js';
@@ -7,6 +10,7 @@
 	import DiscardControls from './DiscardControls.svelte';
 	import PlayControls from './PlayControls.svelte';
 	import SignalPanel from './SignalPanel.svelte';
+	import TurnBanner from './TurnBanner.svelte';
 
 	let {
 		client,
@@ -29,26 +33,30 @@
 	const activeName = $derived(
 		view.players.find((p) => p.id === view.turn?.activePlayerId)?.name ?? 'Someone'
 	);
-	const waiting = $derived(
-		step === 'discard'
-			? `${activeName} must take ${view.turn?.damageToCover ?? 0} damage`
-			: `${activeName} is choosing cards…`
-	);
+	const turnKey = $derived(`${view.turn?.activePlayerId}:${view.turn?.number}`);
 </script>
 
-<div class="flex min-h-13 flex-col justify-center rounded-xl border bg-card/90 p-2">
+<div class="flex shrink-0 flex-col gap-1.5">
 	{#if step === 'play' && mine}
-		<PlayControls {client} {view} {selected} {busy} {connected} {run} />
+		<PlayControls {client} {view} {selected} {busy} {connected} {run} {turnKey} />
 	{:else if step === 'discard' && mine}
-		<DiscardControls {client} {view} {selected} {busy} {connected} {run} />
+		<DiscardControls {client} {view} {selected} {busy} {connected} {run} {turnKey} />
 	{:else if step === 'chooseNext' && mine}
-		<ChooseNextPanel {client} {view} {busy} {connected} {run} />
+		<ChooseNextPanel {client} {view} {busy} {connected} {run} {turnKey} />
 	{:else if step === 'chooseNext'}
-		<SignalPanel {client} {view} {busy} {connected} {run} />
+		<SignalPanel {client} {view} {busy} {connected} {run} {turnKey} />
 	{:else}
-		<p class="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-			<LoaderCircle class="size-4 animate-spin" />
-			{waiting}
+		<TurnBanner title={`${activeName}'s turn`} mine={false} {turnKey}>
+			{#if step === 'discard'}
+				<span class="text-xs text-muted-foreground tabular-nums">
+					Takes {view.turn?.damageToCover ?? 0} damage
+				</span>
+			{/if}
+		</TurnBanner>
+		<p class="flex h-11 items-center justify-center text-sm text-muted-foreground">
+			<span class="truncate">
+				Waiting for {activeName} to {step === 'discard' ? 'discard' : 'play'}.
+			</span>
 		</p>
 	{/if}
 </div>

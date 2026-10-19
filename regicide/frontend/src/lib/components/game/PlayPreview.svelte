@@ -1,49 +1,53 @@
-<!-- What the selected cards would do, as badges: the suit powers, a Jester's effect, a defeat. -->
+<!--
+	What the selected cards would do, as badges on one line: the suit powers (struck through where
+	the enemy's immunity blocks them), a Jester's effect, a defeat. Or why the cards can't be played.
+-->
 <script lang="ts">
-	import Drama from '@lucide/svelte/icons/drama';
 	import Skull from '@lucide/svelte/icons/skull';
-	import { playProblemText, suitGlyph, suitPowerName } from '#lib/game/format.js';
+	import { playProblemText, suitGlyph } from '#lib/game/format.js';
 	import type { PlayPreview, SuitEffect } from '#lib/game/rules.js';
 	import { cn } from '#lib/utils.js';
+	import JesterHat from './JesterHat.svelte';
 
 	let { preview }: { preview: PlayPreview } = $props();
 
 	const check = $derived(preview.check);
 
+	/** A blocked power is shown without its amount, struck through. */
 	function label(e: SuitEffect): string {
+		const n = e.blocked ? '' : ` ${e.amount}`;
 		switch (e.suit) {
 			case 'hearts':
-				return `Heal ${e.amount}`;
+				return `Heal${n}`;
 			case 'diamonds':
-				return `Draw ${e.amount}`;
+				return `Draw${n}`;
 			case 'clubs':
 				return '×2';
 			case 'spades':
-				return `Shield ${e.amount}`;
+				return `Shield${n}`;
 		}
 	}
 
-	const badge = 'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs whitespace-nowrap';
+	const badge =
+		'flex shrink-0 items-center gap-0.5 rounded-full border bg-card px-[7px] text-xs leading-[18px] whitespace-nowrap';
 </script>
 
 {#if check.ok}
-	<ul class="flex flex-wrap gap-1">
+	<ul class="flex gap-1">
 		{#if check.kind === 'jester'}
 			<li class={cn(badge, 'border-jester/60 text-jester')}>
-				<Drama class="size-3.5" aria-hidden="true" />
+				<JesterHat class="size-3.5" />
 				{preview.cancelsImmunity ? 'Cancel immunity' : 'Jester'}
 			</li>
 		{/if}
 		{#each preview.effects as e (e.suit)}
 			<li
-				class={cn(
-					badge,
-					e.blocked ? 'text-muted-foreground line-through opacity-70' : 'border-primary/50'
-				)}
-				title={e.blocked ? 'Immune' : undefined}
+				class={cn(badge, e.blocked ? 'text-muted-foreground line-through' : 'border-primary/50')}
+				title={e.blocked ? "Blocked by the enemy's immunity" : undefined}
 			>
-				<span style="font-family: system-ui, sans-serif">{suitGlyph(e.suit)}&#xFE0E;</span>
-				{e.blocked ? suitPowerName(e.suit) : label(e)}
+				<i class="suit-glyph">{suitGlyph(e.suit)}&#xFE0E;</i>
+				{label(e)}
+				{#if e.blocked}<span class="sr-only">(blocked by immunity)</span>{/if}
 			</li>
 		{/each}
 		{#if preview.defeats}
@@ -57,5 +61,7 @@
 		{/if}
 	</ul>
 {:else}
-	<p class="text-xs leading-tight text-muted-foreground">{playProblemText(check.problem)}</p>
+	<p class="line-clamp-2 text-right text-xs leading-tight whitespace-normal text-muted-foreground">
+		{playProblemText(check.problem)}
+	</p>
 {/if}

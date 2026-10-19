@@ -1,11 +1,11 @@
 <!-- Solo only: the Jester power (discard your hand, draw a new one), behind a confirmation. -->
 <script lang="ts">
-	import Drama from '@lucide/svelte/icons/drama';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { GameClient } from '#lib/game/client.js';
 	import type { Runner } from '#lib/game/selection.js';
 	import type { PlayerView } from '#lib/types.js';
+	import JesterHat from './JesterHat.svelte';
 
 	let {
 		client,
@@ -22,13 +22,13 @@
 {#if view.soloJestersLeft > 0}
 	<Button
 		variant="outline"
-		class="h-9 gap-1 border-jester/60 px-2 text-jester"
+		class="h-11 gap-1 border-jester/60 px-3 text-base text-jester"
 		disabled={!connected || busy}
 		title={`Use a Jester power (${view.soloJestersLeft} left)`}
 		aria-label={`Use a Jester power (${view.soloJestersLeft} left)`}
 		onclick={() => (open = true)}
 	>
-		<Drama />
+		<JesterHat class="size-5" />
 		{view.soloJestersLeft}
 	</Button>
 

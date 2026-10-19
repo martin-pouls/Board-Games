@@ -24,6 +24,7 @@
 	import LastTurnPiles from './LastTurnPiles.svelte';
 	import PlayerStrip from './PlayerStrip.svelte';
 	import RulesHelp from './RulesHelp.svelte';
+	import SoloJesterCount from './SoloJesterCount.svelte';
 	import TableCounters from './TableCounters.svelte';
 
 	let {
@@ -110,12 +111,10 @@
 			<HeaderButton icon={House} label="Home" href={resolve('/')} />
 			<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
 			<span
-				class={cn(
-					'size-2 rounded-full',
-					connected ? 'bg-emerald-500' : 'animate-pulse bg-amber-500'
-				)}
+				class={cn('size-2 rounded-full', connected ? 'bg-online' : 'animate-pulse bg-reconnecting')}
 				title={connected ? 'Connected' : 'Reconnecting'}
 			></span>
+			<TableCounters class="ml-3" {view} />
 			<HandOrderMenu
 				class="ml-auto"
 				order={handOrder}
@@ -133,14 +132,14 @@
 			{/if}
 			<HeaderThemeToggle />
 		</div>
-		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			<TableCounters {view} />
-			<PlayerStrip class="ml-auto" players={view.players} online={client.online} />
+		<div class="flex items-center gap-3">
+			<PlayerStrip players={view.players} online={client.online} />
+			<SoloJesterCount class="ml-auto" {view} />
 		</div>
 	</header>
 
 	{#if view.enemy}
-		<EnemyCard enemy={view.enemy} players={view.players} {preview} />
+		<EnemyCard enemy={view.enemy} players={view.players} castleCount={view.castleCount} {preview} />
 	{:else}
 		<p
 			class="rounded-xl border bg-card/70 p-4 text-center font-display text-lg text-primary"
@@ -153,7 +152,7 @@
 	<LastTurnPiles lastTurn={view.lastTurn} players={view.players} />
 
 	<div
-		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
+		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1.5 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
 	>
 		{#if controls}
 			{@render controls()}

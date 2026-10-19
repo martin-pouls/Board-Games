@@ -9,15 +9,23 @@
 	import type { Runner } from '#lib/game/selection.js';
 	import { cn } from '#lib/utils.js';
 	import type { PlayerSummary, PlayerView } from '#lib/types.js';
+	import TurnBanner from './TurnBanner.svelte';
 
 	let {
 		client,
 		view,
 		busy,
 		connected,
-		run
-	}: { client: GameClient; view: PlayerView; busy: boolean; connected: boolean; run: Runner } =
-		$props();
+		run,
+		turnKey
+	}: {
+		client: GameClient;
+		view: PlayerView;
+		busy: boolean;
+		connected: boolean;
+		run: Runner;
+		turnKey: string;
+	} = $props();
 
 	let target = $state<PlayerSummary | null>(null);
 	let open = $state(false);
@@ -31,31 +39,31 @@
 	}
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
-	<p class="text-sm text-muted-foreground">Next:</p>
-	<ul class="flex flex-1 flex-wrap justify-end gap-1.5">
-		{#each players as p (p.id)}
-			<li>
-				<Button
-					variant="secondary"
-					class={cn('h-9 gap-1.5 px-3', stuck(p) && 'text-health')}
-					title={stuck(p) ? 'No cards and cannot yield: the game would be lost' : undefined}
-					disabled={!connected || busy}
-					onclick={() => choose(p)}
-				>
-					<span class="max-w-[6.5rem] truncate">{p.isYou ? 'Me' : p.name}</span>
-					<span class="text-muted-foreground tabular-nums">· {p.handCount}</span>
-					{#if p.yieldedLastTurn}<Hourglass aria-label="Yielded" />{/if}
-					{#if p.signal === 'goodPlay'}
-						<ThumbsUp class="text-primary" aria-label="Has a good play" />
-					{:else if p.signal === 'ratherNot'}
-						<Hand class="text-health" aria-label="Would rather not go next" />
-					{/if}
-				</Button>
-			</li>
-		{/each}
-	</ul>
-</div>
+<TurnBanner title="Your turn" mine {turnKey}>
+	<span class="text-xs text-muted-foreground">Pick who goes next</span>
+</TurnBanner>
+<ul class="flex h-11 gap-2" aria-label="Who goes next">
+	{#each players as p (p.id)}
+		<li class="flex min-w-0 flex-1">
+			<Button
+				variant="secondary"
+				class={cn('h-11 min-w-0 flex-1 gap-1 px-2 text-base', stuck(p) && 'text-health')}
+				title={stuck(p) ? 'No cards and cannot yield: the game would be lost' : undefined}
+				disabled={!connected || busy}
+				onclick={() => choose(p)}
+			>
+				<span class="truncate">{p.isYou ? 'Me' : p.name}</span>
+				<span class="text-sm text-muted-foreground tabular-nums">{p.handCount}</span>
+				{#if p.yieldedLastTurn}<Hourglass aria-label="Yielded" />{/if}
+				{#if p.signal === 'goodPlay'}
+					<ThumbsUp class="text-primary" aria-label="Has a good play" />
+				{:else if p.signal === 'ratherNot'}
+					<Hand class="text-health" aria-label="Would rather not go next" />
+				{/if}
+			</Button>
+		</li>
+	{/each}
+</ul>
 
 <AlertDialog.Root bind:open>
 	<AlertDialog.Content>
