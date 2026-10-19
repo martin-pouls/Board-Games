@@ -9,7 +9,6 @@ Short list of games we might add. Not a plan: no rules have been checked against
 | Regicide Inferno | 1–4 | not stated | Cooperative, Regicide with classes and a growing enemy | Excellent (same lobby, session, hand and enemy-flow plumbing as Regicide) | Medium |
 | Sail | 2 | ~20 min | Cooperative trick-taking + track | Good | Low–medium |
 | Sky Team | 2 | ~15–20 min | Cooperative dice placement, no talking | Needs a simultaneous, secret dice-placement UI | Medium |
-| LOTR Trick-Taking (Fellowship, Two Towers) | 1–4 | ~15–30 min | Cooperative trick-taking, character goals | Good; shares a trick-taking core with The Crew | Medium |
 | Aeon's End | 1–4 | ~60 min | Cooperative deckbuilder | Large card pool, many effects | High |
 | Marvel Champions | 1–4 | 45–90 min | Cooperative Living Card Game | Huge card pool and effect system | Very high |
 
