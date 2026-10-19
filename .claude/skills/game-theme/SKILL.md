@@ -12,8 +12,8 @@ Follow the design-guidelines skill throughout; this adds the theme process.
 2. **Plan before code**, shown to the user as a plain HTML preview artifact (see Previews in design-guidelines). Inside `/implement-game` the preview is the brief's `<game-docs>/mockup.html` instead, and the orchestrator publishes it:
    - 4–6 named colours with their role, as light and dark tokens; contrast checked (text ≥ 4.5:1, marks ≥ 3:1).
    - Typefaces: one sans for UI and numbers, at most one display face, each with its roles. Fontsource variable packages only, nothing from a CDN.
-   - Card faces: what carries value, suit and colour, at the size the game screen gives them on a 390 px phone.
-   - The game screen at 390×664 and 390×844 as a mockup, plus a few card faces at real size. Take the header, footer and other shared chrome at the heights measured in the current fixtures, so the card sizes the mockup promises hold once built.
+   - Card faces: what carries value, suit and colour, at the size the game screen gives them on a 375 px phone.
+   - The game screen at 375×629 and 375×812 as a mockup, plus a few card faces at real size. Take the header, footer and other shared chrome at the heights measured in the current fixtures, so the card sizes the mockup promises hold once built.
    - Then review the plan against the generic-defaults list in design-guidelines and revise anything that would come out the same for any game.
    - Decide in rounds: keep what the user has locked fixed, and show two or three options only for what is still open. Revisions republish the same artifact.
 3. **Boldness in one place**, usually the card faces. Background, panels and shared components stay quiet and unchanged.

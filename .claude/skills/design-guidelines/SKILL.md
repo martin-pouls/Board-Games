@@ -23,13 +23,13 @@ When rules pull apart: **playability > clarity > familiarity across games > look
   - *Waiting:* plain text in the action area, "Waiting for Alice to play." No spinner: a spinner means the app is loading.
   - *Moves:* tap selects, a clear button commits. Illegal options are disabled with the reason shown, not rejected after the tap.
   - *Server errors:* a toast saying what happened and how to fix it.
-  - *Lobby:* title, seats, settings, primary action in a sticky bottom bar. The title fits on one line at 390 px.
+  - *Lobby:* title, seats, settings, primary action in a sticky bottom bar. The title fits on one line at 375 px.
   - *Game over:* a sheet over the table (the table stays visible), outcome first, rematch as the primary button.
   - A game may deviate where its flow needs it; say why in its CLAUDE.md. Example: The Crew's per-mission debrief is an inline panel in the table, since it leads straight into the next mission.
 - **Copy:** English, sentence case, plain verbs. An action keeps its name through the flow ("Leave" → "Left"). No apologies.
 
 ## Phone first, desktop works
-- **Targets:** iPhone 13 (390×844), the same phone in Safari with its toolbars showing (390×664: the height a player really gets, so check the game screen there), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
+- **Targets:** iPhone 13 mini (375×812), the same phone in Safari with its toolbars showing (375×629: the height a player really gets, so check the game screen there), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
 - **Game screen: no scrolling** at the targets, neither page nor panels (dialogs like RulesHelp may scroll). Use `dvh`/`svh`, never `vh`. Pinned edges respect `env(safe-area-inset-*)`.
 - **No layout jumps:** reserve space for hints, banners and changing counts; fixed-size card slots; tabular numbers.
 - **Thumb zone:** your hand and the action button at the bottom, shared state above. Touch targets ≥ 44 px; overlapping cards still need a clear tap area. No hover-only information. No gestures without a visible alternative.
@@ -54,7 +54,7 @@ When rules pull apart: **playability > clarity > familiarity across games > look
 ## Previews (artifacts)
 Show a look before building it only when the user has to decide between looks before any code exists. Pick the cheapest form that fits:
 - **No preview:** small fixes, layout tweaks, anything the fixtures can show. Fixture screenshots are enough.
-- **Plain HTML artifact (default):** theme plans, a new screen, a reworked component. One self-contained file in the scratchpad, using the game's real or planned tokens as CSS variables and its fonts, in light and dark, at real sizes, with a 390 px game screen mockup. Each revision edits and republishes the same file, so the URL stays the same.
+- **Plain HTML artifact (default):** theme plans, a new screen, a reworked component. One self-contained file in the scratchpad, using the game's real or planned tokens as CSS variables and its fonts, in light and dark, at real sizes, with a 375 px game screen mockup. Each revision edits and republishes the same file, so the URL stays the same.
 - **Claude Design artifact:** only when the user asks for one, or wants several variants side by side on a canvas to compare and comment on. Start it with `design_systems: false`: the game's tokens are the design system.
 - Previews are throwaway. Once the code exists, the fixtures are the truth: don't keep artifacts in sync, and never copy markup from them into the app (it gets rebuilt from Svelte and shadcn components).
 - Only the main session publishes. Subagents (`visual-reviewer`) return files and findings.

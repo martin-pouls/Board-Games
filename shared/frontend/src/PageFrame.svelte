@@ -1,6 +1,7 @@
 <!--
 	The frame of every page (games, start page, gate): the top bar, a centred column for the page and
-	the footer with the imprint and privacy links. The games use it through AppFrame.
+	the footer with the imprint and privacy links (left out on the games' table). The games use it
+	through AppFrame.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -14,6 +15,7 @@
 		wide = false,
 		topBar = true,
 		topBarWidth,
+		footer = true,
 		start,
 		children
 	}: {
@@ -30,6 +32,8 @@
 		/** A max-width class for the top bar, when the page's column is narrower than the frame's:
 		 *  the bar then lines up with it. */
 		topBarWidth?: string;
+		/** false hides the imprint and privacy footer (the games' table, which must fit a phone). */
+		footer?: boolean;
 		/** More items on the left of the top bar. */
 		start?: Snippet;
 		children: Snippet;
@@ -48,9 +52,14 @@
 		</div>
 	{/if}
 	{@render children()}
-	<footer class="mt-auto flex justify-center gap-4 pt-10 text-center text-xs text-muted-foreground">
-		<!-- Pages of the start page app: full page loads. -->
-		<a href={imprintHref} rel="external" class="underline-offset-4 hover:underline">Impressum</a>
-		<a href={privacyHref} rel="external" class="underline-offset-4 hover:underline">Datenschutz</a>
-	</footer>
+	{#if footer}
+		<footer
+			class="mt-auto flex justify-center gap-4 pt-10 text-center text-xs text-muted-foreground"
+		>
+			<!-- Pages of the start page app: full page loads. -->
+			<a href={imprintHref} rel="external" class="underline-offset-4 hover:underline">Impressum</a>
+			<a href={privacyHref} rel="external" class="underline-offset-4 hover:underline">Datenschutz</a
+			>
+		</footer>
+	{/if}
 </main>

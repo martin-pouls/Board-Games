@@ -14,7 +14,7 @@ You review one game of the board-games monorepo. The caller gives you the game, 
 
 ## Shoot the matrix
 - **Screens:** home (`/`), every lobby fixture, the game screen in each key state (each phase and pending decision, your turn and someone else's), game over won and lost. Skip near-duplicate fixtures.
-- **Viewports:** 390×844, 390×664 (the game screen with Safari's toolbars), 1280×800.
+- **Viewports:** 375×812, 375×629 (the game screen with Safari's toolbars), 1280×800.
 - **Modes:** light and dark via `browser_emulate_media` colorScheme (reload after switching).
 - Name files `<screen>-<width>-<mode>.png`. On every game screen also evaluate `[document.documentElement.scrollHeight, innerHeight]` and look for elements wider than the viewport. Use `browser_snapshot` to read truncated text.
 - Open a dialog (RulesHelp, give up) once per viewport to check it too.

@@ -398,7 +398,7 @@ Every place another app is named (checked against how Fox Duet was added):
 - **Adapters:** repotest (copied), sqlite round trip of a mid-attempt game with the dummy, apidto mapping, ws dispatch, httpapi.
 - **e2e:** §6.
 - **Frontend:** vitest for format helpers (objective and reason texts, token labels), the recent-games logic and the communicate eligibility display. Fixtures render in `npm run check`.
-- **Manual QA:** Playwright at 390×844 in both themes. Play 2 players (two browser contexts) through missions 1, 5, 12, 20, 24 and 50. Spot-check 3 and 5 players.
+- **Manual QA:** Playwright at 375×812 in both themes. Play 2 players (two browser contexts) through missions 1, 5, 12, 20, 24 and 50. Spot-check 3 and 5 players.
 - Before declaring done, in `the-crew/backend`: `go vet ./... && go test ./...`; in `the-crew/frontend` and `start-page/frontend`: `npm run check && npm run lint && npm test`; plus `gate/backend` if touched.
 
 ## 10. Work breakdown and agents
