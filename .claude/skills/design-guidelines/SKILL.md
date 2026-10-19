@@ -29,7 +29,7 @@ When rules pull apart: **playability > clarity > familiarity across games > look
 - **Copy:** English, sentence case, plain verbs. An action keeps its name through the flow ("Leave" → "Left"). No apologies.
 
 ## Phone first, desktop works
-- **Targets:** iPhone 13 mini (375×812), the same phone in Safari with its toolbars showing (375×629: the height a player really gets, so check the game screen there), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
+- **Targets:** iPhone 13 mini (375×812) and iPhone 16 (393×852), each also in Safari with its toolbars showing (375×629 and 393×659: the height a player really gets, so check the game screen there; the mini is the tight one), desktop (1280×800). A desktop-only game says so in its CLAUDE.md and shows phones a notice instead of a broken table.
 - **Game screen: no scrolling** at the targets, neither page nor panels (dialogs like RulesHelp may scroll). Use `dvh`/`svh`, never `vh`. Pinned edges respect `env(safe-area-inset-*)`.
 - **No layout jumps:** reserve space for hints, banners and changing counts; fixed-size card slots; tabular numbers.
 - **Thumb zone:** your hand and the action button at the bottom, shared state above. Touch targets ≥ 44 px; overlapping cards still need a clear tap area. No hover-only information. No gestures without a visible alternative.
