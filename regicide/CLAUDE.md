@@ -25,6 +25,7 @@
 - **Last turn:** Played (or Yielded), the defeated enemy and Discarded, each with a text label below; "Exact kill" in red when it went onto the Tavern deck. Bigger piles overlap closer, so the row never wraps.
 - **Action area, split like The Game's turn bar:** a 40 px bar (whose turn, outlined when it is yours, and on the right the selected cards' effect badges on one line, blocked powers struck through), then a 44 px row with the buttons (solo Jester, Yield, a wide Play) or "Waiting for X to play." in plain text. No hand value: as with the physical game, players add it up themselves.
 - **Hand:** one row of 72 px cards, as in The Game: side by side while they fit, overlapping only as much as the width needs. The players sit in the header's second row (compact chips from four players). The hand sort menu sits in the table header.
+- **Start-page tile** (`start-page/frontend/src/lib/components/GameArt.svelte`): a king's K standing on the three ridges with a K♠ card index in the corner, the tile in the Mist tokens (the title is in the page's sans like every tile). Keep it in step with the game's tokens.
 - **Card motion:** plays and discards fly from the hand to the Played/Discarded piles (other players' from the top edge), a defeated enemy to its slot, drawn cards into the hand.
 
 The `AlertDialog.Action` gotcha bites the solo "Use Jester" confirm: without closing it explicitly, the overlay blocks the hand.

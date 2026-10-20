@@ -7,6 +7,7 @@
 	import { lobbyOptions } from '#lib/game/lobbyOptions.js';
 	import { sessions } from '#lib/session.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import StartCard from '#lib/components/game/StartCard.svelte';
 </script>
 
 <HomePage
@@ -30,29 +31,13 @@
 	{#snippet hero()}
 		<Card.Title class="text-3xl">The Game</Card.Title>
 		<Card.Description>Play as a team, as long as you can.</Card.Description>
-		<!-- The two kinds of piles: ascending from 1, descending from 100. -->
+		<!-- The two printed start cards: ascending from 1, descending from 100, fanned outwards. -->
 		<div
-			class="col-start-2 row-span-2 row-start-1 flex items-center gap-1 self-center pr-1"
+			class="col-start-2 row-span-2 row-start-1 flex items-center gap-1.5 self-center pr-1 [--w:2.625rem]"
 			aria-hidden="true"
 		>
-			<span class="pile-chip -rotate-6 border-up bg-up-soft font-display text-up-label">1</span>
-			<span class="pile-chip rotate-6 border-down bg-down-soft font-display text-down-label"
-				>100</span
-			>
+			<StartCard dir="up" class="-rotate-5" />
+			<StartCard dir="down" class="rotate-5" />
 		</div>
 	{/snippet}
 </HomePage>
-
-<style>
-	.pile-chip {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2.25rem;
-		height: 3.25rem;
-		border-width: 1.5px;
-		border-radius: 0.5rem;
-		font-size: 1.5rem;
-		font-variant-numeric: tabular-nums;
-	}
-</style>

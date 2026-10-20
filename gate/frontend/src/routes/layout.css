@@ -9,62 +9,58 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * The start page's card table (start-page/frontend/src/routes/layout.css, without the game tiles):
- * pale linen in light mode, green felt in dark mode. Keep the two in step. The theme is set before
- * first paint by the script in app.html.
+ * The start page's plain slate table (start-page/frontend/src/routes/layout.css, without the game
+ * tiles). Keep the two in step. The theme is set before first paint by the script in app.html.
  */
 :root {
-	--background: oklch(0.965 0.012 120);
-	--foreground: oklch(0.2 0.03 155);
-	--card: oklch(0.995 0.004 120);
+	--background: oklch(0.955 0.008 250);
+	--foreground: oklch(0.22 0.02 255);
+	--card: oklch(0.995 0.003 250);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.42 0.08 155);
-	--primary-foreground: oklch(0.98 0.01 95);
-	--secondary: oklch(0.92 0.015 140);
+	--primary: oklch(0.42 0.06 252);
+	--primary-foreground: oklch(0.985 0.004 250);
+	--secondary: oklch(0.92 0.01 250);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.92 0.015 140);
-	--muted-foreground: oklch(0.48 0.03 150);
-	--accent: oklch(0.92 0.015 140);
+	--muted: oklch(0.92 0.01 250);
+	--muted-foreground: oklch(0.47 0.02 255);
+	--accent: oklch(0.92 0.01 250);
 	--accent-foreground: var(--foreground);
 	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.2 0.03 155 / 12%);
-	--input: oklch(0.2 0.03 155 / 15%);
-	--ring: oklch(0.42 0.08 155 / 60%);
+	--border: oklch(0.22 0.02 255 / 12%);
+	--input: oklch(0.22 0.02 255 / 15%);
+	--ring: oklch(0.42 0.06 252 / 60%);
 	--radius: 0.625rem;
 
-	--felt: oklch(0.9 0.04 150);
 	--accent-piece: oklch(0.55 0.2 25);
 }
 
 .dark {
-	--background: oklch(0.14 0.02 155);
-	--foreground: oklch(0.95 0.01 95);
-	--card: oklch(0.2 0.03 155);
+	--background: oklch(0.17 0.012 255);
+	--foreground: oklch(0.95 0.005 250);
+	--card: oklch(0.21 0.014 255);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.78 0.08 150);
-	--primary-foreground: oklch(0.14 0.02 155);
+	--primary: oklch(0.8 0.05 245);
+	--primary-foreground: oklch(0.17 0.012 255);
 	--secondary: oklch(1 0 0 / 8%);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(1 0 0 / 8%);
-	--muted-foreground: oklch(0.76 0.02 140);
+	--muted-foreground: oklch(0.74 0.015 250);
 	--accent: oklch(1 0 0 / 10%);
 	--accent-foreground: var(--foreground);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.78 0.08 150 / 60%);
+	--ring: oklch(0.8 0.05 245 / 60%);
 
-	--felt: oklch(0.2 0.03 155);
 	--accent-piece: oklch(0.7 0.17 22);
 }
 
 @theme inline {
 	--font-sans: 'Inter Variable', system-ui, sans-serif;
-	--color-felt: var(--felt);
 	--color-accent-piece: var(--accent-piece);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
@@ -102,30 +98,5 @@
 	}
 	body {
 		@apply min-h-svh font-sans text-foreground antialiased;
-	}
-	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
-	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
-	   the status bar and the area around its toolbar with the plain background colour, so the
-	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
-	body::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-		mask-image: linear-gradient(
-			to bottom,
-			transparent,
-			rgb(0 0 0 / 0.12) 2rem,
-			rgb(0 0 0 / 0.45) 4rem,
-			rgb(0 0 0 / 0.82) 6rem,
-			#000 8rem,
-			#000 calc(100% - 8rem),
-			rgb(0 0 0 / 0.82) calc(100% - 6rem),
-			rgb(0 0 0 / 0.45) calc(100% - 4rem),
-			rgb(0 0 0 / 0.12) calc(100% - 2rem),
-			transparent
-		);
-		background: radial-gradient(ellipse at 50% 0%, var(--felt) 0%, transparent 70%) no-repeat;
 	}
 }

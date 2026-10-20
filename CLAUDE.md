@@ -4,7 +4,7 @@ Web implementations of cooperative board and card games, played live in the brow
 
 | App | Directory | URL path | What |
 |---|---|---|---|
-| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game, plus imprint and privacy policy. Frontend only. |
+| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game, plus imprint and privacy policy. Frontend only. See [start-page/CLAUDE.md](start-page/CLAUDE.md). |
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |

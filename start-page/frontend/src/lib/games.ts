@@ -7,8 +7,10 @@ export interface Game {
 	/** Port of the game's Vite dev server (`server.port` in its vite.config.ts), linked to in dev. */
 	devPort: number;
 	players: string;
+	/** One line for the phone's shelf tile. */
 	tagline: string;
-	features: string[];
+	/** The longer text for the desktop tile. */
+	description: string;
 }
 
 export const games: Game[] = [
@@ -18,9 +20,9 @@ export const games: Game[] = [
 		path: '/the-game/',
 		devPort: 5173,
 		players: '1–5 players',
-		tagline:
-			'Play all 98 cards onto two rising and two falling piles, without saying which numbers you hold.',
-		features: ['Pro variant', 'The Game Extreme']
+		tagline: 'Play all 98 cards onto four piles without naming a number.',
+		description:
+			'Play all 98 cards onto two rising and two falling piles, without saying which numbers you hold.'
 	},
 	{
 		id: 'regicide',
@@ -28,9 +30,9 @@ export const games: Game[] = [
 		path: '/regicide/',
 		devPort: 5174,
 		players: '1–4 players',
-		tagline:
-			'Defeat twelve corrupted royals with a standard deck, using the powers of the four suits.',
-		features: ['Solo mode with Jesters', 'Gold, Silver and Bronze victories']
+		tagline: 'Defeat twelve royals with a standard deck.',
+		description:
+			'Defeat twelve corrupted royals with a standard deck, using the powers of the four suits.'
 	},
 	{
 		id: 'fox-duet',
@@ -38,9 +40,9 @@ export const games: Game[] = [
 		path: '/fox-duet/',
 		devPort: 5176,
 		players: '2 players',
-		tagline:
-			'The Fox in the Forest: Duet. Cooperative trick-taking: work together to win the right tricks.',
-		features: ['3 difficulty levels']
+		tagline: 'Trick-taking for two along the forest path.',
+		description:
+			'The Fox in the Forest: Duet. Cooperative trick-taking: work together to win the right tricks.'
 	},
 	{
 		id: 'the-crew',
@@ -48,8 +50,8 @@ export const games: Game[] = [
 		path: '/the-crew/',
 		devPort: 5177,
 		players: '2–5 players',
-		tagline: 'Cooperative trick-taking through 50 missions. No talking about your cards.',
-		features: ['50 missions', '2 players with JARVIS']
+		tagline: 'Trick-taking through 50 missions, without talking.',
+		description: 'Cooperative trick-taking through 50 missions. No talking about your cards.'
 	},
 	{
 		id: 'deep-sea',
@@ -57,9 +59,9 @@ export const games: Game[] = [
 		path: '/deep-sea/',
 		devPort: 5179,
 		players: '2–5 players',
-		tagline:
-			'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.',
-		features: ['Missions with task cards', '2 players with Tonoja']
+		tagline: 'Trick-taking missions with task cards on the ocean floor.',
+		description:
+			'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.'
 	}
 ];
 

@@ -13,7 +13,12 @@
 
 <!-- No onToggleTheme: the page ships no JS, the theme script in app.html handles the toggle. -->
 <!-- Trailing slashes: the pages are <name>/index.html (see datenschutz/+page.ts). -->
-<PageFrame imprintHref="{resolve('/impressum')}/" privacyHref="{resolve('/datenschutz')}/">
+<!-- Wide on the home page: three desktop tiles in a row; the legal pages keep a reading column. -->
+<PageFrame
+	imprintHref="{resolve('/impressum')}/"
+	privacyHref="{resolve('/datenschutz')}/"
+	wide={page.route.id === '/'}
+>
 	{#snippet start()}
 		<!-- The legal pages: the way back sits in the top bar, next to the theme toggle. -->
 		{#if page.route.id !== '/'}

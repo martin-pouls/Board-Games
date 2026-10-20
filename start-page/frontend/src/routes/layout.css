@@ -2,7 +2,8 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/cinzel';
+@import '@fontsource-variable/league-gothic';
+@import '@fontsource-variable/alegreya';
 
 /* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
 @source '../../../../shared/frontend/src';
@@ -10,51 +11,74 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * A card table: pale linen in light mode, green felt in dark mode (the theme is set before first
- * paint by the script in app.html). Each game tile borrows the identity of its game, in the same
- * mode: The Game is blue + orange, Regicide parchment/castle + gold, Fox Duet moss green + fox orange on parchment,
- * The Crew indigo ink + coral on mission paper (midnight navy + cyan in dark mode),
- * Mission Deep Sea teal-navy ink + coral on sea-foam (abyssal blue + turquoise in dark mode).
+ * A plain slate table (no glows): the games bring the colour. Each game tile borrows the look of
+ * its game, in the same mode, with tokens copied from that game's layout.css: The Game navy cards
+ * with blue and orange start arrows, Regicide's misty ridges and Alegreya court letter, Fox Duet's
+ * storybook meadow with its forest path and the fox, The Crew indigo ink + coral on mission paper (midnight
+ * navy + cyan in dark mode), Mission Deep Sea teal-navy ink + coral on sea-foam (abyssal blue +
+ * turquoise in dark mode). The background is mirrored in app.html (theme-color); the gate's
+ * login page (gate/frontend) uses the same table tokens: keep the two in step.
  */
 :root {
-	--background: oklch(0.965 0.012 120);
-	--foreground: oklch(0.2 0.03 155);
-	--card: oklch(0.995 0.004 120);
+	--background: oklch(0.955 0.008 250);
+	--foreground: oklch(0.22 0.02 255);
+	--card: oklch(0.995 0.003 250);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.42 0.08 155);
-	--primary-foreground: oklch(0.98 0.01 95);
-	--secondary: oklch(0.92 0.015 140);
+	--primary: oklch(0.42 0.06 252);
+	--primary-foreground: oklch(0.985 0.004 250);
+	--secondary: oklch(0.92 0.01 250);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.92 0.015 140);
-	--muted-foreground: oklch(0.48 0.03 150);
-	--accent: oklch(0.92 0.015 140);
+	--muted: oklch(0.92 0.01 250);
+	--muted-foreground: oklch(0.47 0.02 255);
+	--accent: oklch(0.92 0.01 250);
 	--accent-foreground: var(--foreground);
 	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.2 0.03 155 / 12%);
-	--input: oklch(0.2 0.03 155 / 15%);
-	--ring: oklch(0.42 0.08 155 / 60%);
+	--border: oklch(0.22 0.02 255 / 12%);
+	--input: oklch(0.22 0.02 255 / 15%);
+	--ring: oklch(0.42 0.06 252 / 60%);
 	--radius: 0.625rem;
 
-	--felt: oklch(0.9 0.04 150);
-	--table: var(--background);
 	--accent-piece: oklch(0.55 0.2 25);
-	/* The Game */
-	--the-game-blue: oklch(0.55 0.17 250);
-	--the-game-orange: oklch(0.68 0.17 55);
-	--the-game-text: oklch(0.47 0.16 255);
-	--the-game-tile: oklch(0.995 0.003 245);
-	/* Regicide */
-	--castle: oklch(0.95 0.025 85);
-	--castle-banner: oklch(0.88 0.05 300);
-	--gold: oklch(0.55 0.12 75);
-	--castle-text: oklch(0.3 0.03 285);
+	--tile-shadow: oklch(0.2 0.03 255 / 9%);
+	/* The Game: tile, art band, text, the navy card face and the start cards' arrows. */
+	--the-game-tile: oklch(0.99 0.004 245);
+	--the-game-band: oklch(0.945 0.016 245);
+	--the-game-fg: oklch(0.2 0.035 258);
+	--the-game-muted: oklch(0.48 0.03 255);
+	--the-game-ring: oklch(0.5 0.11 250 / 28%);
+	--the-game-face: oklch(0.26 0.045 258);
+	--the-game-ink: oklch(0.95 0.03 90);
+	--the-game-edge: oklch(0.95 0.03 90 / 26%);
+	--the-game-shade: oklch(0.12 0.03 258 / 40%);
+	--the-game-up: oklch(0.68 0.12 245);
+	--the-game-down: oklch(0.72 0.16 50);
+	/* Regicide: tile, art band, text, the ridges and the court letter. */
+	--regicide-tile: oklch(0.98 0.008 195);
+	--regicide-band: oklch(0.945 0.02 195);
+	--regicide-fg: oklch(0.27 0.035 240);
+	--regicide-muted: oklch(0.46 0.035 225);
+	--regicide-ring: oklch(0.44 0.06 240 / 28%);
+	--regicide-ridge-1: oklch(0.86 0.035 190);
+	--regicide-ridge-2: oklch(0.76 0.045 195);
+	--regicide-ridge-3: oklch(0.6 0.05 215);
+	--regicide-letter: oklch(0.3 0.025 245);
 	/* Fox Duet */
-	--fox-tile: oklch(0.96 0.03 90);
-	--fox-moss: oklch(0.45 0.09 140);
-	--fox-orange: oklch(0.64 0.16 50);
-	--fox-text: oklch(0.52 0.15 50);
+	/* Fox Duet: tile, art band (the meadow), text, and the board's path, gem tiles and traveller. */
+	--fox-tile: oklch(0.965 0.02 110);
+	--fox-band: oklch(0.87 0.07 118);
+	--fox-fg: oklch(0.26 0.04 140);
+	--fox-muted: oklch(0.45 0.05 135);
+	--fox-ring: oklch(0.62 0.17 45 / 30%);
+	--fox-path: oklch(0.985 0.015 100);
+	--fox-plate: oklch(0.95 0.03 90);
+	--fox-forest: oklch(0.45 0.07 140 / 25%);
+	--fox-ink: oklch(0.27 0.03 60);
+	--fox-gem: oklch(0.53 0.2 22);
+	--fox-disc: oklch(0.62 0.17 45);
+	--fox-disc-rim: oklch(0.975 0.012 85);
+	--fox-disc-ink: oklch(0.2 0.03 50);
 	/* The Crew */
 	--crew-tile: oklch(0.96 0.015 270);
 	--crew-ink: oklch(0.32 0.11 275);
@@ -68,37 +92,55 @@
 }
 
 .dark {
-	--background: oklch(0.14 0.02 155);
-	--foreground: oklch(0.95 0.01 95);
-	--card: oklch(0.2 0.03 155);
+	--background: oklch(0.17 0.012 255);
+	--foreground: oklch(0.95 0.005 250);
+	--card: oklch(0.21 0.014 255);
 	--card-foreground: var(--foreground);
 	--popover: var(--card);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.78 0.08 150);
-	--primary-foreground: oklch(0.14 0.02 155);
+	--primary: oklch(0.8 0.05 245);
+	--primary-foreground: oklch(0.17 0.012 255);
 	--secondary: oklch(1 0 0 / 8%);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(1 0 0 / 8%);
-	--muted-foreground: oklch(0.76 0.02 140);
+	--muted-foreground: oklch(0.74 0.015 250);
 	--accent: oklch(1 0 0 / 10%);
 	--accent-foreground: var(--foreground);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.78 0.08 150 / 60%);
+	--ring: oklch(0.8 0.05 245 / 60%);
 
-	--felt: oklch(0.2 0.03 155);
 	--accent-piece: oklch(0.7 0.17 22);
-	--the-game-text: oklch(0.8 0.11 235);
-	--the-game-tile: oklch(0.205 0.024 262);
-	--castle: oklch(0.17 0.02 285);
-	--castle-banner: oklch(0.24 0.06 305);
-	--gold: oklch(0.78 0.13 85);
-	--castle-text: oklch(0.94 0.03 85 / 85%);
-	--fox-tile: oklch(0.2 0.03 140);
-	--fox-moss: oklch(0.3 0.07 145);
-	--fox-orange: oklch(0.72 0.16 55);
-	--fox-text: oklch(0.78 0.14 60);
+	--tile-shadow: oklch(0 0 0 / 35%);
+	--the-game-tile: oklch(0.205 0.025 258);
+	--the-game-band: oklch(0.165 0.022 258);
+	--the-game-fg: oklch(0.96 0.008 250);
+	--the-game-muted: oklch(0.72 0.025 250);
+	--the-game-ring: oklch(0.66 0.12 245 / 28%);
+	--the-game-face: oklch(0.3 0.048 258);
+	--the-game-edge: oklch(1 0 0 / 16%);
+	--the-game-shade: oklch(0.08 0.02 258 / 55%);
+	--regicide-tile: oklch(0.245 0.03 222);
+	--regicide-band: oklch(0.2 0.025 225);
+	--regicide-fg: oklch(0.94 0.012 195);
+	--regicide-muted: oklch(0.74 0.03 205);
+	--regicide-ring: oklch(0.8 0.06 195 / 28%);
+	--regicide-ridge-1: oklch(0.29 0.035 212);
+	--regicide-ridge-2: oklch(0.34 0.04 208);
+	--regicide-ridge-3: oklch(0.4 0.045 205);
+	--regicide-letter: oklch(0.94 0.012 195);
+	--fox-tile: oklch(0.25 0.035 150);
+	--fox-band: oklch(0.31 0.05 140);
+	--fox-fg: oklch(0.93 0.02 100);
+	--fox-muted: oklch(0.74 0.04 130);
+	--fox-ring: oklch(0.72 0.16 52 / 30%);
+	--fox-path: oklch(0.8 0.035 110);
+	--fox-plate: oklch(0.39 0.04 130);
+	--fox-forest: oklch(0.24 0.04 150 / 25%);
+	--fox-gem: oklch(0.64 0.2 22);
+	--fox-disc: oklch(0.72 0.16 52);
+	--fox-disc-rim: oklch(0.9 0.02 85);
 	--crew-tile: oklch(0.2 0.05 265);
 	--crew-ink: oklch(0.26 0.08 268);
 	--crew-accent: oklch(0.82 0.12 210);
@@ -111,21 +153,27 @@
 
 @theme inline {
 	--font-sans: 'Inter Variable', system-ui, sans-serif;
-	--font-display: 'Cinzel Variable', 'Times New Roman', serif;
-	--color-felt: var(--felt);
+	/* The game tiles' own faces: The Game's card numerals; Regicide's and Fox Duet's titles and
+	   Regicide's court letters (both games use Alegreya). */
+	--font-the-game: 'League Gothic Variable', 'Arial Narrow', sans-serif;
+	--font-alegreya: 'Alegreya Variable', Georgia, serif;
 	--color-accent-piece: var(--accent-piece);
-	--color-the-game-blue: var(--the-game-blue);
-	--color-the-game-orange: var(--the-game-orange);
-	--color-the-game-text: var(--the-game-text);
+	--color-tile-shadow: var(--tile-shadow);
 	--color-the-game-tile: var(--the-game-tile);
-	--color-castle: var(--castle);
-	--color-castle-banner: var(--castle-banner);
-	--color-castle-text: var(--castle-text);
-	--color-gold: var(--gold);
+	--color-the-game-band: var(--the-game-band);
+	--color-the-game-fg: var(--the-game-fg);
+	--color-the-game-muted: var(--the-game-muted);
+	--color-the-game-ring: var(--the-game-ring);
+	--color-regicide-tile: var(--regicide-tile);
+	--color-regicide-band: var(--regicide-band);
+	--color-regicide-fg: var(--regicide-fg);
+	--color-regicide-muted: var(--regicide-muted);
+	--color-regicide-ring: var(--regicide-ring);
 	--color-fox-tile: var(--fox-tile);
-	--color-fox-moss: var(--fox-moss);
-	--color-fox-orange: var(--fox-orange);
-	--color-fox-text: var(--fox-text);
+	--color-fox-band: var(--fox-band);
+	--color-fox-fg: var(--fox-fg);
+	--color-fox-muted: var(--fox-muted);
+	--color-fox-ring: var(--fox-ring);
 	--color-crew-tile: var(--crew-tile);
 	--color-crew-ink: var(--crew-ink);
 	--color-crew-accent: var(--crew-accent);
@@ -171,31 +219,12 @@
 	body {
 		@apply min-h-svh font-sans text-foreground antialiased;
 	}
-	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
-	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
-	   the status bar and the area around its toolbar with the plain background colour, so the
-	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
-	body::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-		mask-image: linear-gradient(
-			to bottom,
-			transparent,
-			rgb(0 0 0 / 0.12) 2rem,
-			rgb(0 0 0 / 0.45) 4rem,
-			rgb(0 0 0 / 0.82) 6rem,
-			#000 8rem,
-			#000 calc(100% - 8rem),
-			rgb(0 0 0 / 0.82) calc(100% - 6rem),
-			rgb(0 0 0 / 0.45) calc(100% - 4rem),
-			rgb(0 0 0 / 0.12) calc(100% - 2rem),
-			transparent
-		);
-		background: radial-gradient(ellipse at 50% 0%, var(--felt) 0%, transparent 70%) no-repeat;
-	}
+}
+
+/* Suit symbols: Inter and Alegreya have none, so they come from a system font (text style, not emoji). */
+.suit-glyph {
+	font-family: system-ui, 'Segoe UI Symbol', sans-serif;
+	font-style: normal;
 }
 
 /* The legal pages (Impressum, Datenschutz): running text. */

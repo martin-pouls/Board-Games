@@ -1,9 +1,51 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { gameHref, games } from '#lib/games.js';
-	import { Badge } from '#lib/components/ui/badge/index.js';
-	import * as Card from '#lib/components/ui/card/index.js';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import GameArt from '#lib/components/GameArt.svelte';
+	import { gameHref, games, type Game } from '#lib/games.js';
 	import { siteName } from '#lib/site.js';
+
+	/** Each tile borrows its game's colours: tile, text and ring; the art carries the rest. */
+	const look: Record<Game['id'], { tile: string; name?: string; muted: string }> = {
+		'the-game': {
+			tile: 'bg-the-game-tile text-the-game-fg ring-the-game-ring',
+			muted: 'text-the-game-muted'
+		},
+		regicide: {
+			tile: 'bg-regicide-tile text-regicide-fg ring-regicide-ring',
+			muted: 'text-regicide-muted'
+		},
+		'fox-duet': {
+			tile: 'bg-fox-tile text-fox-fg ring-fox-ring',
+			muted: 'text-fox-muted'
+		},
+		'the-crew': {
+			tile: 'bg-crew-tile text-foreground ring-crew-accent/30',
+			name: 'text-crew-text',
+			muted: 'text-muted-foreground'
+		},
+		'deep-sea': {
+			tile: 'bg-deep-tile text-foreground ring-deep-accent/30',
+			name: 'text-deep-text',
+			muted: 'text-muted-foreground'
+		}
+	};
+
+	/**
+	 * Desktop tiles have one fixed size: two per row from md, three from lg, each spanning two
+	 * columns of a half-tile grid, so a short last row can be centred.
+	 */
+	function centre(i: number): string[] {
+		const n = games.length;
+		return [
+			n % 2 === 1 && i === n - 1 ? 'md:col-start-2' : '',
+			n % 3 === 2 && i === n - 2
+				? 'lg:col-start-2'
+				: n % 3 === 1 && i === n - 1
+					? 'lg:col-start-3'
+					: 'lg:col-start-auto'
+		];
+	}
 </script>
 
 <svelte:head>
@@ -14,271 +56,59 @@
 	/>
 </svelte:head>
 
-<header class="mt-3 mb-10 text-center sm:mt-5 sm:mb-14">
-	<!-- A die, a meeple and a card: board and card games in general. -->
-	<div class="mb-4 flex items-end justify-center gap-4 text-muted-foreground" aria-hidden="true">
-		<svg viewBox="0 0 24 24" class="size-7 -rotate-12">
-			<rect
-				x="3"
-				y="3"
-				width="18"
-				height="18"
-				rx="4"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-			/>
-			<circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" />
-			<circle cx="12" cy="12" r="1.6" fill="currentColor" />
-			<circle cx="15.5" cy="15.5" r="1.6" fill="currentColor" />
-		</svg>
-		<svg viewBox="0 0 24 24" class="size-9 text-accent-piece">
+<header class="mb-6 text-center md:mt-2 md:mb-10">
+	<div class="flex items-center justify-center gap-2.5">
+		<!-- A meeple: board and card games in general. -->
+		<svg
+			viewBox="0 0 24 24"
+			class="size-7.5 shrink-0 text-accent-piece md:size-10"
+			aria-hidden="true"
+		>
 			<path
 				d="M12 2a3 3 0 0 1 3 3c0 .9-.4 1.7-1 2.2 2.6.5 6.5 1.6 6.5 3.8 0 1.2-1.6 1.7-3.5 1.9L20 21h-5.5L12 17l-2.5 4H4l2.9-8.1C5.1 12.7 3.5 12.2 3.5 11c0-2.2 3.9-3.3 6.5-3.8-.6-.5-1-1.3-1-2.2a3 3 0 0 1 3-3z"
 				fill="currentColor"
 			/>
 		</svg>
-		<svg viewBox="0 0 24 24" class="size-7 rotate-12">
-			<rect
-				x="5"
-				y="2"
-				width="14"
-				height="20"
-				rx="2.5"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-			/>
-			<path d="M12 8.5 15 12l-3 3.5L9 12z" fill="currentColor" />
-		</svg>
+		<h1 class="text-3xl font-extrabold tracking-tight md:text-5xl">{siteName}</h1>
 	</div>
-	<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">{siteName}</h1>
-	<p class="mt-3 text-muted-foreground">
+	<p class="mx-auto mt-2 max-w-[34ch] text-balance text-muted-foreground md:max-w-none">
 		Cooperative board and card games to play live with friends, right in the browser.
 	</p>
 </header>
 
-<ul class="grid gap-5 sm:grid-cols-2">
-	{#each games as game (game.id)}
-		<li>
+<!-- Phone: a shelf of rows. Desktop: fixed-size tiles (148 px half-columns, a tile spans two). -->
+<ul
+	class="flex flex-col gap-2.5 md:grid md:auto-rows-fr md:grid-cols-[repeat(4,9.25rem)] md:justify-center md:gap-4 lg:grid-cols-[repeat(6,9.25rem)]"
+>
+	{#each games as game, i (game.id)}
+		<li class={['md:col-span-2', ...centre(i)]}>
 			<!-- Each game is a separate app (same host in prod, own port in dev): rel="external" makes it a full page load. -->
 			<a
 				href={gameHref(game, page.url, import.meta.env.DEV)}
 				rel="external"
-				class="group block h-full rounded-2xl transition hover:-translate-y-1 focus-visible:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+				class={[
+					'flex h-full items-center gap-3.5 rounded-2xl py-2 pr-3 pl-2 shadow-md ring-1 shadow-tile-shadow transition',
+					'hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring active:translate-y-0',
+					'md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:p-0 md:hover:-translate-y-1',
+					look[game.id].tile
+				]}
 			>
-				<Card.Root
-					class={[
-						'h-full gap-0 rounded-2xl py-0 shadow-lg transition-shadow group-hover:shadow-xl dark:shadow-black/40',
-						game.id === 'the-game' &&
-							'bg-the-game-tile ring-the-game-blue/30 group-hover:ring-the-game-blue/80',
-						game.id === 'regicide' && 'bg-castle ring-gold/30 group-hover:ring-gold/80',
-						game.id === 'fox-duet' &&
-							'bg-fox-tile ring-fox-orange/30 group-hover:ring-fox-orange/80',
-						game.id === 'the-crew' &&
-							'bg-crew-tile ring-crew-accent/30 group-hover:ring-crew-accent/80',
-						game.id === 'deep-sea' &&
-							'bg-deep-tile ring-deep-accent/30 group-hover:ring-deep-accent/80'
-					]}
-				>
-					{#if game.id === 'the-game'}
-						<div
-							class="relative flex h-36 items-center justify-center gap-3 bg-linear-to-br from-the-game-blue via-blue-800 to-blue-950"
-							aria-hidden="true"
-						>
-							<span class="card-face -rotate-6 bg-white text-the-game-blue">1</span>
-							<span class="card-face z-10 bg-white text-zinc-900 group-hover:-translate-y-1"
-								>57</span
-							>
-							<span class="card-face rotate-6 bg-white text-the-game-orange">100</span>
-						</div>
-					{:else if game.id === 'fox-duet'}
-						<div
-							class="relative flex h-36 items-center justify-center bg-linear-to-br from-fox-moss via-fox-moss to-fox-tile"
-							aria-hidden="true"
-						>
-							<svg
-								viewBox="0 0 32 32"
-								class="size-20 text-fox-orange transition group-hover:scale-105"
-							>
-								<path
-									d="M4 5l7 5h10l7-5-1 11-6 11h-10l-6-11z"
-									fill="currentColor"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linejoin="round"
-								/>
-								<path d="M12 27l4-6 4 6z" fill="white" fill-opacity="0.85" />
-							</svg>
-						</div>
-					{:else if game.id === 'the-crew'}
-						<div
-							class="relative flex h-36 items-center justify-center bg-linear-to-br from-crew-ink via-crew-ink to-crew-tile"
-							aria-hidden="true"
-						>
-							<svg
-								viewBox="0 0 32 32"
-								class="size-20 text-crew-accent transition group-hover:scale-105"
-							>
-								<circle cx="6" cy="7" r="0.9" fill="white" fill-opacity="0.8" />
-								<circle cx="26" cy="5" r="0.7" fill="white" fill-opacity="0.7" />
-								<circle cx="4" cy="21" r="0.7" fill="white" fill-opacity="0.6" />
-								<circle cx="28" cy="25" r="0.9" fill="white" fill-opacity="0.8" />
-								<circle cx="25" cy="13" r="3.2" fill="currentColor" fill-opacity="0.45" />
-								<ellipse
-									cx="25"
-									cy="13"
-									rx="5.6"
-									ry="1.2"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="0.8"
-									transform="rotate(-20 25 13)"
-								/>
-								<g transform="rotate(40 14 17)">
-									<path
-										d="M14 4c3 2.6 4.4 6 4.4 10v7h-8.8v-7c0-4 1.4-7.4 4.4-10z"
-										fill="currentColor"
-										stroke="currentColor"
-										stroke-width="1"
-										stroke-linejoin="round"
-									/>
-									<circle cx="14" cy="12.5" r="2" fill="white" fill-opacity="0.85" />
-									<path
-										d="M9.6 17 6 22.5l3.6-1zm8.8 0 3.6 5.5-3.6-1z"
-										fill="currentColor"
-										stroke="currentColor"
-										stroke-width="1"
-										stroke-linejoin="round"
-									/>
-									<path d="M11.8 22.5h4.4L14 27.5z" fill="white" fill-opacity="0.85" />
-								</g>
-							</svg>
-						</div>
-					{:else if game.id === 'deep-sea'}
-						<div
-							class="relative flex h-36 items-center justify-center bg-linear-to-b from-deep-ink via-deep-ink to-deep-tile"
-							aria-hidden="true"
-						>
-							<svg
-								viewBox="0 0 32 32"
-								class="size-20 text-deep-accent transition group-hover:scale-105"
-							>
-								<circle cx="5" cy="8" r="1.1" fill="white" fill-opacity="0.55" />
-								<circle cx="8" cy="4.5" r="0.7" fill="white" fill-opacity="0.45" />
-								<circle cx="27" cy="9" r="0.9" fill="white" fill-opacity="0.5" />
-								<circle cx="29" cy="24" r="0.7" fill="white" fill-opacity="0.4" />
-								<path
-									d="M19 4h5v2.5h-3v3h-2z"
-									fill="currentColor"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linejoin="round"
-								/>
-								<path
-									d="M11 10.5h7v3h-7z"
-									fill="currentColor"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linejoin="round"
-								/>
-								<ellipse cx="15" cy="18.5" rx="11" ry="5.5" fill="currentColor" />
-								<path
-									d="M25 16.5 29 13.5v10l-4-3z"
-									fill="currentColor"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linejoin="round"
-								/>
-								<circle cx="9" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-								<circle cx="14" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-								<circle cx="19" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-								<path
-									d="M6 28.5c1.2-1.6 2.8-1.6 4 0s2.8 1.6 4 0 2.8-1.6 4 0 2.8 1.6 4 0"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linecap="round"
-									stroke-opacity="0.5"
-								/>
-							</svg>
-						</div>
-					{:else}
-						<div
-							class="relative flex h-36 items-center justify-center bg-linear-to-br from-castle via-castle-banner to-castle"
-							aria-hidden="true"
-						>
-							<svg viewBox="0 0 32 32" class="size-20 text-gold transition group-hover:scale-105">
-								<path
-									d="M7 22 5.5 10.5l5.5 4.5L16 8l5 7 5.5-4.5L25 22z"
-									fill="currentColor"
-									stroke="currentColor"
-									stroke-width="1"
-									stroke-linejoin="round"
-								/>
-								<rect x="7" y="23.5" width="18" height="2.5" rx="1" fill="currentColor" />
-							</svg>
-						</div>
-					{/if}
-
-					<Card.Content class="flex flex-1 flex-col gap-3 p-5 text-base">
-						<div class="flex items-baseline justify-between gap-3">
-							<h2
-								class={[
-									'text-2xl font-bold',
-									game.id === 'regicide' && 'font-display tracking-wide text-gold',
-									game.id === 'fox-duet' && 'text-fox-text',
-									game.id === 'the-crew' && 'text-crew-text',
-									game.id === 'deep-sea' && 'text-deep-text'
-								]}
-							>
-								{game.name}
-							</h2>
-							<span class="shrink-0 text-sm text-muted-foreground">{game.players}</span>
-						</div>
-						<p class={game.id === 'regicide' ? 'text-castle-text' : 'text-foreground/85'}>
-							{game.tagline}
-						</p>
-						<ul class="flex flex-wrap gap-2">
-							{#each game.features as feature (feature)}
-								<li><Badge variant="secondary">{feature}</Badge></li>
-							{/each}
-						</ul>
-						<span
-							class={[
-								'mt-auto pt-2 font-semibold',
-								game.id === 'the-game'
-									? 'text-the-game-text'
-									: game.id === 'fox-duet'
-										? 'text-fox-text'
-										: game.id === 'the-crew'
-											? 'text-crew-text'
-											: game.id === 'deep-sea'
-												? 'text-deep-text'
-												: 'text-gold'
-							]}
-						>
-							Play {game.name}
-							<span class="inline-block transition group-hover:translate-x-1">→</span>
-						</span>
-					</Card.Content>
-				</Card.Root>
+				<GameArt game={game.id} class="size-22 rounded-xl md:h-33 md:w-full md:rounded-none" />
+				<div class="flex min-w-0 flex-1 flex-col gap-0.5 md:px-4.5 md:pt-4 md:pb-4.5">
+					<h2
+						class={[
+							'text-lg leading-tight font-extrabold text-balance md:text-xl',
+							look[game.id].name
+						]}
+					>
+						{game.name}
+					</h2>
+					<span class={['text-sm md:mb-1.5', look[game.id].muted]}>{game.players}</span>
+					<p class="text-sm opacity-90 md:hidden">{game.tagline}</p>
+					<p class="hidden text-sm opacity-90 md:block">{game.description}</p>
+				</div>
+				<ChevronRight class="size-5 shrink-0 md:hidden {look[game.id].muted}" aria-hidden="true" />
 			</a>
 		</li>
 	{/each}
 </ul>
-
-<style>
-	.card-face {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 3.5rem;
-		height: 5rem;
-		border-radius: 0.5rem;
-		font-weight: 800;
-		font-size: 1.25rem;
-		box-shadow: 0 6px 14px rgb(0 0 0 / 0.35);
-		transition: translate 150ms;
-	}
-</style>
