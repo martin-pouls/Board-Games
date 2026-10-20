@@ -3,6 +3,7 @@
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import Skull from '@lucide/svelte/icons/skull';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { scale } from 'svelte/transition';
 	import { getCardMotion, type CardMotionParams } from '@board-games/shared/cardMotion.js';
 	import { commandInfo } from '#lib/game/commands.js';
 	import { pileTopKey } from '#lib/game/motion.js';
@@ -102,7 +103,7 @@
 			: 'bg-down-soft shadow-[inset_0_0_0_1.5px_var(--down)] [--pile-label:var(--down-label)] [--pile:var(--down)]',
 		bound && 'outline-2 outline-offset-2 outline-go outline-dashed',
 		highlight && 'outline-3 outline-offset-2 outline-go outline-solid',
-		skull && 'shadow-[inset_0_0_0_2.5px_var(--destructive)]',
+		skull && 'shadow-[inset_0_0_0_2px_var(--destructive)]',
 		disabled && 'cursor-default'
 	)}
 >
@@ -125,12 +126,16 @@
 		>
 	{/if}
 	{#if skull}
-		<span
-			class="absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-xs leading-none font-bold text-white shadow-sm motion-safe:animate-pulse"
-			aria-hidden="true"
-		>
-			<Skull class="size-3" />
-			Cover!
+		<!-- Static: one short pop when the skull lands, then still (the outer span centres it, so the
+		     scale doesn't fight the translate). -->
+		<span class="absolute -top-2 left-1/2 z-10 -translate-x-1/2" aria-hidden="true">
+			<span
+				class="flex items-center gap-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-xs leading-none font-bold text-white shadow-sm"
+				in:scale={{ start: 0.6, duration: prefersReducedMotion.current ? 0 : 200 }}
+			>
+				<Skull class="size-3" />
+				Cover!
+			</span>
 		</span>
 	{/if}
 

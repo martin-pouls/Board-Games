@@ -32,10 +32,10 @@ The Game Extreme, made calm. Tokens in `routes/layout.css`, background mirrored 
 - **Piles:** 2 × 2, each a mat that is the whole tap target. A solid arrow pill sits top left and a green "+N" (cards played there this turn) sits top right. There is no card count. `Board` computes one card size for all piles from the grid, so the card clears the pills; pile size never changes during a game. Bound pile: dashed green outline. Legal pile: solid green outline. Skull: red edge and "Cover!".
 - **Below the piles, all at fixed heights:**
   - Turn bar (48 px): whose turn; then your count with dots, or the other player's plays as mini cards; then the rules in force as badges (`turnStatus().rules`).
-  - Button row (48 px): Undo and End turn, or "Waiting for X to play."
+  - Button row (48 px): the draw pile first (`DrawPile`: a face-down stack of navy cards, the count printed on the back in League Gothic, as on Regicide's decks; empty = dashed outline), then Undo and End turn, or "Waiting for X to play."
   - One-row hand: card width comes from the game's hand size, cards overlap so the corner value and half the numeral stay visible, and covered cards drop their bottom corner value. New cards get `NewCardMark dot="corner-left"`.
   - There is no hint line under the hand.
-- **Header:** on phones the EXTREME tag shortens to "EXT", so Rules and Give up fit at 360 px.
+- **Header:** no game state (the draw pile sits in the button row). On phones the EXTREME tag shortens to "EXT", so Rules and Give up fit at 360 px.
 - **Player strip:** one row. Names truncate, your own pill says "You", the active player's pill is green, and there is no crown in game.
 - **No communication:** a blue Infinity glow around the screen (`NoCommunicationFrame`).
 - **Card motion:** plays fly from the hand onto the pile (undo flies back), other players' plays come in from the top edge, and refills drop into the hand. Cards are keyed by value (`lib/game/motion.ts`), so a card keeps its key between the hand and the pile.

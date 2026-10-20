@@ -11,6 +11,7 @@
 	import type { PlayerView } from '#lib/types.js';
 	import CommandBadge from './CommandBadge.svelte';
 	import CommandIcon from './CommandIcon.svelte';
+	import DrawPile from './DrawPile.svelte';
 	import GameCard from './GameCard.svelte';
 
 	let {
@@ -137,6 +138,7 @@
 		{/key}
 
 		<div class="flex h-12 items-stretch gap-2">
+			<DrawPile count={view.drawPileCount} />
 			{#if isMyTurn}
 				<Button
 					variant="outline"

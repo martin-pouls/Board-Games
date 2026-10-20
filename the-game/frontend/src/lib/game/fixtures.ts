@@ -217,6 +217,15 @@ export const playingEightCards: PlayerView = {
 	turn: { ...playingMyTurn.turn!, cardsPlayed: 0, plays: [] }
 };
 
+/** Late game: the draw pile is empty, so one card a turn is enough. */
+export const playingDrawPileEmpty: PlayerView = {
+	...playingMyTurn,
+	players: players({ active: ME, counts: [3, 2, 3, 4] }),
+	hand: hand([24, 61, 78], midPiles, true),
+	drawPileCount: 0,
+	turn: { ...playingMyTurn.turn!, cardsPlayed: 0, requiredMinimum: 1, plays: [] }
+};
+
 export const playingOthersTurn: PlayerView = {
 	...playingMyTurn,
 	players: players({ active: 'p_ben', counts: [6, 4, 6, 6] }),
@@ -492,6 +501,7 @@ const views = {
 	choosingHost,
 	playingMyTurn,
 	playingEightCards,
+	playingDrawPileEmpty,
 	playingOthersTurn,
 	wonGame,
 	lostGame,

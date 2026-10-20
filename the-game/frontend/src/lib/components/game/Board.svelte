@@ -6,7 +6,6 @@
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
 	import House from '@lucide/svelte/icons/house';
-	import Layers from '@lucide/svelte/icons/layers';
 	import Flag from '@lucide/svelte/icons/flag';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
@@ -200,15 +199,12 @@
 				>
 			</span>
 		{/if}
-		<span
-			class="ml-auto flex items-center gap-1 text-muted-foreground tabular-nums"
-			title="Draw pile"
-		>
-			<Layers class="size-4" />
-			<span class="sr-only">Deck</span>
-			{view.drawPileCount}
-		</span>
-		<HeaderButton icon={BookOpen} label="Rules" onclick={() => (rulesOpen = true)} />
+		<HeaderButton
+			class="ml-auto"
+			icon={BookOpen}
+			label="Rules"
+			onclick={() => (rulesOpen = true)}
+		/>
 		{#if running}
 			<HeaderButton
 				icon={Flag}
