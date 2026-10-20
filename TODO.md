@@ -20,3 +20,4 @@
 
 # General
 - Make waiting for other players turn more consistent, e.g. spinner vs not. Some stuff needs to be game specific, but more conistency would be nice
+- /game-theme skill should also redesign the card on the landing page

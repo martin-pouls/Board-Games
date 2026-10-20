@@ -79,6 +79,11 @@
 	--medal-bronze: oklch(0.56 0.1 50);
 	/* Marks cards that just came into the hand (NewCardMark). */
 	--new-card: oklch(0.62 0.13 185);
+	/* The card back (Tavern deck): its colour, frame line, edge and the count printed on it. */
+	--back: oklch(0.42 0.06 235);
+	--back-line: oklch(0.6 0.05 215);
+	--back-edge: oklch(0.3 0.045 240);
+	--back-ink: oklch(0.97 0.01 195);
 }
 
 .dark {
@@ -139,6 +144,10 @@
 	--medal-silver: oklch(0.8 0.02 240);
 	--medal-bronze: oklch(0.68 0.1 55);
 	--new-card: oklch(0.76 0.12 185);
+	--back: oklch(0.38 0.055 225);
+	--back-line: oklch(0.55 0.05 210);
+	--back-edge: oklch(0.14 0.02 230);
+	--back-ink: oklch(0.97 0.01 195);
 }
 
 @theme inline {
@@ -147,6 +156,8 @@
 	--color-stock: var(--stock);
 	--color-stock-edge: var(--stock-edge);
 	--color-card-shade: var(--card-shade);
+	--color-back: var(--back);
+	--color-back-ink: var(--back-ink);
 	--color-suit-red: var(--suit-red);
 	--color-suit-black: var(--suit-black);
 	--color-ridge-1: var(--ridge-1);

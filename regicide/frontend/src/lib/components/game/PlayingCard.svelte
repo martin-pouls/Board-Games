@@ -20,7 +20,7 @@
 		onclick
 	}: {
 		card: Card;
-		/** xs 34 px (stacks against the enemy), sm 48 px (last turn), md 72 px (hand), lg 100 px (enemy). */
+		/** xs 34 px (stacks against the enemy), sm 48 px (last turn), md 72 px (hand), lg 84 px (enemy). */
 		size?: 'xs' | 'sm' | 'md' | 'lg';
 		selected?: boolean;
 		dimmed?: boolean;
@@ -36,7 +36,7 @@
 	const red = $derived(isRed(card.suit));
 	const name = $derived(cardName(card));
 
-	const widths: Record<string, string> = { xs: 'w-8.5', sm: 'w-12', md: 'w-18', lg: 'w-25' };
+	const widths: Record<string, string> = { xs: 'w-8.5', sm: 'w-12', md: 'w-18', lg: 'w-21' };
 
 	// The ridges in a 100 × 140 card, lightest (farthest) first. The letter's foot rests on the
 	// first one; the darker ones stay below the tails of J and Q.

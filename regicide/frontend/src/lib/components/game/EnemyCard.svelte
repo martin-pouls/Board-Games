@@ -68,7 +68,7 @@
 				</span>
 			{/if}
 		</div>
-		<div class="flex min-w-0 flex-1 flex-col gap-[7px]">
+		<div class="flex min-w-0 flex-1 flex-col gap-1">
 			<h2 class="truncate text-lg leading-[22px] font-bold">{cardName(enemy.card)}</h2>
 			<div
 				class="relative h-6 overflow-hidden rounded-md bg-muted"

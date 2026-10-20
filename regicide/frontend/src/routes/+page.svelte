@@ -23,14 +23,15 @@
 	{#snippet hero()}
 		<Card.Title class="text-3xl">Regicide</Card.Title>
 		<Card.Description>Storm the castle together.</Card.Description>
-		<!-- The enemy and the one card that can stop it: a King and the Jester. Offset, not rotated:
-		     Firefox renders rotated cards blurry. -->
+		<!-- The court: Jack, Queen and King, the three ranks of the Castle deck. Stepped, not
+		     rotated: Firefox renders rotated cards blurry. -->
 		<div
 			class="col-start-2 row-span-2 row-start-1 flex items-start self-center pr-1"
 			aria-hidden="true"
 		>
-			<PlayingCard card={{ suit: 'spades', rank: 13 }} size="sm" />
-			<span class="mt-2.5 -ml-4"><PlayingCard card={{ suit: '', rank: 0 }} size="sm" /></span>
+			<PlayingCard card={{ suit: 'clubs', rank: 11 }} size="sm" />
+			<span class="mt-2 -ml-5"><PlayingCard card={{ suit: 'hearts', rank: 12 }} size="sm" /></span>
+			<span class="mt-4 -ml-5"><PlayingCard card={{ suit: 'spades', rank: 13 }} size="sm" /></span>
 		</div>
 	{/snippet}
 </HomePage>

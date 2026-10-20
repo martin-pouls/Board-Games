@@ -25,7 +25,7 @@
 	import PlayerStrip from './PlayerStrip.svelte';
 	import RulesHelp from './RulesHelp.svelte';
 	import SoloJesterCount from './SoloJesterCount.svelte';
-	import TableCounters from './TableCounters.svelte';
+	import TableDecks from './TableDecks.svelte';
 
 	let {
 		client,
@@ -114,7 +114,6 @@
 				class={cn('size-2 rounded-full', connected ? 'bg-online' : 'animate-pulse bg-reconnecting')}
 				title={connected ? 'Connected' : 'Reconnecting'}
 			></span>
-			<TableCounters class="ml-3" {view} />
 			<HandOrderMenu
 				class="ml-auto"
 				order={handOrder}
@@ -137,6 +136,8 @@
 			<SoloJesterCount class="ml-auto" {view} />
 		</div>
 	</header>
+
+	<TableDecks {view} />
 
 	{#if view.enemy}
 		<EnemyCard enemy={view.enemy} players={view.players} castleCount={view.castleCount} {preview} />
