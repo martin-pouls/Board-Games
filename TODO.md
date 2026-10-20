@@ -1,7 +1,6 @@
 # Games
 
 - Theme redesigns for:
-    - Fox in the Forest: Duet
     - The Crew & Mission Deep Sea
     - Start page for all games, when the games are done
 

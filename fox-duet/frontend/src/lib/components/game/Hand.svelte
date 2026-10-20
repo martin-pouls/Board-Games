@@ -49,7 +49,7 @@
 </script>
 
 <div bind:clientWidth={width} class="w-full">
-	<ul class="flex h-28 items-end justify-center pt-3" aria-label="Your hand">
+	<ul class="flex h-26 items-end justify-center pb-1" aria-label="Your hand">
 		{#each cards as card, i (cardKey(card))}
 			{@const on = enabled(card)}
 			{@const isSelected = sameCard(card, selected)}
@@ -69,25 +69,24 @@
 				<button
 					type="button"
 					class={cn(
-						'relative block rounded-lg transition-[translate,opacity,filter] duration-150 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
+						'relative block rounded-[5.6px] transition-[translate] duration-150 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
 						(isSelected || isMarked) && '-translate-y-3',
 						isSelected && 'ring-3 ring-fox',
-						isMarked && 'ring-3 ring-moss',
-						on && !isSelected && 'hover:-translate-y-1.5',
-						anyEnabled && !on && !isMarked && 'opacity-45 saturate-50'
+						isMarked && 'ring-3 ring-muted-foreground',
+						on && !isSelected && 'hover:-translate-y-1.5'
 					)}
 					disabled={!on}
 					aria-pressed={isSelected}
 					onclick={() => onpick?.(card)}
 				>
-					<PlayingCard {card} size="sm" />
+					<PlayingCard {card} size="sm" dim={anyEnabled && !on && !isMarked} />
 					{#if fresh.has(cardKey(card))}
 						<NewCardMark dot="corner-left" ring="var(--parchment)" />
 					{/if}
 				</button>
 			</li>
 		{:else}
-			<li class="flex h-[5.5rem] items-center text-sm text-muted-foreground">No cards in hand</li>
+			<li class="flex h-[87px] items-center text-sm text-muted-foreground">No cards in hand</li>
 		{/each}
 	</ul>
 </div>

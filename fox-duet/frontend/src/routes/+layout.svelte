@@ -15,7 +15,7 @@
 	<title>Fox Duet</title>
 </svelte:head>
 
-<ModeWatcher themeColors={{ light: '#f3eedd', dark: '#0f1d17' }} />
+<ModeWatcher themeColors={{ light: '#e7edd3', dark: '#091a0d' }} />
 <Toaster />
 <AppFrame
 	url={page.url}

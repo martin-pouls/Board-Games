@@ -5,7 +5,6 @@ import type {
 	Card,
 	CardRef,
 	End,
-	GameEvent,
 	MoveOption,
 	PlayerSummary,
 	PlayerView,
@@ -142,84 +141,69 @@ export function lossText(view: Pick<PlayerView, 'players' | 'result'>): string {
 	}
 }
 
-/** What the game waits for, from the viewer's side. */
-export function statusText(view: PlayerView): string {
-	const p = view.pending;
-	if (!p || view.phase !== 'playing') return '';
-	const mine = p.playerIds.includes(view.you);
-	const actor = who(view, p.playerIds[0]);
-	switch (p.step) {
-		case 'lead':
-			return mine ? 'Your lead: play any card.' : `${capital(actor)} leads…`;
-		case 'follow': {
-			const lead = view.trick?.lead;
-			if (!mine) return `${capital(actor)} follows…`;
-			if (lead?.ability === 'royalHeir') return 'Royal Heir led: play any card.';
-			return lead ? `Follow ${SUIT_NAME[lead.suit]} if you can.` : 'Your turn.';
-		}
-		case 'foxesChoose':
-			return mine ? 'Foxes: who may swap the decree?' : `${capital(actor)} plays the Foxes…`;
-		case 'foxesSwap':
-			return mine
-				? 'Swap a card for the decree, or keep it.'
-				: `${capital(actor)} may swap the decree…`;
-		case 'gift':
-			if (mine) return `Gift: choose a card for ${seats(view).mate?.name ?? 'your teammate'}.`;
-			return view.pending?.yourGift
-				? `Waiting for ${actor}'s gift…`
-				: `${capital(actor)} chooses a gift…`;
-		case 'move':
-			return mine
-				? 'You won the trick. Move the traveller:'
-				: `${capital(actor)} moves the traveller…`;
-		case 'forestEnd':
-			return mine
-				? 'Round over. Which end gets a forest token?'
-				: `${capital(actor)} places a forest token…`;
-	}
+export interface TurnStatus {
+	mine: boolean;
+	/** "Your turn" or "Bob's turn". */
+	title: string;
+	/** On your turn: what to do, e.g. "Follow Stars if you can". */
+	hint: string;
+	/** On the other player's turn: "Waiting for Bob to lead." */
+	waiting: string;
 }
 
-/** A short line about what just happened, built from the last events. */
-export function describeEvents(events: GameEvent[], view: PlayerView): string {
-	const parts: string[] = [];
-	for (const e of events) {
-		switch (e.type) {
-			case 'roundStarted':
-				parts.push(`Round ${e.round}: ${who(view, e.dealerId)} dealt`);
-				break;
-			case 'foxesChosen':
-				parts.push(
-					e.skipped
-						? `Foxes: ${who(view, e.playerId)} had no card to swap`
-						: `Foxes: ${who(view, e.byPlayerId)} chose ${who(view, e.playerId)}`
-				);
-				break;
-			case 'decreeSwapped':
-				parts.push(`New decree: ${cardLabel(e.new)}`);
-				break;
-			case 'decreeKept':
-				parts.push(`${capital(who(view, e.playerId))} kept the decree`);
-				break;
-			case 'giftExchanged':
-				parts.push('Gifts exchanged');
-				break;
-			case 'trickWon':
-				parts.push(`${capital(who(view, e.playerId))} won trick ${e.number}`);
-				break;
-			case 'forestTokenPlaced':
-				parts.push(
-					e.roundEnd
-						? `Forest token on ${endLabel(view, e.end)}`
-						: `Off the path! Forest token on ${endLabel(view, e.end)}`
-				);
-				break;
-			case 'gemCollected':
-				parts.push(`Gem collected, ${e.left} left`);
-				break;
-			case 'gemsAdded':
-				parts.push(`${plural(e.count, 'gem')} added`);
-				break;
+/** What the game waits for, from the viewer's side (the turn bar and the line below it). */
+export function turnStatus(view: PlayerView): TurnStatus | null {
+	const p = view.pending;
+	if (!p || view.phase !== 'playing') return null;
+	const mine = p.playerIds.includes(view.you);
+	const name = capital(who(view, p.playerIds[0]));
+	const mate = seats(view).mate?.name ?? 'your teammate';
+	const status = (hint: string, waiting: string): TurnStatus => ({
+		mine,
+		title: mine ? 'Your turn' : `${name}'s turn`,
+		hint: mine ? hint : '',
+		waiting: mine ? '' : waiting
+	});
+	switch (p.step) {
+		case 'lead':
+			return status('Lead any card', `Waiting for ${name} to lead.`);
+		case 'follow': {
+			const lead = view.trick?.lead;
+			const hint =
+				lead?.ability === 'royalHeir'
+					? 'Royal Heir led: play any card'
+					: lead
+						? `Follow ${SUIT_NAME[lead.suit]} if you can`
+						: 'Play a card';
+			return status(hint, `Waiting for ${name} to follow.`);
 		}
+		case 'foxesChoose':
+			return status(
+				'Foxes: who may swap the decree?',
+				`Waiting for ${name} to choose for the Foxes.`
+			);
+		case 'foxesSwap':
+			return status(
+				'Swap a card for the decree, or keep it',
+				`Waiting for ${name} to swap or keep the decree.`
+			);
+		case 'gift':
+			return status(`Gift: pick a card for ${mate}`, `Waiting for ${name}'s gift.`);
+		case 'move': {
+			const abilities = [view.trick?.lead?.ability, view.trick?.follow?.ability];
+			const musician = abilities.includes('musician');
+			const gazelle = abilities.includes('gazelle');
+			const hint =
+				musician && gazelle
+					? 'Musician and Gazelle: pick a move'
+					: musician
+						? 'Musician: pick the way'
+						: gazelle
+							? 'Gazelle: pick how far'
+							: 'Move the traveller';
+			return status(hint, `Waiting for ${name} to move the traveller.`);
+		}
+		case 'forestEnd':
+			return status('Round over: cover an end', `Waiting for ${name} to place a forest token.`);
 	}
-	return parts.join(' · ');
 }

@@ -100,7 +100,7 @@
 						<span
 							class={cn(
 								'size-2.5 shrink-0 rounded-full',
-								isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+								isOnline ? 'bg-online' : 'bg-muted-foreground/40'
 							)}
 							title={isOnline ? 'Online' : 'Offline'}
 						></span>

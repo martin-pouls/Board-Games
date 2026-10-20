@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
 	cardKey,
 	cardLabel,
-	describeEvents,
 	displayIndex,
 	endLabel,
 	lossText,
 	moveLabel,
 	resultHeadline,
 	sameCard,
-	statusText,
-	towardMe
+	towardMe,
+	turnStatus
 } from './format.js';
 import { card, playingView } from './fixtures.js';
 import type { MoveOption } from '#lib/types.js';
@@ -76,41 +75,34 @@ describe('texts', () => {
 
 	it('describes the pending step', () => {
 		const view = playingView();
-		expect(statusText(view)).toBe('Your lead: play any card.');
+		expect(turnStatus(view)).toEqual({
+			mine: true,
+			title: 'Your turn',
+			hint: 'Lead any card',
+			waiting: ''
+		});
 		view.pending = { ...view.pending!, step: 'follow', playerIds: ['bob'] };
-		expect(statusText(view)).toBe('Bob follows…');
+		expect(turnStatus(view)).toEqual({
+			mine: false,
+			title: "Bob's turn",
+			hint: '',
+			waiting: 'Waiting for Bob to follow.'
+		});
 		view.pending = { ...view.pending!, step: 'follow', playerIds: ['alice'] };
 		view.trick = { number: 1, leaderId: 'bob', lead: card('stars', 4), follow: null };
-		expect(statusText(view)).toBe('Follow Stars if you can.');
+		expect(turnStatus(view)?.hint).toBe('Follow Stars if you can');
 		view.trick.lead = card('stars', 9);
-		expect(statusText(view)).toBe('Royal Heir led: play any card.');
+		expect(turnStatus(view)?.hint).toBe('Royal Heir led: play any card');
+		view.trick.follow = card('stars', 1);
+		view.pending = { ...view.pending!, step: 'move' };
+		expect(turnStatus(view)?.hint).toBe('Musician: pick the way');
 		view.pending = {
 			...view.pending!,
 			step: 'gift',
 			playerIds: ['bob'],
 			yourGift: card('roses', 2)
 		};
-		expect(statusText(view)).toBe("Waiting for Bob's gift…");
-	});
-
-	it('summarises events', () => {
-		const view = playingView();
-		expect(
-			describeEvents(
-				[
-					{ type: 'trickWon', playerId: 'bob', number: 3 },
-					{ type: 'travellerMoved', from: 5, to: 8, delta: 3 },
-					{ type: 'gemCollected', space: 8, left: 11 }
-				],
-				view
-			)
-		).toBe('Bob won trick 3 · Gem collected, 11 left');
-		expect(
-			describeEvents(
-				[{ type: 'forestTokenPlaced', end: 'left', space: 0, gemsMoved: 1, left: 3 }],
-				view
-			)
-		).toBe('Off the path! Forest token on your end');
+		expect(turnStatus(view)?.waiting).toBe("Waiting for Bob's gift.");
 	});
 
 	it('explains results', () => {

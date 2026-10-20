@@ -5,23 +5,22 @@
 	import { resolve } from '$app/paths';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import Flag from '@lucide/svelte/icons/flag';
-	import Gem from '@lucide/svelte/icons/gem';
 	import House from '@lucide/svelte/icons/house';
-	import Trees from '@lucide/svelte/icons/trees';
 	import type { Snippet } from 'svelte';
 	import { setCardMotion } from '@board-games/shared/cardMotion.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { errorText } from '#lib/errors.js';
 	import { ActionError } from '#lib/game/connection.svelte.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { cardLabel, describeEvents, plural, sameCard, seats } from '#lib/game/format.js';
+	import { trackBoardMarks } from '#lib/game/boardMarks.svelte.js';
+	import { sameCard, seats } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Card, PlayerView } from '#lib/types.js';
-	import DecisionPanel from './DecisionPanel.svelte';
 	import ForestBoard from './ForestBoard.svelte';
 	import Hand from './Hand.svelte';
 	import RulesHelp from './RulesHelp.svelte';
 	import TrickRow from './TrickRow.svelte';
+	import TurnBar from './TurnBar.svelte';
 
 	let {
 		client,
@@ -33,7 +32,7 @@
 		view: PlayerView;
 		/** Read-only table (game over): no card selection or actions. */
 		readonly?: boolean;
-		/** Replaces the decision panel above the hand. */
+		/** Replaces the turn bar above the hand. */
 		controls?: Snippet;
 	} = $props();
 
@@ -49,12 +48,17 @@
 	const playing = $derived(view.phase === 'playing');
 	const pending = $derived(view.pending);
 	const mine = $derived(!readonly && playing && !!pending?.playerIds.includes(view.you));
-	const { me, mate } = $derived(seats(view));
+	const { me } = $derived(seats(view));
 	const step = $derived(pending?.step);
 	const dealing = $derived(
 		view.trick?.number === 1 && !view.trick.lead && !view.lastGift && view.hand.length === 11
 	);
-	const chronicle = $derived(describeEvents(client.lastEvents, view));
+	// What changed on the board without a move (round-end gems, forest tokens), until the next lead.
+	const marks = trackBoardMarks(
+		() => view.board,
+		() => !!view.trick?.lead,
+		() => view.gameId
+	);
 
 	// Drop the selection whenever the decision it belongs to changes.
 	const selectionKey = $derived(
@@ -113,59 +117,34 @@
 	}
 </script>
 
-<div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-2 sm:max-w-xl">
-	<header class="flex flex-col gap-1">
-		<div class={cn(headerRow, 'text-sm')}>
-			<HeaderButton icon={House} label="Home" href={resolve('/')} />
-			<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
-			<span
-				class={cn(
-					'size-2 rounded-full',
-					connected ? 'bg-emerald-500' : 'animate-pulse bg-amber-500'
-				)}
-				title={connected ? 'Connected' : 'Reconnecting'}
-			></span>
-			<span class="text-muted-foreground">Level {view.level}</span>
+<div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-1.5 sm:max-w-xl">
+	<header class={cn(headerRow, 'text-sm whitespace-nowrap')}>
+		<HeaderButton icon={House} label="Home" href={resolve('/')} />
+		<span class="font-mono text-base font-semibold tracking-widest">{view.gameId}</span>
+		<span
+			class={cn('size-2 shrink-0 rounded-full', connected ? 'bg-online' : 'animate-pulse bg-fox')}
+			title={connected ? 'Connected' : 'Reconnecting'}
+		></span>
+		{#if view.round > 0}
+			<span class="ml-1.5 text-muted-foreground">
+				Round <b class="font-extrabold text-foreground">{view.round}</b> of 3
+			</span>
+		{/if}
+		<HeaderButton
+			class="ml-auto"
+			icon={BookOpen}
+			label="Rules"
+			onclick={() => (rulesOpen = true)}
+		/>
+		{#if playing && !readonly}
 			<HeaderButton
-				class="ml-auto"
-				icon={BookOpen}
-				label="Rules"
-				onclick={() => (rulesOpen = true)}
+				icon={Flag}
+				label="Give up"
+				disabled={!connected}
+				onclick={() => (confirmGiveUp = true)}
 			/>
-			{#if playing && !readonly}
-				<HeaderButton
-					icon={Flag}
-					label="Give up"
-					disabled={!connected}
-					onclick={() => (confirmGiveUp = true)}
-				/>
-			{/if}
-			<HeaderThemeToggle />
-		</div>
-		<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
-			<span>Round <b>{view.round}</b>/3</span>
-			{#if view.trick?.number}<span>Trick <b>{view.trick.number}</b>/11</span>{/if}
-			{#if view.board}
-				<span class="flex items-center gap-1" title="Gems left in the forest">
-					<Gem class="size-4 text-gem" /><b>{view.board.gemsLeft}</b>
-				</span>
-				<span class="flex items-center gap-1" title="Forest tokens left">
-					<Trees class="size-4 text-moss" /><b>{view.board.forestTokens}</b>/{view.board
-						.forestTokensTotal}
-				</span>
-			{/if}
-			{#if mate}
-				<span class="ml-auto flex items-center gap-1.5 text-muted-foreground">
-					<span
-						class={cn(
-							'size-2 rounded-full',
-							client.online.includes(mate.id) ? 'bg-emerald-500' : 'bg-muted-foreground/40'
-						)}
-					></span>
-					{mate.name} · {plural(mate.handCount, 'card')}{mate.isDealer ? ' · dealer' : ''}
-				</span>
-			{/if}
-		</div>
+		{/if}
+		<HeaderThemeToggle />
 	</header>
 
 	{#if view.board}
@@ -173,6 +152,8 @@
 			board={view.board}
 			myEnd={me.end}
 			players={view.players}
+			online={client.online}
+			marks={marks.current}
 			options={mine && step === 'move' ? (pending?.moveOptions ?? []) : []}
 			{highlight}
 			onchoose={(delta) => run(() => client.chooseMove(delta))}
@@ -180,24 +161,15 @@
 		/>
 	{/if}
 
+	<div class="flex-1"></div>
 	<TrickRow {view} />
+	<div class="flex-1"></div>
 
-	<p class="min-h-5 text-center text-sm text-muted-foreground" aria-live="polite">{chronicle}</p>
-
-	<div
-		class="sticky bottom-0 -mx-3 mt-auto flex flex-col gap-1 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] before:absolute before:inset-0 before:-z-10 before:backdrop-blur"
-	>
+	<div class="flex flex-col gap-1.5 pb-[env(safe-area-inset-bottom)]">
 		{#if controls}
 			{@render controls()}
 		{:else if playing && !readonly}
-			<DecisionPanel {client} {view} {selected} {busy} {connected} {run} bind:highlight />
-		{/if}
-		{#if view.lastGift && !view.trick?.follow && step !== 'gift'}
-			<p class="text-center text-xs text-muted-foreground">
-				Gift: you gave {cardLabel(view.lastGift.gave)} and received {cardLabel(
-					view.lastGift.received
-				)}.
-			</p>
+			<TurnBar {client} {view} {selected} {busy} {connected} {run} bind:highlight />
 		{/if}
 		<Hand
 			cards={view.hand}
@@ -208,9 +180,6 @@
 			{dealing}
 			onpick={pick}
 		/>
-		<p class="text-center text-xs text-muted-foreground">
-			You{me.isDealer ? ' · dealer' : ''}{me.isHost ? ' · host' : ''}
-		</p>
 	</div>
 </div>
 

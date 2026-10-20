@@ -18,7 +18,7 @@
 	{errorText}
 >
 	{#snippet hero()}
-		<Card.Title class="text-3xl">Fox Duet</Card.Title>
+		<Card.Title class="font-display text-4xl">Fox Duet</Card.Title>
 		<Card.Description>Two friends, one forest path. Collect every gem together.</Card.Description>
 	{/snippet}
 </HomePage>

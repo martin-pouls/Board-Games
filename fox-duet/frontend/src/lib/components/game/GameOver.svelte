@@ -19,6 +19,7 @@
 	import type { PlayerView } from '#lib/types.js';
 	import PlayingCard from './PlayingCard.svelte';
 	import Table from './Table.svelte';
+	import { barClass } from './TurnBar.svelte';
 
 	let { client, view }: { client: GameClient; view: PlayerView } = $props();
 
@@ -62,15 +63,15 @@
 
 <Table {client} {view} readonly>
 	{#snippet controls()}
-		<div class="flex min-h-14 items-center gap-3 rounded-xl bg-muted/60 px-3 py-1.5">
-			<p class="min-w-0 flex-1 leading-snug font-semibold">
+		<div class={barClass(false)}>
+			<b class="truncate text-sm font-extrabold">
 				{result ? resultHeadline(result) : 'Game over'}
-			</p>
-			<Button size="lg" class="h-12 px-4 text-base" onclick={() => (hidden = false)}>
-				<ChevronUp />
-				Results
-			</Button>
+			</b>
 		</div>
+		<Button class="h-11 text-base" onclick={() => (hidden = false)}>
+			<ChevronUp />
+			Results
+		</Button>
 	{/snippet}
 </Table>
 

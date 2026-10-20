@@ -284,6 +284,84 @@ export function forestEndView(): PlayerView {
 	};
 }
 
+/** Bob won trick 5 and leads trick 6; the completed trick stays on the table until he leads. */
+export function trickWonView(): PlayerView {
+	const v = playingView();
+	const hand = [
+		card('doves', 2),
+		card('doves', 10),
+		card('roses', 5),
+		card('roses', 8),
+		card('stars', 4),
+		card('stars', 11)
+	];
+	const spaces = sideA();
+	spaces[3].gems = 0;
+	spaces[7].gems = 0;
+	return {
+		...v,
+		revision: 30,
+		players: v.players.map((p) => ({ ...p, handCount: 6, mustAct: p.id === 'bob' })),
+		hand,
+		playable: [],
+		board: { ...v.board!, spaces, traveller: 8, gemsLeft: 10 },
+		trick: { number: 6, leaderId: 'bob', lead: null, follow: null },
+		lastTrick: {
+			number: 5,
+			leaderId: 'alice',
+			lead: card('doves', 7),
+			follow: card('doves', 9),
+			winnerId: 'bob',
+			from: 7,
+			to: 8,
+			delta: 1,
+			beyond: '',
+			collected: false
+		},
+		pending: pending({ step: 'lead', playerIds: ['bob'] })
+	};
+}
+
+/** Round 2 has just been dealt: gems were added and a forest token covers Bob's last space. */
+export function newRoundView(): PlayerView {
+	const v = playingView();
+	const spaces = sideA().map((s) => ({ ...s, gems: s.plus ? 1 : 0 }));
+	spaces[2].gems = 1;
+	spaces[9].gems = 2;
+	spaces[10].covered = true;
+	const hand = [
+		card('doves', 1),
+		card('doves', 4),
+		card('doves', 8),
+		card('roses', 2),
+		card('roses', 6),
+		card('roses', 7),
+		card('roses', 9),
+		card('stars', 1),
+		card('stars', 3),
+		card('stars', 5),
+		card('stars', 10)
+	];
+	return {
+		...v,
+		revision: 70,
+		round: 2,
+		players: v.players.map((p) => ({ ...p, isDealer: p.id === 'alice', mustAct: p.id === 'bob' })),
+		hand,
+		playable: [],
+		board: {
+			...v.board!,
+			spaces,
+			traveller: 5,
+			forestTokens: 3,
+			gemsLeft: spaces.reduce((n, s) => n + s.gems, 0)
+		},
+		decree: card('roses', 4),
+		trick: { number: 1, leaderId: 'bob', lead: null, follow: null },
+		pending: pending({ step: 'lead', playerIds: ['bob'] })
+	};
+}
+
 /** Won in round 2 at level 1. */
 export function wonView(): PlayerView {
 	const v = forestEndView();
@@ -338,7 +416,9 @@ export const fixtures: Record<string, () => PlayerView> = {
 	giftView,
 	giftChosenView,
 	moveView,
+	trickWonView,
 	forestEndView,
+	newRoundView,
 	wonView,
 	lostView,
 	endedView
