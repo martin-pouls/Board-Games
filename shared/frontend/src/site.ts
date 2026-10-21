@@ -1,4 +1,4 @@
-/** The site's name: page titles, the heading and the back links of the legal pages. */
+/** The site's name: page titles and the heading of the start page and the gate. */
 export const siteName = 'Board Games';
 
 /** Who runs the site: named in the imprint (Impressum) and the privacy policy (Datenschutz). */

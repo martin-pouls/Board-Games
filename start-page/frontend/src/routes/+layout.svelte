@@ -5,7 +5,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import HeaderButton from '@board-games/shared/HeaderButton.svelte';
 	import PageFrame from '@board-games/shared/PageFrame.svelte';
-	import { siteName } from '#lib/site.js';
+	import { siteName } from '@board-games/shared/site.js';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();

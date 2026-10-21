@@ -10,7 +10,8 @@
 
 /*
  * The start page's plain slate table (start-page/frontend/src/routes/layout.css, without the game
- * tiles). Keep the two in step. The theme is set before first paint by the script in app.html.
+ * tiles, but with their shadow for the form). Keep the two in step. The theme is set before
+ * first paint by the script in app.html.
  */
 :root {
 	--background: oklch(0.955 0.008 250);
@@ -34,6 +35,8 @@
 	--radius: 0.625rem;
 
 	--accent-piece: oklch(0.55 0.2 25);
+	/* The form's tile: the start page's tile shadow. */
+	--tile-shadow: oklch(0.2 0.03 255 / 9%);
 }
 
 .dark {
@@ -57,11 +60,13 @@
 	--ring: oklch(0.8 0.05 245 / 60%);
 
 	--accent-piece: oklch(0.7 0.17 22);
+	--tile-shadow: oklch(0 0 0 / 35%);
 }
 
 @theme inline {
 	--font-sans: 'Inter Variable', system-ui, sans-serif;
 	--color-accent-piece: var(--accent-piece);
+	--color-tile-shadow: var(--tile-shadow);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

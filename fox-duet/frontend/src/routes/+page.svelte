@@ -6,9 +6,11 @@
 	import { errorText } from '#lib/errors.js';
 	import { sessions } from '#lib/session.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import HomeBand from '#lib/components/HomeBand.svelte';
 </script>
 
 <HomePage
+	heroClass="overflow-hidden pt-0 shadow-lg dark:shadow-black/30"
 	gameHref={(code) => resolve('/g/[code]', { code })}
 	{goto}
 	{createGame}
@@ -17,6 +19,10 @@
 	{sessions}
 	{errorText}
 >
+	{#snippet heroTop()}
+		<!-- A strip of the forest board along the card's top edge. -->
+		<HomeBand />
+	{/snippet}
 	{#snippet hero()}
 		<Card.Title class="font-display text-4xl">Fox Duet</Card.Title>
 		<Card.Description>Two friends, one forest path. Collect every gem together.</Card.Description>

@@ -3,7 +3,8 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import GameArt from '#lib/components/GameArt.svelte';
 	import { gameHref, games, type Game } from '#lib/games.js';
-	import { siteName } from '#lib/site.js';
+	import SiteHeader from '@board-games/shared/SiteHeader.svelte';
+	import { siteName } from '@board-games/shared/site.js';
 
 	/** Each tile borrows its game's colours: tile, text and ring; the art carries the rest. */
 	const look: Record<Game['id'], { tile: string; name?: string; muted: string }> = {
@@ -56,25 +57,7 @@
 	/>
 </svelte:head>
 
-<header class="mb-6 text-center md:mt-2 md:mb-10">
-	<div class="flex items-center justify-center gap-2.5">
-		<!-- A meeple: board and card games in general. -->
-		<svg
-			viewBox="0 0 24 24"
-			class="size-7.5 shrink-0 text-accent-piece md:size-10"
-			aria-hidden="true"
-		>
-			<path
-				d="M12 2a3 3 0 0 1 3 3c0 .9-.4 1.7-1 2.2 2.6.5 6.5 1.6 6.5 3.8 0 1.2-1.6 1.7-3.5 1.9L20 21h-5.5L12 17l-2.5 4H4l2.9-8.1C5.1 12.7 3.5 12.2 3.5 11c0-2.2 3.9-3.3 6.5-3.8-.6-.5-1-1.3-1-2.2a3 3 0 0 1 3-3z"
-				fill="currentColor"
-			/>
-		</svg>
-		<h1 class="text-3xl font-extrabold tracking-tight md:text-5xl">{siteName}</h1>
-	</div>
-	<p class="mx-auto mt-2 max-w-[34ch] text-balance text-muted-foreground md:max-w-none">
-		Cooperative board and card games to play live with friends, right in the browser.
-	</p>
-</header>
+<SiteHeader />
 
 <!-- Phone: a shelf of rows. Desktop: fixed-size tiles (148 px half-columns, a tile spans two). -->
 <ul

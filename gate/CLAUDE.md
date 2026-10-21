@@ -4,7 +4,7 @@ Shared-password access gate for the board-game apps (root [CLAUDE.md](../CLAUDE.
 
 ## Login page
 
-`frontend/` is a small SvelteKit app (same stack and look as the start page: shadcn `Card`/`Input`/`Button`, the shared `PageFrame` with top bar and footer). It is prerendered with `csr = false`: one HTML page, its CSS and fonts, no JS except the theme script in `src/app.html` (same `mode-watcher-mode` key as the other apps).
+`frontend/` is a small SvelteKit app (same stack and look as the start page: the shared `PageFrame` with top bar and footer, the start page's `SiteHeader` in the same place, and the form on a tile surface where the start page lists the games, so the header stays put after the login). It is prerendered with `csr = false`: one HTML page, its CSS and fonts, no JS except the inline script in `src/app.html` (theme, opening the legal dialogs; a copy of the start page's) (same `mode-watcher-mode` key as the other apps).
 
 - `npm run build` writes straight into `backend/internal/gate/ui/build/` (gitignored), which the Go binary embeds (`ui.go`). The built `index.html` is parsed as an `html/template`: `src/routes/+page.svelte` puts `{{.Action}}`, `{{.Next}}` and `{{if .Message}}…{{end}}` into the markup as text. In `npm run dev` (port 5178) it shows plain values instead.
 - The gate serves the page's files at `/_app/...` (immutable caching) and `/favicon.svg`. The build's `BASE_PATH` (`/gate`, set in `deploy/compose.yaml`) must match `GATE_BASE_PATH`.
