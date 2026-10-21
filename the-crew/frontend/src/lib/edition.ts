@@ -37,7 +37,7 @@ export const editionTerms: Record<Edition, Terms> = {
 		dummyPossessive: "JARVIS's",
 		commander: 'commander',
 		commToken: 'radio token',
-		themeColor: { light: '#f2f0ea', dark: '#0b1022' }
+		themeColor: { light: '#efe5d5', dark: '#060a1a' }
 	},
 	deepSea: {
 		title: 'The Crew: Mission Deep Sea',

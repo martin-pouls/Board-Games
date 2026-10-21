@@ -68,14 +68,19 @@ export function tokenMeaning(t: Token): string {
 	return `must be the ${ord} task fulfilled`;
 }
 
-export type CardSize = 'xs' | 'task' | 'stack' | 'sm' | 'md';
-/** xs: inline chips; task: task cards; stack: JARVIS's stacks; sm: the hand; md: the trick. */
+export type CardSize = 'xs' | 'comm' | 'task' | 'stack' | 'trick' | 'hand';
+/**
+ * Card sizes in px: xs 26×36 (tasks in a row, inline chips), comm 30×42 (a communicated card),
+ * task 40×56 (tasks in dialogs), stack 42×60 (JARVIS's stacks), trick 52×74, hand 58×84.
+ */
 export const CARD_SIZE: Record<CardSize, string> = {
-	xs: 'h-9 w-6.5 rounded-[0.3rem] p-px',
-	task: 'h-14 w-10 rounded-md p-0.5',
-	stack: 'h-[3.6rem] w-[2.6rem] rounded-md p-0.5',
-	sm: 'h-[4.75rem] w-[3.25rem] rounded-lg p-1',
-	md: 'h-[5.25rem] w-[3.6rem] rounded-lg p-1'
+	xs: 'h-9 w-6.5 rounded-[0.25rem]',
+	comm: 'h-[2.625rem] w-[1.875rem] rounded-[0.3125rem]',
+	task: 'h-14 w-10 rounded-md',
+	stack: 'h-[3.75rem] w-[2.625rem] rounded-md',
+	trick: 'h-[4.625rem] w-[3.25rem] rounded-md',
+	hand: 'h-[5.25rem] w-[3.625rem] rounded-md'
 };
-/** Sizes that show the rank and glyph stacked in the middle instead of in the corner. */
-export const COMPACT: ReadonlySet<CardSize> = new Set(['xs', 'task', 'stack']);
+/** Sizes without the art window (Planet Nine) or with the rank and glyph stacked in the middle
+ * (Deep Sea). */
+export const COMPACT: ReadonlySet<CardSize> = new Set(['xs', 'comm', 'task', 'stack']);

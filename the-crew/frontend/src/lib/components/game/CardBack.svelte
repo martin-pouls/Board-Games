@@ -4,7 +4,7 @@
 	import { cn } from '#lib/utils.js';
 
 	let {
-		size = 'md',
+		size = 'trick',
 		label = 'Hidden card',
 		class: className = ''
 	}: { size?: CardSize; label?: string; class?: string } = $props();

@@ -47,7 +47,11 @@
 
 {#if tasks.length}
 	<ul
-		class={cn('flex flex-wrap items-end', size === 'xs' ? 'gap-2' : 'gap-x-2.5 gap-y-2', className)}
+		class={cn(
+			'flex flex-wrap items-end',
+			size === 'xs' ? 'gap-x-[7px] gap-y-1.5' : 'gap-x-2.5 gap-y-2',
+			className
+		)}
 		aria-label={label}
 	>
 		{#each tasks as t (t.id)}

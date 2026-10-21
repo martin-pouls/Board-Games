@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/oxanium';
+@import '@fontsource-variable/sofia-sans-semi-condensed';
+/* Mission Deep Sea keeps its own faces until its theme is redone. */
 @import '@fontsource-variable/space-grotesk';
 @import '@fontsource-variable/nunito';
 /* Mission Deep Sea: token overrides under [data-edition='deepSea'] (Planet Nine ignores them). */
@@ -12,31 +15,35 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Space theme: pale mission paper, deep indigo ink and a coral accent by day; midnight navy with
- * a faint starfield and a cyan accent by night. The theme is set before first paint by the script
- * in app.html and kept by mode-watcher afterwards. Cards keep a light face in both modes so the
- * four colours stay distinct; rockets are dark cards. Mission Deep Sea overrides the tokens in
- * theme-deep-sea.css.
+ * Planet Nine, "rulebook page": warm rulebook paper with navy ink and a royal-blue accent by day;
+ * midnight navy with a blue glow at the top and a sky-blue accent by night. Oxanium for the
+ * display (title, headings, card values), Sofia Sans Semi Condensed for the UI. The cards are white
+ * with the value and symbol in the top-left corner and Planet Nine's night print in a window (the
+ * --nd/--ng/--nn tokens: dark, glow and neon of each colour); rockets have a dark window and a
+ * white rocket. Tasks stand on square task tokens (--chip: navy in light mode, lilac in dark
+ * mode); a communicated card wears the round green radio token (--radio). The theme is set before
+ * first paint by the script in app.html and kept by mode-watcher afterwards. Mission Deep Sea
+ * overrides the tokens in theme-deep-sea.css.
  */
 :root {
-	--background: oklch(0.955 0.008 85);
-	--foreground: oklch(0.27 0.09 278);
-	--card: oklch(0.985 0.006 85);
+	--background: oklch(0.925 0.024 78);
+	--foreground: oklch(0.24 0.06 265);
+	--card: oklch(0.955 0.016 80);
 	--card-foreground: var(--foreground);
-	--popover: oklch(0.985 0.006 85);
+	--popover: oklch(0.955 0.016 80);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.66 0.17 35);
-	--primary-foreground: oklch(0.99 0.01 85);
-	--secondary: oklch(0.91 0.025 275);
+	--primary: oklch(0.45 0.16 264);
+	--primary-foreground: oklch(0.98 0.01 90);
+	--secondary: oklch(0.86 0.035 76);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.92 0.012 270);
-	--muted-foreground: oklch(0.47 0.05 275);
-	--accent: oklch(0.89 0.04 275);
+	--muted: oklch(0.888 0.03 76);
+	--muted-foreground: oklch(0.43 0.05 262);
+	--accent: oklch(0.86 0.035 76);
 	--accent-foreground: var(--foreground);
-	--destructive: oklch(0.54 0.2 27);
-	--border: oklch(0.4 0.08 278 / 18%);
-	--input: oklch(0.27 0.09 278 / 18%);
-	--ring: oklch(0.66 0.17 35 / 60%);
+	--destructive: oklch(0.55 0.2 27);
+	--border: oklch(0.3 0.05 265 / 18%);
+	--input: oklch(0.3 0.05 265 / 22%);
+	--ring: oklch(0.45 0.16 264 / 60%);
 	--radius: 0.6rem;
 	--chart-1: oklch(0.87 0 0);
 	--chart-2: oklch(0.556 0 0);
@@ -52,45 +59,78 @@
 	--sidebar-border: oklch(0.92 0.004 286.32);
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 
+	/* Faces: the @theme fonts point here, so Mission Deep Sea can keep its own. */
+	--app-font-sans: 'Sofia Sans Semi Condensed Variable', system-ui, sans-serif;
+	--app-font-display: 'Oxanium Variable', system-ui, sans-serif;
+
 	/* Game tokens */
-	--paper: oklch(0.985 0.008 85); /* card face */
-	--ink: oklch(0.25 0.08 278); /* card text */
-	--pink: oklch(0.58 0.2 355);
-	--blue: oklch(0.52 0.15 250);
-	--green: oklch(0.55 0.14 150);
-	--yellow: oklch(0.68 0.15 75);
-	--rocket: oklch(0.24 0.06 275); /* rocket card face */
-	--rocket-ink: oklch(0.86 0.12 60);
+	--paper: oklch(0.995 0.003 90); /* card face */
+	--card-edge: oklch(0.3 0.04 265 / 22%);
+	--card-shadow: oklch(0 0 0 / 15%);
+	--ink: oklch(0.24 0.06 265); /* card text */
+	--pink: oklch(0.55 0.22 345);
+	--blue: oklch(0.51 0.11 212);
+	--green: oklch(0.52 0.16 145);
+	--yellow: oklch(0.55 0.13 72);
+	/* The night window of each colour (the same in both modes): dark, glow, neon symbol. */
+	--nd-pink: oklch(0.25 0.1 345);
+	--ng-pink: oklch(0.44 0.19 345);
+	--nn-pink: oklch(0.83 0.14 345);
+	--nd-blue: oklch(0.25 0.06 215);
+	--ng-blue: oklch(0.45 0.1 210);
+	--nn-blue: oklch(0.87 0.11 205);
+	--nd-green: oklch(0.26 0.07 145);
+	--ng-green: oklch(0.47 0.14 145);
+	--nn-green: oklch(0.88 0.16 145);
+	--nd-yellow: oklch(0.27 0.06 85);
+	--ng-yellow: oklch(0.5 0.11 85);
+	--nn-yellow: oklch(0.9 0.14 95);
+	--nd-trump: oklch(0.13 0.02 270);
+	--ng-trump: oklch(0.27 0.05 262);
+	--nn-trump: oklch(0.97 0.005 260);
+	--rocket-glyph: oklch(0.85 0.03 260); /* the rocket in its window */
+	--window-star: oklch(1 0 0 / 75%);
+	--tok: oklch(0.25 0.055 285); /* rocket values, the printed task token */
+	--tok-ink: oklch(0.8 0.1 295);
+	--rocket: oklch(0.2 0.06 268); /* card backs, JARVIS's hidden cards */
+	--rocket-ink: oklch(0.86 0.12 75);
 	--captain: var(--rocket-ink); /* the commander's crown */
 	--signal: var(--primary); /* "your turn", selection */
-	--success: oklch(0.56 0.14 155);
+	/* The task token: square, an order mark or ✓ / ✗ (in --ok-ink) on --success / --danger. */
+	--chip: var(--tok);
+	--chip-ink: var(--tok-ink);
+	--ok-ink: oklch(1 0 0);
+	/* The round radio token of a communicated card, and the ring around that card. */
+	--radio: oklch(0.56 0.13 160);
+	--radio-ink: oklch(1 0 0);
+	--success: oklch(0.52 0.14 150);
 	--danger: oklch(0.55 0.2 27);
-	--panel: oklch(0.93 0.015 275 / 60%); /* table areas */
-	--glow: oklch(0.88 0.05 275 / 55%);
+	--panel: oklch(0.888 0.03 76); /* table areas */
+	--glow: transparent;
 	--stars: transparent;
 	/* Marks cards that just came into the hand (NewCardMark). */
 	--new-card: oklch(0.62 0.12 190);
 }
 
 .dark {
-	--background: oklch(0.16 0.04 270);
-	--foreground: oklch(0.93 0.02 260);
-	--card: oklch(0.21 0.045 268);
+	--background: oklch(0.15 0.035 268);
+	--foreground: oklch(0.93 0.015 250);
+	--card: oklch(0.205 0.045 266);
 	--card-foreground: var(--foreground);
-	--popover: oklch(0.21 0.045 268);
+	--popover: oklch(0.205 0.045 266);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.8 0.13 205);
-	--primary-foreground: oklch(0.18 0.04 260);
-	--secondary: oklch(0.27 0.05 268);
+	--primary: oklch(0.76 0.13 238);
+	--primary-foreground: oklch(0.16 0.04 265);
+	--secondary: oklch(0.27 0.05 266);
 	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.25 0.04 268);
-	--muted-foreground: oklch(0.72 0.04 260);
-	--accent: oklch(0.31 0.06 265);
+	--muted: oklch(0.205 0.045 266);
+	--muted-foreground: oklch(0.72 0.04 255);
+	--accent: oklch(0.27 0.05 266);
 	--accent-foreground: var(--foreground);
-	--destructive: oklch(0.62 0.2 27);
+	--destructive: oklch(0.68 0.18 27);
 	--border: oklch(0.8 0.05 250 / 16%);
 	--input: oklch(1 0 0 / 12%);
-	--ring: oklch(0.8 0.13 205 / 60%);
+	--ring: oklch(0.76 0.13 238 / 60%);
 	--radius: 0.6rem;
 	--chart-1: oklch(0.87 0 0);
 	--chart-2: oklch(0.556 0 0);
@@ -106,27 +146,26 @@
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 
-	--paper: oklch(0.93 0.012 85);
-	--ink: oklch(0.25 0.08 278);
-	--pink: oklch(0.56 0.2 355);
-	--blue: oklch(0.5 0.15 250);
-	--green: oklch(0.52 0.14 150);
-	--yellow: oklch(0.64 0.15 75);
-	--rocket: oklch(0.3 0.07 275);
-	--rocket-ink: oklch(0.86 0.12 60);
-	--captain: var(--rocket-ink); /* the commander's crown */
-	--signal: var(--primary);
-	--success: oklch(0.72 0.15 155);
-	--danger: oklch(0.66 0.19 27);
-	--panel: oklch(0.22 0.045 268 / 70%);
-	--glow: oklch(0.3 0.08 265 / 55%);
-	--stars: oklch(0.95 0.02 250 / 55%);
+	--paper: oklch(0.93 0.008 90);
+	--pink: oklch(0.51 0.22 345);
+	--blue: oklch(0.47 0.11 212);
+	--green: oklch(0.48 0.15 145);
+	--yellow: oklch(0.5 0.13 72);
+	/* The lilac token: on the navy table the printed navy one would disappear. */
+	--chip: oklch(0.8 0.1 295);
+	--chip-ink: oklch(0.25 0.055 285);
+	--ok-ink: oklch(0.15 0.035 268);
+	--radio: oklch(0.66 0.14 160);
+	--success: oklch(0.72 0.15 150);
+	--danger: oklch(0.68 0.18 27);
+	--panel: oklch(0.205 0.045 266);
+	--glow: oklch(0.42 0.13 245 / 45%);
 	--new-card: oklch(0.8 0.14 75);
 }
 
 @theme inline {
-	--font-sans: 'Nunito Variable', system-ui, sans-serif;
-	--font-display: 'Space Grotesk Variable', system-ui, sans-serif;
+	--font-sans: var(--app-font-sans);
+	--font-display: var(--app-font-display);
 	--color-paper: var(--paper);
 	--color-ink: var(--ink);
 	--color-pink: var(--pink);
@@ -135,6 +174,13 @@
 	--color-yellow: var(--yellow);
 	--color-rocket: var(--rocket);
 	--color-rocket-ink: var(--rocket-ink);
+	--color-tok: var(--tok);
+	--color-chip: var(--chip);
+	--color-chip-ink: var(--chip-ink);
+	--color-ok-ink: var(--ok-ink);
+	--color-radio: var(--radio);
+	--color-radio-ink: var(--radio-ink);
+	--color-card-edge: var(--card-edge);
 	--color-captain: var(--captain);
 	--color-task-ink: var(--task-ink);
 	--color-task-badge: var(--task-badge);

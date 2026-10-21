@@ -52,14 +52,8 @@
 </script>
 
 {#snippet face()}
-	<span class="relative block">
-		{#if task.card}
-			<PlayingCard
-				card={task.card}
-				{size}
-				class={cn(task.status === 'failed' && 'opacity-60 grayscale')}
-			/>
-		{:else if deepSea}
+	{#if deepSea}
+		<span class="relative block">
 			{#if task.objective}
 				<DeepSeaTaskFace
 					{task}
@@ -80,29 +74,67 @@
 				title={`Difficulty ${task.difficulty}`}
 				aria-hidden="true">{task.difficulty}</span
 			>
-		{:else}
-			<CardBack {size} label="Face-down task" />
-		{/if}
-		{#if task.token}
-			<TokenBadge
-				token={task.token}
-				class={cn('absolute -top-1.5 -right-1.5', size === 'xs' && 'h-4 min-w-4 text-[0.6rem]')}
-			/>
-		{/if}
-		{#if task.status === 'fulfilled'}
+			{#if task.token}
+				<TokenBadge
+					token={task.token}
+					class={cn('absolute -top-1.5 -right-1.5', size === 'xs' && 'h-4 min-w-4 text-[0.6rem]')}
+				/>
+			{/if}
+			{#if task.status === 'fulfilled'}
+				<span
+					class="absolute -bottom-1 -left-1 grid size-4.5 place-items-center rounded-full bg-success text-white shadow"
+				>
+					<Check class="size-3" strokeWidth={3} />
+				</span>
+			{:else if task.status === 'failed'}
+				<span
+					class="absolute -bottom-1 -left-1 grid size-4.5 place-items-center rounded-full bg-danger text-white shadow"
+				>
+					<X class="size-3" strokeWidth={3} />
+				</span>
+			{/if}
+		</span>
+	{:else}
+		<!-- The task card on its square task token: the order mark (a hollow square without one), then
+		     ✓ or ✗. The token hangs below the card, inside this box. -->
+		<span
+			class={cn(
+				'relative block rounded-[0.25rem] pb-2',
+				selected && 'ring-2 ring-primary outline-3 outline-offset-2 outline-primary/25'
+			)}
+		>
+			{#if task.card}
+				<PlayingCard card={task.card} {size} />
+			{:else}
+				<CardBack {size} label="Face-down task" />
+			{/if}
+			{#if task.status !== 'open'}
+				<span class="absolute inset-x-0 top-0 bottom-2 z-[3] rounded-[inherit] bg-background/40"
+				></span>
+			{/if}
 			<span
-				class="absolute -bottom-1 -left-1 grid size-4.5 place-items-center rounded-full bg-success text-white shadow"
+				class={cn(
+					'absolute bottom-0 left-1/2 z-[4] grid h-3.5 min-w-4 -translate-x-1/2 place-items-center rounded-[3px] px-[3px] font-display text-[10px] leading-none font-bold shadow-[0_0_0_1.5px_var(--tab-ring,var(--background))]',
+					task.status === 'fulfilled'
+						? 'bg-success text-ok-ink'
+						: task.status === 'failed'
+							? 'bg-danger text-ok-ink'
+							: 'bg-chip text-chip-ink'
+				)}
+				aria-hidden="true"
 			>
-				<Check class="size-3" strokeWidth={3} />
+				{#if task.status === 'fulfilled'}
+					<Check class="size-2.5" strokeWidth={3.5} />
+				{:else if task.status === 'failed'}
+					<X class="size-2.5" strokeWidth={3.5} />
+				{:else if task.token}
+					{tokenLabel(task.token)}
+				{:else}
+					<span class="size-1.5 rounded-[1.5px] border-[1.5px] border-chip-ink opacity-70"></span>
+				{/if}
 			</span>
-		{:else if task.status === 'failed'}
-			<span
-				class="absolute -bottom-1 -left-1 grid size-4.5 place-items-center rounded-full bg-danger text-white shadow"
-			>
-				<X class="size-3" strokeWidth={3} />
-			</span>
-		{/if}
-	</span>
+		</span>
+	{/if}
 	{#if owner}
 		<span
 			class={cn(
@@ -120,9 +152,10 @@
 		type="button"
 		class={cn(
 			'flex flex-col items-center gap-0.5 rounded-md transition-transform focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none',
-			selected
-				? '-translate-y-1 [&_[data-face]]:ring-3 [&_[data-face]]:ring-signal [&_[role=img]]:ring-3 [&_[role=img]]:ring-signal'
-				: 'hover:-translate-y-0.5'
+			deepSea &&
+				(selected
+					? '-translate-y-1 [&_[data-face]]:ring-3 [&_[data-face]]:ring-signal [&_[role=img]]:ring-3 [&_[role=img]]:ring-signal'
+					: 'hover:-translate-y-0.5')
 		)}
 		aria-label={label}
 		aria-pressed={selected}

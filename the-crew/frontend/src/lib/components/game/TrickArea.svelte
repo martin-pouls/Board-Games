@@ -36,6 +36,9 @@
 		})
 	);
 
+	/** The viewer acts now (also for JARVIS): their empty slot is marked. */
+	const mine = $derived(attempt.step === 'play' && attempt.actors.includes(attempt.seat));
+
 	// A trick in progress hides the peek again once a card is played.
 	const playCount = $derived(attempt.trick.length);
 	$effect(() => {
@@ -52,20 +55,18 @@
 
 <!-- Up to three cards leave room beside the trick for its label; with more, it sits on top. -->
 <section
-	class={cn('grid items-start gap-1', side3 ? 'grid-cols-[3.5rem_1fr_3.5rem]' : 'grid-cols-1')}
+	class={cn('grid items-start gap-1', side3 ? 'grid-cols-[3.375rem_1fr_3.375rem]' : 'grid-cols-1')}
 	aria-label="Trick"
 >
 	<div
 		class={cn(
 			'flex text-xs text-muted-foreground',
-			side3 ? 'flex-col items-start gap-1.5 pt-1' : 'items-center justify-between'
+			side3 ? 'flex-col items-start gap-1.5 pt-0.5' : 'items-center justify-between'
 		)}
 	>
-		<span class="font-display leading-tight font-semibold tracking-wide uppercase">
-			{#if showLast && (peek || attempt.step === '')}
+		<span class="font-display leading-tight font-bold tracking-wide uppercase">
+			{#if showLast}
 				Last trick
-			{:else if showLast}
-				Trick {attempt.trickNumber - 1}
 			{:else}
 				Trick {Math.min(attempt.trickNumber, attempt.totalTricks)}/{attempt.totalTricks}
 			{/if}
@@ -74,56 +75,54 @@
 			<button
 				type="button"
 				class={cn(
-					'-mx-1.5 flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:text-foreground',
+					'flex w-max items-center gap-[3px] rounded-md border border-border px-[5px] py-px hover:text-foreground',
 					peek && 'bg-muted text-foreground'
 				)}
 				aria-pressed={peek}
 				title="Show the last trick"
 				onclick={() => (peek = !peek)}
 			>
-				<History class="size-3.5" />Last
+				<History class="size-3" />Last
 			</button>
+		{:else if showLast}
+			<span>{attempt.trickNumber - 1}/{attempt.totalTricks}</span>
 		{/if}
 	</div>
 	<ol class="flex w-full justify-center gap-1.5">
 		{#each slots as slot, i (slot.seat)}
+			{@const yours = !showLast && !slot.card && slot.seat === attempt.turn && mine}
 			<li class="flex min-w-0 flex-col items-center gap-0.5">
 				<div
 					class={cn(
-						'relative h-[5.25rem] w-[3.6rem] rounded-lg border-2 border-dashed border-foreground/15',
-						showLast && 'border-transparent'
+						'relative h-[4.625rem] w-[3.25rem] rounded-md border-[1.5px] border-dashed border-border',
+						showLast && 'border-transparent',
+						yours && 'border-solid border-primary ring-3 ring-primary/22'
 					)}
 				>
 					{#if slot.card}
 						{@const c = slot.card}
 						{#key cardKey(c)}
 							<div
-								class={cn('absolute -inset-0.5', showLast && slot.seat !== winner && 'opacity-70')}
+								class={cn('absolute -inset-[1.5px]', showLast && 'opacity-80')}
 								in:receive={{ key: cardKey(c), offstage: from(slot.seat) }}
 								out:send={{ key: cardKey(c), offstage: winner >= 0 ? side(winner) : 'none' }}
 							>
-								<PlayingCard card={c} />
+								<PlayingCard card={c} size="trick" />
 							</div>
 						{/key}
-					{/if}
-					{#if slot.card && slot.seat === winner}
-						<span
-							class="absolute -top-2.5 -right-2.5 grid size-6 place-items-center rounded-full bg-signal text-primary-foreground shadow"
-							title="Won the trick"
-						>
-							<Crown class="size-3.5" />
-						</span>
 					{/if}
 				</div>
 				<span
 					class={cn(
-						'max-w-[3.75rem] truncate text-[0.7rem] leading-tight',
-						slot.seat === attempt.seat ? 'font-semibold' : 'text-muted-foreground'
+						'flex max-w-[3.75rem] items-center gap-0.5 truncate text-xs leading-tight',
+						slot.seat === attempt.seat ? 'font-bold text-foreground' : 'text-muted-foreground'
 					)}
 				>
-					{#if i === 0}<span class="sr-only">Lead: </span><span aria-hidden="true"
-							>▸
-						</span>{/if}{seatName(attempt.members, slot.seat, attempt.seat)}
+					{#if slot.card && slot.seat === winner}
+						<Crown class="size-3 shrink-0 fill-current text-captain" aria-label="Won the trick" />
+					{/if}
+					{#if i === 0}<span class="sr-only">Lead: </span><span aria-hidden="true">▸</span>{/if}
+					<span class="truncate">{seatName(attempt.members, slot.seat, attempt.seat)}</span>
 				</span>
 			</li>
 		{/each}

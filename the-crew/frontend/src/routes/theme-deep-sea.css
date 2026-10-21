@@ -22,6 +22,13 @@
 	--input: oklch(0.27 0.06 228 / 18%);
 	--ring: oklch(0.68 0.16 30 / 60%);
 
+	/* Deep Sea keeps Nunito and Space Grotesk (Planet Nine: Sofia Sans Semi Condensed, Oxanium). */
+	--app-font-sans: 'Nunito Variable', system-ui, sans-serif;
+	--app-font-display: 'Space Grotesk Variable', system-ui, sans-serif;
+	/* The ring and token of a communicated card: the accent, as the old badge (both modes). */
+	--radio: var(--primary);
+	--radio-ink: var(--primary-foreground);
+
 	--paper: oklch(0.985 0.01 100); /* card face */
 	--ink: oklch(0.25 0.06 235); /* card text */
 	--pink: oklch(0.58 0.2 355);

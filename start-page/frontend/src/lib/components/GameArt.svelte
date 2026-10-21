@@ -2,8 +2,8 @@
 	A game tile's art band: the 88 px square on the phone's shelf, a wide band on desktop. It is a
 	size container, so everything inside scales with its height (cqh). The Game shows its two
 	printed start cards, Regicide a king on its misty ridges with a card index, Fox Duet a slice of
-	its board with the fox on the path; The Crew and Mission Deep Sea keep their icons until their
-	own themes are done.
+	its board with the fox on the path, The Crew its rocket flying up to Planet Nine; Mission Deep
+	Sea keeps its icon until its own theme is done.
 -->
 <script lang="ts">
 	import type { Game } from '#lib/games.js';
@@ -27,6 +27,20 @@
 			.join('');
 	const FOX_STONES = [12, 42, 72, 96, 146, 172, 202, 230];
 	/** Each tile hangs off a stone by a dotted line, from the stone's edge to the tile's. */
+	/** The Crew's starfield: x, y, radius, opacity. */
+	const CREW_STARS = [
+		[18, 14, 1.3, 0.8],
+		[52, 30, 1, 0.6],
+		[38, 70, 1.1, 0.7],
+		[84, 12, 1.2, 0.8],
+		[150, 14, 1, 0.7],
+		[178, 40, 1.3, 0.8],
+		[214, 18, 1, 0.6],
+		[228, 54, 1.1, 0.5],
+		[96, 86, 0.9, 0.5],
+		[140, 34, 0.9, 0.6],
+		[8, 50, 0.9, 0.5]
+	];
 	const FOX_TILES = [
 		{ x: 96, y: 24, tilt: -6, gems: [0], link: `M96 ${pathY(96) - 6}V36` },
 		{ x: 146, y: 82, tilt: 5, gems: [-5, 5], link: `M146 ${pathY(146) + 6}V70` }
@@ -112,23 +126,33 @@
 			</g>
 		</svg>
 	{:else if game === 'the-crew'}
-		<svg viewBox="0 0 32 32" class="icon text-crew-accent">
-			<circle cx="6" cy="7" r="0.9" fill="white" fill-opacity="0.8" />
-			<circle cx="26" cy="5" r="0.7" fill="white" fill-opacity="0.7" />
-			<circle cx="4" cy="21" r="0.7" fill="white" fill-opacity="0.6" />
-			<circle cx="28" cy="25" r="0.9" fill="white" fill-opacity="0.8" />
-			<circle cx="25" cy="13" r="3.2" fill="currentColor" fill-opacity="0.45" />
-			<ellipse
-				cx="25"
-				cy="13"
-				rx="5.6"
-				ry="1.2"
+		<!-- A slice of space, 240 × 100: the rocket flies up a dotted trail towards the lit rim of
+		     Planet Nine rising from the corner. -->
+		<svg class="scene text-crew-accent" viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice">
+			{#each CREW_STARS as [x, y, r, o] (`${x},${y}`)}
+				<circle cx={x} cy={y} {r} fill="white" fill-opacity={o} />
+			{/each}
+			<circle cx="172" cy="128" r="62" fill="var(--crew-planet)" />
+			<circle
+				cx="172"
+				cy="128"
+				r="62"
 				fill="none"
 				stroke="currentColor"
-				stroke-width="0.8"
-				transform="rotate(-20 25 13)"
+				stroke-width="7"
+				stroke-opacity="0.22"
 			/>
-			<g transform="rotate(40 14 17)">
+			<circle cx="172" cy="128" r="62" fill="none" stroke="currentColor" stroke-width="2" />
+			<path
+				d="M14 98C46 94 80 84 106 68"
+				fill="none"
+				stroke="white"
+				stroke-opacity="0.55"
+				stroke-width="1.8"
+				stroke-dasharray="0.1 5"
+				stroke-linecap="round"
+			/>
+			<g transform="translate(96 18) scale(1.9) rotate(40 14 17)">
 				<path
 					d="M14 4c3 2.6 4.4 6 4.4 10v7h-8.8v-7c0-4 1.4-7.4 4.4-10z"
 					fill="currentColor"

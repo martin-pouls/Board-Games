@@ -14,5 +14,5 @@
 </svelte:head>
 
 {#key data.name}
-	<GameScreen {client} view={data.view} />
+	<GameScreen {client} view={data.view} preset={data.preset} />
 {/key}

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
-	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Shuffle from '@lucide/svelte/icons/shuffle';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
@@ -12,6 +11,7 @@
 	import { taskTextOf } from '#lib/game/taskText.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Card, Direction, MissionDef, Task } from '#lib/types.js';
+	import CardName from './CardName.svelte';
 	import EditionGlyph from './EditionGlyph.svelte';
 	import TaskCard from './TaskCard.svelte';
 
@@ -29,7 +29,7 @@
 		client: GameClient;
 		attempt: Attempt;
 		mission: MissionDef | null;
-		/** The card picked in the hand or among the dummy's stacks. */
+		/** The card picked in the hand (pass step). */
 		selectedCard: Card | null;
 		/** Tasks tapped in the pool or a member's row (draft, token swap or move). */
 		selectedTasks: number[];
@@ -76,11 +76,8 @@
 		const step = attempt.step;
 		switch (step) {
 			case 'play':
-				if (!mine) return `Waiting for ${waitingFor} to play.`;
-				if (forJarvis) return `${terms.dummyPossessive} turn: tap one of its cards.`;
-				return attempt.trick.length
-					? 'Your turn: follow suit if you can.'
-					: 'Your turn: lead a card.';
+				// The button row (ActionRow) says what happens while cards are played.
+				return '';
 			case 'draft': {
 				if (!mine) return `Waiting for ${waitingFor} to take a task.`;
 				if (draftTask && !attempt.takeable.includes(draftTask.id))
@@ -183,6 +180,16 @@
 		attempt.step === 'draft' && selectedTasks.length ? attempt.tasks[selectedTasks[0]] : null
 	);
 
+	/** Only the Take button is shown: it stands on its own, like the button row in play. */
+	const bare = $derived(
+		!!draftTask &&
+			mine &&
+			attempt.takeable.includes(draftTask.id) &&
+			!attempt.actions.replaceTasks &&
+			!attempt.actions.pass &&
+			!draftTask.objective
+	);
+
 	// --- Token swap / move ---
 	const moveToken = $derived(mission?.setup.includes('moveToken') ?? false);
 	const tokenReady = $derived(selectedTasks.length === 2);
@@ -204,7 +211,10 @@
 </script>
 
 <div
-	class="flex min-h-14 flex-col justify-center gap-2 rounded-xl bg-muted/60 px-3 py-2"
+	class={cn(
+		'flex min-h-11 flex-col justify-center gap-2',
+		!bare && 'rounded-xl bg-panel px-3 py-2'
+	)}
 	role="status"
 >
 	{#if tappedTask?.objective}
@@ -212,25 +222,18 @@
 		<p class="text-sm leading-snug">{taskTextOf(tappedTask, players)}</p>
 	{/if}
 	<!-- The status; a tapped card or task replaces it with the button that confirms it. -->
-	{#if attempt.step === 'play' && mine && selectedCard}
-		<Button
-			class="h-10 w-full text-base"
-			{disabled}
-			onclick={() => run(() => client.playCard(selectedCard))}
-		>
-			Play {cardLabel(selectedCard)}{forJarvis ? ` for ${terms.dummy}` : ''}
-		</Button>
-	{:else if attempt.step === 'draft' && mine && draftTask && (attempt.takeable.includes(draftTask.id) || attempt.actions.replaceTasks)}
+	{#if attempt.step === 'draft' && mine && draftTask && (attempt.takeable.includes(draftTask.id) || attempt.actions.replaceTasks)}
 		<div class="flex gap-2">
 			{#if attempt.takeable.includes(draftTask.id)}
 				<Button
-					class="h-10 flex-1 text-base"
+					class="h-11 flex-1 gap-1.5 rounded-[0.6875rem] text-base font-semibold"
 					{disabled}
+					aria-label={`Take ${draftTask.card ? cardLabel(draftTask.card) : 'this task'}${forJarvis ? ` for ${terms.dummy}` : ''}`}
 					onclick={() => run(() => client.pickTask(draftTask.id))}
 				>
-					Take {draftTask.card ? cardLabel(draftTask.card) : 'this task'}{forJarvis
-						? ` for ${terms.dummy}`
-						: ''}
+					Take
+					{#if draftTask.card}<CardName card={draftTask.card} />{:else}this task{/if}
+					{forJarvis ? ` for ${terms.dummy}` : ''}
 				</Button>
 			{:else}
 				<p class="mr-auto self-center text-sm text-muted-foreground">You cannot take this task.</p>
@@ -246,14 +249,8 @@
 				</Button>
 			{/if}
 		</div>
-	{:else}
-		<p
-			class={cn(
-				'flex items-center gap-2 leading-snug',
-				mine ? 'font-semibold' : 'text-muted-foreground'
-			)}
-		>
-			{#if !mine}<LoaderCircle class="size-4 shrink-0 animate-spin" />{/if}
+	{:else if status}
+		<p class={cn('leading-snug', mine ? 'font-semibold' : 'text-muted-foreground')}>
 			{status}
 		</p>
 	{/if}
@@ -423,7 +420,7 @@
 	{/if}
 
 	{#if attempt.step === 'play' && attempt.actions.sendDistress}
-		<div class="flex flex-wrap items-center gap-1.5 border-t border-foreground/10 pt-2 text-sm">
+		<div class="flex flex-wrap items-center gap-1.5 text-sm">
 			<span class="mr-auto flex items-center gap-1.5 text-muted-foreground">
 				<EditionGlyph kind="distress" class="size-4 shrink-0" />Distress signal?
 			</span>

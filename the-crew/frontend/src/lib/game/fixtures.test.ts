@@ -4,9 +4,15 @@ import {
 	FIXTURE_MISSIONS,
 	fixtures as planetNineFixtures,
 	fullDeck,
-	missionDef
+	missionDef,
+	presets
 } from './fixtures.js';
-import { deepSeaFixtures, deepSeaLobbyFixtures } from './fixturesDeepSea.js';
+import {
+	deepSeaFixtures,
+	deepSeaLobbyFixtures,
+	deepSeaPresets,
+	deepSeaUiFixtures
+} from './fixturesDeepSea.js';
 import {
 	OWNER_CREW,
 	OWNER_UNASSIGNED,
@@ -16,7 +22,7 @@ import {
 } from '#lib/types.js';
 
 // Both editions' fixtures go through the same checks; the Deep Sea ones have more below.
-const fixtures = { ...planetNineFixtures, ...deepSeaFixtures };
+const fixtures = { ...planetNineFixtures, ...deepSeaFixtures, ...deepSeaUiFixtures };
 
 const TOTAL_TRICKS: Record<number, number> = { 2: 13, 3: 13, 4: 10, 5: 8 };
 
@@ -31,8 +37,9 @@ function visibleCards(v: PlayerView): Card[] {
 	const cards: Card[] = [...a.hand, ...a.trick.map((p) => p.card)];
 	if (a.lastTrick) cards.push(...a.lastTrick.plays.map((p) => p.card));
 	for (const m of a.members) {
-		cards.push(...m.communications.map((c) => c.card));
+		// The viewer's own communicated cards are still in the hand.
 		if (m.seat === a.seat) continue;
+		cards.push(...m.communications.map((c) => c.card));
 		// A debrief reveals everything a member still holds, which includes JARVIS's face-up cards.
 		if (m.cards) cards.push(...m.cards);
 		else cards.push(...m.stacks.flatMap((s) => (s.up ? [s.up] : [])));
@@ -83,6 +90,49 @@ describe('fixtures', () => {
 				'mission48View'
 			])
 		);
+	});
+
+	it('starts the table UI only in states the view allows (dev route presets)', () => {
+		const all = { ...planetNineFixtures, ...deepSeaUiFixtures };
+		for (const [name, preset] of Object.entries({ ...presets, ...deepSeaPresets })) {
+			expect(Object.hasOwn(all, name), name).toBe(true);
+			const v = all[name]();
+			const a = v.attempt!;
+			const p = preset(v);
+			if (p.selected)
+				expect(
+					a.playable.some((c) => sameCard(c, p.selected)),
+					name
+				).toBe(true);
+			if (p.communicate) expect(a.actions.communicate.length, name).toBeGreaterThan(0);
+			if (p.shown) {
+				expect(
+					a.actions.communicate.some((o) => sameCard(o.card, p.shown)),
+					name
+				).toBe(true);
+			}
+			for (const id of p.tasks ?? []) expect(a.takeable, name).toContain(id);
+		}
+	});
+
+	it('has stress views: full rows, communications, the last trick', () => {
+		const lead = planetNineFixtures.stressView2().attempt!;
+		expect(lead.tasks).toHaveLength(10);
+		expect(lead.lastTrick).not.toBeNull();
+		expect(lead.trick).toEqual([]);
+		expect(lead.members[1].communications).toHaveLength(1);
+		expect(lead.actions.communicate.length).toBeGreaterThan(0);
+		const comm = planetNineFixtures.stressCommView2().attempt!;
+		expect(comm.members[0].communications).toHaveLength(1);
+		expect(comm.members[1].communications).toHaveLength(1);
+		const draft = planetNineFixtures.draftFullView2().attempt!;
+		expect(draft.tasks.filter((t) => t.owner === OWNER_UNASSIGNED)).toHaveLength(10);
+		for (const n of [2, 3, 5]) {
+			const ds = deepSeaFixtures[`dsStress${n}`]().attempt!;
+			expect(ds.lastTrick).not.toBeNull();
+			expect(ds.members[1].communications).toHaveLength(1);
+			expect(ds.actions.communicate.length).toBeGreaterThan(0);
+		}
 	});
 
 	it('knows the mission rows it needs', () => {

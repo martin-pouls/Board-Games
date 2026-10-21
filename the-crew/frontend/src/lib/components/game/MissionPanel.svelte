@@ -54,25 +54,44 @@
 	);
 	const terrain = $derived(attempt.terrain);
 
+	/** The communication rules (and the distress signal), each a label and what it means. */
 	const rules = $derived(
 		[
-			mission?.deadZone && { text: 'dead zone', title: 'Communicate without position' },
-			!terrain && attempt.comm === 'currents' && { text: 'currents', title: modeTitle.currents },
-			!terrain && attempt.comm === 'none' && { text: 'no communication', title: modeTitle.none },
+			mission?.deadZone && {
+				label: 'Dead zone',
+				text: 'communicate without the position',
+				title: 'Nobody says whether a communicated card is the highest, only or lowest'
+			},
+			!terrain &&
+				attempt.comm === 'currents' && {
+					label: 'Currents',
+					text: 'communicate without the position',
+					title: modeTitle.currents
+				},
+			!terrain &&
+				attempt.comm === 'none' && { label: 'No communication', text: '', title: modeTitle.none },
 			attempt.commFirstTrickOnly && {
-				text: 'communication only before the first trick',
+				label: 'Passed on',
+				text: 'communicate only before the first trick',
 				title: 'The tasks were passed on: communicate before trick 1 or never'
 			},
-			mission && mission.fromTrick > 1 && { text: `comms from trick ${mission.fromTrick}` },
-			attempt.distress && { text: 'distress signal used' }
-		].filter((r): r is { text: string; title?: string } => !!r)
+			mission &&
+				mission.fromTrick > 1 && {
+					label: 'Disruption',
+					text: `nobody communicates before trick ${mission.fromTrick}`
+				},
+			attempt.distress && { label: 'Distress signal', text: 'used' }
+		].filter((r): r is { label: string; text: string; title?: string } => !!r)
 	);
 </script>
 
 {#if attempt.objectives.length || rules.length || pool || terrain}
-	<section class="flex flex-col gap-1 rounded-xl bg-panel px-3 py-1.5" aria-label="Mission">
+	<section
+		class="flex flex-col gap-1 rounded-[0.625rem] bg-panel px-2 py-1 text-xs"
+		aria-label="Mission"
+	>
 		{#if terrain}
-			<p class="flex items-center gap-1.5 text-xs">
+			<p class="flex items-center gap-1.5">
 				<PlayingCard card={terrain} size="xs" />
 				<span>
 					Unfamiliar terrain: {cardLabel(terrain)} →
@@ -81,14 +100,11 @@
 			</p>
 		{/if}
 		{#if rules.length || pool}
-			<ul class="flex flex-wrap items-center gap-1.5 text-xs">
+			<ul class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
 				{#if pool}
-					<li
-						class="flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5"
-						title={modeTitle.rapture}
-					>
+					<li class="flex items-center gap-1.5" title={modeTitle.rapture}>
 						<SonarPing class="size-3.5" />
-						<span>rapture of the deep</span>
+						<b class="font-bold">Rapture of the deep</b>
 						<span
 							class="flex gap-0.5"
 							role="img"
@@ -105,8 +121,11 @@
 						</span>
 					</li>
 				{/if}
-				{#each rules as r (r.text)}
-					<li class="rounded-full bg-muted px-2 py-0.5" title={r.title}>{r.text}</li>
+				{#each rules as r (r.label)}
+					<li title={r.title}>
+						<b class="font-bold">{r.label}{r.text ? ':' : ''}</b>
+						{r.text}
+					</li>
 				{/each}
 			</ul>
 		{/if}

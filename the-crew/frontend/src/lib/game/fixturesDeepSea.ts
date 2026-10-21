@@ -19,6 +19,7 @@ import {
 	type AttemptOpts,
 	type Table
 } from './fixtures.js';
+import type { TablePreset } from './tablePreset.js';
 import { TASK_CARDS } from './taskCards.fixture.js';
 import {
 	OWNER_UNASSIGNED,
@@ -558,6 +559,32 @@ function debriefWon(humans: number): PlayerView {
 	});
 }
 
+// ---------------------------------------------------------------------------------- stress
+
+/**
+ * Mission 31 at the start of trick 3: the most task cards (difficulty 17) in the rows, the last
+ * trick shown, seat 1's communication, and the viewer leads and may still communicate.
+ */
+function stress(humans: number): PlayerView {
+	const t = table({
+		humans,
+		commander: 0,
+		seed: 321,
+		tricks: 2,
+		plays: 0,
+		accept: (x) =>
+			x.leader === 0 &&
+			commOptions(x.hands[0], false).length >= 2 &&
+			commOptions(x.hands[1], false).length >= 1
+	});
+	const tasks = assigned(t, drawCards(t.seats, 17, 18, {}));
+	return dsView(t, 31, {
+		viewer: 0,
+		tasks,
+		comms: { 1: communicationOf(t, 1, false, 2) }
+	});
+}
+
 // ---------------------------------------------------------------------------------- the list
 
 const SITUATIONS: Record<string, (humans: number) => PlayerView> = {
@@ -580,7 +607,8 @@ const SITUATIONS: Record<string, (humans: number) => PlayerView> = {
 	dsPlayTerrain: playTerrain,
 	dsDebriefLost: debriefLost,
 	dsDebriefLostEpilogue: debriefLostEpilogue,
-	dsDebriefWon: debriefWon
+	dsDebriefWon: debriefWon,
+	dsStress: stress
 };
 
 /** The Deep Sea situations by name. */
@@ -603,4 +631,21 @@ export const deepSeaLobbyFixtures: Record<string, () => PlayerView> = {
 	dsLobby2: () => dsLobby(2),
 	dsLobby4: () => dsLobby(4, 2),
 	dsEnded: () => ({ ...dsLobby(3, 1), phase: 'ended' })
+};
+
+/** Views the table starts in a UI state of its own (dev route only, see `deepSeaPresets`). */
+export const deepSeaUiFixtures: Record<string, () => PlayerView> = {
+	dsCommunicate2: () => stress(2),
+	dsCommunicatePicked2: () => stress(2),
+	dsPlayPicked2: () => stress(2)
+};
+
+/** The table's UI state of the views in `deepSeaUiFixtures`. */
+export const deepSeaPresets: Record<string, (v: PlayerView) => TablePreset> = {
+	dsCommunicate2: () => ({ communicate: true }),
+	dsCommunicatePicked2: (v) => ({
+		communicate: true,
+		shown: v.attempt!.actions.communicate[0].card
+	}),
+	dsPlayPicked2: (v) => ({ selected: v.attempt!.playable[0] })
 };

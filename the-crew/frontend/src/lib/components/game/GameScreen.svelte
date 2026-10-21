@@ -5,14 +5,22 @@
 	import Lobby from '#lib/components/game/Lobby.svelte';
 	import Table from '#lib/components/game/Table.svelte';
 	import type { GameClient } from '#lib/game/client.js';
+	import type { TablePreset } from '#lib/game/tablePreset.js';
 	import type { PlayerView } from '#lib/types.js';
 
 	/** The game screen for one view: the live game route and the dev fixtures route render it. */
 	let {
 		client,
 		view,
-		onleave
-	}: { client: GameClient; view: PlayerView; onleave?: () => Promise<void> | void } = $props();
+		onleave,
+		preset = null
+	}: {
+		client: GameClient;
+		view: PlayerView;
+		onleave?: () => Promise<void> | void;
+		/** Dev fixtures only: the table's UI state to start with. */
+		preset?: TablePreset | null;
+	} = $props();
 </script>
 
 {#if view.phase === 'lobby'}
@@ -64,5 +72,5 @@
 		</Card.Root>
 	</div>
 {:else if view.attempt}
-	<Table {client} {view} attempt={view.attempt} />
+	<Table {client} {view} attempt={view.attempt} {preset} />
 {/if}

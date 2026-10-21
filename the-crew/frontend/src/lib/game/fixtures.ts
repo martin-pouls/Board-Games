@@ -5,6 +5,7 @@
 // The seeds are fixed; every function returns a fresh object. The Deep Sea views are in
 // fixturesDeepSea.ts, built from the same table simulation.
 import { cardKey, sameCard } from './cards.js';
+import type { TablePreset } from './tablePreset.js';
 import type {
 	Actions,
 	Attempt,
@@ -210,6 +211,7 @@ const DEFS: Record<number, () => MissionDef> = {
 	22: () => open(22, 5, { tokens: ['arrow1', 'arrow2', 'arrow3', 'arrow4'] }),
 	23: () => open(23, 5, { tokens: ['1', '2', '3', '4', '5'], setup: ['swapTokens'] }),
 	31: () => open(31, 6, { tokens: ['1', '2', '3'], golden: true }),
+	49: () => open(49, 10, { tokens: ['arrow1', 'arrow2', 'arrow3'], golden: true }),
 	48: () =>
 		open(48, 3, {
 			tokens: ['omega'],
@@ -1013,6 +1015,93 @@ export function mission48View(): PlayerView {
 	});
 }
 
+// ---------------------------------------------------------------------------------- stress
+
+const M49_TOKENS: Token[] = ['arrow1', 'arrow2', 'arrow3'];
+
+/**
+ * The fullest two-player table: mission 49 at the start of trick 4, the last trick shown, ten
+ * tasks in the rows (one fulfilled), Bob's communication, the distress signal line, and the
+ * viewer leads and may still communicate.
+ */
+export function stressView2(): PlayerView {
+	const t = table({
+		humans: 2,
+		commander: 0,
+		seed: 91,
+		tricks: 3,
+		plays: 0,
+		accept: (t) =>
+			t.leader === 0 &&
+			hasColourTricks(t, 1) &&
+			commOptions(t.hands[0], false).length >= 2 &&
+			commOptions(t.hands[1], false).length >= 1
+	});
+	return gameView(t, {
+		viewer: 0,
+		mission: 49,
+		distress: true,
+		tasks: makeTasks(t, { count: 10, tokens: M49_TOKENS, fulfilled: 1 }),
+		comms: { 1: communicationOf(t, 1, false, 2) }
+	});
+}
+
+/** The same mission in trick 6: the viewer and Bob have communicated, and the viewer follows. */
+export function stressCommView2(): PlayerView {
+	const t = table({
+		humans: 2,
+		commander: 0,
+		seed: 92,
+		tricks: 5,
+		turn: 0,
+		minPlays: 1,
+		accept: (t) =>
+			hasColourTricks(t, 2) &&
+			legal(t, 0).length >= 1 &&
+			legal(t, 0).length < t.hands[0].length &&
+			commOptions(t.hands[0], false).length >= 1 &&
+			commOptions(t.hands[1], false).length >= 1
+	});
+	return gameView(t, {
+		viewer: 0,
+		mission: 49,
+		tasks: makeTasks(t, { count: 10, tokens: M49_TOKENS, fulfilled: 2 }),
+		comms: { 0: communicationOf(t, 0, false, 4), 1: communicationOf(t, 1, false, 2) }
+	});
+}
+
+/** Mission 49, draft: all ten tasks are open and the viewer, the commander, takes the first. */
+export function draftFullView2(): PlayerView {
+	const t = table({ humans: 2, commander: 0, seed: 93 });
+	const tasks = makeTasks(t, { count: 10, tokens: M49_TOKENS, owned: 0 });
+	return gameView(t, {
+		viewer: 0,
+		mission: 49,
+		step: 'draft',
+		draftTurn: 0,
+		tasks,
+		extra: { takeable: tasks.map((x) => x.id) }
+	});
+}
+
+/**
+ * The table's own UI state some fixtures start with (dev route only): a card picked, or the
+ * communicate flow. The fixture of the same name in `fixtures` gives the view.
+ */
+export const presets: Record<string, (v: PlayerView) => TablePreset> = {
+	/** The viewer has picked a card to play. */
+	playPickedView2: (v) => ({ selected: v.attempt!.playable[0] }),
+	/** Communicate was tapped: the hand offers the cards that can be shown. */
+	communicateView2: () => ({ communicate: true }),
+	/** A card to show is picked: the button says the statement. */
+	communicatePickedView2: (v) => ({
+		communicate: true,
+		shown: v.attempt!.actions.communicate[0].card
+	}),
+	/** Draft: a task is tapped, the Take button confirms it. */
+	draftPickedView2: () => ({ tasks: [2] })
+};
+
 /** Every fixture by name, for tests and the dev fixtures route (`/dev/fixtures/<name>`). */
 export const fixtures: Record<string, () => PlayerView> = {
 	lobbyView1,
@@ -1035,5 +1124,12 @@ export const fixtures: Record<string, () => PlayerView> = {
 	handoverView5,
 	mission12View,
 	mission50View,
-	mission48View
+	mission48View,
+	stressView2,
+	stressCommView2,
+	draftFullView2,
+	playPickedView2: stressCommView2,
+	communicateView2: stressView2,
+	communicatePickedView2: stressView2,
+	draftPickedView2: draftFullView2
 };

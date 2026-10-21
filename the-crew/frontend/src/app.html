@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="text-scale" content="scale" />
 		<meta name="color-scheme" content="light dark" />
-		<meta name="theme-color" content="#f2f0ea" />
+		<meta name="theme-color" content="#efe5d5" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
 		<script>
 			// Set the edition and theme before first paint (same storage key and values as
@@ -13,7 +13,7 @@
 			// colours and the favicon mirror src/lib/edition.ts and src/routes/theme-deep-sea.css.
 			try {
 				var deepSea = '__EDITION_FOR_APP_HTML__' === 'deepSea';
-				var colors = deepSea ? ['#e7f3f1', '#04131d'] : ['#f2f0ea', '#0b1022'];
+				var colors = deepSea ? ['#e7f3f1', '#04131d'] : ['#efe5d5', '#060a1a'];
 				if (deepSea) {
 					document.documentElement.setAttribute('data-edition', 'deepSea');
 					document
