@@ -1,6 +1,7 @@
 <!--
-	A row of task cards: the ones in front of a member, or the open pool during the setup. A task
-	that changes place (taken in the draft, handed over) flies from one row to the other.
+	A row of tasks: the ones in front of a member. Planet Nine's are small playing cards, Deep Sea's
+	task cards are chips (TaskChip; a tap opens the full card). A task that changes place (taken in
+	the draft, handed over) flies from one row to the other.
 -->
 <script lang="ts" module>
 	import type { Task } from '#lib/types.js';
@@ -10,14 +11,18 @@
 		canPick: (t: Task) => boolean;
 		selected: number[];
 		onpick: (t: Task) => void;
+		/** Deep Sea: the open tasks read out the selected one (draft, assignment). */
+		read?: boolean;
 	}
 </script>
 
 <script lang="ts">
 	import { flip } from 'svelte/animate';
 	import { getCardMotion } from '@board-games/shared/cardMotion.js';
+	import { isTaskCard } from '#lib/game/taskChip.js';
 	import { cn } from '#lib/utils.js';
 	import TaskCard from './TaskCard.svelte';
+	import TaskChip from './TaskChip.svelte';
 
 	let {
 		tasks,
@@ -43,30 +48,41 @@
 	const motion = getCardMotion();
 	const { send, receive } = motion;
 	const key = (t: Task) => `task-${attempt}-${t.id}`;
+	const chips = $derived(tasks.some(isTaskCard));
 </script>
 
 {#if tasks.length}
 	<ul
 		class={cn(
 			'flex flex-wrap items-end',
-			size === 'xs' ? 'gap-x-[7px] gap-y-1.5' : 'gap-x-2.5 gap-y-2',
+			chips ? 'gap-x-2 gap-y-2' : size === 'xs' ? 'gap-x-[7px] gap-y-1.5' : 'gap-x-2.5 gap-y-2',
 			className
 		)}
 		aria-label={label}
 	>
 		{#each tasks as t (t.id)}
 			<li
+				class={chips ? 'max-w-full min-w-0' : undefined}
 				animate:flip={motion.flip}
 				in:receive={{ key: key(t), offstage: 'none' }}
 				out:send={{ key: key(t), offstage: 'none' }}
 			>
-				<TaskCard
-					task={t}
-					{size}
-					{players}
-					selected={!!pick?.selected.includes(t.id)}
-					onpick={pick?.canPick(t) ? () => pick.onpick(t) : undefined}
-				/>
+				{#if chips}
+					<TaskChip
+						task={t}
+						players={players ?? 3}
+						selected={!!pick?.selected.includes(t.id)}
+						onpick={pick?.canPick(t) ? () => pick.onpick(t) : undefined}
+					/>
+				{:else}
+					<TaskCard
+						task={t}
+						{size}
+						{players}
+						selected={!!pick?.selected.includes(t.id)}
+						onpick={pick?.canPick(t) ? () => pick.onpick(t) : undefined}
+					/>
+				{/if}
 			</li>
 		{/each}
 	</ul>

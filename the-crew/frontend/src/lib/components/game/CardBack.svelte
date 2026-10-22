@@ -21,18 +21,13 @@
 	title={label}
 >
 	{#if edition === 'deepSea'}
-		<!-- Sonar ripples: the back of every card. -->
-		<svg viewBox="0 0 24 24" class="size-3/5 opacity-50" fill="none" aria-hidden="true">
-			<circle cx="12" cy="12" r="2.4" fill="currentColor" />
-			<circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.4" />
-			<circle
-				cx="12"
-				cy="12"
-				r="10"
-				stroke="currentColor"
-				stroke-width="1.4"
-				stroke-dasharray="4 3"
-			/>
+		<!-- The sunken temple, lit in the dark: the back of every card. -->
+		<svg viewBox="0 0 24 24" class="size-3/5 opacity-55" fill="currentColor" aria-hidden="true">
+			<path d="M5.5 13a6.5 6.5 0 0 1 13 0z" />
+			<rect x="11.4" y="4.2" width="1.2" height="2" rx="0.4" />
+			<rect x="4" y="13" width="16" height="1.6" rx="0.4" />
+			<path d="M5.6 15.4h1.4v4.6H5.6zm3.4 0h1.4v4.6H9zm3.4 0h1.4v4.6h-1.4zm3.4 0h1.4v4.6h-1.4z" />
+			<rect x="3.5" y="20" width="17" height="1.4" rx="0.4" />
 		</svg>
 	{:else}
 		<!-- A small planet with a ring: the back of every card. -->

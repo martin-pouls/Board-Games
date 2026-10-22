@@ -2,8 +2,8 @@
 	A game tile's art band: the 88 px square on the phone's shelf, a wide band on desktop. It is a
 	size container, so everything inside scales with its height (cqh). The Game shows its two
 	printed start cards, Regicide a king on its misty ridges with a card index, Fox Duet a slice of
-	its board with the fox on the path, The Crew its rocket flying up to Planet Nine; Mission Deep
-	Sea keeps its icon until its own theme is done.
+	its board with the fox on the path, The Crew its rocket flying up to Planet Nine, Mission Deep
+	Sea its bathyscaphe diving through the lamp beam towards the sunken temple.
 -->
 <script lang="ts">
 	import type { Game } from '#lib/games.js';
@@ -15,7 +15,7 @@
 		regicide: 'bg-regicide-band',
 		'fox-duet': 'bg-fox-band',
 		'the-crew': 'bg-linear-to-br from-crew-ink via-crew-ink to-crew-tile',
-		'deep-sea': 'bg-linear-to-b from-deep-ink via-deep-ink to-deep-tile'
+		'deep-sea': 'bg-linear-to-br from-deep-ink via-deep-ink to-deep-tile'
 	};
 
 	/* Fox Duet's forest path: a gentle meander with stepping stones, a gem tile above and below. */
@@ -41,6 +41,24 @@
 		[140, 34, 0.9, 0.6],
 		[8, 50, 0.9, 0.5]
 	];
+	/** Deep Sea's floating motes and the bubbles behind the bathyscaphe: x, y, radius, opacity. */
+	const DEEP_MOTES = [
+		[22, 30, 0.9, 0.5],
+		[48, 70, 0.7, 0.4],
+		[150, 20, 0.8, 0.45],
+		[205, 62, 0.9, 0.4],
+		[228, 18, 0.7, 0.5],
+		[12, 82, 0.8, 0.35],
+		[118, 90, 0.6, 0.4]
+	];
+	const DEEP_BUBBLES = [
+		[54, 13, 1.6, 0.55],
+		[38, 20, 1.1, 0.45],
+		[70, 6, 1.2, 0.4]
+	];
+	const TEMPLE_COLUMNS = [-28, -17, -6, 5, 16, 27];
+	/** The beam's gradient needs an id of its own on the page. */
+	const uid = $props.id();
 	const FOX_TILES = [
 		{ x: 96, y: 24, tilt: -6, gems: [0], link: `M96 ${pathY(96) - 6}V36` },
 		{ x: 146, y: 82, tilt: 5, gems: [-5, 5], link: `M146 ${pathY(146) + 6}V70` }
@@ -172,44 +190,66 @@
 			</g>
 		</svg>
 	{:else}
-		<svg viewBox="0 0 32 32" class="icon text-deep-accent">
-			<circle cx="5" cy="8" r="1.1" fill="white" fill-opacity="0.55" />
-			<circle cx="8" cy="4.5" r="0.7" fill="white" fill-opacity="0.45" />
-			<circle cx="27" cy="9" r="0.9" fill="white" fill-opacity="0.5" />
-			<circle cx="29" cy="24" r="0.7" fill="white" fill-opacity="0.4" />
+		<!-- A slice of the deep, 240 × 100: the bathyscaphe dives down a trail of bubbles into the
+		     lamp-lit water, towards the dome of the sunken temple rising from the corner. -->
+		<svg class="scene text-deep-sub" viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice">
+			<defs>
+				<linearGradient id="{uid}-beam" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color="var(--deep-beam)" stop-opacity="0.32" />
+					<stop offset="1" stop-color="var(--deep-beam)" stop-opacity="0" />
+				</linearGradient>
+			</defs>
+			{#each DEEP_MOTES as [x, y, r, o] (`${x},${y}`)}
+				<circle cx={x} cy={y} {r} fill="white" fill-opacity={o} />
+			{/each}
+			<path d="M124 -4 L190 -4 L172 100 L98 100z" fill="url(#{uid}-beam)" />
+			<g transform="translate(166 84)" fill="var(--deep-temple)">
+				<path d="M-27 -2a27 27 0 0 1 54 0z" />
+				<rect x="-2" y="-34" width="4" height="7" rx="1" />
+				<rect x="-34" y="-2" width="68" height="5" rx="1" />
+				{#each TEMPLE_COLUMNS as c (c)}
+					<rect x={c - 1.5} y="3" width="4.5" height="20" />
+				{/each}
+				<path
+					d="M-27 -2a27 27 0 0 1 54 0"
+					fill="none"
+					stroke="var(--deep-beam)"
+					stroke-width="1.6"
+					stroke-opacity="0.75"
+				/>
+			</g>
 			<path
-				d="M19 4h5v2.5h-3v3h-2z"
-				fill="currentColor"
-				stroke="currentColor"
-				stroke-width="1"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M11 10.5h7v3h-7z"
-				fill="currentColor"
-				stroke="currentColor"
-				stroke-width="1"
-				stroke-linejoin="round"
-			/>
-			<ellipse cx="15" cy="18.5" rx="11" ry="5.5" fill="currentColor" />
-			<path
-				d="M25 16.5 29 13.5v10l-4-3z"
-				fill="currentColor"
-				stroke="currentColor"
-				stroke-width="1"
-				stroke-linejoin="round"
-			/>
-			<circle cx="9" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-			<circle cx="14" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-			<circle cx="19" cy="18.5" r="1.5" fill="white" fill-opacity="0.85" />
-			<path
-				d="M6 28.5c1.2-1.6 2.8-1.6 4 0s2.8 1.6 4 0 2.8-1.6 4 0 2.8 1.6 4 0"
+				d="M-4 6C30 10 62 18 92 32"
 				fill="none"
-				stroke="currentColor"
-				stroke-width="1"
+				stroke="white"
+				stroke-opacity="0.55"
+				stroke-width="1.8"
+				stroke-dasharray="0.1 5.5"
 				stroke-linecap="round"
-				stroke-opacity="0.5"
 			/>
+			{#each DEEP_BUBBLES as [x, y, r, o] (`${x},${y}`)}
+				<circle
+					cx={x}
+					cy={y}
+					{r}
+					fill="none"
+					stroke="white"
+					stroke-opacity={o}
+					stroke-width="0.9"
+				/>
+			{/each}
+			<!-- The bathyscaphe: float tank, hull on skids, the glass dome in front, its lamp. -->
+			<g transform="translate(92 12) rotate(22) scale(2.05)">
+				<rect x="4.5" y="4.6" width="9" height="3.6" rx="1.8" fill="currentColor" />
+				<path d="M9 8v2" stroke="currentColor" stroke-width="1.8" />
+				<rect x="1.5" y="9.5" width="13" height="8" rx="4" fill="currentColor" />
+				<path d="M4.5 19.6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+				<path d="M6 17v2.6M12 17v2.6" stroke="currentColor" stroke-width="1.2" />
+				<circle cx="15" cy="13.5" r="5.2" fill="currentColor" />
+				<circle cx="15.6" cy="13.3" r="3.6" fill="var(--deep-ink)" />
+				<circle cx="16.7" cy="12.2" r="0.95" fill="currentColor" fill-opacity="0.6" />
+				<path d="M20 11.7 23.6 9.6v8l-3.6-2.1z" fill="currentColor" fill-opacity="0.42" />
+			</g>
 		</svg>
 	{/if}
 </div>
@@ -222,10 +262,6 @@
 		flex: none;
 		display: grid;
 		place-items: center;
-	}
-	.icon {
-		width: 66cqh;
-		height: 66cqh;
 	}
 
 	/* The Game: navy cards with cream numerals, fanned 5° outwards (as on its home page). */

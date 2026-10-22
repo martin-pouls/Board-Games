@@ -48,7 +48,7 @@ export const editionTerms: Record<Edition, Terms> = {
 		dummyPossessive: "Tonoja's",
 		commander: 'captain',
 		commToken: 'sonar token',
-		themeColor: { light: '#e7f3f1', dark: '#04131d' }
+		themeColor: { light: '#e5f3f8', dark: '#010f1b' }
 	}
 };
 

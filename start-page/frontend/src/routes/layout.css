@@ -15,9 +15,11 @@
  * its game, in the same mode, with tokens copied from that game's layout.css: The Game navy cards
  * with blue and orange start arrows, Regicide's misty ridges and Alegreya court letter, Fox Duet's
  * storybook meadow with its forest path and the fox, The Crew's rocket flying up to the lit rim of
- * Planet Nine (coral on indigo space; cyan on midnight navy in dark mode), Mission Deep Sea teal-navy ink + coral on sea-foam (abyssal blue +
- * turquoise in dark mode). The background is mirrored in app.html (theme-color); the gate's
- * login page (gate/frontend) uses the same table tokens: keep the two in step.
+ * Planet Nine (coral on indigo space; cyan on midnight navy in dark mode), Mission Deep Sea's yellow
+ * bathyscaphe diving through the lamp beam to the sunken temple (ice-blue tile with the orange of
+ * the task badges; deep teal-navy water and a warmer orange in dark mode). The background is
+ * mirrored in app.html (theme-color); the gate's login page (gate/frontend) uses the same table
+ * tokens: keep the two in step.
  */
 :root {
 	--background: oklch(0.955 0.008 250);
@@ -85,11 +87,15 @@
 	--crew-accent: oklch(0.7 0.17 40);
 	--crew-text: oklch(0.52 0.17 35);
 	--crew-planet: oklch(0.24 0.08 275);
-	/* Mission Deep Sea */
-	--deep-tile: oklch(0.96 0.025 190);
-	--deep-ink: oklch(0.3 0.07 215);
-	--deep-accent: oklch(0.72 0.15 30);
-	--deep-text: oklch(0.5 0.14 28);
+	/* Mission Deep Sea: tile, the water band, the orange of the name and ring, the bathyscaphe, the
+	   lamp beam, the temple. */
+	--deep-tile: oklch(0.96 0.018 222);
+	--deep-ink: oklch(0.3 0.07 232);
+	--deep-accent: oklch(0.56 0.165 42);
+	--deep-text: oklch(0.52 0.16 42);
+	--deep-sub: oklch(0.8 0.16 85);
+	--deep-beam: oklch(0.9 0.1 200);
+	--deep-temple: oklch(0.22 0.06 240);
 }
 
 .dark {
@@ -147,10 +153,13 @@
 	--crew-accent: oklch(0.82 0.12 210);
 	--crew-text: oklch(0.84 0.11 210);
 	--crew-planet: oklch(0.17 0.05 270);
-	--deep-tile: oklch(0.19 0.04 235);
-	--deep-ink: oklch(0.22 0.06 240);
-	--deep-accent: oklch(0.85 0.12 195);
-	--deep-text: oklch(0.86 0.11 195);
+	--deep-tile: oklch(0.19 0.04 240);
+	--deep-ink: oklch(0.22 0.06 242);
+	--deep-accent: oklch(0.76 0.15 58);
+	--deep-text: oklch(0.8 0.14 60);
+	--deep-sub: oklch(0.86 0.16 90);
+	--deep-beam: oklch(0.85 0.12 200);
+	--deep-temple: oklch(0.14 0.04 245);
 }
 
 @theme inline {
@@ -185,6 +194,7 @@
 	--color-deep-ink: var(--deep-ink);
 	--color-deep-accent: var(--deep-accent);
 	--color-deep-text: var(--deep-text);
+	--color-deep-sub: var(--deep-sub);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

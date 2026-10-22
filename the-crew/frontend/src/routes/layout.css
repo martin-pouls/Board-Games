@@ -3,9 +3,6 @@
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/oxanium';
 @import '@fontsource-variable/sofia-sans-semi-condensed';
-/* Mission Deep Sea keeps its own faces until its theme is redone. */
-@import '@fontsource-variable/space-grotesk';
-@import '@fontsource-variable/nunito';
 /* Mission Deep Sea: token overrides under [data-edition='deepSea'] (Planet Nine ignores them). */
 @import './theme-deep-sea.css';
 
@@ -13,6 +10,13 @@
 @source '../../../../shared/frontend/src';
 
 @custom-variant dark (&:is(.dark *));
+/* A short phone screen (375 × 629 and the like): lists that scroll show fewer rows. */
+@custom-variant short (@media (max-height: 700px));
+
+/* A list that scrolls fades out at its bottom edge. */
+@utility fade-end {
+	mask-image: linear-gradient(to bottom, black calc(100% - 14px), transparent);
+}
 
 /*
  * Planet Nine, "rulebook page": warm rulebook paper with navy ink and a royal-blue accent by day;
@@ -59,7 +63,7 @@
 	--sidebar-border: oklch(0.92 0.004 286.32);
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 
-	/* Faces: the @theme fonts point here, so Mission Deep Sea can keep its own. */
+	/* Faces (both editions): the @theme fonts point here. */
 	--app-font-sans: 'Sofia Sans Semi Condensed Variable', system-ui, sans-serif;
 	--app-font-display: 'Oxanium Variable', system-ui, sans-serif;
 
@@ -110,6 +114,10 @@
 	--stars: transparent;
 	/* Marks cards that just came into the hand (NewCardMark). */
 	--new-card: oklch(0.62 0.12 190);
+	/* The home card's scene band (HomeBand): the night sky, the planet and its lit rim. */
+	--band-bg: linear-gradient(100deg, oklch(0.32 0.11 275), oklch(0.25 0.09 272));
+	--band-shape: oklch(0.22 0.08 275);
+	--band-accent: oklch(0.7 0.17 40);
 }
 
 .dark {
@@ -161,6 +169,9 @@
 	--panel: oklch(0.205 0.045 266);
 	--glow: oklch(0.42 0.13 245 / 45%);
 	--new-card: oklch(0.8 0.14 75);
+	--band-bg: linear-gradient(100deg, oklch(0.26 0.08 268), oklch(0.2 0.06 266));
+	--band-shape: oklch(0.17 0.05 270);
+	--band-accent: oklch(0.82 0.12 210);
 }
 
 @theme inline {

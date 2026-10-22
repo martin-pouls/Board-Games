@@ -24,15 +24,6 @@ export function sameCard(a: Card | null | undefined, b: Card | null | undefined)
 	return !!a && !!b && a.suit === b.suit && a.rank === b.rank;
 }
 
-/** The Tailwind text colour class of a suit (theme tokens). */
-export const SUIT_TEXT: Record<Suit, string> = {
-	pink: 'text-pink',
-	blue: 'text-blue',
-	green: 'text-green',
-	yellow: 'text-yellow',
-	trump: 'text-rocket-ink'
-};
-
 /** The short label of a token: 1–5, Ω, › … ››››. */
 export function tokenLabel(t: Token): string {
 	if (t === 'omega') return 'Ω';
@@ -81,6 +72,3 @@ export const CARD_SIZE: Record<CardSize, string> = {
 	trick: 'h-[4.625rem] w-[3.25rem] rounded-md',
 	hand: 'h-[5.25rem] w-[3.625rem] rounded-md'
 };
-/** Sizes without the art window (Planet Nine) or with the rank and glyph stacked in the middle
- * (Deep Sea). */
-export const COMPACT: ReadonlySet<CardSize> = new Set(['xs', 'comm', 'task', 'stack']);

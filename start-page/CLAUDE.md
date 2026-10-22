@@ -12,6 +12,7 @@ The landing page at `/board-games/`: one tile per game, plus imprint and privacy
   - The Game: its two printed start cards, fanned −5°/+5° (mirrors `StartCard` in the-game).
   - Regicide: a K on the three ridges with a K♠ index.
   - Fox Duet: a slice of the board (path, stepping stones, gem tiles, the fox disc).
-  - The Crew, Deep Sea: icon art until their themes are redone.
+  - The Crew: a slice of space, the rocket flying up a dotted trail towards the lit rim of Planet Nine.
+  - Deep Sea: a slice of the deep, the yellow bathyscaphe diving through the lamp beam towards the sunken temple.
 - **Layout:** phone is a shelf of rows (art square on the left, title, player count, one-line `tagline`, chevron). Desktop is a grid of fixed-size tiles (2 per row from `md`, 3 from `lg`), art band on top and the longer `description`; a short last row is centred. No feature tags: they added nothing and cost space.
 - The art band is a size container: everything in it scales with its height (`cqh`), and SVG scenes use `slice`, so the phone's square shows the middle of the desktop band.

@@ -13,6 +13,7 @@
 	import type { GameClient } from '#lib/game/client.js';
 	import { cardLabel, sameCard } from '#lib/game/cards.js';
 	import type { TablePreset } from '#lib/game/tablePreset.js';
+	import { setTaskSheet } from '#lib/game/taskSheet.js';
 	import { cn } from '#lib/utils.js';
 	import {
 		OWNER_UNASSIGNED,
@@ -32,6 +33,7 @@
 	import RulesHelp from './RulesHelp.svelte';
 	import type { TaskPick } from './TaskList.svelte';
 	import TaskPool from './TaskPool.svelte';
+	import TaskSheet from './TaskSheet.svelte';
 	import TrickArea from './TrickArea.svelte';
 
 	let {
@@ -48,6 +50,9 @@
 	} = $props();
 
 	setCardMotion();
+	// Deep Sea: tapping a task chip opens its full card.
+	let sheetTask = $state<Task | null>(null);
+	setTaskSheet({ show: (t) => (sheetTask = t) });
 
 	// svelte-ignore state_referenced_locally
 	const start = preset;
@@ -176,7 +181,10 @@
 		get selected() {
 			return selectedTasks;
 		},
-		onpick: pickTask
+		onpick: pickTask,
+		get read() {
+			return mine && !replacing && (step === 'draft' || step === 'assign');
+		}
 	};
 	// During the setup the open tasks lie in the middle, where the trick goes later.
 	const pool = $derived(
@@ -313,6 +321,7 @@
 </div>
 
 <RulesHelp bind:open={rulesOpen} {mission} />
+<TaskSheet {attempt} bind:task={sheetTask} />
 
 <AlertDialog.Root bind:open={confirmGiveUp}>
 	<AlertDialog.Content>

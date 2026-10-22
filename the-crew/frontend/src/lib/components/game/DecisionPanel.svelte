@@ -14,6 +14,7 @@
 	import CardName from './CardName.svelte';
 	import EditionGlyph from './EditionGlyph.svelte';
 	import TaskCard from './TaskCard.svelte';
+	import TaskChip from './TaskChip.svelte';
 
 	let {
 		client,
@@ -101,7 +102,8 @@
 					? `Waiting for ${waitingFor} to choose a card.`
 					: stepText(step, attempt.pick);
 			case 'poll':
-				if (mine) return `The ${terms.commander} asks you.`;
+				// The question itself, answered right below.
+				if (mine) return question;
 				return isCommander ? 'Waiting for the crew to answer.' : `Waiting for ${waitingFor}.`;
 			case 'pick':
 				if (mine && twoVolunteers)
@@ -186,8 +188,7 @@
 			mine &&
 			attempt.takeable.includes(draftTask.id) &&
 			!attempt.actions.replaceTasks &&
-			!attempt.actions.pass &&
-			!draftTask.objective
+			!attempt.actions.pass
 	);
 
 	// --- Token swap / move ---
@@ -213,14 +214,10 @@
 <div
 	class={cn(
 		'flex min-h-11 flex-col justify-center gap-2',
-		!bare && 'rounded-xl bg-panel px-3 py-2'
+		!bare && 'rounded-xl bg-panel px-3 py-1.5'
 	)}
 	role="status"
 >
-	{#if tappedTask?.objective}
-		<!-- Deep Sea: the tapped task card in words. -->
-		<p class="text-sm leading-snug">{taskTextOf(tappedTask, players)}</p>
-	{/if}
 	<!-- The status; a tapped card or task replaces it with the button that confirms it. -->
 	{#if attempt.step === 'draft' && mine && draftTask && (attempt.takeable.includes(draftTask.id) || attempt.actions.replaceTasks)}
 		<div class="flex gap-2">
@@ -228,11 +225,13 @@
 				<Button
 					class="h-11 flex-1 gap-1.5 rounded-[0.6875rem] text-base font-semibold"
 					{disabled}
-					aria-label={`Take ${draftTask.card ? cardLabel(draftTask.card) : 'this task'}${forJarvis ? ` for ${terms.dummy}` : ''}`}
+					aria-label={`Take ${draftTask.card ? cardLabel(draftTask.card) : draftTask.objective ? taskTextOf(draftTask, players) : 'this task'}${forJarvis ? ` for ${terms.dummy}` : ''}`}
 					onclick={() => run(() => client.pickTask(draftTask.id))}
 				>
 					Take
-					{#if draftTask.card}<CardName card={draftTask.card} />{:else}this task{/if}
+					{#if draftTask.card}<CardName card={draftTask.card} />
+					{:else if draftTask.objective}<TaskChip task={draftTask} {players} still />
+					{:else}this task{/if}
 					{forJarvis ? ` for ${terms.dummy}` : ''}
 				</Button>
 			{:else}
@@ -270,7 +269,11 @@
 		     difficulty (in the draft also while another member is on turn, e.g. mission 25). -->
 		<div class="flex items-center gap-2 text-sm">
 			<span class="mr-auto text-muted-foreground">
-				{tappedTask ? 'Replace the tapped task?' : 'Tap a task to replace it.'}
+				{tappedTask
+					? tappedTask.objective
+						? `${taskTextOf(tappedTask, players)}.`
+						: 'Replace the tapped task?'
+					: 'Tap a task to replace it.'}
 			</span>
 			<Button
 				size="sm"
@@ -315,15 +318,20 @@
 			{/each}
 		</div>
 	{:else if attempt.step === 'poll' && poll}
-		<p class="text-sm">{question}</p>
-		<ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
-			{#each pollers as s (s)}
-				<li>
-					<span class="text-muted-foreground">{name(s)}:</span>
-					<b>{answerText(poll.answers[s])}</b>
-				</li>
-			{/each}
-		</ul>
+		{#if !mine}
+			<p class="text-sm">{question}</p>
+		{/if}
+		{@const others = pollers.filter((s) => !mine || s !== me)}
+		{#if others.length}
+			<ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
+				{#each others as s (s)}
+					<li>
+						<span class="text-muted-foreground">{name(s)}:</span>
+						<b>{answerText(poll.answers[s])}</b>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 		{#if mine}
 			<div class="grid grid-cols-2 gap-2">
 				<Button class="h-11" {disabled} onclick={() => run(() => client.answerPoll(true))}>

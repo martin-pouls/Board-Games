@@ -1,6 +1,7 @@
 <!--
-	What the mission asks beyond the tasks: the special objectives and the communication rules.
-	The tasks themselves lie with their owners (crew strip, own row) or in the open pool.
+	What the mission asks beyond the tasks: the special objectives and the communication rules
+	(only while the attempt runs: the debrief says what counted). The tasks themselves lie with
+	their owners (crew strip, own row) or in the open pool.
 -->
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
@@ -11,8 +12,8 @@
 	import { objectiveText, ownerText } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import { OWNER_UNASSIGNED, type Attempt, type MissionDef } from '#lib/types.js';
-	import PlayingCard from './PlayingCard.svelte';
-	import SonarPing from './SonarPing.svelte';
+	import EditionGlyph from './EditionGlyph.svelte';
+	import TaskMini from './TaskMini.svelte';
 
 	let {
 		attempt,
@@ -34,6 +35,9 @@
 			: attempt.objectives[i].owner;
 	}
 
+	/** The debrief shows the objectives only. */
+	const over = $derived(!!attempt.result);
+
 	// Deep Sea: the communication mode of this attempt (the terrain card has already decided).
 	const MODE_TEXT = {
 		'': 'normal communication',
@@ -48,40 +52,46 @@
 	} as const;
 	/** The shared sonar token pool of rapture of the deep: used and left. */
 	const pool = $derived(
-		attempt.comm === 'rapture' && attempt.tokensLeft >= 0
+		!over && attempt.comm === 'rapture' && attempt.tokensLeft >= 0
 			? { left: attempt.tokensLeft, total: attempt.members.length - 2 }
 			: null
 	);
-	const terrain = $derived(attempt.terrain);
+	const terrain = $derived(over ? null : attempt.terrain);
 
 	/** The communication rules (and the distress signal), each a label and what it means. */
 	const rules = $derived(
-		[
-			mission?.deadZone && {
-				label: 'Dead zone',
-				text: 'communicate without the position',
-				title: 'Nobody says whether a communicated card is the highest, only or lowest'
-			},
-			!terrain &&
-				attempt.comm === 'currents' && {
-					label: 'Currents',
-					text: 'communicate without the position',
-					title: modeTitle.currents
-				},
-			!terrain &&
-				attempt.comm === 'none' && { label: 'No communication', text: '', title: modeTitle.none },
-			attempt.commFirstTrickOnly && {
-				label: 'Passed on',
-				text: 'communicate only before the first trick',
-				title: 'The tasks were passed on: communicate before trick 1 or never'
-			},
-			mission &&
-				mission.fromTrick > 1 && {
-					label: 'Disruption',
-					text: `nobody communicates before trick ${mission.fromTrick}`
-				},
-			attempt.distress && { label: 'Distress signal', text: 'used' }
-		].filter((r): r is { label: string; text: string; title?: string } => !!r)
+		over
+			? []
+			: [
+					mission?.deadZone && {
+						label: 'Dead zone',
+						text: 'communicate without the position',
+						title: 'Nobody says whether a communicated card is the highest, only or lowest'
+					},
+					!terrain &&
+						attempt.comm === 'currents' && {
+							label: 'Currents',
+							text: 'communicate without the position',
+							title: modeTitle.currents
+						},
+					!terrain &&
+						attempt.comm === 'none' && {
+							label: 'No communication',
+							text: '',
+							title: modeTitle.none
+						},
+					attempt.commFirstTrickOnly && {
+						label: 'Passed on',
+						text: 'communicate only before the first trick',
+						title: 'The tasks were passed on: communicate before trick 1 or never'
+					},
+					mission &&
+						mission.fromTrick > 1 && {
+							label: 'Disruption',
+							text: `nobody communicates before trick ${mission.fromTrick}`
+						},
+					attempt.distress && { label: 'Distress signal', text: 'used' }
+				].filter((r): r is { label: string; text: string; title?: string } => !!r)
 	);
 </script>
 
@@ -92,18 +102,17 @@
 	>
 		{#if terrain}
 			<p class="flex items-center gap-1.5">
-				<PlayingCard card={terrain} size="xs" />
-				<span>
-					Unfamiliar terrain: {cardLabel(terrain)} →
-					<b class="font-semibold">{MODE_TEXT[attempt.comm]}</b>
-				</span>
+				<b class="font-bold">Unfamiliar terrain:</b>
+				<TaskMini card={terrain} size="chip" />
+				<span class="sr-only">{cardLabel(terrain)}</span>
+				<span>→ <b class="font-semibold">{MODE_TEXT[attempt.comm]}</b></span>
 			</p>
 		{/if}
 		{#if rules.length || pool}
 			<ul class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
 				{#if pool}
 					<li class="flex items-center gap-1.5" title={modeTitle.rapture}>
-						<SonarPing class="size-3.5" />
+						<EditionGlyph kind="comm" class="size-3.5" />
 						<b class="font-bold">Rapture of the deep</b>
 						<span
 							class="flex gap-0.5"

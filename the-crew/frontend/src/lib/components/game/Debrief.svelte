@@ -9,12 +9,13 @@
 	import { Switch } from '#lib/components/ui/switch/index.js';
 	import { edition, missionCount } from '#lib/edition.js';
 	import type { GameClient } from '#lib/game/client.js';
-	import { cardKey } from '#lib/game/cards.js';
+	import { cardKey, cardLabel } from '#lib/game/cards.js';
 	import { resultText, seatName } from '#lib/game/format.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, PlayerView } from '#lib/types.js';
 	import EditionGlyph from './EditionGlyph.svelte';
 	import PlayingCard from './PlayingCard.svelte';
+	import TaskMini from './TaskMini.svelte';
 
 	let {
 		client,
@@ -70,7 +71,7 @@
 	);
 </script>
 
-<section class="flex flex-col gap-2.5 rounded-xl bg-muted/60 px-3 py-2.5" aria-label="Debrief">
+<section class="flex flex-col gap-2 rounded-xl bg-muted/60 px-3 py-2" aria-label="Debrief">
 	<div class="flex items-start gap-2">
 		<span
 			class={cn(
@@ -96,36 +97,55 @@
 		</div>
 	</div>
 
-	<ul class="flex flex-col gap-1">
-		{#each members as m (m.seat)}
-			{#if m.cards?.length}
-				<li class="flex items-center gap-2">
-					<span class="w-14 shrink-0 truncate text-xs text-muted-foreground">
-						{seatName(attempt.members, m.seat, attempt.seat)}
-					</span>
-					<span class="flex flex-wrap gap-0.5">
-						{#each m.cards as c (cardKey(c))}
-							<PlayingCard card={c} size="xs" />
-						{/each}
-					</span>
-				</li>
-			{/if}
-		{/each}
-	</ul>
+	{#if deepSea}
+		<!-- The hands left as the small printed cards, one member after the other. -->
+		<ul class="flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Cards left">
+			{#each members as m (m.seat)}
+				{#if m.cards?.length}
+					<li class="flex items-center gap-1.5">
+						<span class="text-xs text-muted-foreground">
+							{seatName(attempt.members, m.seat, attempt.seat)}
+						</span>
+						<span class="flex flex-wrap gap-0.5">
+							{#each m.cards as c (cardKey(c))}
+								<span class="flex" role="img" aria-label={cardLabel(c)}>
+									<TaskMini card={c} size="chip" />
+								</span>
+							{/each}
+						</span>
+					</li>
+				{/if}
+			{/each}
+		</ul>
+	{:else}
+		<ul class="flex flex-col gap-1">
+			{#each members as m (m.seat)}
+				{#if m.cards?.length}
+					<li class="flex items-center gap-2">
+						<span class="w-14 shrink-0 truncate text-xs text-muted-foreground">
+							{seatName(attempt.members, m.seat, attempt.seat)}
+						</span>
+						<span class="flex flex-wrap gap-0.5">
+							{#each m.cards as c (cardKey(c))}
+								<PlayingCard card={c} size="xs" />
+							{/each}
+						</span>
+					</li>
+				{/if}
+			{/each}
+		</ul>
+	{/if}
 
 	{#if isHost}
 		{#if canUncount}
 			<div class="flex items-center justify-between gap-3">
-				<div class="flex flex-col gap-0.5">
-					<Label for="opt-uncounted" class="text-sm leading-snug font-normal">
-						Don't count this attempt
-					</Label>
-					<p class="text-xs text-muted-foreground">The loss could not be avoided.</p>
-				</div>
+				<Label for="opt-uncounted" class="text-sm leading-snug font-normal">
+					Unavoidable failure: don't count it
+				</Label>
 				<Switch id="opt-uncounted" bind:checked={uncounted} {disabled} />
 			</div>
 		{/if}
-		<div class="grid grid-cols-2 gap-2">
+		<div class={cn('grid gap-2', !won && cardTasks ? 'grid-cols-3' : 'grid-cols-2')}>
 			{#if won}
 				<Button
 					class="h-11"
@@ -137,10 +157,10 @@
 						: `Mission ${view.mission + 1}`}
 				</Button>
 			{:else if cardTasks}
-				<Button class="h-11" {disabled} onclick={() => nextAttempt(false)}>
+				<Button class="h-11 px-2" {disabled} onclick={() => nextAttempt(false)}>
 					<RotateCcw />Same tasks
 				</Button>
-				<Button class="h-11" variant="secondary" {disabled} onclick={() => nextAttempt(true)}>
+				<Button class="h-11 px-2" variant="secondary" {disabled} onclick={() => nextAttempt(true)}>
 					<Shuffle />New tasks
 				</Button>
 			{:else}
@@ -149,7 +169,7 @@
 				</Button>
 			{/if}
 			<Button
-				class={cn('h-11', !won && cardTasks && 'col-span-2')}
+				class={cn('h-11', !won && cardTasks && 'px-2')}
 				variant="secondary"
 				{disabled}
 				onclick={() => run(() => client.backToLobby(canUncount && uncounted))}

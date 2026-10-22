@@ -255,6 +255,19 @@ function draftHardest(humans: number): PlayerView {
 	});
 }
 
+/** Mission 31's draft: the most open tasks (difficulty 17), more than the pool shows at once. */
+function draftMany(humans: number): PlayerView {
+	const t = table({ humans, commander: 0, seed: 141 });
+	const tasks = drawCards(t.seats, 17, 18, {}).map((id, i) => dsTask(t, i, id));
+	return dsView(t, 31, {
+		viewer: 0,
+		step: 'draft',
+		draftTurn: 0,
+		tasks,
+		extra: { takeable: takeable(tasks, true) }
+	});
+}
+
 // ---------------------------------------------------------------------------------- one member, volunteers, free selection
 
 /** Mission 6: the captain (the viewer) picks the one member who takes all the tasks. */
@@ -591,6 +604,7 @@ const SITUATIONS: Record<string, (humans: number) => PlayerView> = {
 	dsDraftPass: draftPass,
 	dsDraftStart: draftStart,
 	dsDraftHardest: draftHardest,
+	dsDraftMany: draftMany,
 	dsOneMemberPick: oneMemberPick,
 	dsVolunteerPoll: volunteerPoll,
 	dsVolunteerPick: volunteerPick,
@@ -637,7 +651,8 @@ export const deepSeaLobbyFixtures: Record<string, () => PlayerView> = {
 export const deepSeaUiFixtures: Record<string, () => PlayerView> = {
 	dsCommunicate2: () => stress(2),
 	dsCommunicatePicked2: () => stress(2),
-	dsPlayPicked2: () => stress(2)
+	dsPlayPicked2: () => stress(2),
+	dsDraftPicked2: () => draftMany(2)
 };
 
 /** The table's UI state of the views in `deepSeaUiFixtures`. */
@@ -647,5 +662,6 @@ export const deepSeaPresets: Record<string, (v: PlayerView) => TablePreset> = {
 		communicate: true,
 		shown: v.attempt!.actions.communicate[0].card
 	}),
-	dsPlayPicked2: (v) => ({ selected: v.attempt!.playable[0] })
+	dsPlayPicked2: (v) => ({ selected: v.attempt!.playable[0] }),
+	dsDraftPicked2: (v) => ({ tasks: [v.attempt!.takeable[1]] })
 };

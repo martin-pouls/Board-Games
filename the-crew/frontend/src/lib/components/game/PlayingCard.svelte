@@ -1,13 +1,13 @@
 <!--
-	A playing card. Planet Nine: a white card with the value and its symbol once, in the top-left
-	corner, and Planet Nine's night print in a window beside them (the neon symbol on the colour's
-	dark glow; rockets: a white rocket among stars). The small sizes (tasks, a communicated card)
-	have no window. Mission Deep Sea keeps its own face until its theme is redone: the value and
-	glyph in the corner, a large faint glyph and the value upside down at the bottom.
+	A playing card: white, with the value and its symbol once in the top-left corner and the art in a
+	window beside them. Planet Nine: its night print (the neon symbol on the colour's dark glow;
+	rockets: a white rocket among stars). Mission Deep Sea: the bright duotone of its printed art,
+	lit from the top left with the symbol in white (submarines: the yellow bathyscaphe in deep blue,
+	the value alone in the corner). The small sizes (tasks, a communicated card) have no window.
 -->
 <script lang="ts">
 	import { edition } from '#lib/edition.js';
-	import { CARD_SIZE, cardLabel, COMPACT, SUIT_TEXT, type CardSize } from '#lib/game/cards.js';
+	import { CARD_SIZE, cardLabel, type CardSize } from '#lib/game/cards.js';
 	import { cn } from '#lib/utils.js';
 	import type { Card } from '#lib/types.js';
 	import SuitGlyph from './SuitGlyph.svelte';
@@ -22,6 +22,7 @@
 		class?: string;
 	} = $props();
 
+	const deep = edition === 'deepSea';
 	const rocket = $derived(card.suit === 'trump');
 	const label = $derived(cardLabel(card));
 
@@ -38,72 +39,32 @@
 	const windowed = $derived(size === 'stack' || size === 'trick' || size === 'hand');
 </script>
 
-{#if edition !== 'deepSea'}
-	<div
-		class={cn('face relative shrink-0 overflow-hidden select-none', CARD_SIZE[size], className)}
-		class:rocket
-		style:--sc={rocket ? 'var(--tok)' : `var(--${card.suit})`}
-		style:--nd={`var(--nd-${card.suit})`}
-		style:--ng={`var(--ng-${card.suit})`}
-		style:--nn={`var(--nn-${card.suit})`}
-		style:--vs={`${corner.vs}px`}
-		style:--ix={`${corner.ix}px`}
-		style:--sym={`${corner.sym}px`}
-		role="img"
-		aria-label={label}
-		title={label}
-	>
-		{#if windowed}
-			<span class="art"><SuitGlyph suit={card.suit} class="art-glyph" /></span>
-		{/if}
-		<span class="val font-display">{card.rank}</span>
+<div
+	class={cn('face relative shrink-0 overflow-hidden select-none', CARD_SIZE[size], className)}
+	class:rocket
+	class:deep
+	style:--sc={rocket ? 'var(--tok)' : `var(--${card.suit})`}
+	style:--nh={`var(--nh-${card.suit})`}
+	style:--nd={`var(--nd-${card.suit})`}
+	style:--ng={`var(--ng-${card.suit})`}
+	style:--nn={`var(--nn-${card.suit})`}
+	style:--vs={`${corner.vs}px`}
+	style:--ix={`${corner.ix}px`}
+	style:--sym={`${corner.sym}px`}
+	role="img"
+	aria-label={label}
+	title={label}
+>
+	{#if windowed}
+		<span class="art"><SuitGlyph suit={card.suit} class="art-glyph" /></span>
+	{/if}
+	<span class="val font-display">{card.rank}</span>
+	{#if !(deep && rocket && windowed)}
 		<span class="six" style:top={`${corner.top}px`}>
 			<SuitGlyph suit={card.suit} class="block" />
 		</span>
-	</div>
-{:else}
-	<div
-		class={cn(
-			'relative flex shrink-0 flex-col shadow-sm select-none',
-			rocket ? 'border border-rocket-ink/30 bg-rocket' : 'border border-ink/15 bg-paper',
-			SUIT_TEXT[card.suit],
-			CARD_SIZE[size],
-			size === 'xs' ? 'p-px' : COMPACT.has(size) ? 'p-0.5' : 'p-1',
-			className
-		)}
-		role="img"
-		aria-label={label}
-		title={label}
-	>
-		{#if COMPACT.has(size)}
-			<span
-				class={cn(
-					'text-center font-display leading-tight font-bold',
-					size === 'xs' ? 'text-sm' : 'text-lg'
-				)}>{card.rank}</span
-			>
-			<SuitGlyph suit={card.suit} class={cn('mx-auto', size === 'xs' ? 'size-3' : 'size-4.5')} />
-		{:else}
-			<!-- Left strip: stays visible where cards overlap in the hand. -->
-			<div class="flex w-fit flex-col items-center leading-none">
-				<span class="font-display text-xl font-bold">{card.rank}</span>
-				<SuitGlyph suit={card.suit} class="size-3.5" />
-			</div>
-			<SuitGlyph
-				suit={card.suit}
-				class={cn(
-					'pointer-events-none absolute top-1/2 left-1/2 -translate-x-[30%] -translate-y-[40%]',
-					size === 'hand' ? 'size-8' : 'size-7',
-					rocket ? 'opacity-80' : 'opacity-30'
-				)}
-			/>
-			<span
-				class="absolute right-1 bottom-0.5 rotate-180 font-display text-xs leading-none font-bold opacity-70"
-				aria-hidden="true">{card.rank}</span
-			>
-		{/if}
-	</div>
-{/if}
+	{/if}
+</div>
 
 <style>
 	.face {
@@ -164,5 +125,27 @@
 		color: var(--rocket-glyph);
 		opacity: 0.85;
 		filter: none;
+	}
+	/* Deep Sea's bright window: the colour's highlight, body and shadow, a sheen across it. */
+	.deep .art {
+		background:
+			linear-gradient(118deg, transparent 36%, oklch(1 0 0 / 20%) 45%, transparent 53%),
+			radial-gradient(120% 95% at 30% 18%, var(--nh), var(--ng) 52%, var(--nd));
+	}
+	.deep .art :global(.art-glyph) {
+		opacity: 0.92;
+		filter: drop-shadow(0 1px 1.5px oklch(0 0 0 / 35%));
+	}
+	.deep.rocket .art {
+		background:
+			linear-gradient(118deg, transparent 30%, oklch(1 0 0 / 12%) 42%, transparent 54%),
+			radial-gradient(120% 95% at 30% 18%, var(--nh), var(--ng) 50%, var(--nd));
+	}
+	.deep.rocket .art :global(.art-glyph) {
+		width: 72%;
+		height: 72%;
+		color: var(--nn);
+		opacity: 1;
+		filter: drop-shadow(0 0 3px color-mix(in oklab, var(--nn) 45%, transparent));
 	}
 </style>

@@ -13,6 +13,7 @@
 	import { cap, terms } from '#lib/edition.js';
 	import { byTokenOrder, cardKey } from '#lib/game/cards.js';
 	import { DUMMY } from '#lib/game/format.js';
+	import { isTaskCard } from '#lib/game/taskChip.js';
 	import { cn } from '#lib/utils.js';
 	import type { Attempt, Member } from '#lib/types.js';
 	import CommCard from './CommCard.svelte';
@@ -39,14 +40,19 @@
 	const you = $derived(m.seat === attempt.seat);
 	const name = $derived(you ? 'You' : m.dummy ? DUMMY : m.name);
 	const tasks = $derived(byTokenOrder(attempt.tasks.filter((t) => t.owner === m.seat)));
+	/** Deep Sea's chips are wide: in a wrapping row (the 5-player grid) they move below the name. */
+	const chips = $derived(tasks.some(isTaskCard));
 	/** Rapture of the deep allows several communications; older views only have the first. */
 	const comms = $derived(
 		m.communications?.length ? m.communications : m.communication ? [m.communication] : []
 	);
 </script>
 
-<div class={cn('flex min-h-11 min-w-0 items-center gap-2', className)}>
-	<div class="flex min-w-13 shrink-0 flex-col gap-px">
+<!-- The dummy's stacks lie below its row, so its name and counts share one line. -->
+<div class={cn('flex min-w-0 items-center gap-2', m.dummy ? 'min-h-7' : 'min-h-11', className)}>
+	<div
+		class={cn('flex min-w-13 shrink-0', m.dummy ? 'items-center gap-2.5 pr-1' : 'flex-col gap-px')}
+	>
 		<span
 			class={cn(
 				'flex items-center gap-1 text-sm leading-tight font-bold whitespace-nowrap',
@@ -82,7 +88,7 @@
 			</span>
 		</span>
 	</div>
-	<div class="flex min-w-0 flex-1 items-center gap-[7px]">
+	<div class={cn('flex min-w-0 flex-1 items-center gap-[7px]', chips && 'basis-auto')}>
 		<TaskList
 			{tasks}
 			attempt={attempt.number}
