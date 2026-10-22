@@ -22,7 +22,7 @@ You review one game of the board-games monorepo. The caller gives you the game, 
 ## Judge
 Look at each screenshot yourself; don't infer from code. Severity order:
 1. **Blocking:** game screen scrolls or overflows, an action unreachable or hidden, text clipped, layout jumps between states.
-2. **Gameplay clarity:** whose turn or what to decide is unclear, information shown twice or missing, colour as the only carrier, poor contrast in one mode, targets < 44 px.
+2. **Gameplay clarity:** whose turn or what to decide is unclear, information shown twice or missing, colour as the only carrier, poor contrast in one mode, targets clearly below 44 px (a few px under is fine on dense boards, see design-guidelines).
 3. **Consistency:** a shared element or concept treated differently from the guidelines or the other games.
 4. **Theme fit:** fonts used outside their roles, ad-hoc colours, looks generic or unlike the box, a start-page tile whose colours, face or art no longer match the game.
 

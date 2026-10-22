@@ -22,7 +22,8 @@ You write the rules reference for one game of the board-games monorepo. The call
 - Numbered sections (§1 Overview, Components, Setup, the turn, legal moves, special cards or powers, end of game, communication, solo and player-count variants, App decisions without a rule counterpart). Subsections as the game needs.
 - Everything code will transcribe goes into tables with stable IDs: cards, enemies, missions, boards, per-player-count values. Numbers in tables, not prose.
 - Rules, not flavour. Short sentences. English. Write the rules in your own words; don't copy rulebook text.
-- **App decision:** inline, at the rule it settles. Typical ones: "decide together" (who decides in the app), simultaneous actions (first come, first served on the server), talking rules (the app doesn't enforce them), physical actions (shuffling, peeking, drawing face down), timers, what is revealed at the end.
+- **App decision:** inline, at the rule it settles. Typical ones: "decide together" (who decides in the app), simultaneous actions (first come, first served on the server), talking rules (the app doesn't enforce them), physical actions (shuffling, peeking, drawing face down), what is revealed at the end.
+- **No real-time modes:** the user doesn't want timers or sand-timer modules. Leave them out without asking, and keep the scenarios that use them playable without the timer (an App decision).
 
 ## Questions
 Collect every ambiguity, contradiction, missing fact and app-level choice. End the file with `## Open questions`: numbered, each with the options and your recommendation. The caller asks the user and you (or the caller) turn the answers into App decisions and remove the section.
