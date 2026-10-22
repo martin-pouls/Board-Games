@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sky Team layouts</title>
+<style>
+/* Neutral wireframe palette. Blue and orange are the two player colours, needed because they carry rules. */
+:root {
+	--bg: #e9ebed;
+	--page: #f4f5f6;
+	--surface: #ffffff;
+	--surface-2: #f1f2f4;
+	--sunken: #dde1e5;
+	--border: #c3c9cf;
+	--border-strong: #858e97;
+	--text: #1c2024;
+	--muted: #59626b;
+	--accent: #1c2024;
+	--accent-text: #ffffff;
+	--blue: #2c5c9a;
+	--blue-soft: #d9e3f1;
+	--orange: #b55a14;
+	--orange-soft: #f4e1d1;
+	--ok: #2b7149;
+	--ok-soft: #d6eadd;
+	--danger: #b02a22;
+	--black-die: #1c2024;
+	--shade: rgba(20, 24, 28, 0.42);
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #111417;
+		--page: #171b1e;
+		--surface: #20252a;
+		--surface-2: #272d32;
+		--sunken: #14181b;
+		--border: #3a424a;
+		--border-strong: #737d87;
+		--text: #e6e9ec;
+		--muted: #a2abb3;
+		--accent: #e6e9ec;
+		--accent-text: #111417;
+		--blue: #3f71b8;
+		--blue-soft: #1f2d40;
+		--orange: #c06a24;
+		--orange-soft: #3a2a1d;
+		--ok: #4fa874;
+		--ok-soft: #1d3326;
+		--danger: #e0665e;
+		--black-die: #050607;
+		--shade: rgba(0, 0, 0, 0.55);
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #111417;
+	--page: #171b1e;
+	--surface: #20252a;
+	--surface-2: #272d32;
+	--sunken: #14181b;
+	--border: #3a424a;
+	--border-strong: #737d87;
+	--text: #e6e9ec;
+	--muted: #a2abb3;
+	--accent: #e6e9ec;
+	--accent-text: #111417;
+	--blue: #3f71b8;
+	--blue-soft: #1f2d40;
+	--orange: #c06a24;
+	--orange-soft: #3a2a1d;
+	--ok: #4fa874;
+	--ok-soft: #1d3326;
+	--danger: #e0665e;
+	--black-die: #050607;
+	--shade: rgba(0, 0, 0, 0.55);
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+	background: var(--page);
+	color: var(--text);
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	font-size: 16px;
+	line-height: 1.5;
+}
+
+/* ---------- Document ---------- */
+.doc { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+.doc h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+.doc h2 { font-size: 22px; margin: 48px 0 8px; }
+.doc h3 { font-size: 16px; margin: 20px 0 6px; }
+.doc p, .doc li { max-width: 72ch; color: var(--text); }
+.doc .lede { color: var(--muted); max-width: 72ch; }
+.doc table { border-collapse: collapse; font-size: 14px; margin: 8px 0 16px; display: block; overflow-x: auto; max-width: 100%; }
+.doc th, .doc td { border-bottom: 1px solid var(--border); padding: 6px 10px 6px 0; text-align: left; vertical-align: top; }
+.doc th { color: var(--muted); font-weight: 600; }
+.verdict { border-left: 4px solid var(--accent); padding: 4px 0 4px 14px; margin: 12px 0; }
+.verdict.no { border-left-color: var(--border-strong); }
+.gallery { display: flex; flex-wrap: wrap; gap: 24px 20px; margin-top: 16px; }
+.shot { display: flex; flex-direction: column; gap: 6px; max-width: 100%; margin: 0; }
+.shot figcaption { font-size: 13px; color: var(--muted); }
+.fwrap { max-width: 100%; }
+.frame {
+	width: var(--fw, 375px);
+	height: var(--fh, 630px);
+	container-type: size;
+	overflow: hidden;
+	position: relative;
+	background: var(--bg);
+	border: 1px solid var(--border-strong);
+	border-radius: 18px;
+}
+.solo .frame { border: 0; border-radius: 0; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 20px; font-size: 14px; color: var(--muted); max-width: 900px; }
+.legend span.k { display: inline-block; min-width: 2.2em; color: var(--text); font-weight: 600; }
+
+/* ---------- Game screen ---------- */
+.screen {
+	--g: 8px;           /* side gutter */
+	--cell: 44px;       /* die space = tap target */
+	--die: 52px;        /* dice in hand */
+	--gap: 5px;
+	height: 100%;
+	display: grid;
+	grid-template-rows: auto auto auto 1fr auto auto auto;
+	grid-template-areas: "head" "track" "mods" "panel" "status" "hand" "action";
+	gap: 4px;
+	padding: 0 var(--g) var(--g);
+	font-size: 14px;
+	line-height: 1.25;
+	font-variant-numeric: tabular-nums;
+	position: relative;
+}
+@container (min-height: 740px) {
+	.screen { --cell: 50px; --die: 58px; gap: 10px; }
+}
+.xs { font-size: 12px; }
+.muted { color: var(--muted); }
+
+/* header */
+.hd { grid-area: head; display: flex; align-items: center; gap: 2px; height: 42px; }
+.hd .ttl { flex: 1; min-width: 0; }
+.hd .ttl b { font-size: 16px; }
+.hd .ttl div { font-size: 12px; color: var(--muted); }
+.ib { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); font-size: 18px; border: 0; background: transparent; }
+
+/* approach + altitude */
+.track { grid-area: track; display: flex; flex-direction: column; gap: 3px; }
+.ap { display: flex; gap: 2px; }
+.apc {
+	flex: 1; min-width: 0; height: 46px; border-radius: 6px;
+	background: var(--surface); border: 1px solid var(--border);
+	display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+	padding: 3px 1px; position: relative;
+}
+.apc.past { opacity: .4; }
+.apc.here { border: 2px solid var(--accent); background: var(--surface-2); }
+.apc.aim { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.apc .no { position: absolute; left: 3px; top: 1px; font-size: 12px; color: var(--muted); }
+.apc .apt { position: absolute; right: 3px; top: 1px; font-size: 12px; font-weight: 700; }
+.apc.here { border-width: 3px; }
+.apc .us { position: absolute; left: -1px; top: -1px; width: 0; height: 0; border-style: solid; border-width: 12px 12px 0 0; border-color: var(--accent) transparent transparent transparent; }
+.tm { display: flex; gap: 1px; height: 9px; margin-top: 1px; }
+.tm i { width: 6px; height: 9px; border: 1px solid var(--border-strong); border-radius: 1px; }
+.tm i.x { background: var(--danger); border-color: var(--danger); }
+.tm i.cur { outline: 2px solid var(--accent); outline-offset: 0; }
+.pl { font-size: 14px; letter-spacing: -1px; white-space: nowrap; }
+.trf { display: flex; gap: 1px; height: 8px; }
+.trf i { width: 8px; height: 8px; border-radius: 2px; background: var(--black-die); }
+.alt { display: flex; gap: 2px; }
+.alc { flex: 1; height: 20px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 3px; color: var(--muted); }
+.alc.cur { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.alc.past { opacity: .45; }
+.alc .fp { font-weight: 700; }
+
+/* modules + abilities row */
+.mods { grid-area: mods; display: flex; gap: 4px; }
+.mods .chip { flex: none; }
+.mods .chip.fuel { flex: 1 1 0; }
+.chip {
+	height: 36px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface);
+	display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 12px; white-space: nowrap; min-width: 0;
+}
+.chip b { font-size: 14px; }
+.chip.fuel { flex: 1 1 128px; }
+.fbar { flex: 1; height: 10px; border-radius: 3px; background: var(--sunken); position: relative; overflow: hidden; min-width: 40px; }
+.fbar i { position: absolute; inset: 0 auto 0 0; background: var(--border-strong); }
+.fbar s { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(90deg, transparent 0 3px, var(--surface) 3px 4px); left: 0; right: 0; text-decoration: none; }
+.dial { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); position: relative; flex: none; }
+.dial::after { content: ""; position: absolute; left: 50%; top: 1px; width: 2px; height: 8px; background: var(--accent); transform-origin: 50% 9px; transform: translateX(-50%) rotate(var(--rot)); }
+.chip.ab .st { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent); flex: none; }
+.chip.ab .st.used { background: var(--accent); }
+.chip .abt { display: none; }
+
+/* panel */
+.pwrap { grid-area: panel; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.panel { display: flex; gap: 8px; align-items: flex-start; width: 100%; justify-content: center; }
+.pcol { display: flex; flex-direction: column; gap: var(--gap); }
+.pmid { display: flex; flex-direction: column; gap: var(--gap); flex: 0 1 calc(var(--cell) * 5 + 35px); min-width: 0; }
+.prow { display: flex; gap: var(--gap); align-items: center; justify-content: center; }
+.sp {
+	width: var(--cell); height: var(--cell); flex: none; border-radius: 8px; position: relative;
+	display: flex; flex-direction: column; align-items: center; justify-content: center;
+	font-size: 12px; line-height: 14px; color: var(--muted); text-align: center;
+	border: 1.5px solid var(--border-strong);
+}
+.sp.b { background: var(--blue-soft); border-color: var(--blue); }
+.sp.o { background: var(--orange-soft); border-color: var(--orange); }
+.sp.x { background: linear-gradient(135deg, var(--blue-soft) 50%, var(--orange-soft) 50%); border-color: var(--border-strong); }
+.sp b { color: var(--text); font-weight: 600; }
+.sp .sw { position: absolute; right: -4px; top: -4px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--surface); font-size: 11px; line-height: 12px; color: var(--surface); display: grid; place-items: center; font-weight: 800; }
+.sp .sw.on { background: var(--ok); border-color: var(--ok); color: #fff; }
+.sp.shut { opacity: .45; }
+.sp.shut::after { content: "✓"; position: absolute; font-size: 16px; color: var(--ok); font-weight: 800; }
+.die-on { position: absolute; inset: 3px; border-radius: 6px; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: #fff; }
+.die-on.P { background: var(--blue); }
+.die-on.C { background: var(--orange); }
+.die-on.T { background: var(--black-die); }
+.die-on.I { border-radius: 50%; background: var(--surface); color: var(--text); border: 3px solid var(--blue); }
+.die-on.I.C { border-color: var(--orange); }
+.die-on.I::after { content: "i"; position: absolute; right: -2px; top: -4px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.die-on .who { position: absolute; left: 2px; top: 0; font-size: 12px; line-height: 13px; font-weight: 700; opacity: .85; }
+.sp.last .die-on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.sp.last::before { content: "new"; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); z-index: 2; font-size: 12px; line-height: 13px; padding: 0 3px; border-radius: 3px; background: var(--accent); color: var(--accent-text); }
+/* selection states */
+.selecting .sp:not(.legal):not(.has) { opacity: .38; }
+.sp.legal { border: 2px solid var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+.sp.target { border: 3px solid var(--accent); box-shadow: inset 0 0 0 2px var(--surface), 0 0 0 3px var(--ok); }
+.sp.target::after { content: ""; position: absolute; inset: 6px; border-radius: 5px; border: 2px dashed var(--accent); }
+
+/* readouts inside the panel */
+.axb { flex: 1; display: flex; gap: 2px; height: 34px; }
+.axb i { flex: 1; border-radius: 3px; background: var(--surface); border: 1px solid var(--border); display: grid; place-items: center; font-style: normal; font-size: 12px; color: var(--muted); }
+.axb i.end { color: var(--danger); font-weight: 800; background: var(--surface-2); }
+.axb i.cur { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+.bands { flex: 1; display: flex; gap: 2px; height: var(--cell); }
+.bands div { flex: 1; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; line-height: 14px; }
+.bands div b { font-size: 13px; }
+.bands div.hot { background: var(--surface-2); border-color: var(--border-strong); }
+.rd { font-size: 12px; line-height: 14px; text-align: center; color: var(--muted); min-width: 40px; }
+.rd b { color: var(--text); font-size: 14px; display: block; }
+.arrow { color: var(--muted); font-size: 12px; width: 6px; text-align: center; }
+.icem { display: flex; gap: 2px; height: 16px; align-items: stretch; justify-content: center; }
+.icem i { width: 32px; border-radius: 3px; background: var(--sunken); font-size: 12px; line-height: 16px; text-align: center; font-style: normal; color: var(--muted); }
+.icem i.on { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.intern { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.tok { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: var(--surface); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.tok.gone { border-style: dashed; background: transparent; color: transparent; }
+.tok.nextP { box-shadow: 0 0 0 2px var(--blue); }
+.tok.nextC { box-shadow: 0 0 0 2px var(--orange); }
+.toks { display: flex; gap: 2px; }
+.plabel { font-size: 12px; color: var(--muted); text-align: center; }
+
+/* status line, hand, actions */
+.status { grid-area: status; min-height: 32px; display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 16px; }
+.pill { flex: none; padding: 3px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-weight: 600; font-size: 12px; }
+.pill.wait { background: var(--sunken); color: var(--text); }
+.hand { grid-area: hand; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.hand.mine { border: 2px solid var(--accent); }
+.die {
+	width: var(--die); height: var(--die); border-radius: 10px; flex: none;
+	display: grid; place-items: center; font-size: 24px; font-weight: 700; color: #fff; position: relative; border: 0;
+}
+.die.P { background: var(--blue); }
+.die.C { background: var(--orange); }
+.die.T { background: var(--black-die); }
+.die.empty { background: transparent; border: 1.5px dashed var(--border); }
+.die.sel { transform: translateY(-4px); box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+.die .mod { position: absolute; right: -6px; top: -8px; font-size: 12px; line-height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-text); }
+.die.rr::after { content: "⟲"; position: absolute; right: -5px; bottom: -5px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-size: 14px; line-height: 20px; text-align: center; }
+.die.locked { opacity: .55; }
+.partner { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); line-height: 15px; }
+.partner b { color: var(--text); font-size: 13px; }
+.fd { display: inline-flex; gap: 3px; margin-top: 3px; }
+.fd i { width: 14px; height: 14px; border-radius: 3px; background: var(--border-strong); }
+.fd i.C { background: var(--orange); }
+.fd i.P { background: var(--blue); }
+.fd i.out { background: transparent; border: 1px dashed var(--border-strong); }
+.action { grid-area: action; display: flex; gap: 6px; align-items: center; height: 48px; }
+.btn { height: 44px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-weight: 600; padding: 0 12px; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.btn.pri { background: var(--accent); color: var(--accent-text); border-color: var(--accent); flex: 1; }
+.btn.dis { opacity: .4; }
+.btn.sq { width: 44px; padding: 0; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--border-strong); border-radius: 10px; height: 44px; background: var(--surface); }
+.stepper .btn { border: 0; height: 42px; width: 40px; padding: 0; background: transparent; }
+.stepper .val { min-width: 54px; text-align: center; font-size: 12px; line-height: 14px; }
+.stepper .val b { font-size: 14px; display: block; }
+.cups { display: inline-flex; gap: 2px; }
+.cups i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--text); }
+.cups i.f { background: var(--text); }
+
+/* Concept B: summary + tabs */
+.cB { grid-template-rows: auto auto auto 1fr auto auto auto; grid-template-areas: "head" "sum" "tabs" "panel" "status" "hand" "action"; }
+.sum { grid-area: sum; display: flex; flex-direction: column; gap: 4px; }
+.sum1 { display: flex; gap: 4px; }
+.sum1 .ap { flex: 1.5; }
+.sum1 .apc { height: 44px; }
+.sbox { flex: 1; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); padding: 2px 4px; font-size: 12px; line-height: 14px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.sbox b { font-size: 14px; }
+.sum2 { display: flex; gap: 10px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.sum2 b { color: var(--text); }
+.tabs { grid-area: tabs; display: flex; gap: 2px; background: var(--sunken); border-radius: 10px; padding: 2px; height: 44px; }
+.tab { flex: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--muted); }
+.tab.on { background: var(--surface); color: var(--text); }
+.tab .bd { min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: var(--accent-text); font-size: 12px; line-height: 18px; text-align: center; padding: 0 4px; }
+.tab .bd.new { background: var(--surface); color: var(--text); border: 1.5px solid var(--accent); line-height: 15px; }
+.cB .screen-in { --cell: 52px; }
+.zone { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.zone .prow { justify-content: space-between; }
+.zone .plabel { text-align: left; margin-bottom: -4px; }
+
+/* Concept C: map + sheet */
+.cC .map { --cell: 34px; --gap: 3px; }
+.cC .map .pmid { flex-basis: calc(var(--cell) * 5 + 30px); }
+.cC .map .sp { font-size: 12px; border-radius: 6px; }
+.cC .map .sp .lbl2 { display: none; }
+.cC .map .die-on { font-size: 16px; inset: 2px; }
+.cC .map .bands { height: var(--cell); }
+.cC .map .bands div { font-size: 12px; line-height: 13px; }
+.cC .map .bands div span { display: none; }
+.cC .map .axb { height: 26px; }
+.cC .map .sp .sw { width: 13px; height: 13px; right: -3px; top: -3px; font-size: 9px; line-height: 9px; }
+.cC .map .sp.last::before { display: none; }
+.cC .map .tok { width: 18px; height: 18px; }
+.cC .map .icem i { width: 26px; }
+.cC .map .rd b { font-size: 13px; }
+.sheet {
+	position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+	background: var(--surface); border-top: 1px solid var(--border-strong);
+	border-radius: 16px 16px 0 0; padding: 8px var(--g) var(--g);
+	display: flex; flex-direction: column; gap: 8px;
+	box-shadow: 0 -8px 24px var(--shade);
+}
+.sheet .btn.pri { flex: none; }
+.sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto; }
+.sheet .shd { display: flex; align-items: center; gap: 10px; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.opt { min-height: 50px; border-radius: 10px; border: 1.5px solid var(--border-strong); padding: 4px 8px; font-size: 12px; line-height: 14px; display: flex; flex-direction: column; justify-content: center; }
+.opt b { font-size: 14px; line-height: 17px; }
+.opt.on { border: 3px solid var(--accent); background: var(--surface-2); }
+.opt .muted { color: var(--muted); }
+.notlegal { font-size: 12px; color: var(--muted); line-height: 15px; }
+
+/* Desktop arrangement (any concept frame at ≥ 900 px width) */
+@container (min-width: 900px) {
+	.screen {
+		--cell: 60px; --die: 64px; --gap: 8px;
+		grid-template-columns: 1fr 560px 1fr;
+		grid-template-rows: 56px 1fr auto auto auto;
+		grid-template-areas:
+			"head head head"
+			"track panel mods"
+			"track status mods"
+			"track hand mods"
+			"track action mods";
+		column-gap: 32px; row-gap: 12px;
+		padding: 0 32px 24px;
+		max-width: 1240px; margin: 0 auto;
+	}
+	.hd .ttl b { font-size: 18px; }
+	.track { flex-direction: row; gap: 8px; align-self: start; justify-self: end; }
+	.ap { flex-direction: column-reverse; width: 150px; gap: 3px; }
+	.apc { height: 66px; flex: none; }
+	.alt { flex-direction: column-reverse; width: 92px; gap: 3px; }
+	.alc { height: 66px; flex: none; flex-direction: column; }
+	.mods { flex-direction: column; flex-wrap: nowrap; align-self: start; max-width: 300px; gap: 8px; }
+	.chip { height: auto; min-height: 44px; padding: 8px 10px; white-space: normal; align-items: flex-start; flex-wrap: wrap; }
+	.chip.fuel { flex: none; }
+	.chip .abt { display: block; width: 100%; color: var(--muted); }
+	.pmid { flex-basis: calc(var(--cell) * 5 + 50px); }
+	.die-on { font-size: 26px; }
+	.sp { font-size: 13px; line-height: 15px; }
+	.hand, .action, .status { width: 560px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ------------------------------------------------------------------ sample data
+const SP = {
+	axisPilot: { c: 'b', l: 'Axis' }, axisCopilot: { c: 'o', l: 'Axis' },
+	enginesPilot: { c: 'b', l: 'Engine' }, enginesCopilot: { c: 'o', l: 'Engine' },
+	radioPilot: { c: 'b', l: 'Radio' }, radioCopilot1: { c: 'o', l: 'Radio' }, radioCopilot2: { c: 'o', l: 'Radio' },
+	gear12: { c: 'b', l: 'Gear', v: '1–2', sw: 1 }, gear34: { c: 'b', l: 'Gear', v: '3–4', sw: 1 }, gear56: { c: 'b', l: 'Gear', v: '5–6', sw: 1 },
+	flaps12: { c: 'o', l: 'Flaps', v: '1–2', sw: 1 }, flaps23: { c: 'o', l: 'Flaps', v: '2–3', sw: 1 },
+	flaps45: { c: 'o', l: 'Flaps', v: '4–5', sw: 1 }, flaps56: { c: 'o', l: 'Flaps', v: '5–6', sw: 1 },
+	brakes2: { c: 'b', l: 'Brake', v: '2', sw: 1 }, brakes4: { c: 'b', l: 'Brake', v: '4', sw: 1 }, brakes6: { c: 'b', l: 'Brake', v: '6', sw: 1 },
+	conc1: { c: 'x', l: 'Coffee', v: '+1' }, conc2: { c: 'x', l: 'Coffee', v: '+1' }, conc3: { c: 'x', l: 'Coffee', v: '+1' },
+	kerosene: { c: 'x', l: 'Fuel', v: '−die' },
+	internPilot: { c: 'b', l: 'Train' }, internCopilot: { c: 'o', l: 'Train' },
+	ice2t: { c: 'b', l: 'Ice', v: '2' }, ice3t: { c: 'b', l: 'Ice', v: '3' }, ice4t: { c: 'b', l: 'Ice', v: '4' }, ice5t: { c: 'b', l: 'Ice', v: '5' },
+	ice2b: { c: 'x', l: 'Ice', v: '2' }, ice3b: { c: 'x', l: 'Ice', v: '3' }, ice4b: { c: 'x', l: 'Ice', v: '4' }, ice5b: { c: 'x', l: 'Ice', v: '5' }
+};
+const SHORT = { Axis: 'Ax', Engine: 'En', Radio: 'R', Coffee: '+1', Fuel: 'F', Train: 'T' };
+
+const CASES = {
+	tgu: {
+		key: 'tgu', title: 'TGU red', sub: 'Kerosene, wind, 2 abilities', me: 'P', names: { P: 'Alex', C: 'Sam' }, round: 3,
+		N: 5, apt: 'TGU', planes: [0, 1, 2, 1, 2], traffic: [3, 0, 2, 0, 0], turns: [null, 'ooxxx', 'xooxx', 'ooxxx', null], pos: 2,
+		axis: -1, blue: 6, orange: 10, brakes: 1, coffee: 2, rerolls: 1,
+		fuel: 11, wind: { off: -3, v: 2 },
+		abilities: [
+			{ n: 'Synchronisation', short: 'Sync', used: true, t: 'Black die rolled and placed this round.' },
+			{ n: 'Working together', short: 'Together', used: false, t: 'Free this round: put a die on the card to swap values.' }
+		],
+		placed: { axisPilot: ['P', 4], gear34: ['P', 3], flaps23: ['C', 2], radioCopilot1: ['C', 5], radioCopilot2: ['T', 3] },
+		sw: ['gear12', 'gear34', 'flaps12', 'flaps23', 'brakes2'],
+		hand: [6, null, 2, null], sel: 0, mod: 0, partnerLeft: 2, last: 'radioCopilot2',
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'kerosene'], target: 'gear56',
+		preview: 'Gear 5–6: last gear down, blue marker 6 → 7.',
+		opts: [
+			['gear56', 'Gear 5–6', 'Last gear down, blue 6 → 7'],
+			['enginesPilot', 'Engine', 'Speed 6 + Sam’s die + wind 2'],
+			['radioPilot', 'Radio', 'Past the airport, no effect'],
+			['conc1', 'Coffee', 'Coffee 2 → 3'],
+			['kerosene', 'Fuel', 'Fuel 11 → 5']
+		],
+		notLegal: 'Not legal: Axis (taken), Gear 1–2 and 3–4 (needs 1–4), Brake 4 (needs 4), Brake 6 (deploy 4 first).',
+		// later states of the same round
+		waiting: { hand: [null, null, 2, null], placedAdd: { gear56: ['P', 6] }, swAdd: ['gear56'], last: 'gear56', blue: 7 },
+		reroll: { rr: [2], rerolls: 0 }
+	},
+	kef: {
+		key: 'kef', title: 'KEF black', sub: 'Wind, ice brakes, 2 abilities', me: 'P', names: { P: 'Alex', C: 'Sam' }, round: 5,
+		N: 6, apt: 'KEF', planes: [0, 0, 0, 0, 1, 0], traffic: [2, 0, 1, 0, 0, 0], turns: [null, 'oooxx', null, 'xxooo', 'xooox', null], pos: 4,
+		axis: 1, blue: 6, orange: 10, coffee: 1, rerolls: 0,
+		wind: { off: 4, v: 1 },
+		ice: { marker: 1 },
+		abilities: [
+			{ n: 'Anticipation', short: 'Anticip.', used: true, t: 'First player rerolled one die before their first placement.' },
+			{ n: 'Adaptation', short: 'Adapt', used: false, t: 'Once per game each: turn one die to its opposite face. You: free. Sam: used.' }
+		],
+		placed: { axisPilot: ['P', 2], ice3t: ['P', 3], axisCopilot: ['C', 3], enginesCopilot: ['C', 4] },
+		sw: ['gear12', 'gear34', 'flaps12', 'flaps23'],
+		hand: [5, 3, null, null], sel: 0, mod: 0, partnerLeft: 2, last: 'enginesCopilot',
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3'], target: 'enginesPilot',
+		preview: 'Engine: speed 4 + 5 + wind 1 = 10, advance 1 to space 5 (turn ok at +1).',
+		opts: [
+			['enginesPilot', 'Engine', '4 + 5 + wind 1 = 10: advance 1, turn ok'],
+			['gear56', 'Gear 5–6', 'Last gear down, blue 6 → 7'],
+			['radioPilot', 'Radio', 'Past the airport, no effect'],
+			['conc1', 'Coffee', 'Coffee 1 → 2']
+		],
+		notLegal: 'Not legal: Axis (taken), Ice 3 (needs 3), Ice 4–5 (deploy 3 first), Gear 1–2 and 3–4 (needs 1–4).'
+	},
+	hnd: {
+		key: 'hnd', title: 'HND red', sub: 'Kerosene, intern, 1 ability', me: 'C', names: { P: 'Alex', C: 'Sam' }, round: 6,
+		N: 8, apt: 'HND', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
+		axis: -1, blue: 7, orange: 11, brakes: 2, coffee: 3, rerolls: 0,
+		fuel: 9,
+		intern: { toks: [3, 5, 2, 6, 1, 4], gone: [0, 1, 4, 5] },
+		abilities: [{ n: 'Control', short: 'Control', used: true, t: 'Axis dice matched this round: coffee gained.' }],
+		placed: { internPilot: ['P', 1], gear56: ['IP', 5], axisPilot: ['P', 3], axisCopilot: ['C', 3], flaps45: ['C', 4] },
+		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
+		hand: [6, 2, null, null], sel: 1, mod: -1, partnerLeft: 2, last: 'axisPilot',
+		legal: ['enginesCopilot', 'radioCopilot1', 'radioCopilot2', 'flaps12', 'conc1', 'conc2', 'conc3', 'kerosene', 'internCopilot'], target: 'radioCopilot1',
+		aim: 6,
+		preview: 'Radio 1 (2 − 1 coffee): clears the plane on your space 6.',
+		opts: [
+			['radioCopilot1', 'Radio', 'Clears the plane on space 6'],
+			['enginesCopilot', 'Engine', 'Speed 1 + Alex’s die'],
+			['internCopilot', 'Train', 'Take intern 6, place it'],
+			['kerosene', 'Fuel', 'Fuel 9 → 8'],
+			['conc1', 'Coffee', 'Coffee back to 3'],
+			['flaps12', 'Flaps 1–2', 'Already down, no effect']
+		],
+		notLegal: 'Not legal: Axis (taken), Flaps 5–6 (needs 5 or 6).'
+	}
+};
+
+// ------------------------------------------------------------------ helpers
+const ALT = ['6000', '5000', '4000', '3000', '2000', '1000', 'Land'];
+const sign = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + -n : '0');
+
+function stateFor(key, phase) {
+	const s = structuredClone(CASES[key]);
+	s.phase = phase;
+	if (phase === 'waiting' && s.waiting) {
+		Object.assign(s.placed, s.waiting.placedAdd);
+		s.sw.push(...s.waiting.swAdd);
+		s.hand = s.waiting.hand; s.last = s.waiting.last; s.blue = s.waiting.blue;
+		s.sel = null; s.legal = []; s.target = null; s.mod = 0;
+	}
+	if (phase === 'reroll' && s.reroll) {
+		s.rr = s.reroll.rr; s.rerolls = s.reroll.rerolls;
+		s.sel = null; s.legal = []; s.target = null; s.mod = 0;
+	}
+	return s;
+}
+
+function space(id, s, mode) {
+	const d = SP[id];
+	const placed = s.placed[id];
+	const done = d.sw && s.sw.includes(id);
+	const cls = ['sp', d.c];
+	if (placed) cls.push('has');
+	if (s.legal.includes(id)) cls.push('legal');
+	if (s.target === id) cls.push('target');
+	if (s.last === id) cls.push('last');
+	if (id.startsWith('ice') && s.ice && Number(id[3]) - 2 < s.ice.marker) cls.push('shut');
+	let inner;
+	if (placed) {
+		const [o, v] = placed;
+		const k = o.startsWith('I') ? 'I ' + o.slice(1) : o;
+		const who = d.c === 'x' && !o.startsWith('I') ? `<span class="who">${o === 'T' ? '' : o}</span>` : '';
+		inner = `<div class="die-on ${k}">${v}${who}</div>`;
+	} else if (mode === 'map') {
+		inner = `<b>${d.v && d.l !== 'Coffee' && d.l !== 'Fuel' ? d.v : SHORT[d.l] ?? d.l}</b>`;
+	} else {
+		inner = d.v ? `<span>${d.l}</span><b>${d.v}</b>` : `<b>${d.l}</b>`;
+	}
+	const sw = d.sw ? `<span class="sw ${done ? 'on' : ''}">${done ? '✓' : ''}</span>` : '';
+	return `<div class="${cls.join(' ')}">${inner}${sw}</div>`;
+}
+
+function axisBar(s) {
+	let h = '';
+	for (let p = -3; p <= 3; p++) {
+		const end = Math.abs(p) === 3;
+		const cur = p === s.axis;
+		h += `<i class="${end ? 'end' : ''} ${cur ? 'cur' : ''}">${end ? '✕' : cur ? sign(p) : ''}</i>`;
+	}
+	return `<div class="axb" title="Axis">${h}</div>`;
+}
+
+function bands(s) {
+	if (s.round === 7) return `<div class="bands"><div class="hot"><b>&lt; ${[2, 3, 5, 7][s.brakes]}</b><span>lands</span></div></div>`;
+	return `<div class="bands">
+		<div><b>≤${s.blue}</b><span>stay</span></div>
+		<div class="hot"><b>${s.blue + 1}–${s.orange}</b><span>+1</span></div>
+		<div><b>${s.orange + 1}+</b><span>+2</span></div></div>`;
+}
+
+function brakeRow(s, mode) {
+	if (s.ice) {
+		const cols = [2, 3, 4, 5];
+		const m = cols.map((_, i) => `<i class="${i === s.ice.marker ? 'on' : ''}">${i === 0 ? '◂2' : cols[i - 1] + '▸'}</i>`).join('') + `<i class="${s.ice.marker === 4 ? 'on' : ''}">5▸</i>`;
+		return `<div class="prow">${cols.map((c) => space('ice' + c + 't', s, mode)).join('')}</div>
+			<div class="prow">${cols.map((c) => space('ice' + c + 'b', s, mode)).join('')}</div>
+			<div class="icem" title="Ice-brake marker: must end past 5">${m}</div>`;
+	}
+	const land = [1, 2, 4, 6][s.brakes ?? 0];
+	return `<div class="prow">${space('brakes2', s, mode)}<span class="arrow">›</span>${space('brakes4', s, mode)}<span class="arrow">›</span>${space('brakes6', s, mode)}
+		<div class="rd">Lands<b>≤${land}</b></div></div>`;
+}
+
+function internBoard(s, mode) {
+	if (!s.intern) return '';
+	const t = s.intern.toks;
+	const left = t.findIndex((_, i) => !s.intern.gone.includes(i));
+	const right = t.length - 1 - [...t].reverse().findIndex((_, i) => !s.intern.gone.includes(t.length - 1 - i));
+	const toks = t.map((v, i) => `<span class="tok ${s.intern.gone.includes(i) ? 'gone' : ''} ${i === left ? 'nextP' : ''} ${i === right ? 'nextC' : ''}">${v}</span>`).join('');
+	return `<div class="intern">${space('internPilot', s, mode)}<div class="toks">${toks}</div>${space('internCopilot', s, mode)}</div>`;
+}
+
+function panel(s, mode) {
+	const blue = ['radioPilot', 'gear12', 'gear34', 'gear56'];
+	const orange = ['radioCopilot1', 'radioCopilot2', 'flaps12', 'flaps23', 'flaps45', 'flaps56'];
+	const conc = ['conc1', 'conc2', 'conc3'];
+	const fuelSpace = s.fuel !== undefined ? space('kerosene', s, mode) : '';
+	return `<div class="panel ${s.sel !== null && s.sel !== undefined ? 'selecting' : ''}">
+		<div class="pcol">${blue.map((id) => space(id, s, mode)).join('')}${fuelSpace}</div>
+		<div class="pmid">
+			<div class="prow">${space('axisPilot', s, mode)}${axisBar(s)}${space('axisCopilot', s, mode)}</div>
+			<div class="prow">${space('enginesPilot', s, mode)}${bands(s)}${space('enginesCopilot', s, mode)}</div>
+			${brakeRow(s, mode)}
+			<div class="prow">${conc.map((id) => space(id, s, mode)).join('')}</div>
+			${internBoard(s, mode)}
+		</div>
+		<div class="pcol">${orange.map((id) => space(id, s, mode)).join('')}</div>
+	</div>`;
+}
+
+function approach(s, cells) {
+	const from = cells === 'ahead' ? s.pos - 1 : 0;
+	const to = cells === 'ahead' ? Math.min(s.N, s.pos + 3) : s.N;
+	let h = '';
+	for (let i = from; i < to; i++) {
+		const n = i + 1;
+		const cls = ['apc'];
+		if (n < s.pos) cls.push('past');
+		if (n === s.pos) cls.push('here');
+		if (s.aim === n) cls.push('aim');
+		const t = s.turns[i];
+		const tm = t ? `<div class="tm">${[...t].map((c, k) => `<i class="${c === 'x' ? 'x' : ''} ${k - 2 === s.axis ? 'cur' : ''}"></i>`).join('')}</div>` : '<div class="tm"></div>';
+		const p = s.planes[i];
+		const pl = `<div class="pl">${p > 3 ? '✈︎×' + p : '✈︎'.repeat(p)}</div>`;
+		const tr = `<div class="trf">${'<i></i>'.repeat(n === s.pos || n > s.pos ? s.traffic[i] : 0)}</div>`;
+		h += `<div class="${cls.join(' ')}">${n === s.N ? `<span class="apt">${s.apt}</span>` : ''}${tm}${pl}${tr}${n === s.pos ? '<span class="us" title="Your plane"></span>' : ''}</div>`;
+	}
+	return `<div class="ap">${h}</div>`;
+}
+
+function altitude(s) {
+	return `<div class="alt">${ALT.map((a, i) => {
+		const r = i + 1;
+		const fp = r % 2 ? 'P' : 'C';
+		return `<div class="alc ${r === s.round ? 'cur' : ''} ${r < s.round ? 'past' : ''}">${a}<span class="fp">${fp}</span></div>`;
+	}).join('')}</div>`;
+}
+
+function header(s) {
+	return `<div class="hd"><div class="ttl"><b>${s.title}</b><div>Round ${s.round} of 7, ${s.names[s.round % 2 ? 'P' : 'C']} first</div></div>
+		<span class="ib" title="Rules">?</span><span class="ib" title="Give up">⚑</span><span class="ib" title="Theme">◐</span></div>`;
+}
+
+function modules(s) {
+	let h = '';
+	if (s.fuel !== undefined) {
+		h += `<div class="chip fuel"><span>Fuel</span><span class="fbar"><i style="width:${(s.fuel / 20) * 100}%"></i><s></s></span><b>${s.fuel}</b></div>`;
+	}
+	if (s.wind) {
+		h += `<div class="chip"><span class="dial" style="--rot:${s.wind.off * 18}deg"></span><span>Wind</span><b>${sign(s.wind.v)}</b></div>`;
+	}
+	for (const a of s.abilities) {
+		h += `<div class="chip ab"><span class="st ${a.used ? 'used' : ''}"></span><span>${a.short}</span><span class="abt">${a.n}: ${a.t}</span></div>`;
+	}
+	return `<div class="mods">${h}</div>`;
+}
+
+function cups(n) {
+	return `<span class="cups">${[0, 1, 2].map((i) => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</span>`;
+}
+
+function hand(s) {
+	const me = s.me;
+	const pt = me === 'P' ? 'C' : 'P';
+	const dice = s.hand.map((v, i) => {
+		if (v === null) return `<span class="die empty"></span>`;
+		const cls = ['die', me];
+		if (i === s.sel) cls.push('sel');
+		if (s.rr && s.rr.includes(v)) cls.push('rr');
+		if (s.phase === 'waiting') cls.push('locked');
+		const shown = i === s.sel && s.mod ? v + s.mod : v;
+		const mod = i === s.sel && s.mod ? `<span class="mod">${sign(s.mod)}</span>` : '';
+		return `<span class="${cls.join(' ')}">${shown}${mod}</span>`;
+	}).join('');
+	const left = s.partnerLeft;
+	const fd = [0, 1, 2, 3].map((i) => `<i class="${i < left ? pt : 'out'}"></i>`).join('');
+	return `<div class="hand ${s.phase === 'turn' ? 'mine' : ''}">${dice}
+		<div class="partner"><b>${s.names[pt]}</b><br>${left} dice left<br><span class="fd">${fd}</span></div></div>`;
+}
+
+function status(s, concept) {
+	const pt = s.names[s.me === 'P' ? 'C' : 'P'];
+	if (s.phase === 'waiting') return `<div class="status"><span class="pill wait">${pt}’s turn</span><span>Waiting for ${pt} to place a die.</span></div>`;
+	if (s.phase === 'reroll') return `<div class="status"><span class="pill">Reroll</span><span>Pick the dice to reroll. ${pt} is choosing too.</span></div>`;
+	if (concept === 'C') return `<div class="status"><span class="pill">Your turn</span><span>Tap a die to see where it can go.</span></div>`;
+	return `<div class="status"><span class="pill">Your turn</span><span>${s.preview}</span></div>`;
+}
+
+function action(s) {
+	const rr = `<span class="btn sq ${s.rerolls ? '' : 'dis'}" title="Spend a reroll">⟲${s.rerolls}</span>`;
+	if (s.phase === 'reroll') {
+		const n = s.rr.length;
+		return `<div class="action"><span class="btn">Keep all</span><span class="btn pri">Reroll ${n} ${n === 1 ? 'die' : 'dice'}</span></div>`;
+	}
+	const stepper = `<div class="stepper"><span class="btn ${s.phase !== 'turn' ? 'dis' : ''}">−</span><span class="val"><b>${s.coffee - Math.abs(s.mod || 0)}</b>${cups(s.coffee - Math.abs(s.mod || 0))}</span><span class="btn ${s.phase !== 'turn' ? 'dis' : ''}">+</span></div>`;
+	const place = s.phase === 'turn' ? `<span class="btn pri">Place</span>` : `<span class="btn pri dis">Place</span>`;
+	return `<div class="action">${stepper}${place}${rr}</div>`;
+}
+
+// ------------------------------------------------------------------ concepts
+function conceptA(s) {
+	return `<div class="screen cA">${header(s)}
+		<div class="track">${approach(s)}${altitude(s)}</div>
+		${modules(s)}
+		<div class="pwrap">${panel(s, 'full')}</div>
+		${status(s, 'A')}${hand(s)}${action(s)}</div>`;
+}
+
+const B_TAB = { tgu: 'flight', kef: 'config', hnd: 'flight' };
+function zoneFlight(s) {
+	const m = 'full';
+	const conc = ['conc1', 'conc2', 'conc3'].map((id) => space(id, s, m)).join('');
+	return `<div class="zone">
+		<div class="prow">${space('axisPilot', s, m)}${axisBar(s)}${space('axisCopilot', s, m)}</div>
+		<div class="prow">${space('enginesPilot', s, m)}${bands(s)}${space('enginesCopilot', s, m)}</div>
+		<div class="prow">${space('radioPilot', s, m)}<span class="plabel">Radio: die 1 = your space</span>${space('radioCopilot1', s, m)}${space('radioCopilot2', s, m)}</div>
+		<div class="prow">${conc}${s.fuel !== undefined ? space('kerosene', s, m) : ''}</div>
+		${internBoard(s, m)}</div>`;
+}
+function zoneConfig(s) {
+	const m = 'full';
+	return `<div class="zone">
+		<div class="prow">${['gear12', 'gear34', 'gear56'].map((id) => space(id, s, m)).join('')}<span style="flex:.5"></span>${['flaps12', 'flaps23'].map((id) => space(id, s, m)).join('')}</div>
+		<div class="prow"><span style="flex:1"></span>${['flaps45', 'flaps56'].map((id) => space(id, s, m)).join('')}</div>
+		${brakeRow(s, m)}</div>`;
+}
+function conceptB(s) {
+	const tab = B_TAB[s.key];
+	const legalIn = (ids) => s.legal.filter((id) => ids(id)).length;
+	const isConfig = (id) => /^(gear|flaps|brakes|ice)/.test(id);
+	const nf = legalIn((id) => !isConfig(id));
+	const nc = legalIn(isConfig);
+	const badge = (n, on) => (n && s.phase === 'turn' ? `<span class="bd">${n}</span>` : on ? `<span class="bd new">new</span>` : '');
+	const lastConfig = s.last && isConfig(s.last);
+	const tabs = `<div class="tabs">
+		<span class="tab ${tab === 'flight' ? 'on' : ''}">Flight ${badge(nf, !lastConfig && tab !== 'flight')}</span>
+		<span class="tab ${tab === 'config' ? 'on' : ''}">Config ${badge(nc, lastConfig && tab !== 'config')}</span>
+		<span class="tab">Route</span></div>`;
+	const sum = `<div class="sum">
+		<div class="sum1">${approach(s, 'ahead')}
+			<div class="sbox"><span>Axis</span><b>${sign(s.axis)}</b></div>
+			<div class="sbox"><span>Speed</span><b>≤${s.blue}·${s.orange}</b></div></div>
+		<div class="sum2"><span>Alt <b>${ALT[s.round - 1]}</b></span><span>Coffee <b>${s.coffee}</b></span><span>Rerolls <b>${s.rerolls}</b></span>
+		${s.fuel !== undefined ? `<span>Fuel <b>${s.fuel}</b></span>` : ''}${s.wind ? `<span>Wind <b>${sign(s.wind.v)}</b></span>` : ''}
+		${s.ice ? `<span>Ice <b>${s.ice.marker}/4</b></span>` : ''}</div></div>`;
+	const zone = tab === 'flight' ? zoneFlight(s) : zoneConfig(s);
+	return `<div class="screen cB">${header(s)}${sum}${tabs}
+		<div class="pwrap"><div class="screen-in ${s.sel !== null && s.sel !== undefined ? 'selecting' : ''}" style="width:100%">${zone}</div></div>
+		${status(s, 'B')}${hand(s)}${action(s)}</div>`;
+}
+
+function conceptC(s) {
+	const sheetOpen = s.phase === 'turn';
+	let sheet = '';
+	if (sheetOpen) {
+		const v = s.hand[s.sel];
+		const opts = s.opts.map(([id, name, eff]) => `<div class="opt ${id === s.target ? 'on' : ''}"><b>${name}</b><span class="muted">${eff}</span></div>`).join('');
+		sheet = `<div class="sheet"><div class="grab"></div>
+			<div class="shd"><span class="die ${s.me} sel" style="--die:48px">${v + (s.mod || 0)}${s.mod ? `<span class="mod">${sign(s.mod)}</span>` : ''}</span>
+				<div class="stepper"><span class="btn">−</span><span class="val"><b>${s.coffee - Math.abs(s.mod || 0)}</b>${cups(s.coffee - Math.abs(s.mod || 0))}</span><span class="btn">+</span></div>
+				<span class="btn" style="margin-left:auto">Cancel</span></div>
+			<div class="opts">${opts}</div>
+			<div class="notlegal">${s.notLegal}</div>
+			<span class="btn pri">Place ${v + (s.mod || 0)} on ${s.opts.find((o) => o[0] === s.target)[1]}</span></div>`;
+	}
+	// in the map the selection highlight shows only the chosen target
+	const ms = structuredClone(s);
+	if (sheetOpen) ms.legal = [];
+	return `<div class="screen cC">${header(s)}
+		<div class="track">${approach(s)}${altitude(s)}</div>
+		${modules(s)}
+		<div class="pwrap map">${panel(ms, 'map')}</div>
+		${status(s, 'C')}${hand(s)}${action(s)}${sheet}</div>`;
+}
+
+const CONCEPTS = { A: conceptA, B: conceptB, C: conceptC };
+function frame(concept, key, phase, w = 375, h = 630) {
+	const s = stateFor(key, phase);
+	return `<div class="frame" style="--fw:${w}px;--fh:${h}px">${CONCEPTS[concept](s)}</div>`;
+}
+
+// ------------------------------------------------------------------ page
+const params = new URLSearchParams(location.search);
+if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme');
+const solo = params.get('f');
+const app = document.getElementById('app');
+
+if (solo) {
+	const [c, k, p] = solo.split('-');
+	document.body.classList.add('solo');
+	app.innerHTML = frame(c, k, p || 'turn').replace(/--fw:\d+px;--fh:\d+px/, '--fw:100vw;--fh:100dvh');
+} else {
+	const shots = (c) => [
+		['tgu', 'turn', 'TGU red: kerosene, wind, Sync + Working together. Your turn, 6 selected.'],
+		['kef', 'turn', 'KEF black: wind, ice brakes, Anticipation + Adaptation. Your turn, 5 selected.'],
+		['hnd', 'turn', 'HND red (Co-Pilot view): kerosene, intern, Control. 2 selected, coffee −1.'],
+		['tgu', 'waiting', 'TGU red, waiting for the partner.'],
+		['tgu', 'reroll', 'TGU red, reroll step.']
+	].map(([k, p, cap]) => `<figure class="shot"><div class="fwrap" data-w="375">${frame(c, k, p)}</div><figcaption>${cap}<br><a href="?f=${c}-${k}-${p}">Open at full size</a></figcaption></figure>`).join('');
+
+	app.innerHTML = `<div class="doc">
+	<h1>Sky Team layout concepts</h1>
+	<p class="lede">Feasibility study before the plan: can the whole game state of the worst scenarios fit on an iPhone 13 mini in portrait (375×630 in Safari, 375×812 without toolbars) without scrolling, with dice placed in one tap? Wireframes only, neutral palette, sample data from rules.md. Every frame below is drawn at 375×630.</p>
+
+	<h2>What has to fit</h2>
+	<table>
+		<tr><th>Scenario</th><th>Die spaces</th><th>Extra readouts</th><th>Abilities</th></tr>
+		<tr><td>Base (YUL)</td><td>20: axis 2, engines 2, radio 3, gear 3, flaps 4, brakes 3, coffee 3</td><td>approach (≤ 8 spaces), altitude (7), axis, speed thresholds, brake marker, coffee, rerolls</td><td>0</td></tr>
+		<tr><td>TGU red</td><td>21 (+ fuel)</td><td>fuel 0–20, wind value; turn masks on 3 of 5 spaces, traffic 3+2</td><td>Sync (black die on the panel), Working together</td></tr>
+		<tr><td>KEF black</td><td>25 (brakes → 4×2 ice spaces)</td><td>ice marker (5 slots), wind; 3 turns on 6 spaces</td><td>Anticipation, Adaptation (per player)</td></tr>
+		<tr><td>HND red</td><td>23 (+ fuel, + 2 train)</td><td>6 intern tokens with both "next" ends, intern chips on the panel, fuel; 4 turns on 8 spaces</td><td>Control</td></tr>
+	</table>
+	<p>Always visible, because every placement depends on it: your dice, the partner's count, the axis, the speed thresholds (gear and flaps state), the next 2–5 approach spaces with planes and turn masks (radio reach is up to 5 spaces ahead), what the partner placed this round. Can sit behind a tap: ability texts, the wind ring drawing, the full track history, rules.</p>
+	<div class="legend">
+		<div><span class="k">▢ blue</span>Pilot space</div><div><span class="k">▢ orange</span>Co-Pilot space</div>
+		<div><span class="k">◩</span>either colour (coffee, fuel, ice bottom)</div><div><span class="k">✓ ○</span>switch green / red</div>
+		<div><span class="k">ring</span>legal for the selected die</div><div><span class="k">dashed</span>tapped target</div>
+		<div><span class="k">● i</span>intern token used as a die</div><div><span class="k">■ black</span>traffic die (Sync)</div>
+		<div><span class="k">▮ red</span>turn: forbidden axis position</div><div><span class="k">outlined</span>turn: column of the current axis</div>
+		<div><span class="k">▪</span>traffic-die icon</div><div><span class="k">◤ bold</span>your plane's space</div><div><span class="k">new</span>partner's last placement</div>
+	</div>
+
+	<h2>A. Whole cockpit</h2>
+	<p>The panel as on the table: blue column (radio, gear, fuel), centre (axis with its gauge, engines with the speed bands, brakes or ice brakes, coffee, intern board), orange column (radios, flaps). Approach and altitude as strips on top, modules and abilities as one chip row. Placement: tap a die, its legal spaces get a ring and the rest dims, tap a space, a status line says what will happen, Place commits. Coffee stepper and reroll sit in the action bar.</p>
+	<p><b>Sizes:</b> die spaces 44×44 with 5 px gaps (50 px at 375×812), hand dice 52 px, 8 px side gutter. The orange column (2 radios + 4 flaps = 6 spaces) sets the panel height: 6 × 44 + 5 × 5 = 289 px. The centre has room left over, which is where ice brakes and the intern board go.</p>
+	<ul>
+		<li><b>Legibility:</b> die values 20 px bold, labels 12 px, everything in its physical place, so players who know the board find things.</li>
+		<li><b>One-tap placement:</b> every space is a 44 px target; neighbours are 5 px apart, but only the legal ones are active while a die is selected (typically 4–9 of 20–25), so a near miss lands on a dimmed space and does nothing.</li>
+		<li><b>Behind a tap:</b> ability texts (chip opens a sheet), wind ring drawing (chip shows value and a needle), rules.</li>
+		<li><b>Always visible:</b> everything else, including the partner's placements of this round with a "new" mark on the last one.</li>
+		<li><b>Cost:</b> it is dense. At 375×630 the panel row has 14 px to spare (measured in every A frame); no room for a seventh panel row or a second chip row. At 375×812 about 110 px are left over for bigger dice or a taller track.</li>
+	</ul>
+	<p class="verdict"><b>Verdict: recommended.</b> Fits all three worst cases at 375×630 without scrolling, keeps 44 px targets and shows everything a placement depends on.</p>
+	<div class="gallery">${shots('A')}</div>
+	<h3>Same screen at 375×812 and on desktop</h3>
+	<div class="gallery">
+		<figure class="shot"><div class="fwrap" data-w="375">${frame('A', 'kef', 'turn', 375, 812)}</div><figcaption>KEF black at 375×812: spaces grow to 50 px.</figcaption></figure>
+		<figure class="shot" style="flex:1 1 100%"><div class="fwrap" data-w="1280">${frame('A', 'hnd', 'turn', 1280, 800)}</div><figcaption>HND red at 1280×800: tracks vertical on the left as on the table, ability texts spelled out on the right, 60 px spaces.</figcaption></figure>
+	</div>
+
+	<h2>B. Summary strip and zones</h2>
+	<p>A summary strip (next approach spaces, axis, speed thresholds, counters) stays on top; the panel is split into tabs: <i>Flight</i> (axis, engines, radio, coffee, fuel, intern), <i>Config</i> (gear, flaps, brakes or ice), <i>Route</i> (full approach and altitude, wind ring, ability texts). Tabs show how many legal spaces the selected die has there, or "new" when the partner placed there.</p>
+	<ul>
+		<li><b>Legibility:</b> 54 px spaces with room for hints.</li>
+		<li><b>One-tap placement:</b> easiest of the three inside a tab, but a die whose best space is on the other tab costs a tab switch, and the player has to know to look.</li>
+		<li><b>Behind a tap:</b> half the panel at any time, including the partner's placements and the switches that set the speed thresholds.</li>
+		<li><b>Problem:</b> deciding between engines and flaps (or radio and gear) needs both zones at once. The summary repeats the panel's numbers in a second form, against "each piece of information once". In HND the summary only fits 4 approach spaces, so radio reach 5 is off-screen.</li>
+	</ul>
+	<p class="verdict no"><b>Verdict: rejected.</b> Bigger targets do not pay for hiding the partner's moves and half the decision basis. Sky Team is a game of reading the partner's dice.</p>
+	<div class="gallery">${shots('B')}</div>
+
+	<h2>C. Panel map and placement sheet</h2>
+	<p>The panel is a read-only map with 34 px spaces in the physical layout. Tapping a die opens a sheet that lists its legal spaces as 50 px buttons, each with a plain effect preview ("Speed 4 + 5 + wind 1 = 10: advance 1, turn ok"), the coffee stepper and the illegal spaces with their reason. The chosen space is outlined on the map behind the sheet.</p>
+	<ul>
+		<li><b>Legibility:</b> map values 16 px, short labels (Ax, En, R, 1–2); fine for reading state, too small to tap.</li>
+		<li><b>One-tap placement:</b> no mis-hits at all, but always three taps (die, option, Place) and the sheet covers the lower half of the map and the hand while deciding.</li>
+		<li><b>Behind a tap:</b> the effect previews are a bonus, not hidden info; but the decision happens in a list instead of on the board, which loses the "put the die on the panel" feel and the spatial reading of the partner's dice.</li>
+		<li><b>Lists get long:</b> a Co-Pilot 1 or 2 in HND has 7–9 legal spaces; the sheet then covers most of the screen.</li>
+	</ul>
+	<p class="verdict no"><b>Verdict: not as the main mode.</b> Take two parts into A: the one-line effect preview (A's status line) and the "not legal because …" text when a dimmed space is tapped.</p>
+	<div class="gallery">${shots('C')}</div>
+
+	<h2>Recommendation</h2>
+	<p><b>Feasible.</b> Concept A fits every worst case at 375×630 with 44 px die spaces, no scrolling, and nothing a placement depends on behind a tap. Collapsed or behind a tap: ability texts (chips with a used/free dot), the wind ring drawing (needle + value), the approach track's printed art (cells show planes, traffic icons and turn masks as symbols), altitude labels shortened to one row. Rule data that pressures the layout: the orange column (6 spaces) is the height driver; HND's 8-space approach gives 44 px cells, the minimum for 3 plane icons plus a 5-slot turn mask; ice brakes add two rows that only fit because they replace the brake row and use the centre's spare height; Synchronisation adds a black die for the Co-Pilot to place; it takes one of the hand's empty slots (the Co-Pilot has placed the flaps die by then), so the hand stays 4 slots wide.</p>
+</div>`;
+
+	const fit = () => {
+		document.querySelectorAll('.fwrap').forEach((w) => {
+			const avail = w.parentElement.parentElement.clientWidth;
+			const z = Math.min(1, avail / Number(w.dataset.w));
+			w.style.zoom = z;
+		});
+	};
+	fit();
+	addEventListener('resize', fit);
+}
+</script>
+</body>
+</html>
