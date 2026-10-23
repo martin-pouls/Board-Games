@@ -15,7 +15,7 @@
  * as the physical dice. By night the aluminium turns gunmetal and the glows carry the panel.
  * Token names follow the future sky-team/frontend/src/routes/layout.css.
  */
-:root {
+:root, .lt {
 	--background: oklch(0.935 0.012 240);
 	--foreground: oklch(0.24 0.035 258);
 	--card: oklch(0.982 0.005 240);
@@ -131,7 +131,7 @@
 		color-scheme: dark;
 	}
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], .dk {
 	--background: oklch(0.185 0.022 255);
 	--foreground: oklch(0.94 0.01 240);
 	--card: oklch(0.225 0.025 255);
@@ -750,16 +750,90 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .wall .tile .txt, .wcard .txt { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 2px; }
 .wall .tile h2, .wcard h2 { font-size: 20px; }
 .wall .tile .chev, .wcard .chev { display: none; }
-/* tile options: one column per option, each in light and dark at real size */
-.topts { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px; background: var(--background); min-height: 100%; }
-.topt { flex: 1 1 360px; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
-.topt h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-.topt h3 .rec { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); }
-.topt h3 a { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--primary); }
-.topt p.why { margin: 0; font-size: 13px; color: var(--muted-foreground); line-height: 18px; }
-.topt.chosen { outline: 2px solid var(--ring); outline-offset: 8px; border-radius: 4px; }
-.topt .stpage { padding: 10px; border-radius: 12px; min-height: 0; }
-.topt .wcard { display: flex; width: 296px; }
+
+/* ---------------- round 3 options ---------------- */
+/* 1. panel edge marks: gone, or a bar in your colour on your side */
+.panel.edge-none::before, .panel.edge-none::after, .panel.edge-side::before, .panel.edge-side::after { display: none; }
+.panel.edge-side.me-P::before, .panel.edge-side.me-C::after { display: block; top: 14px; bottom: 14px; height: auto; width: 4px; }
+.panel.edge-side.me-P::before { left: -2px; background: var(--pilot); }
+.panel.edge-side.me-C::after { right: -2px; background: var(--copilot); }
+/* 2. axis */
+.axg i.end { flex: .6; }
+.axg i.cur svg { max-width: 100%; }
+.axg.lit i.cur, .axg.num i.cur { background: oklch(from var(--gauge-ink) l c h / 20%); box-shadow: inset 0 0 0 2px var(--glow); overflow: visible; }
+.axg.lit i.cur svg { width: 21px; height: 21px; max-width: none; filter: none; }
+.axg.num i { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.axg.num i::before { display: none; }
+.axg.num i b { font-family: 'Saira', sans-serif; font-stretch: 75%; font-weight: 600; font-size: 12px; line-height: 12px; color: oklch(from var(--gauge-ink) l c h / 80%); }
+.axg.num i.zero b { color: var(--gauge-ink); font-weight: 700; }
+.axg.num i.cur b { color: var(--gauge-ink); font-weight: 800; }
+.axg.num i.cur svg { width: 22px; height: 18px; max-width: none; filter: none; }
+.landing .axg.lit i.zero, .landing .axg.num i.zero { box-shadow: inset 0 0 0 2px var(--led); }
+.landing .axg.lit i.zero.cur, .landing .axg.num i.zero.cur { box-shadow: inset 0 0 0 2px var(--led); background: color-mix(in oklch, var(--led) 28%, transparent); }
+.axg.dial { padding: 2px; }
+.axg.dial svg { width: 100%; height: 100%; display: block; }
+/* 3. speed */
+.spd.full .n { font-size: 11px; }
+.spd.full .pin { top: -1px; bottom: -1px; width: 4px; margin-left: -2px; }
+.spd .z b { font-size: 11px; font-weight: 700; line-height: 1; }
+.spd .z { gap: 2px; display: flex; align-items: center; justify-content: center; }
+.spd .z svg { width: 12px; height: 10px; }
+.spr { display: flex; gap: 0; padding: 3px; position: relative; }
+.spr .seg { flex: var(--n) 1 0; min-width: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 4px; position: relative; }
+.spr .seg + .seg { margin-left: 5px; }
+.spr .seg + .seg::before { content: ""; position: absolute; left: -4px; top: -2px; bottom: -2px; width: 3px; border-radius: 2px; background: var(--mk); }
+.spr .seg .r { font-family: 'Saira', sans-serif; font-stretch: 80%; font-weight: 600; font-size: 12px; line-height: 12px; color: oklch(from var(--gauge-ink) l c h / 85%); white-space: nowrap; }
+.spr .seg .m { display: flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; line-height: 11px; color: var(--gauge-ink); white-space: nowrap; }
+.spr .seg .m svg { width: 12px; height: 10px; }
+.spr .z1 { background: oklch(from var(--gauge-ink) l c h / 9%); }
+.spr .z2 { background: oklch(from var(--gauge-ink) l c h / 18%); }
+.spr .land { background: color-mix(in oklch, var(--led) 26%, transparent); }
+.spr .land .m { color: var(--led); }
+.spr .crash .m { color: var(--forbidden); }
+.spr .seg.aim { background: var(--gauge-ink); }
+.spr .seg.aim .r, .spr .seg.aim .m { color: var(--gauge); }
+/* 4. turn masks */
+.tm.w i.ok::after { border-top-color: oklch(0.56 0.17 145); opacity: 1; }
+.tm.d { background: var(--gauge); box-shadow: 0 0 0 1px oklch(from var(--glow) l c h / 45%); }
+.tm.d i.ok::after { border-top-color: var(--led); opacity: 1; }
+/* 5. ability chips */
+.chip.abw.used, .chip.abi.used { color: var(--muted-foreground); background: transparent; border-style: dashed; }
+.chip.abw .st { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+.chip.abw .st svg, .chip.abi .aw svg { width: 12px; height: 12px; color: currentColor; }
+.chip.abi { padding: 0 8px 0 4px; }
+.chip.abi .aw { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--well); flex: none; }
+.chip.abi .aw svg { width: 15px; height: 15px; color: var(--glow); }
+.chip.abi.used .aw { background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
+.chip.abi.used .aw svg { width: 13px; height: 13px; color: var(--muted-foreground); }
+
+/* the builder */
+.lt, .dk { background: var(--background); color: var(--foreground); }
+.dec { margin-top: 36px; }
+.dec h3 { font-size: 18px; margin: 0 0 4px; }
+.dec > p { margin: 0 0 4px; }
+.opts { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 12px; align-items: flex-start; }
+.opt { width: 383px; max-width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--border); cursor: pointer; }
+.opt.chosen { box-shadow: inset 0 0 0 2px var(--ring); }
+.opt .oh { display: flex; align-items: center; gap: 8px; padding: 2px 4px 0; }
+.opt .oh b { font-size: 15px; }
+.opt .rec { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); }
+.opt .pk { margin-left: auto; font: inherit; font-size: 13px; font-weight: 600; height: 30px; padding: 0 12px; border-radius: 8px; border: 0; background: var(--secondary); color: var(--secondary-foreground); cursor: pointer; }
+.opt.chosen .pk { background: var(--primary); color: var(--primary-foreground); }
+.opt .why { margin: 0; padding: 0 4px; font-size: 13px; line-height: 18px; color: var(--muted-foreground); }
+.ov { border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 10px; }
+.ov .lbl { font-size: 12px; color: var(--muted-foreground); margin: 0 0 -4px; }
+.slice { display: block; height: auto; padding: 0; width: 351px; max-width: 100%; }
+.slice .crop { overflow: hidden; border-radius: 14px; }
+.slice .crop.c2 { height: calc(var(--cell) * 2 + var(--gap) + 10px); }
+.slice .mods { flex-wrap: nowrap; }
+.closeup { zoom: 2.5; display: flex; gap: 4px; width: max-content; }
+.closeup .apc { flex: none; width: 36px; height: 16px; justify-content: center; padding: 0; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.picks span { font-size: 13px; padding: 4px 10px; border-radius: 12px; background: var(--secondary); }
+.picks span b { font-weight: 700; }
+.doc details { margin-top: 48px; }
+.doc summary { font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 22px; font-weight: 700; cursor: pointer; }
+.frame.lt, .frame.dk { background: var(--background); }
 
 /* ---------------- desktop (game screen frame ≥ 900 px) ---------------- */
 .mods .abfull { display: none; }
@@ -794,7 +868,11 @@ svg.i { width: 16px; height: 16px; flex: none; }
 	.sp svg.att { width: 32px; height: 32px; }
 	.pd { font-size: 30px; }
 	.spd .n { font-size: 14px; font-stretch: 90%; }
-	.axg i.cur svg { width: 36px; height: 36px; }
+	.axg i.cur svg, .axg.lit i.cur svg { width: 36px; height: 36px; }
+	.axg.num i.cur svg { width: 32px; height: 26px; }
+	.axg.num i b { font-size: 14px; line-height: 14px; }
+	.spr .seg .r { font-size: 15px; line-height: 15px; }
+	.spr .seg .m { font-size: 13px; }
 	.hd { margin: 0; }
 	.hand { padding: 8px 12px; }
 }
@@ -840,11 +918,80 @@ const I = {
 	step1: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 2 4 4-4 4"/></svg>',
 	step2: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 2 4 4-4 4M9 2l4 4-4 4"/></svg>',
 	ok: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 6.5 3 3 6-7"/></svg>',
-	cross: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>'
+	cross: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+	check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3.2 3.2L13 4.5"/></svg>',
+	// ability glyphs: what each card does
+	blackDie: '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="currentColor"/><g fill="var(--well)"><circle cx="8.5" cy="8.5" r="1.7"/><circle cx="15.5" cy="15.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="15.5" cy="8.5" r="1.7"/><circle cx="8.5" cy="15.5" r="1.7"/></g></svg>',
+	flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="9" width="12" height="12" rx="3"/><circle cx="8.5" cy="15" r="1.2" fill="currentColor"/><path d="M11 3.5a8 8 0 0 1 9.5 8"/><path d="m22.5 9-2 2.7-2.7-2"/></svg>',
+	pair: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="1.5" y="6" width="9" height="9" rx="2.2"/><rect x="13.5" y="6" width="9" height="9" rx="2.2"/><path d="M6 19.5h12" stroke-linecap="round"/></svg>'
 };
 const ic = (n, cls = 'i') => I[n].replace('<svg', `<svg class="${cls}"`);
 const themeToggle = () => `<span class="hb tt" title="Toggle light or dark mode">${ic('moon', 'i moon')}${ic('sun', 'i sun')}</span>`;
 const rtok = (cls = '') => `<span class="rtok ${cls}">${ic('reroll', '')}</span>`;
+
+// =================================================================== round 3 picks
+// One row per open decision; the renderers read P, so every screen follows the picks.
+const OPTS = {
+	edge: {
+		title: 'Yellow marks at the panel edges',
+		ask: 'Those were decoration: two hazard-yellow stripes, a nod to the board’s edge marks. They meant nothing, so they read as a bug.',
+		rec: 'none',
+		o: {
+			none: ['A: Remove', 'The panel edge is plain aluminium. Nothing on the screen without a meaning.'],
+			side: ['B: Your side', 'One bar in your colour on your side of the panel (Pilot left, Co-Pilot right). Carries a meaning, but the column colours already say it.']
+		}
+	},
+	axis: {
+		title: 'Axis: where the plane sits',
+		ask: 'The banked plane was wider than its cell, so it spilled over the neighbours and the position was a guess.',
+		rec: 'num',
+		o: {
+			lit: ['A: Lit cell', 'The current position is a lit, framed cell with the banked plane inside it; the other positions keep their ticks. Same look, clear box.'],
+			num: ['B: Numbered', 'Every position shows its number, −2 … +2. The current one is lit with the banked plane over its number. The numbers are the ones the turn masks and the rules use.'],
+			dial: ['C: Dial', 'An attitude dial: the plane’s fin is the needle, pointing at the tick. Most instrument-like; the angle says "tilted" at a glance, the tick says how far.']
+		}
+	},
+	speed: {
+		title: 'Speed: what the engine sum does',
+		ask: 'The scale had numbers only on even values, the markers sat between them as thin pins, and the chevrons under it had to be decoded.',
+		rec: 'ranges',
+		o: {
+			full: ['A: Full scale', 'Every number 2 … 12, the blue and orange markers as tall bars between them, and under each band what it does in words: stay, +1, +2. Closest to the board.'],
+			ranges: ['B: Three ranges', 'The scale folds into its bands: "≤ 5 stay", "6–10 +1", "11+ +2", split by the blue and orange markers. Answers "what does my die do" without counting. A preview lights the band and shows the sum.']
+		}
+	},
+	mask: {
+		title: 'Turn masks on the approach track',
+		ask: 'The allowed axis positions were grey triangles next to the red crosses.',
+		rec: 'white',
+		o: {
+			white: ['A: Green on white', 'The white strip stays, allowed positions in a darker green so they hold up on white. The strip still pops on the navy cell.'],
+			dark: ['B: Gauge strip', 'A black strip like the axis gauge, bright green triangles and red crosses. Matches the panel, but sinks into the navy cell.']
+		}
+	},
+	abil: {
+		title: 'Ability chips in the top row',
+		ask: 'They looked different because Sync was used this round (card face down) and Together wasn’t (face up). A tiny face-down card doesn’t read as "used", and the card icon said nothing about the ability.',
+		rec: 'icon',
+		o: {
+			word: ['A: Name and state', 'No icon. A ready ability is a plain chip; a used one turns dashed and muted with "✓ used". Clear, but all abilities look alike.'],
+			icon: ['B: Own icon', 'Each ability gets a glyph for what it does (black die, swap, flip, reroll, coffee, pair) in a lit well. Used: dashed and muted, the glyph replaced by a check.']
+		}
+	}
+};
+// Locked by the user after round 3 (the dial over the recommended numbers).
+const PICK_DEFAULT = { edge: 'none', axis: 'dial', speed: 'ranges', mask: 'white', abil: 'icon' };
+const P = { ...PICK_DEFAULT };
+{
+	const q = new URLSearchParams(location.search);
+	for (const k of Object.keys(OPTS)) if (OPTS[k].o[q.get(k)]) P[k] = q.get(k);
+}
+/** Renders with some picks overridden (the option previews). */
+function withPick(over, fn) {
+	const keep = { ...P };
+	Object.assign(P, over);
+	try { return fn(); } finally { Object.assign(P, keep); }
+}
 
 // =================================================================== panel data
 const SP = {
@@ -978,14 +1125,36 @@ function space(id, s) {
 }
 
 function axisGauge(s) {
+	if (P.axis === 'dial') return axisDial(s);
 	let h = '';
 	for (let p = -3; p <= 3; p++) {
 		if (Math.abs(p) === 3) { h += `<i class="end">${ic('cross', '')}</i>`; continue; }
 		const side = p < 0 ? 'P' : p > 0 ? 'C' : 'zero';
 		const cur = p === s.axis;
-		h += `<i class="${side} ${cur ? 'cur' : ''}" ${cur ? `style="--tilt:${p * 16}deg"` : ''}>${cur ? ic('att', '') : ''}</i>`;
+		const num = P.axis === 'num' ? `<b>${sign(p)}</b>` : '';
+		h += `<i class="${side} ${cur ? 'cur' : ''}" ${cur ? `style="--tilt:${p * 16}deg"` : ''}>${cur ? ic('att', '') : ''}${num}</i>`;
 	}
-	return `<div class="gauge axg" title="Axis ${sign(s.axis)}">${h}</div>`;
+	return `<div class="gauge axg ${P.axis}" title="Axis ${sign(s.axis)}">${h}</div>`;
+}
+
+/* The dial: −2 … +2 on an arc 30° apart, the crosses at ±90°; the plane banks to the position and its fin is the needle. */
+function axisDial(s) {
+	const cx = 60, cy = 37, r = 33;
+	const pt = (p, rr) => { const a = (p * 30 * Math.PI) / 180; return [(cx + Math.sin(a) * rr).toFixed(1), (cy - Math.cos(a) * rr).toFixed(1)]; };
+	const land = s.round === 7;
+	let ticks = '';
+	for (let p = -2; p <= 2; p++) {
+		const [x1, y1] = pt(p, p === 0 ? r - 9 : r - 6), [x2, y2] = pt(p, r);
+		const col = p === s.axis ? 'var(--glow)' : land && p === 0 ? 'var(--led)' : 'oklch(from var(--gauge-ink) l c h / 65%)';
+		ticks += `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="${col}" stroke-width="${p === 0 || p === s.axis ? 3 : 2}" stroke-linecap="round"/>`;
+	}
+	const cross = (p) => { const [x, y] = pt(p, r - 3); return `<path d="M${x - 4} ${y - 4}l8 8m0-8l-8 8" stroke="var(--forbidden)" stroke-width="2.4" stroke-linecap="round"/>`; };
+	const [lx, ly] = pt(-3, r), [tx, ty] = pt(0, r), [rx, ry] = pt(3, r);
+	const sectors = `<path d="M${cx} ${cy}L${lx} ${ly}A${r} ${r} 0 0 1 ${tx} ${ty}z" fill="color-mix(in oklch, var(--pilot) 34%, transparent)"/>
+		<path d="M${cx} ${cy}L${tx} ${ty}A${r} ${r} 0 0 1 ${rx} ${ry}z" fill="color-mix(in oklch, var(--copilot) 30%, transparent)"/>`;
+	const plane = `<g transform="rotate(${s.axis * 30} ${cx} ${cy})"><path d="M${cx} ${cy - 6}V${cy - r + 4}" stroke="var(--glow)" stroke-width="2.4" stroke-linecap="round"/>
+		<g transform="translate(${cx - 13.2} ${cy - 13.6}) scale(1.1)" fill="var(--gauge-ink)">${I.att.replace(/<\/?svg[^>]*>/g, '')}</g></g>`;
+	return `<div class="gauge axg dial" title="Axis ${sign(s.axis)}"><svg viewBox="0 0 120 42" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${sectors}${ticks}${cross(-3)}${cross(3)}${plane}</svg></div>`;
 }
 
 /** Highest final speed that lands: below the brake marker (or the ice-brake marker). */
@@ -994,13 +1163,30 @@ function landMax(s) {
 	return [1, 2, 4, 6][s.brakes ?? 0];
 }
 
+// What each band does, in words: the plane stays, moves one or two spaces; in the final round it lands or crashes.
+const BAND = { z0: () => '<b>stay</b>', z1: () => '<b>+1</b>', z2: () => '<b>+2</b>', land: () => `${ic('ok', '')}<b>land</b>`, crash: () => ic('cross', '') };
+
 function speedGauge(s) {
 	const final = s.round === 7;
 	const lm = landMax(s);
+	const title = final ? `Lands at speed ${lm} or less` : `Speed: up to ${s.blue} stays, up to ${s.orange} one space, more two`;
+	if (P.speed === 'ranges') {
+		// The bands as segments, split by the markers; open-ended at both ends (wind can push the sum past 2 … 12).
+		const segs = final
+			? [{ z: 'land', lo: -Infinity, hi: lm, mk: '' }, { z: 'crash', lo: lm + 1, hi: Infinity, mk: 'var(--forbidden)' }]
+			: [{ z: 'z0', lo: -Infinity, hi: s.blue, mk: '' }, { z: 'z1', lo: s.blue + 1, hi: s.orange, mk: 'var(--pilot)' }, { z: 'z2', lo: s.orange + 1, hi: Infinity, mk: 'var(--copilot)' }];
+		const range = (g) => (g.lo === -Infinity ? `≤ ${g.hi}` : g.hi === Infinity ? `${g.lo}+` : g.lo === g.hi ? `${g.lo}` : `${g.lo}–${g.hi}`);
+		const width = (g) => Math.max(1, Math.min(12, g.hi) - Math.max(2, g.lo) + 1);
+		const html = segs.filter((g) => g.lo <= 12 || g.z === 'crash').map((g) => {
+			const aim = s.speedAim !== null && s.speedAim >= g.lo && s.speedAim <= g.hi;
+			return `<span class="seg ${g.z} ${aim ? 'aim' : ''}" style="--n:${width(g)};--mk:${g.mk}"><span class="r">${aim ? '= ' + s.speedAim : range(g)}</span><span class="m">${BAND[g.z]()}</span></span>`;
+		}).join('');
+		return `<div class="gauge spr" title="${title}">${html}</div>`;
+	}
 	const zone = (v) => (final ? (v <= lm ? 'land' : 'crash') : v <= s.blue ? 'z0' : v <= s.orange ? 'z1' : 'z2');
 	let nums = '';
-	// Labelled like a printed gauge: even values numbered, odd ones a tick (a previewed sum always shows its number).
-	for (let v = 2; v <= 12; v++) nums += `<span class="n ${zone(v) === 'crash' ? '' : zone(v)} ${s.speedAim === v ? 'aim' : ''}">${v % 2 === 0 || s.speedAim === v ? v : '<i class="tk"></i>'}</span>`;
+	// Every value numbered; a previewed sum is inverted.
+	for (let v = 2; v <= 12; v++) nums += `<span class="n ${zone(v) === 'crash' ? '' : zone(v)} ${s.speedAim === v ? 'aim' : ''}">${v}</span>`;
 	// the movement row: one span per band
 	const bands = [];
 	for (let v = 2; v <= 12; v++) {
@@ -1008,12 +1194,10 @@ function speedGauge(s) {
 		if (bands.length && bands[bands.length - 1].z === z) bands[bands.length - 1].n++;
 		else bands.push({ z, n: 1 });
 	}
-	const glyph = { z0: 'hold', z1: 'step1', z2: 'step2', land: 'ok', crash: 'cross' };
-	const row = bands.map((b) => `<span class="z ${b.z}" style="grid-column:span ${b.n}">${ic(glyph[b.z], '')}</span>`).join('');
+	const row = bands.map((b) => `<span class="z ${b.z}" style="grid-column:span ${b.n}">${BAND[b.z]()}</span>`).join('');
 	const pin = (k, c) => `<i class="pin ${c}" style="left:calc(2px + (100% - 4px) * ${Math.max(0, Math.min(11, k))} / 11)"></i>`;
 	const pins = final ? pin(lm - 1, 'R') : pin(s.blue - 1, 'P') + pin(s.orange - 1, 'C');
-	const title = final ? `Lands at speed ${lm} or less` : `Speed: up to ${s.blue} holds, up to ${s.orange} one space, more two`;
-	return `<div class="gauge spd" title="${title}">${nums}${row}${pins}</div>`;
+	return `<div class="gauge spd full" title="${title}">${nums}${row}${pins}</div>`;
 }
 
 function brakeRows(s) {
@@ -1043,7 +1227,7 @@ function internBoard(s) {
 function panel(s) {
 	const blue = ['radioPilot', 'gear12', 'gear34', 'gear56'];
 	const orange = ['radioCopilot1', 'radioCopilot2', 'flaps12', 'flaps23', 'flaps45', 'flaps56'];
-	return `<div class="panel ${s.sel !== null ? 'selecting' : ''}">
+	return `<div class="panel ${s.sel !== null ? 'selecting' : ''} edge-${P.edge} me-${s.me}">
 		<div class="pcol">${blue.map((id) => space(id, s)).join('')}${s.fuel !== undefined ? space('kerosene', s) : ''}</div>
 		<div class="pmid">
 			<div class="prow">${space('axisPilot', s)}${axisGauge(s)}${space('axisCopilot', s)}</div>
@@ -1056,6 +1240,9 @@ function panel(s) {
 	</div>`;
 }
 
+/** A turn mask: allowed axis positions −2 … +2 (o) and forbidden ones (x); the current position underlined. */
+const turnMask = (t, axis) => `<div class="tm ${P.mask === 'dark' ? 'd' : 'w'}">${[...t].map((c, k) => `<i class="${c === 'x' ? 'x' : 'ok'} ${k - 2 === axis ? 'cur' : ''}"></i>`).join('')}</div>`;
+
 function approach(s) {
 	let h = '';
 	for (let i = 0; i < s.N; i++) {
@@ -1065,7 +1252,7 @@ function approach(s) {
 		if (n === s.pos) cls.push('here');
 		if (s.aim === n) cls.push('aim');
 		const t = s.turns[i];
-		const tm = t ? `<div class="tm">${[...t].map((c, k) => `<i class="${c === 'x' ? 'x' : 'ok'} ${k - 2 === s.axis ? 'cur' : ''}"></i>`).join('')}</div>` : '<div class="tm none"></div>';
+		const tm = t ? turnMask(t, s.axis) : '<div class="tm none"></div>';
 		const p = s.planes[i];
 		const pl = `<div class="pl">${p > 2 ? ic('plane', '') + `<span class="n">×${p}</span>` : ic('plane', '').repeat(p)}</div>`;
 		const tr = `<div class="trf">${'<i></i>'.repeat(n >= s.pos ? s.traffic[i] : 0)}</div>`;
@@ -1093,42 +1280,42 @@ function header(s) {
 // =================================================================== abilities and modules
 const ABIL = {
 	adaptation: {
-		name: 'Adaptation', short: 'Adapt', when: 'Once per game each',
+		name: 'Adaptation', short: 'Adapt', icon: 'flip', when: 'Once per game each',
 		line: 'Flip one die to its opposite face.',
 		lead: 'Each of you may once per game turn one of your unplaced dice to its opposite face.',
 		steps: ['Opposite faces add up to 7: 1 and 6, 2 and 5, 3 and 4.', 'You can do it at any time during placement, also on your partner’s turn.'],
 		dia: () => `<figure><span class="die P">1</span>before</figure><span class="arw">→</span><figure><span class="die P">6</span>after</figure>`
 	},
 	anticipation: {
-		name: 'Anticipation', short: 'Anticipate', when: 'Once per round',
+		name: 'Anticipation', short: 'Anticipate', icon: 'reroll', when: 'Once per round',
 		line: 'The first player rerolls one die before placing.',
 		lead: 'Before the first die of a round is placed, the round’s first player may reroll one of their dice.',
 		steps: ['The altitude track’s arrow shows who goes first.', 'The app offers it before your first placement; skip it if you like your dice.'],
 		dia: () => `<figure><span class="die C">1</span>before</figure><span class="arw">${ic('reroll')}</span><figure><span class="die C hid"></span>rerolled</figure>`
 	},
 	control: {
-		name: 'Control', short: 'Control', when: 'Every round',
+		name: 'Control', short: 'Control', icon: 'coffee', when: 'Every round',
 		line: 'Equal axis dice give a coffee.',
 		lead: 'When both axis spaces hold the same value, you gain a coffee at once.',
 		steps: ['Only if fewer than 3 coffees are on the panel.', 'Intern tokens and the black die count as dice.'],
 		dia: () => `<figure><span class="die P">4</span>axis</figure><span class="arw">=</span><figure><span class="die C">4</span>axis</figure><span class="arw">→</span><figure><span class="slot">${ic('coffee')}</span>coffee</figure>`
 	},
 	mastery: {
-		name: 'Mastery', short: 'Mastery', when: 'Every round',
+		name: 'Mastery', short: 'Mastery', icon: 'pair', when: 'Every round',
 		line: 'Equal engine dice give a reroll token.',
 		lead: 'When both engine spaces hold the same value, you gain a reroll token at once.',
 		steps: ['Only 2 tokens exist: you gain one only if it is neither on the altitude track nor in your supply.', 'Intern tokens and the black die count as dice.'],
 		dia: () => `<figure><span class="die P">2</span>engines</figure><span class="arw">=</span><figure><span class="die C">2</span>engines</figure><span class="arw">→</span><figure>${rtok()}token</figure>`
 	},
 	synchronisation: {
-		name: 'Synchronisation', short: 'Sync', when: 'Once per round',
+		name: 'Synchronisation', short: 'Sync', icon: 'blackDie', when: 'Once per round',
 		line: 'Gear and flaps in one round: the black die joins in.',
 		lead: 'As soon as a round has a die on the landing gear and one on the flaps, the black die is rolled.',
 		steps: ['The Co-Pilot places it at once on any empty space it fits, of either colour.', 'It acts like a normal die and is an extra action.', 'No coffee on it, and it can’t go on an intern space.'],
 		dia: () => `<figure><span class="die P">3</span>gear</figure><span class="arw">+</span><figure><span class="die C">2</span>flaps</figure><span class="arw">→</span><figure><span class="die T">5</span>black die</figure>`
 	},
 	workingTogether: {
-		name: 'Working Together', short: 'Together', when: 'Once per round',
+		name: 'Working Together', short: 'Together', icon: 'swap', when: 'Once per round',
 		line: 'Swap the values of one die each.',
 		lead: 'Trade one die’s value with your partner, without naming a number.',
 		steps: [
@@ -1181,7 +1368,11 @@ function mods(s) {
 	let h = '';
 	if (s.fuel !== undefined) h += `<div class="chip grow" title="Kerosene">${ic('fuel')}<span class="fbar"><i style="left:${(s.fuel / 20) * 100}%"></i></span><b>${s.fuel}</b></div>`;
 	if (s.wind) h += `<div class="chip" title="Wind"><span class="ring" style="--rot:${s.wind.off * 18}deg"></span><b>${sign(s.wind.v)}</b></div>`;
-	for (const a of s.abilities) h += `<div class="chip abc ${a.used ? 'used' : ''}" title="${ABIL[a.id].name}${a.used ? ', used' : ''}"><span class="cardi"></span>${ABIL[a.id].short}</div>`;
+	for (const a of s.abilities) {
+		const t = `title="${ABIL[a.id].name}${a.used ? ', used this round' : ', ready'}"`;
+		if (P.abil === 'word') h += `<div class="chip abc abw ${a.used ? 'used' : ''}" ${t}>${ABIL[a.id].short}${a.used ? `<span class="st">${ic('check', '')}used</span>` : ''}</div>`;
+		else h += `<div class="chip abc abi ${a.used ? 'used' : ''}" ${t}><span class="aw">${ic(a.used ? 'check' : ABIL[a.id].icon, '')}</span>${ABIL[a.id].short}</div>`;
+	}
 	// Desktop shows the ability cards themselves in the right column.
 	for (const a of s.abilities) h += `<div class="abfull">${abCard(a.id)}</div>`;
 	// The base game has no modules or abilities: the row is left out (its height goes to the panel).
@@ -1355,7 +1546,7 @@ function headOn(lights = true) {
 		${lights ? [-6.5, 6.5].map((x) => `<circle cx="${x}" cy="4.6" r="5" fill="var(--sky-lights)" opacity=".35"/><circle cx="${x}" cy="4.6" r="1.5" fill="var(--sky-lights)"/>`).join('') : ''}`;
 }
 const planeTop = (tf) => `<g transform="${tf}"><path d="${I.plane.match(/d="([^"]+)"/)[1]}" fill="var(--sky-plane)" stroke="var(--sky-belly)" stroke-width=".5"/><circle cx="2.8" cy="14.6" r=".9" fill="var(--sky-nav-red)"/><circle cx="21.2" cy="14.6" r=".9" fill="var(--sky-nav-green)"/></g>`;
-/* Three options for the tile art (viewBox 240 × 100, sliced: the phone tile shows x 70–170).
+/* The tile art (viewBox 240 × 100, sliced: the phone tile shows x 70–170). B is locked; A and C stay for reference.
    kind 'band' is the home card's strip: a wider, flatter cut of the same scene. */
 function skyArt(opt, kind, id) {
 	const vb = kind === 'band' ? '-40 12 320 70' : '0 0 240 100';
@@ -1394,13 +1585,9 @@ function skyArt(opt, kind, id) {
 		${dots(-1)}${dots(1)}
 		<g transform="translate(120 39) scale(1.22)">${headOn()}</g></svg>`;
 }
-const TILE_OPTS = {
-	a: ['A: Through the clouds', 'The box cover’s sky: cyan with the cream and peach cloud swirls, the airliner from above, banking through them. Nav lights at the wingtips.'],
-	b: ['B: Final approach', 'The box’s bottom half and the Co-Pilot screen: sunrise over the lit runway, the airliner head-on with its landing lights. Says "landing" at a glance; at night the runway lights carry it.'],
-	c: ['C: Two screens', 'The two player screens side by side, Pilot blue and Co-Pilot amber, the airliner crossing between them. Says "two players"; boldest of the three, least like the box art.']
-};
 const REC = 'b';
-const TILE = new URLSearchParams(location.search).get('tile') || REC;
+// Locked in round 3: B, final approach.
+const TILE = REC;
 const chev = `<span class="chev">${ic('chevR')}</span>`;
 const SKY_TXT = ['Sky Team', '2 players', 'Land the plane together, one die at a time.', 'Cooperative dice placement for a pilot and a co-pilot: 23 scenarios at 12 airports, without talking about your dice.'];
 const shelfTile = (c, n, p, tag, art) => `<div class="tile ${c}"><div class="art">${art}</div><div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1"><h2>${n}</h2><span class="pl2">${p}</span><p>${tag}</p></div>${chev}</div>`;
@@ -1414,16 +1601,6 @@ function tiles(kind) {
 	if (kind === 'shelf') return `<div class="stpage"><div class="shelf">${t.map(([c, n, p, tag, , art]) => shelfTile(c, n, p, tag, art)).join('')}</div></div>`;
 	return `<div class="stpage"><div class="wall">${t.map(([c, n, p, , desc, art]) => wallTile(c, n, p, desc, art)).join('')}</div></div>`;
 }
-function tileOptions() {
-	const [n, p, tag, desc] = SKY_TXT;
-	return `<div class="topts">${Object.entries(TILE_OPTS).map(([k, [title, why]]) => `<div class="topt ${k === TILE ? 'chosen' : ''}">
-		<h3>${title}${k === REC ? '<span class="rec">Recommended</span>' : ''}<a href="?tile=${k}#tiles">${k === TILE ? 'In the previews' : 'Use in previews'}</a></h3>
-		<p class="why">${why}</p>
-		${['lt', 'dk'].map((m) => `<div class="${m} stpage">${shelfTile('t-sky', n, p, tag, skyArt(k, 'tile', k + m + 's'))}</div>`).join('')}
-		${['lt', 'dk'].map((m) => `<div class="${m} stpage">${wallTile('t-sky', n, p, desc, skyArt(k, 'tile', k + m + 'w'), 'wcard')}</div>`).join('')}
-	</div>`).join('')}</div>`;
-}
-
 // =================================================================== screens and page
 const SCREENS = {
 	home: { name: 'Home (host or join), tile option ' + TILE.toUpperCase() + ' as its band', html: home, scroll: true },
@@ -1443,7 +1620,6 @@ const SCREENS = {
 	final: { name: 'Final round, landing', html: () => game('final'), game: true },
 	won: { name: 'Game over, won', html: () => game('won'), game: true },
 	lost: { name: 'Game over, lost', html: () => game('lost'), game: true },
-	'tile-options': { name: 'Start-page tile options, light and dark, real size', html: tileOptions, w: 1280, h: 1060 },
 	'tile-shelf': { name: 'Start page, phone shelf', html: () => tiles('shelf') },
 	'tile-wall': { name: 'Start page, desktop tiles', html: () => tiles('wall'), w: 1280, h: 420 },
 	desktop: { name: 'Desktop, TGU red', html: () => game('tgu'), w: 1280, h: 800 }
@@ -1475,9 +1651,9 @@ const params = new URLSearchParams(location.search);
 if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme');
 const solo = params.get('s');
 const app = document.getElementById('app');
-const frame = (key, w = 375, h = 812) => {
+const frame = (key, w = 375, h = 812, mode = '') => {
 	const sc = SCREENS[key];
-	return `<div class="frame ${sc.scroll ? 'scroll' : ''}" style="--fw:${sc.w ?? w}px;--fh:${sc.h ?? h}px">${sc.html()}</div>`;
+	return `<div class="frame ${mode} ${sc.scroll ? 'scroll' : ''}" style="--fw:${sc.w ?? w}px;--fh:${sc.h ?? h}px">${sc.html()}</div>`;
 };
 // The scenario picker opens scrolled to the chosen scenario.
 const scrollPicker = () => document.querySelectorAll('#pick').forEach((p) => { const on = p.querySelector('.scn.on'); if (on) p.scrollTop = on.offsetTop - p.clientHeight / 2; });
@@ -1487,16 +1663,17 @@ if (solo) {
 	app.innerHTML = frame(solo).replace(/--fw:\d+px;--fh:\d+px/, '--fw:100vw;--fh:100dvh');
 	scrollPicker();
 } else {
-	const fig = (key, w, h, cap) => `<figure class="shot"><div class="fwrap" data-w="${SCREENS[key].w ?? w}">${frame(key, w, h)}</div><figcaption>${cap ?? SCREENS[key].name}${w && h ? ` (${w}×${h})` : ''} · <a href="?s=${key}">open</a></figcaption></figure>`;
+	const pq = () => Object.entries(P).filter(([k, v]) => v !== PICK_DEFAULT[k]).map(([k, v]) => `&${k}=${v}`).join('');
+	const fig = (key, w, h, cap, mode = '') => `<figure class="shot"><div class="fwrap" data-w="${SCREENS[key].w ?? w}">${frame(key, w, h, mode)}</div><figcaption>${cap ?? SCREENS[key].name}${w && h ? ` (${w}×${h}${mode === 'dk' ? ', dark' : mode === 'lt' ? ', light' : ''})` : ''} · <a href="?s=${key}${pq()}${mode === 'dk' ? '&theme=dark' : ''}">open</a></figcaption></figure>`;
 	const PAL = [
 		['Aluminium', '--panel', 'Panel, its column strips (--panel-strip)'],
 		['Instrument navy', '--well', 'Track and altitude cells, wells, card banners; primary in light mode'],
 		['Pilot blue', '--pilot', 'Pilot dice (white numerals); spaces --pilot-well with --pilot-glow labels'],
 		['Co-Pilot orange', '--copilot', 'Co-Pilot dice (dark numerals); spaces --copilot-well with --copilot-glow labels'],
 		['Gauge black', '--gauge', 'Axis, speed and ice-marker strips, red crosses and the brake marker (--forbidden)'],
-		['Hazard yellow', '--hazard', 'Your plane marker, panel edge marks, turn-mask axis mark; never text'],
-		['Switch green', '--led', 'Deployed switches; the landing band on the speed scale'],
-		['Cockpit glow', '--glow', 'Primary in dark mode, focus rings, airport icon']
+		['Hazard yellow', '--hazard', 'Your plane marker, turn-mask axis mark; never text'],
+		['Switch green', '--led', 'Deployed switches, allowed turn-mask positions, the landing band'],
+		['Cockpit glow', '--glow', 'Primary in dark mode, focus rings, the current axis position, airport icon']
 	];
 	const pairs = [
 		['--foreground', '--background', 'text'], ['--muted-foreground', '--background', 'muted text'], ['--primary-foreground', '--primary', 'button'],
@@ -1506,22 +1683,65 @@ if (solo) {
 		['--led', '--led-off', 'LED on vs off (mark)'], ['--forbidden', '--gauge', 'red cross, brake marker on gauge (mark)'], ['--pilot', '--pilot-well', 'Pilot die in its well (mark)'], ['--copilot', '--copilot-well', 'Co-Pilot die in its well (mark)'], ['--copilot', '--card', 'Co-Pilot die in the hand (edge ring added)']
 	];
 	const gameKeys = Object.keys(SCREENS).filter((k) => SCREENS[k].game);
-	app.innerHTML = `<div class="doc">
-	<h1>Sky Team look</h1>
-	<p class="lede">Theme plan and mockup for the new app, layout concept A ("whole cockpit"). The look comes from the box: a brushed-aluminium control panel with navy instrument wells, Pilot spaces in deep blue with ice-blue numerals, Co-Pilot spaces in brick with backlit yellow numerals, black gauge strips with white numbers and red crosses, green switch LEDs, the navy approach and altitude tracks with cyan and yellow frames. The bold part is the dice and wells; page, cards and dialogs stay quiet shadcn.</p>
 
-	<h2>Round 2</h2>
+	// The option previews: the piece in question at real size (375×630 phone), light and dark.
+	const slice = (s, inner) => `<div class="screen slice ${s.round === 7 ? 'landing' : ''}">${inner}</div>`;
+	const crop = (s) => slice(s, `<div class="crop c2">${panel(s)}</div>`);
+	const GAUGES = () => [
+		['Your turn, axis −1', { ...state('turn'), axis: -1 }],
+		['KEF: an engine die previews speed 10', state('kef')],
+		['Final round: axis 0, brakes at 4', state('final')]
+	];
+	const PREVIEW = {
+		edge: () => [['Your turn (Pilot)', state('turn'), (s) => slice(s, panel(s))]],
+		axis: () => GAUGES().map(([l, s]) => [l, s, crop]),
+		speed: () => GAUGES().map(([l, s]) => [l, s, crop]),
+		mask: () => [
+			...[['TGU red: three turns', state('tgu')], ['KEF black: two turns', state('kef')]].map(([l, s]) => [l, s, (x) => slice(x, `<div class="track">${approach(x)}${altitude(x)}</div>`)]),
+			['TGU’s masks, 2.5× close-up', state('tgu'), (x) => `<div class="closeup">${x.turns.filter(Boolean).map((t) => `<span class="apc">${turnMask(t, x.axis)}</span>`).join('')}</div>`]
+		],
+		abil: () => [['TGU: Sync used, Together ready', state('tgu')], ['KEF: Anticipation used, Adaptation ready', state('kef')], ['HND: Control used', state('hnd')]].map(([l, s]) => [l, s, (x) => slice(x, mods(x))])
+	};
+	const optCard = (key, k, [title, why], on = P[key] === k) => withPick({ [key]: k }, () => `<div class="opt ${on ? 'chosen' : ''}" data-pick="${key}:${k}">
+		<div class="oh"><b>${title}</b>${OPTS[key].rec === k ? '<span class="rec">Recommended</span>' : ''}<button class="pk" type="button">${on ? 'Picked' : 'Pick'}</button></div>
+		<p class="why">${why}</p>
+		${['lt', 'dk'].map((m) => `<div class="ov ${m}">${PREVIEW[key]().map(([l, s, f]) => `<p class="lbl">${l}</p>${f(s)}`).join('')}</div>`).join('')}
+	</div>`);
+	const decisions = () => Object.entries(OPTS).map(([key, d], i) => `<section class="dec"><h3>${i + 1}. ${d.title}</h3><p>${d.ask}</p>
+		<div class="opts">${Object.entries(d.o).map(([k, o]) => optCard(key, k, o)).join('')}</div></section>`).join('');
+	const pickSummary = () => `<div class="picks">${Object.entries(OPTS).map(([key, d]) => `<span>${d.title.split(':')[0]}: <b>${d.o[P[key]][0]}</b></span>`).join('')}</div>`;
+	const PREVIEW_KEYS = ['turn', 'tgu', 'kef', 'hnd', 'final'];
+
+	const render = () => {
+		app.innerHTML = `<div class="doc">
+	<h1>Sky Team look</h1>
+	<p class="lede">Round 3: locked. The UX is final; a UI polish pass on the real components follows once the table is built (list below). The option rows stay for reference and still switch the previews.</p>
+
+	<h2>Locked</h2>
 	<ul>
-		<li><b>Headers</b> are the other games' headers: lobby = Home, "Lobby", Leave / End game (or Close lobby alone) with labels, theme toggle; table = Home, code, connection dot, the scenario (like The Crew's "Mission 12"), then Rules, Give up and the theme toggle as icons. No "All games" bar on game pages (it stays on home and join). The round sits on the altitude track, so the header doesn't repeat it.</li>
-		<li><b>No narration line.</b> Whose turn moved into the dice tray ("Your turn" with the ring, "Sam's turn"; waiting says "Waiting for Sam" on the disabled Place button). The effect preview moved onto the board: the radio's target space gets a ring, an engine die rings the resulting speed on the scale, the selected space gets the dashed target. Reasons for dimmed spaces show on tap (a toast). The freed row makes the spaces 45 px (were 42) and the dice 52 px at 630 px height.</li>
-		<li><b>The chip row</b> holds only the scenario's extras: kerosene, wind and the ability cards (a tiny card each, ticked once used). Each chip opens its rules. It is absent in scenarios without modules or abilities, and it no longer turns into a landing checklist: in the final round the open conditions show where they live (switches still up get a red LED with a cross, the axis 0 gets a green frame, the speed scale shows the landing band).</li>
-		<li><b>Axis, speed, brakes</b> redrawn after the board: the axis is −2 … +2 between the red crosses, blue half and orange half, with the head-on aircraft symbol banked on the current position (also the axis spaces' icon). Speed is the printed scale 2 … 12 with the blue and orange markers between the numbers and the movement (hold, one, two chevrons) under each band; in round 7 the same scale shows the landing band and the red brake marker. Brakes show the red marker in its slot, no "land ≤" box.</li>
-		<li><b>Reroll tokens</b> are one piece everywhere: a navy disc with a blue and orange ring and the reroll arrows, like the physical token. On the altitude track on their round, in the supply on the reroll button (bottom right, with the count), on a die being rerolled, and in the discussion tray when picked up. Altitudes read 6k … 1k; label, arrow and token have fixed places, so nothing shifts.</li>
-		<li><b>Scenario picker</b> rows: code, airport, module icons, ability count, no colour or module words (the group says the colour). The chosen scenario shows its approach and altitude tracks with the table's own pieces, and module chips that open the module's rules.</li>
-		<li><b>Ability cards</b> after the physical cards: navy banner, a worked example, numbered steps. The same card opens from the lobby tile (Pick) and from the table's chip (refresher, and Start for Working Together).</li>
-		<li><b>Game over</b> lists the conditions as short chips. <b>Desktop</b> uses the right column for the full ability cards and lets the tracks fill the height.</li>
+		<li><b>Start-page tile: B, final approach</b> (sunrise over the lit runway, airliner head-on). Its strip is the home screen's band. The A and C options are gone.</li>
+		<li><b>Round 3:</b> no edge marks; the axis as a dial (closest to the physical game); speed as three ranges; green turn masks on the white strip; one icon per ability, dashed with a check when used.</li>
+		<li><b>Everything else from round 2:</b> palette and type, headers, the table layout (tracks, chip row, panel, dice tray, action bar), dice and spaces, reroll tokens, the lobby with the scenario picker and ability cards, game over, desktop. Collapsed at the bottom.</li>
 	</ul>
 
+	<h2>Polish pass (after the table is built)</h2>
+	<ul>
+		<li><b>Speed strip:</b> uneven in some states, worst in the final round, where "✓ land" overlaps its narrow segment. Copy follows the rule: "&lt; 5" with the marker, not "≤ 4".</li>
+		<li><b>Axis dial:</b> a second design pass towards the physical gauge: black bezel with white triangle ticks and a hollow zero mark, red crosses at the ends, sky and ground disc behind a plane silhouette that banks.</li>
+	</ul>
+
+	<h2>Round 3 decisions</h2>
+	${pickSummary()}
+	${decisions()}
+
+	<h2>Your picks on the table</h2>
+	${pickSummary()}
+	<div class="gallery">${PREVIEW_KEYS.map((k) => fig(k, 375, 812, null, 'lt')).join('')}</div>
+	<div class="gallery">${PREVIEW_KEYS.map((k) => fig(k, 375, 812, null, 'dk')).join('')}</div>
+	<div class="gallery">${['tgu', 'hnd'].map((k) => fig(k, 375, 630, null, 'lt')).join('')}${['tgu', 'hnd'].map((k) => fig(k, 375, 630, null, 'dk')).join('')}</div>
+	<div class="gallery">${fig('desktop', 1280, 800)}</div>
+
+	<details><summary>Locked: round 2 in full</summary>
 	<h2>Palette</h2>
 	<table><tr><th></th><th>Name</th><th>Token</th><th>Role</th></tr>
 	${PAL.map(([n, t, r]) => `<tr><td><span class="sw" style="background:var(${t})"></span></td><td>${n}</td><td class="mono">${t}</td><td>${r}</td></tr>`).join('')}</table>
@@ -1530,7 +1750,7 @@ if (solo) {
 	<table><tr><th>Pair</th><th>Use</th><th>Ratio</th></tr>${pairs.map(([f, b, u]) => `<tr><td class="mono">${f} on ${b}</td><td>${u}</td><td>${contrast(f, b)}:1</td></tr>`).join('')}</table>
 
 	<h2>Type</h2>
-	<p><span class="display" style="font-size:28px;font-weight:700">Saira</span> (variable, width 112 %, weights 600–800): the display face for the game title, airport codes, altitudes, die numerals and space values, close to the board's wide avionics lettering; the speed scale uses its 75 % width. <span style="font-size:20px;font-weight:600">IBM Plex Sans</span> (variable): all UI text and numbers, sentence case, tabular figures; the technical-manual voice of a cockpit. Fontsource: <span class="mono">@fontsource-variable/saira</span>, <span class="mono">@fontsource-variable/ibm-plex-sans</span>. Neither is used by another app. Game codes stay mono (shared).</p>
+	<p><span class="display" style="font-size:28px;font-weight:700">Saira</span> (variable, width 112 %, weights 600–800): the display face for the game title, airport codes, altitudes, die numerals and space values, close to the board's wide avionics lettering; the gauges use its 75–80 % width. <span style="font-size:20px;font-weight:600">IBM Plex Sans</span> (variable): all UI text and numbers, sentence case, tabular figures. Fontsource: <span class="mono">@fontsource-variable/saira</span>, <span class="mono">@fontsource-variable/ibm-plex-sans</span>. Game codes stay mono (shared).</p>
 
 	<h2>Dice and spaces at real size</h2>
 	<div class="screen" style="display:block;height:auto;padding:0">
@@ -1538,8 +1758,8 @@ if (solo) {
 			<span class="die P">1</span><span class="die P">6</span><span class="die C">3</span><span class="die C">5</span><span class="die T">4</span>
 			<span class="die P sel">2</span><span class="die C sel">4<span class="mod">+1</span></span>${rtok()}<span style="--rt:24px;display:contents">${rtok()}</span>
 		</div>
-		<p class="lede" style="font-size:14px">Hand dice 52 px (56 at 812 px height): blue with white numerals, orange with dark numerals (as the physical dice, so colour is not the only carrier), black traffic die. Selected: lifted with a ring; coffee shows as a badge. The reroll token at its two sizes.</p>
-		<div class="panel" style="width:auto;display:inline-flex;--cell:45px">
+		<p class="lede" style="font-size:14px">Hand dice 52 px (58 at 812 px height): blue with white numerals, orange with dark numerals, black traffic die. Selected: lifted with a ring; coffee shows as a badge. The reroll token at its two sizes.</p>
+		<div class="panel edge-${P.edge}" style="width:auto;display:inline-flex;--cell:47px">
 			<div class="pcol">${['radioPilot', 'gear12', 'gear34'].map((id) => space(id, { ...BASE, sw: ['gear12'], placed: { gear34: ['P', 3] } })).join('')}</div>
 			<div class="pmid" style="flex:none">
 				<div class="prow">${['conc1', 'kerosene', 'internPilot'].map((id) => space(id, { ...BASE })).join('')}</div>
@@ -1548,17 +1768,11 @@ if (solo) {
 			</div>
 			<div class="pcol">${['radioCopilot1', 'flaps12', 'flaps23'].map((id) => space(id, { ...BASE, sw: ['flaps12'], placed: { flaps23: ['C', 2] } })).join('')}</div>
 		</div>
-		<p class="lede" style="font-size:14px">Spaces 45 px at 375×630 (48 px at 812, 64 on desktop). Wells carry an icon (axis aircraft, engine, radio, coffee, fuel, intern) or the printed value (gear, flaps, brakes, ice) in the glow colour; a corner LED shows the switch. A placed piece fills the well: die, black traffic die, green intern disc. Legal spaces for the selected die get the ring, the tapped one a thicker ring and a dashed inset; the partner's last placement a cyan dot and ring.</p>
+		<p class="lede" style="font-size:14px">Spaces 47 px at 375×630 (50 px at 812, 64 on desktop). Wells carry an icon or the printed value in the glow colour; a corner LED shows the switch. A placed piece fills the well. Legal spaces for the selected die get the ring, the tapped one a thicker ring and a dashed inset; the partner's last placement a cyan dot and ring.</p>
 	</div>
 
-	<h2 id="tiles">Start-page tile: options</h2>
-	<p>Three box-inspired arts, each as the phone shelf tile and the desktop card, light and dark, at real size. "Use in previews" puts an option into the start-page previews and the home screen's band below (<span class="mono">?tile=a|b|c</span>). Text fixed: 23 scenarios (21 from the flight log plus the two Düsseldorf promos) at 12 airports.</p>
-	<p><b>Recommendation: B, final approach.</b> It is the one picture that says what the game is about (getting the plane down), it uses the box's own sunrise palette, it stays legible at 88 px (runway lines and a head-on plane), its light tile is the only pale, warm one between the two navy Crew tiles, and its strip makes a good home band. A is prettier up close but reads as "a plane" rather than "landing"; C is the most graphic but the least like the box.</p>
-	<div class="gallery">${fig('tile-options', 1280, 1060)}</div>
+	<h2>Start page and home</h2>
 	<div class="gallery">${fig('tile-shelf', 375, 420)}${fig('tile-wall', 1280, 420)}</div>
-
-	<h2>Home</h2>
-	<p>The shared HomePage (as fox-duet and the-crew <span class="mono">routes/+page.svelte</span>): the hero card's top strip is the chosen tile's scene (a <span class="mono">HomeBand.svelte</span>), title in Saira, tagline, then the shared form and lists. The join page is the shared JoinPage, unchanged.</p>
 	<div class="gallery">${fig('home', 375, 812)}</div>
 
 	<h2>Lobby</h2>
@@ -1568,12 +1782,29 @@ if (solo) {
 	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 812)).join('')}</div>
 	<h2>Game screen, 375×630</h2>
 	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 630)).join('')}</div>
-	<h2>Desktop, 1280×800</h2>
-	<div class="gallery">${fig('desktop', 1280, 800)}</div>
+	</details>
 	</div>`;
-	scrollPicker();
+		scrollPicker();
+		fit();
+	};
 	const fit = () => document.querySelectorAll('.fwrap').forEach((w) => { w.style.zoom = Math.min(1, w.parentElement.parentElement.clientWidth / Number(w.dataset.w)); });
-	fit();
+	// Picking re-renders in place and keeps the picks in the URL (so "open" links and a reload keep them).
+	app.addEventListener('click', (e) => {
+		const card = e.target.closest('[data-pick]');
+		if (!card || e.target.closest('a')) return;
+		const [key, k] = card.dataset.pick.split(':');
+		if (P[key] === k) return;
+		P[key] = k;
+		try {
+			const q = new URLSearchParams(location.search);
+			for (const [kk, v] of Object.entries(P)) { if (v === PICK_DEFAULT[kk]) q.delete(kk); else q.set(kk, v); }
+			history.replaceState(null, '', '?' + q.toString() + location.hash);
+		} catch {}
+		const y = scrollY;
+		render();
+		scrollTo(0, y);
+	});
+	render();
 	addEventListener('resize', fit);
 }
 </script>
