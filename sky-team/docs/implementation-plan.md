@@ -369,8 +369,8 @@ All acceptance runs from the repo root; "check" = `bash .claude/skills/check/che
 | 20 | open | | UI polish pass at checkpoint C (§10). |
 
 **Resuming in a fresh session** (`/implement-game sky-team`):
-1. Check for leftovers of the session that ran out: `git status` (uncommitted WP3 domain files in the main checkout, an edited `sky-team/docs/mockup.html`) and `git worktree list` (the WP14 worktree). Run `bash .claude/skills/check/check.sh sky-team` on what is there. If it's green and complete for its WP, review and commit it; else re-run that WP with a fresh agent. Remove stale worktrees.
+1. Check for leftovers: `git status` and `git worktree list` (clean as of 8723c34, no worktrees). For uncommitted work of a WP, run `bash .claude/skills/check/check.sh sky-team`; if it's green and complete, review and commit it, else re-run that WP with a fresh agent. Remove stale worktrees. `IDEAS.md` and `TODO.md` hold the user's own notes: leave them alone.
 2. **Mockup:** approved. Round 3 (the locked version) is `sky-team/docs/mockup.html`, published as version 4 of https://claude.ai/artifact/WZeWdkJR13z1DA6jXTaqra. WP15–18 may start; the look's leftovers are WP20. No "Round r of 7" in the table header (user, 2026-10-23).
-3. Continue the backend track from the first open WP.
+3. Run both tracks per §10: backend from WP4 (4 ∥ 5 ∥ 6 ∥ 7), UI from WP15 (then 16 → 17, 18 alongside 16). At G7 (checkpoint C) stop for the user, then WP20 with them.
 
 **Open items:** none. The checkpoint B answers are App decisions in rules.md: the intern token counts as a die, the Sync die takes no coffee and no intern space, the Working Together die is public, and the planner's decisions. Discards stay as written in §5.2, even with a reroll left.
