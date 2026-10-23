@@ -374,7 +374,7 @@ function flight(s: Spec): PlayerView {
 		gear,
 		flaps,
 		brakes,
-		brakeLimit: ice === null ? [1, 2, 4, 6][brakes] : ice + 1,
+		brakeLimit: ice === null ? [2, 3, 5, 7][brakes] : ice + 2,
 		coffee: s.coffee ?? 0,
 		rerolls: s.rerolls ?? 0,
 		planeSupply: 12 - s.planes.reduce((a, b) => a + b, 0),

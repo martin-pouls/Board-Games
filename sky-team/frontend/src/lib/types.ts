@@ -108,7 +108,7 @@ export interface FlightView {
 	gear: [boolean, boolean, boolean];
 	flaps: number;
 	brakes: number;
-	brakeLimit: number;
+	brakeLimit: number; // the round-7 speed must be lower than this (brake or ice-brake marker)
 	coffee: number;
 	rerolls: number;
 	planeSupply: number;

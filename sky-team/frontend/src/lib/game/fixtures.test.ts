@@ -239,7 +239,7 @@ describe('the worst-case fixtures', () => {
 		expect(f.placements).toHaveLength(4);
 		// Engines 4 + 5 + wind 1 = 10: one space.
 		expect(f.legal!.byValue[4]).toContain('enginesPilot');
-		expect(f.brakeLimit).toBe(2);
+		expect(f.brakeLimit).toBe(3);
 		expect(f.legal!.byValue.flat().some((s) => s.startsWith('brakes'))).toBe(false);
 	});
 
