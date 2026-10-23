@@ -182,23 +182,37 @@
 }
 
 /* Start page tokens for the new tile (go into start-page/frontend/src/routes/layout.css), plus the
-   two neighbours as they are today. */
-:root {
+   two neighbours as they are today. .lt and .dk force one mode on a subtree, so the tile options
+   can show light and dark side by side. Sky Team's art comes from the box: the cyan sky with cream
+   and peach cloud swirls, the sunrise over the runway, the white airliner with orange-lit engines. */
+:root, .lt {
 	--st-background: oklch(0.955 0.008 250);
 	--st-foreground: oklch(0.22 0.02 255);
 	--st-muted: oklch(0.47 0.02 255);
 	--tile-shadow: oklch(0.2 0.03 255 / 9%);
-	--sky-tile: oklch(0.965 0.012 238);
+	--sky-tile: oklch(0.965 0.018 215);
 	--sky-fg: oklch(0.24 0.035 258);
-	--sky-text: oklch(0.34 0.1 262);
+	--sky-text: oklch(0.38 0.14 262);
 	--sky-muted: oklch(0.47 0.03 252);
-	--sky-ring: oklch(0.34 0.1 262 / 28%);
-	--sky-sky: oklch(0.74 0.1 232);
-	--sky-sky-top: oklch(0.58 0.12 245);
-	--sky-earth: oklch(0.58 0.085 62);
-	--sky-wings: oklch(0.86 0.16 92);
+	--sky-ring: oklch(0.6 0.12 225 / 30%);
+	--sky-top: oklch(0.7 0.12 228);
+	--sky-haze: oklch(0.93 0.05 195);
+	--sky-sun: oklch(0.9 0.13 85);
+	--sky-peach: oklch(0.86 0.09 55);
+	--sky-cloud: oklch(0.985 0.012 90);
+	--sky-ground: oklch(0.42 0.09 250);
+	--sky-runway: oklch(0.3 0.04 255);
+	--sky-lights: oklch(0.96 0.09 92);
+	--sky-plane: oklch(0.99 0.004 240);
+	--sky-plane-shade: oklch(0.8 0.035 240);
+	--sky-belly: oklch(0.55 0.13 245);
+	--sky-engine: oklch(0.28 0.06 260);
+	--sky-engine-glow: oklch(0.7 0.18 40);
 	--sky-pilot: oklch(0.53 0.155 256);
-	--sky-copilot: oklch(0.73 0.165 55);
+	--sky-copilot: oklch(0.8 0.15 75);
+	--sky-pip: oklch(0.2 0.03 45);
+	--sky-nav-red: oklch(0.62 0.21 27);
+	--sky-nav-green: oklch(0.75 0.19 145);
 	--crew-tile: oklch(0.96 0.015 270);
 	--crew-ink: oklch(0.32 0.11 275);
 	--crew-accent: oklch(0.7 0.17 40);
@@ -218,17 +232,29 @@
 		--st-foreground: oklch(0.95 0.005 250);
 		--st-muted: oklch(0.74 0.015 250);
 		--tile-shadow: oklch(0 0 0 / 35%);
-		--sky-tile: oklch(0.215 0.03 256);
+		--sky-tile: oklch(0.215 0.035 256);
 		--sky-fg: oklch(0.95 0.008 240);
 		--sky-text: oklch(0.87 0.13 88);
 		--sky-muted: oklch(0.75 0.025 245);
 		--sky-ring: oklch(0.83 0.1 222 / 28%);
-		--sky-sky: oklch(0.5 0.1 238);
-		--sky-sky-top: oklch(0.3 0.08 258);
-		--sky-earth: oklch(0.42 0.07 58);
-		--sky-wings: oklch(0.84 0.15 90);
+		--sky-top: oklch(0.2 0.06 265);
+		--sky-haze: oklch(0.4 0.1 252);
+		--sky-sun: oklch(0.72 0.15 58);
+		--sky-peach: oklch(0.48 0.08 35);
+		--sky-cloud: oklch(0.5 0.045 250);
+		--sky-ground: oklch(0.17 0.04 258);
+		--sky-runway: oklch(0.27 0.03 255);
+		--sky-lights: oklch(0.9 0.16 82);
+		--sky-plane: oklch(0.93 0.01 240);
+		--sky-plane-shade: oklch(0.7 0.03 245);
+		--sky-belly: oklch(0.45 0.12 250);
+		--sky-engine: oklch(0.2 0.04 260);
+		--sky-engine-glow: oklch(0.72 0.18 45);
 		--sky-pilot: oklch(0.55 0.16 256);
-		--sky-copilot: oklch(0.74 0.165 56);
+		--sky-copilot: oklch(0.76 0.15 68);
+		--sky-pip: oklch(0.2 0.03 45);
+		--sky-nav-red: oklch(0.66 0.21 27);
+		--sky-nav-green: oklch(0.8 0.19 145);
 		--crew-tile: oklch(0.2 0.05 265);
 		--crew-ink: oklch(0.26 0.08 268);
 		--crew-accent: oklch(0.82 0.12 210);
@@ -243,22 +269,34 @@
 		--deep-temple: oklch(0.14 0.04 245);
 	}
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], .dk {
 	--st-background: oklch(0.17 0.012 255);
 	--st-foreground: oklch(0.95 0.005 250);
 	--st-muted: oklch(0.74 0.015 250);
 	--tile-shadow: oklch(0 0 0 / 35%);
-	--sky-tile: oklch(0.215 0.03 256);
+	--sky-tile: oklch(0.215 0.035 256);
 	--sky-fg: oklch(0.95 0.008 240);
 	--sky-text: oklch(0.87 0.13 88);
 	--sky-muted: oklch(0.75 0.025 245);
 	--sky-ring: oklch(0.83 0.1 222 / 28%);
-	--sky-sky: oklch(0.5 0.1 238);
-	--sky-sky-top: oklch(0.3 0.08 258);
-	--sky-earth: oklch(0.42 0.07 58);
-	--sky-wings: oklch(0.84 0.15 90);
+	--sky-top: oklch(0.2 0.06 265);
+	--sky-haze: oklch(0.4 0.1 252);
+	--sky-sun: oklch(0.72 0.15 58);
+	--sky-peach: oklch(0.48 0.08 35);
+	--sky-cloud: oklch(0.5 0.045 250);
+	--sky-ground: oklch(0.17 0.04 258);
+	--sky-runway: oklch(0.27 0.03 255);
+	--sky-lights: oklch(0.9 0.16 82);
+	--sky-plane: oklch(0.93 0.01 240);
+	--sky-plane-shade: oklch(0.7 0.03 245);
+	--sky-belly: oklch(0.45 0.12 250);
+	--sky-engine: oklch(0.2 0.04 260);
+	--sky-engine-glow: oklch(0.72 0.18 45);
 	--sky-pilot: oklch(0.55 0.16 256);
-	--sky-copilot: oklch(0.74 0.165 56);
+	--sky-copilot: oklch(0.76 0.15 68);
+	--sky-pip: oklch(0.2 0.03 45);
+	--sky-nav-red: oklch(0.66 0.21 27);
+	--sky-nav-green: oklch(0.8 0.19 145);
 	--crew-tile: oklch(0.2 0.05 265);
 	--crew-ink: oklch(0.26 0.08 268);
 	--crew-accent: oklch(0.82 0.12 210);
@@ -314,15 +352,15 @@ svg.i { width: 16px; height: 16px; flex: none; }
 /* ---------------- game screen ---------------- */
 .screen {
 	--g: 12px;
-	--cell: 42px;
-	--die: 50px;
+	--cell: 47px;
+	--die: 52px;
 	--gap: 4px;
-	--tok: 20px;
+	--tok: 18px;
 	height: 100%;
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	grid-template-rows: auto auto auto 1fr auto auto auto;
-	grid-template-areas: "head" "track" "mods" "panel" "status" "hand" "action";
+	grid-template-rows: auto auto auto 1fr auto auto;
+	grid-template-areas: "head" "track" "mods" "panel" "hand" "action";
 	gap: 6px;
 	padding: 12px var(--g) max(12px, env(safe-area-inset-bottom));
 	font-size: 14px; line-height: 1.25;
@@ -330,19 +368,26 @@ svg.i { width: 16px; height: 16px; flex: none; }
 	position: relative;
 }
 @container (min-height: 740px) {
-	.screen { --cell: 48px; --die: 56px; --gap: 5px; gap: 12px; }
+	.screen { --cell: 50px; --die: 58px; --gap: 5px; gap: 12px; }
 }
 
-/* header row: 32 px, as the shared headerRow */
-.hd { grid-area: head; display: flex; align-items: center; gap: 6px; height: 32px; margin: -4px -8px 0; padding: 0 0 0 8px; white-space: nowrap; font-size: 14px; }
-.hd .code { font-weight: 600; letter-spacing: .15em; font-size: 16px; }
-.hd .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--online); }
-.hd .rnd { color: var(--muted-foreground); }
-.hd .rnd b { color: var(--foreground); font-weight: 700; }
-.hb { width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted-foreground); border-radius: 8px; }
-.lvl { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px 0 6px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: 'Saira', sans-serif; font-stretch: 112%; color: var(--gauge-ink); background: var(--well); }
-.lvl::before { content: ""; width: 4px; height: 12px; border-radius: 2px; background: var(--c); }
-.lvl.green { --c: var(--level-green); } .lvl.yellow { --c: var(--level-yellow); } .lvl.red { --c: var(--level-red); } .lvl.black { --c: oklch(0.9 0 0); }
+/* Header rows: the shared headerRow (-mx-2 -mt-1, 32 px high, gap 6) with HeaderButtons (ghost,
+   32 px, 16 px icon, muted). Table: Home, code, connection dot, the game's own label (here the
+   scenario, as The Crew's "Mission 12"), then Rules, Give up and the theme toggle at the right end. */
+.hd { grid-area: head; display: flex; align-items: center; gap: 6px; min-height: 32px; margin: -4px -8px 0; white-space: nowrap; font-size: 14px; }
+.hd .code { font-weight: 600; letter-spacing: .1em; font-size: 16px; }
+.hd .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--online); flex: none; }
+.hd .sn { margin-left: 6px; display: inline-flex; align-items: center; gap: 6px; font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 700; font-size: 16px; }
+.hd .sn::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--c); box-shadow: 0 0 0 1px var(--border); }
+.hb { width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted-foreground); border-radius: 8px; flex: none; }
+.hbtn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; color: var(--muted-foreground); font-size: 14px; font-weight: 500; border-radius: 8px; white-space: nowrap; }
+.tt .sun { display: none; }
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .tt .moon { display: none; }
+	:root:not([data-theme="light"]) .tt .sun { display: block; }
+}
+:root[data-theme="dark"] .tt .moon { display: none; }
+:root[data-theme="dark"] .tt .sun { display: block; }
 
 /* approach + altitude */
 .track { grid-area: track; display: flex; flex-direction: column; gap: 3px; }
@@ -373,32 +418,46 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .trf { display: flex; gap: 1px; height: 9px; }
 .trf i { width: 9px; height: 9px; border-radius: 2px; background: var(--plane); position: relative; }
 .trf i::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--traffic); }
+/* Altitude: the label is always centred; the first-player arrow and the reroll token are pinned to
+   the cell's edges, so a token never shifts the label (tokens only ever sit on Pilot rounds). */
 .alt { display: flex; gap: 3px; }
-.alc { flex: 1; height: 20px; border-radius: 4px; background: var(--well); color: var(--gauge-ink); font-size: 12px; font-family: 'Saira', sans-serif; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 0 0 1px var(--fp); opacity: .9; }
+.alc { flex: 1; min-width: 0; height: 22px; border-radius: 4px; background: var(--well); color: var(--gauge-ink); font-size: 12px; line-height: 1; font-family: 'Saira', sans-serif; font-weight: 600; position: relative; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--fp); opacity: .9; }
 .alc.P { --fp: var(--pilot-glow); }
 .alc.C { --fp: var(--copilot-glow); }
-.alc .ar { color: var(--fp); font-size: 11px; }
+.alc .ar { position: absolute; top: 50%; translate: 0 -50%; border: 4px solid transparent; }
+.alc.P .ar { left: 3px; border-right: 5px solid var(--fp); border-left: 0; }
+.alc.C .ar { right: 3px; border-left: 5px solid var(--fp); border-right: 0; }
+/* the token lies on the space's corner, as the physical token covers the printed icon */
+.alc .rtok { position: absolute; right: -4px; bottom: -6px; --rt: 15px; z-index: 1; }
 .alc.cur { box-shadow: inset 0 0 0 2px var(--fp); background: oklch(from var(--well) calc(l + .08) c h); opacity: 1; }
 .alc.past { opacity: .4; }
-.alc svg { width: 11px; height: 11px; color: var(--glow); }
 
-/* chips: modules, abilities, landing checks */
+/* Reroll token: the physical token is a navy disc with a blue and an orange die and two arrows.
+   The same disc sits on the altitude track, in the supply on the reroll button and in the rules. */
+.rtok {
+	--rt: 18px; width: var(--rt); height: var(--rt); border-radius: 50%; flex: none; display: inline-grid; place-items: center;
+	background: radial-gradient(circle, var(--well) 56%, transparent 58%), conic-gradient(from -90deg, var(--pilot) 0 50%, var(--copilot) 0);
+	color: var(--gauge-ink); box-shadow: 0 1px 2px var(--shade);
+}
+.rtok svg { width: 62%; height: 62%; }
+.rtok.gone { background: transparent; box-shadow: inset 0 0 0 1.5px oklch(from var(--foreground) l c h / 35%); color: transparent; }
+
+/* Scenario extras: one chip per module (fuel, wind) and per ability card. Each opens its rules. */
 .mods { grid-area: mods; display: flex; gap: 4px; }
 .chip { height: 34px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; padding: 0 7px; font-size: 13px; white-space: nowrap; flex: none; min-width: 0; }
 .chip b { font-weight: 700; }
 .chip.grow { flex: 1 1 0; }
 .chip svg { color: var(--muted-foreground); }
-.fbar { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--fuel-empty), var(--hazard) 45%, var(--fuel-full)); position: relative; min-width: 34px; }
+.fbar { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--fuel-empty), var(--hazard) 45%, var(--fuel-full)); position: relative; min-width: 30px; }
 .fbar i { position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: var(--foreground); box-shadow: 0 0 0 1.5px var(--card); }
 .ring { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--panel-strip); position: relative; flex: none; }
 .ring::after { content: ""; position: absolute; left: 50%; top: -1px; width: 2px; height: 9px; border-radius: 1px; background: var(--pilot); transform-origin: 50% 8px; transform: translateX(-50%) rotate(var(--rot)); }
-.chip .ab-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--foreground); flex: none; }
-.chip .ab-dot.used { background: var(--foreground); }
-.chip .abt { display: none; }
-.chip.ok { border-color: color-mix(in oklch, var(--led) 60%, transparent); }
-.chip .chk { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex: none; }
-.chip.ok .chk { background: var(--led); color: oklch(0.2 0.05 145); }
-.chip.open .chk { border: 2px solid var(--muted-foreground); }
+/* An ability chip is a tiny card: the navy banner over the card face, ticked once used. */
+.cardi { width: 15px; height: 20px; border-radius: 3px; flex: none; background: linear-gradient(var(--well) 0 6px, var(--muted) 6px); box-shadow: inset 0 0 0 1px var(--border); display: grid; place-items: end center; font-size: 10px; line-height: 13px; font-weight: 800; color: var(--foreground); }
+.chip.abc { padding: 0 8px 0 5px; }
+.chip.abc.used { color: var(--muted-foreground); }
+/* used: the card lies face down */
+.chip.abc.used .cardi { background: var(--well); box-shadow: inset 0 0 0 1px var(--border); }
 
 /* panel */
 .pwrap { grid-area: panel; display: flex; align-items: center; justify-content: center; min-height: 0; }
@@ -427,10 +486,12 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .sp.o { background: var(--copilot-well); --lab: var(--copilot-glow); }
 .sp.x { background: linear-gradient(135deg, var(--pilot-well) 50%, var(--copilot-well) 50%); --lab: var(--gauge-ink); }
 .sp .v { font-family: 'Saira', sans-serif; font-stretch: 105%; font-weight: 700; font-size: 16px; line-height: 16px; text-shadow: 0 0 6px color-mix(in oklch, var(--lab) 45%, transparent); }
-.sp .w { font-size: 12px; line-height: 12px; opacity: .85; }
 .sp svg { width: 18px; height: 18px; filter: drop-shadow(0 0 3px color-mix(in oklch, var(--lab) 40%, transparent)); }
+.sp svg.att { width: 24px; height: 24px; }
 .led { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%; background: var(--led-off); box-shadow: 0 0 0 2px var(--panel-strip); display: grid; place-items: center; font-size: 9px; font-weight: 900; color: transparent; }
 .led.on { background: var(--led); color: oklch(0.22 0.06 145); box-shadow: 0 0 0 2px var(--panel-strip), 0 0 6px var(--led); }
+/* Final round: a switch still up is a landing condition not met, so its LED shows red with a cross. */
+.landing .led:not(.on):not(.brk) { background: var(--forbidden); color: oklch(0.99 0 0); }
 .sp.closed { opacity: .4; }
 .sp.closed .v { text-decoration: line-through; }
 /* dice and pieces on the panel */
@@ -450,63 +511,83 @@ svg.i { width: 16px; height: 16px; flex: none; }
 
 /* gauges inside the panel */
 .gauge { flex: 1; display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--gauge); color: var(--gauge-ink); height: var(--cell); align-items: stretch; min-width: 0; }
-.axg i { flex: 1; border-radius: 4px; display: grid; place-items: center; font-style: normal; font-size: 12px; font-family: 'Saira', sans-serif; font-weight: 700; color: oklch(from var(--gauge-ink) l c h / 40%); }
-.axg i.end { color: var(--forbidden); font-size: 14px; }
-.axg i.cur { background: var(--gauge-ink); color: var(--gauge); font-size: 14px; }
-.axg i.zero { box-shadow: inset 0 0 0 1px oklch(from var(--gauge-ink) l c h / 25%); }
-.spd { position: relative; }
-.spd div { flex: 1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 13px; }
-.spd div b { font-family: 'Saira', sans-serif; font-weight: 700; font-size: 14px; line-height: 15px; }
-.spd div span { font-size: 12px; opacity: .75; }
-.spd .mk { flex: none; width: 3px; border-radius: 2px; }
-.spd .mk.P { background: var(--pilot); box-shadow: 0 0 0 1px var(--pilot-glow); }
-.spd .mk.C { background: var(--copilot); }
-.spd .land b { color: var(--copilot-glow); }
-.rd { font-size: 12px; line-height: 13px; text-align: center; color: var(--foreground); min-width: 38px; }
-.rd b { display: block; font-family: 'Saira', sans-serif; font-weight: 700; font-size: 15px; line-height: 16px; }
-.rd .mkr { display: block; width: 10px; height: 10px; margin: 0 auto 2px; border-radius: 2px; background: var(--forbidden); }
-.arrow { color: var(--foreground); opacity: .5; font-size: 10px; }
-.icem { align-self: center; position: relative; width: calc(var(--cell) * 4 + var(--gap) * 3); height: 12px; border-radius: 6px; background: var(--gauge); }
-.icem i { position: absolute; top: -3px; width: 8px; height: 18px; margin-left: -4px; border-radius: 3px; background: var(--forbidden); box-shadow: 0 0 0 2px var(--panel); }
-.icem b { position: absolute; top: 0; width: var(--cell); text-align: center; font-size: 10px; line-height: 12px; color: oklch(from var(--gauge-ink) l c h / 55%); font-weight: 700; }
-.intern { display: flex; align-items: center; gap: 6px; justify-content: center; }
-.toks { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--panel-strip); }
+/* Axis: −2 … +2 between the two red crosses, the Pilot half tinted blue, the Co-Pilot half orange;
+   the aircraft symbol sits on the current position and banks toward that side. */
+.axg i { flex: 1; min-width: 0; border-radius: 4px; position: relative; display: grid; place-items: center; font-style: normal; }
+.axg i.P { background: color-mix(in oklch, var(--pilot) 34%, transparent); }
+.axg i.C { background: color-mix(in oklch, var(--copilot) 30%, transparent); }
+.axg i::before { content: ""; width: 2px; height: 30%; border-radius: 1px; background: oklch(from var(--gauge-ink) l c h / 50%); }
+.axg i.zero::before { height: 55%; background: var(--gauge-ink); }
+.axg i.end { color: var(--forbidden); }
+.axg i.end::before, .axg i.cur::before { display: none; }
+.axg i.end svg { width: 12px; height: 12px; }
+.axg i.cur svg { width: 26px; height: 26px; color: var(--gauge-ink); rotate: var(--tilt); filter: drop-shadow(0 0 4px oklch(from var(--glow) l c h / 70%)); position: relative; z-index: 1; }
+.landing .axg i.zero { box-shadow: inset 0 0 0 2px var(--led); }
+/* Speed: the printed scale 2 … 12 with the blue and orange aerodynamics markers between the numbers;
+   under it how far each band moves the plane (none, one, two). In the final round the scale shows
+   the landing band left of the red brake marker instead. A preview rings the sum the move gives. */
+.spd { position: relative; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: 1fr 1fr; gap: 0; padding: 3px 2px; }
+.spd .n { display: grid; place-items: center; font-family: 'Saira', sans-serif; font-stretch: 75%; font-weight: 600; font-size: 12px; line-height: 1; color: oklch(from var(--gauge-ink) l c h / 85%); }
+.spd .n { min-width: 0; overflow: visible; white-space: nowrap; }
+.spd .tk { width: 2px; height: 6px; border-radius: 1px; background: oklch(from var(--gauge-ink) l c h / 45%); }
+.spd .z { grid-row: 2; display: grid; place-items: center; color: var(--gauge-ink); border-radius: 0 0 4px 4px; }
+.spd .z svg { width: 16px; height: 12px; }
+.spd .z1 { background: oklch(from var(--gauge-ink) l c h / 10%); }
+.spd .z2 { background: oklch(from var(--gauge-ink) l c h / 20%); }
+.spd .n.z1, .spd .n.z2, .spd .n.land { border-radius: 0; }
+.spd .land { background: color-mix(in oklch, var(--led) 26%, transparent); }
+.spd .z.land { color: var(--led); }
+.spd .z.crash { color: var(--forbidden); }
+.spd .n.aim { background: var(--gauge-ink); color: var(--gauge); border-radius: 3px; font-weight: 800; }
+.spd .pin { position: absolute; top: 1px; bottom: 1px; width: 4px; margin-left: -2px; border-radius: 2px; }
+.spd .pin.P { background: var(--pilot); box-shadow: 0 0 0 1px var(--pilot-glow); }
+.spd .pin.C { background: var(--copilot); box-shadow: 0 0 0 1px var(--gauge); }
+.spd .pin.R { background: var(--forbidden); box-shadow: 0 0 0 1px var(--gauge); }
+/* Brakes: the red marker in its slot before the next brake, as on the board. */
+.bslot { width: 6px; height: 60%; align-self: center; border-radius: 3px; flex: none; background: oklch(from var(--foreground) l c h / 14%); }
+.bslot.on { height: 80%; background: var(--forbidden); box-shadow: 0 0 0 2px var(--panel); }
+.icem { align-self: center; position: relative; width: calc(var(--cell) * 4 + var(--gap) * 3); height: 10px; border-radius: 5px; background: var(--gauge); }
+.icem i { position: absolute; top: -4px; width: 8px; height: 18px; margin-left: -4px; border-radius: 3px; background: var(--forbidden); box-shadow: 0 0 0 2px var(--panel); }
+.intern { display: flex; align-items: center; gap: 3px; justify-content: center; }
+.toks { display: flex; gap: 1px; padding: 3px; border-radius: 12px; background: var(--panel-strip); }
 .tok { width: var(--tok); height: var(--tok); border-radius: 50%; background: var(--intern); color: oklch(0.99 0 0); font-size: 12px; font-weight: 700; font-family: 'Saira', sans-serif; display: grid; place-items: center; }
 .tok.gone { background: transparent; box-shadow: inset 0 0 0 1.5px oklch(from var(--foreground) l c h / 25%); color: transparent; }
 .tok.nP { box-shadow: 0 0 0 2px var(--pilot); }
 .tok.nC { box-shadow: 0 0 0 2px var(--copilot); }
 
-/* status, hand, action */
-.status { grid-area: status; min-height: 30px; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 17px; }
-.pill { flex: none; height: 24px; padding: 0 10px; border-radius: 12px; display: inline-flex; align-items: center; font-weight: 600; font-size: 13px; background: var(--primary); color: var(--primary-foreground); }
-.pill.wait { background: var(--muted); color: var(--foreground); }
-.hand { grid-area: hand; display: flex; align-items: center; gap: 7px; padding: 7px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); position: relative; }
+/* hand (dice tray) and action bar; the tray also says whose turn it is */
+.hand { grid-area: hand; display: flex; align-items: center; gap: 7px; padding: 7px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); position: relative; min-height: calc(var(--die) + 16px); }
 .hand.mine { box-shadow: 0 0 0 2px var(--ring); border-color: transparent; }
-.hand .tab { position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: var(--me); }
+.who { margin-left: auto; text-align: right; font-size: 13px; color: var(--muted-foreground); line-height: 17px; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.who b { color: var(--foreground); font-size: 14px; line-height: 18px; }
+.hand.mine .who b { color: var(--primary); }
+.talk { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 0 4px; font-size: 13px; line-height: 17px; color: var(--muted-foreground); }
+.talk b { color: var(--foreground); font-size: 14px; line-height: 18px; }
+.talk .got { display: inline-flex; align-items: center; gap: 5px; }
 .die { width: var(--die); height: var(--die); border-radius: 11px; flex: none; display: grid; place-items: center; font-family: 'Saira', sans-serif; font-stretch: 105%; font-weight: 700; font-size: 27px; line-height: 1; position: relative; }
 .die.P { background: linear-gradient(150deg, oklch(from var(--pilot) calc(l + .09) c h), var(--pilot) 55%); color: var(--pilot-ink); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 22%), 0 1px 2px var(--shade); }
 .die.C { background: linear-gradient(150deg, oklch(from var(--copilot) calc(l + .07) c h), var(--copilot) 55%); color: var(--copilot-ink); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 18%), inset 0 0 0 1px oklch(0.45 0.12 45 / 55%), 0 1px 2px var(--shade); }
 .die.T { background: linear-gradient(150deg, oklch(0.34 0.01 255), var(--traffic) 55%); color: var(--plane); }
 .die.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
 .die.blank { color: transparent; opacity: .45; }
+.die.hid::after { content: "?"; font-size: calc(var(--die) * .5); opacity: .8; }
 .die.sel { translate: 0 -4px; box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring), 0 6px 10px var(--shade); }
 .die .mod { position: absolute; right: -7px; top: -9px; height: 18px; padding: 0 5px; border-radius: 9px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 700; line-height: 18px; background: var(--foreground); color: var(--background); }
 .die.rr::after { content: ""; position: absolute; inset: -5px; border-radius: 14px; border: 2px dashed var(--ring); }
-.die.rr .rri { position: absolute; right: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; }
-.die.rr .rri svg { width: 13px; height: 13px; }
+.die.rr .rtok { position: absolute; right: -6px; bottom: -6px; --rt: 20px; }
 .die.locked { opacity: .6; }
-.partner { margin-left: auto; text-align: right; font-size: 13px; color: var(--muted-foreground); line-height: 16px; }
-.partner b { color: var(--foreground); font-size: 14px; }
-.fd { display: inline-flex; gap: 3px; margin-top: 4px; }
-.fd i { width: 13px; height: 13px; border-radius: 3px; background: var(--pc); }
+.fd { display: inline-flex; gap: 3px; }
+.fd i { width: 12px; height: 12px; border-radius: 3px; background: var(--pc); }
 .fd i.out { background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
 .action { grid-area: action; display: flex; gap: 6px; align-items: center; height: 44px; }
 .btn { height: 44px; border-radius: 10px; border: 0; background: var(--secondary); color: var(--secondary-foreground); font: inherit; font-weight: 600; font-size: 15px; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .btn.pri { background: var(--primary); color: var(--primary-foreground); flex: 1; }
+.btn.wait { flex: 1; font-weight: 500; color: var(--muted-foreground); }
 .btn.out { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
 .btn.dis { opacity: .45; }
-.btn.sq { width: 52px; padding: 0; gap: 3px; }
-.btn.sq b { font-weight: 700; }
+.btn.rrb { padding: 0 10px 0 8px; gap: 5px; }
+.btn.rrb b { font-weight: 700; }
+.btn.rrb .rtok { --rt: 24px; }
 .stepper { display: flex; align-items: center; border-radius: 10px; height: 44px; background: var(--secondary); }
 .stepper .btn { width: 40px; padding: 0; background: transparent; font-size: 18px; }
 .stepper .val { min-width: 44px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; line-height: 15px; }
@@ -514,34 +595,57 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .cups i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--foreground); }
 .cups i.f { background: var(--foreground); }
 
-/* sheets over the table: game over */
+/* sheets over the table or the lobby: game over, ability cards, module rules */
 .scrim { position: absolute; inset: 0; background: var(--shade); z-index: 4; }
-.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--card); border-radius: 18px 18px 0 0; padding: 10px 16px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -10px 30px var(--shade); }
-.sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--card); border-radius: 18px 18px 0 0; padding: 10px 16px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -10px 30px var(--shade); max-height: 88%; overflow-y: auto; scrollbar-width: none; }
+.sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto; flex: none; }
 .sheet h2 { margin: 0; font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 26px; line-height: 1.1; font-weight: 700; }
 .sheet p { margin: 0; color: var(--muted-foreground); font-size: 15px; }
-.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 2px 10px 2px 4px; border-radius: 12px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 2px 10px 2px 4px; border-radius: 12px; align-self: flex-start; }
 .badge.won { background: color-mix(in oklch, var(--led) 25%, var(--card)); }
 .badge.lost { background: color-mix(in oklch, var(--destructive) 18%, var(--card)); }
 .badge .hz { width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: linear-gradient(var(--sky) 50%, var(--earth) 50%); rotate: var(--tilt, 0deg); }
-.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; }
-.checks div { display: flex; gap: 8px; align-items: center; }
-.checks .chk { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--led); color: oklch(0.2 0.05 145); flex: none; }
-.checks .chk.no { background: var(--destructive); color: oklch(0.99 0 0); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.checks span { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 6px; border-radius: 15px; background: var(--muted); font-size: 14px; white-space: nowrap; }
+.checks span b { font-weight: 700; }
+.chk { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--led); color: oklch(0.2 0.05 145); flex: none; }
+.chk.no { background: var(--destructive); color: oklch(0.99 0 0); }
 .reveal { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted-foreground); }
 .reveal .die { --die: 34px; font-size: 19px; border-radius: 8px; }
 .sheet .row { display: flex; gap: 8px; }
+.sheet .row .btn { flex: 1; }
+/* The ability card, after the physical card: navy title banner over the light face, a worked
+   example, then the steps. One component for the lobby (Pick) and the table (refresher, Start). */
+.abcard { border-radius: 14px; overflow: hidden; background: var(--background); box-shadow: inset 0 0 0 1px var(--border); }
+.abcard .ban { background: var(--well); color: var(--gauge-ink); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.abcard .ban h2 { font-size: 20px; color: var(--gauge-ink); }
+.abcard .ban .when { margin-left: auto; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 11px; background: oklch(from var(--gauge-ink) l c h / 16%); white-space: nowrap; }
+.abcard .face { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+.abcard .lead { margin: 0; font-size: 15px; line-height: 21px; color: var(--foreground); font-weight: 600; }
+.abcard ol, .mcard ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; color: var(--foreground); }
+.abcard li::marker, .mcard li::marker { color: var(--muted-foreground); font-weight: 700; }
+.dia { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 10px 8px; border-radius: 10px; background: var(--muted); }
+.dia .die { --die: 42px; font-size: 23px; border-radius: 9px; }
+.dia figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--muted-foreground); }
+.dia .slot { width: 50px; height: 50px; border-radius: 10px; box-shadow: inset 0 0 0 2px var(--well); display: grid; place-items: center; color: var(--muted-foreground); }
+.dia .arw { color: var(--muted-foreground); font-size: 18px; padding-bottom: 18px; }
+.sheet .hint { font-size: 13px; color: var(--muted-foreground); text-align: center; margin: 0; }
+.mcard .ban { display: flex; align-items: center; gap: 10px; }
+.mcard .ban .mi { width: 40px; height: 40px; border-radius: 10px; background: var(--well); color: var(--glow); display: grid; place-items: center; flex: none; }
+.mcard .ban .mi svg { width: 22px; height: 22px; }
+.mcard .ban h2 { font-size: 24px; }
+.wring { display: grid; place-items: center; padding: 6px 0 0; }
+.wring svg { width: 176px; height: 176px; }
 
 /* ---------------- lobby ---------------- */
 .lobby { min-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 0; font-size: 15px; }
-.topbar { display: flex; align-items: center; height: 32px; margin: -4px -8px 4px; gap: 6px; font-size: 14px; color: var(--muted-foreground); }
-.topbar .lnk { display: flex; align-items: center; gap: 6px; padding: 0 8px; height: 32px; }
-.lhd { display: flex; align-items: center; height: 32px; margin: -4px -8px 0; gap: 4px; }
-.lhd h1 { margin: 0 0 0 8px; font-size: 18px; font-weight: 600; }
-.lhd .hbtn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; color: var(--muted-foreground); font-size: 14px; }
+.lhd { display: flex; align-items: center; min-height: 32px; margin: -4px -8px 0; gap: 6px; }
+.lhd h1 { margin: 0; font-size: 18px; font-weight: 600; }
+.lhd .end { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .card h3 { margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .card h3 .aside { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.card h3 .lnk { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--primary); }
 .share h2 { margin: 0; font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 26px; font-weight: 700; line-height: 1.1; }
 .share .cd { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
 .share .cd b { color: var(--foreground); font-size: 16px; letter-spacing: .2em; }
@@ -550,40 +654,77 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .seat .role { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-family: 'Saira', sans-serif; font-weight: 700; font-size: 13px; }
 .seat .role.P { background: var(--pilot); color: var(--pilot-ink); }
 .seat .role.C { background: var(--copilot); color: var(--copilot-ink); }
-.seat .who { display: flex; flex-direction: column; line-height: 18px; }
-.seat .who span { font-size: 13px; color: var(--muted-foreground); }
-.scn { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; background: var(--well); color: var(--gauge-ink); min-height: 64px; }
+.seat .who2 { display: flex; flex-direction: column; line-height: 18px; }
+.seat .who2 span { font-size: 13px; color: var(--muted-foreground); }
+.scn { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; background: var(--well); color: var(--gauge-ink); min-height: 56px; flex: none; }
 .scn .band { width: 8px; background: var(--c); flex: none; }
 .scn .body { flex: 1; display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-width: 0; }
-.scn .apc3 { font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: .02em; }
-.scn .nm { display: flex; flex-direction: column; min-width: 0; line-height: 18px; }
-.scn .nm span { font-size: 13px; opacity: .78; }
-.scn .ic { margin-left: auto; display: flex; gap: 4px; align-items: center; }
-.scn .ic span { min-width: 24px; padding: 0 3px; gap: 1px; height: 24px; display: inline-flex !important; align-items: center; justify-content: center; border-radius: 6px; background: var(--plane); color: var(--traffic); display: grid; place-items: center; font-size: 12px; font-weight: 800; font-family: 'Saira', sans-serif; }
+.scn .apc3 { font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 24px; line-height: 1; letter-spacing: .02em; width: 56px; flex: none; }
+.scn .nm { min-width: 0; font-weight: 600; line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scn .ic { margin-left: auto; display: flex; gap: 4px; align-items: center; flex: none; }
+.scn .ic span { min-width: 24px; padding: 0 3px; gap: 1px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--plane); color: var(--traffic); font-size: 12px; font-weight: 800; font-family: 'Saira', sans-serif; }
+.scn .ic span.rt { background: transparent; color: var(--gauge-ink); box-shadow: inset 0 0 0 1.5px oklch(from var(--gauge-ink) l c h / 45%); }
 .scn .ic svg { width: 15px; height: 15px; }
 .scn .ic span svg:not(:only-child) { width: 11px; height: 11px; }
-.scn.sm { min-height: 52px; }
-.scn.sm .apc3 { font-size: 20px; width: 50px; }
+.scn.sm { min-height: 46px; }
+.scn.sm .apc3 { font-size: 19px; width: 44px; }
 .scn.on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
 .green { --c: var(--level-green); } .yellow { --c: var(--level-yellow); } .red { --c: var(--level-red); } .black { --c: var(--level-black); }
 .black.scn .band { background: repeating-linear-gradient(45deg, var(--level-black) 0 4px, oklch(0.45 0 0) 4px 6px); }
+/* The chosen scenario's flight, drawn with the table's own track pieces. */
+.prev { display: flex; flex-direction: column; gap: 3px; padding-top: 6px; }
+.prev .apc { height: 44px; }
+.prev .apc.here { box-shadow: none; }
+.mods2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.modchip { height: 36px; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px 0 8px; border-radius: 9px; background: var(--secondary); font-size: 14px; font-weight: 600; }
+.modchip .mi { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--well); color: var(--glow); }
+.modchip .mi svg { width: 15px; height: 15px; }
+.modchip > svg { color: var(--muted-foreground); }
+.modchip.open { box-shadow: 0 0 0 2px var(--ring); }
 .abs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ab { border-radius: 10px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 0 0 1px var(--border); background: var(--card); position: relative; min-height: 92px; }
-.ab .t { display: flex; align-items: center; gap: 6px; }
-.ab .t b { font-family: 'Saira', sans-serif; font-stretch: 108%; font-weight: 700; font-size: 15px; }
-.ab .t .ck { margin-left: auto; width: 20px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--input); display: grid; place-items: center; font-size: 12px; font-weight: 800; }
-.ab p { margin: 0; font-size: 13px; line-height: 17px; color: var(--muted-foreground); }
-.ab.on { box-shadow: inset 0 0 0 2px var(--ring); background: color-mix(in oklch, var(--primary) 7%, var(--card)); }
-.ab.on .ck { background: var(--primary); color: var(--primary-foreground); box-shadow: none; }
+.ab { border-radius: 10px; padding: 0 0 10px; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 0 0 1px var(--border); background: var(--card); position: relative; min-height: 98px; overflow: hidden; }
+.ab .t { display: flex; align-items: center; gap: 6px; background: var(--well); color: var(--gauge-ink); padding: 6px 8px 6px 10px; }
+.ab .t b { font-family: 'Saira', sans-serif; font-stretch: 85%; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ab .t .ck { margin-left: auto; width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px oklch(from var(--gauge-ink) l c h / 55%); display: grid; place-items: center; font-size: 12px; font-weight: 800; flex: none; }
+.ab p { margin: 0; padding: 2px 10px 0; font-size: 13px; line-height: 17px; color: var(--muted-foreground); }
+.ab .more { margin-top: auto; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--primary); }
+.ab .more svg { width: 14px; height: 14px; }
+.ab.on { box-shadow: inset 0 0 0 2px var(--ring); }
+.ab.on .ck { background: var(--glow); color: var(--well); box-shadow: none; }
 .ab.off { opacity: .5; }
-.ab .band { height: 4px; border-radius: 2px; background: var(--well); margin: -2px 0 2px; }
-.ab.on .band { background: var(--primary); }
 .sticky { position: sticky; bottom: 0; margin: auto -12px 0; padding: 8px 12px max(8px, env(safe-area-inset-bottom)); background: color-mix(in oklch, var(--background) 85%, transparent); backdrop-filter: blur(8px); }
 .sticky .btn { height: 48px; width: 100%; font-size: 16px; }
 .sticky p { margin: 0 0 6px; text-align: center; font-size: 13px; color: var(--muted-foreground); }
-.picker .sheet { max-height: 86%; overflow: hidden; }
-.picker .list { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
-.grp { font-size: 13px; color: var(--muted-foreground); font-weight: 600; margin: 4px 0 0; }
+.picker .pkh { position: sticky; top: -10px; margin: -10px -16px 0; padding: 10px 16px 8px; background: var(--card); z-index: 1; display: flex; flex-direction: column; gap: 12px; }
+.picker .list { display: flex; flex-direction: column; gap: 6px; }
+.grp { font-size: 13px; color: var(--muted-foreground); font-weight: 600; margin: 6px 0 0; display: flex; align-items: center; gap: 6px; }
+.grp::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: var(--c); box-shadow: 0 0 0 1px var(--border); }
+.ovl { position: relative; height: 100%; overflow: hidden; }
+
+/* ---------------- home (the shared HomePage with the game's hero) ---------------- */
+.home { min-height: 100%; display: flex; flex-direction: column; padding: 12px; gap: 16px; font-size: 15px; }
+.tb { display: flex; align-items: center; min-height: 32px; margin: -4px -8px 0; gap: 6px; }
+.hero { padding: 0 0 18px; overflow: hidden; box-shadow: 0 10px 15px -3px oklch(0.2 0.03 255 / 12%); gap: 16px; }
+.hero .band { display: block; width: 100%; height: 72px; }
+.hero .hh { padding: 0 18px; display: flex; flex-direction: column; gap: 4px; }
+.hero .hh h1 { margin: 0; font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 36px; line-height: 1.1; }
+.hero .hh p { margin: 0; color: var(--muted-foreground); font-size: 15px; }
+.hero .form { padding: 0 18px; display: flex; flex-direction: column; gap: 18px; }
+.hero label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.hero .inp { height: 48px; font-size: 16px; }
+.hero .btn.big { height: 48px; font-size: 16px; flex: none; }
+.homecol { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+.or { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted-foreground); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.grow-row { display: flex; gap: 8px; }
+.grow-row .inp { flex: 1; justify-content: center; letter-spacing: .3em; font-size: 20px; }
+.gamerow { min-height: 56px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--border); display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+.gamerow .c { display: flex; flex-direction: column; gap: 2px; }
+.gamerow .c b { letter-spacing: .2em; font-weight: 600; }
+.gamerow .c span { font-size: 12px; color: var(--muted-foreground); }
+.gamerow .bdg { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; background: var(--secondary); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero { box-shadow: 0 10px 15px -3px oklch(0 0 0 / 30%); } }
+:root[data-theme="dark"] .hero { box-shadow: 0 10px 15px -3px oklch(0 0 0 / 30%); }
 
 /* ---------------- start page tiles ---------------- */
 .stpage { background: var(--st-background); color: var(--st-foreground); min-height: 100%; padding: 12px; font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif; }
@@ -604,36 +745,58 @@ svg.i { width: 16px; height: 16px; flex: none; }
 .t-sky .pl2, .t-sky .chev { color: var(--sky-muted); }
 .t-crew .pl2, .t-deep .pl2, .t-crew .chev, .t-deep .chev { color: var(--st-muted); }
 .wall { display: grid; grid-template-columns: repeat(3, 296px); gap: 16px; justify-content: center; padding-top: 24px; }
-.wall .tile { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
-.wall .tile .art { width: 100%; height: 132px; border-radius: 0; }
-.wall .tile .txt { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 2px; }
-.wall .tile h2 { font-size: 20px; }
-.wall .tile .chev { display: none; }
+.wall .tile, .wcard { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+.wall .tile .art, .wcard .art { width: 100%; height: 132px; border-radius: 0; }
+.wall .tile .txt, .wcard .txt { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 2px; }
+.wall .tile h2, .wcard h2 { font-size: 20px; }
+.wall .tile .chev, .wcard .chev { display: none; }
+/* tile options: one column per option, each in light and dark at real size */
+.topts { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px; background: var(--background); min-height: 100%; }
+.topt { flex: 1 1 360px; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+.topt h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.topt h3 .rec { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); }
+.topt h3 a { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--primary); }
+.topt p.why { margin: 0; font-size: 13px; color: var(--muted-foreground); line-height: 18px; }
+.topt.chosen { outline: 2px solid var(--ring); outline-offset: 8px; border-radius: 4px; }
+.topt .stpage { padding: 10px; border-radius: 12px; min-height: 0; }
+.topt .wcard { display: flex; width: 296px; }
 
 /* ---------------- desktop (game screen frame ≥ 900 px) ---------------- */
+.mods .abfull { display: none; }
 @container (min-width: 900px) {
 	.screen {
-		--cell: 60px; --die: 64px; --gap: 8px; --tok: 26px;
-		grid-template-columns: 1fr 600px 1fr;
-		grid-template-rows: 32px 1fr auto auto auto;
-		grid-template-areas: "head head head" "track panel mods" "track status mods" "track hand mods" "track action mods";
-		column-gap: 32px; row-gap: 12px; padding: 16px 32px 24px; max-width: 1280px; margin: 0 auto;
+		--cell: 64px; --die: 68px; --gap: 8px; --tok: 26px;
+		grid-template-columns: minmax(0, 1fr) 640px minmax(0, 1fr);
+		grid-template-rows: 32px 1fr auto auto;
+		grid-template-areas: "head head head" "track panel mods" "track hand mods" "track action mods";
+		column-gap: 40px; row-gap: 14px; padding: 16px 32px 24px; max-width: 1280px; margin: 0 auto;
 	}
-	.track { flex-direction: row; gap: 8px; align-self: start; justify-self: end; }
-	.ap { flex-direction: column-reverse; width: 140px; gap: 4px; }
-	.apc { height: 64px; flex: none; }
+	.track { flex-direction: row; gap: 8px; align-self: stretch; justify-self: end; }
+	.ap { flex-direction: column-reverse; width: 150px; gap: 5px; }
+	.apc { flex: 1; height: auto; min-height: 64px; }
 	.apc .apt { inset: 4px 0 auto; }
-	.alt { flex-direction: column-reverse; width: 92px; gap: 4px; }
-	.alc { height: 64px; flex: none; flex-direction: column; font-size: 14px; }
-	.mods { flex-direction: column; align-self: start; max-width: 300px; gap: 8px; }
-	.chip { height: auto; min-height: 44px; padding: 8px 12px; white-space: normal; flex-wrap: wrap; font-size: 14px; }
+	.alt { flex-direction: column-reverse; width: 92px; gap: 5px; }
+	.alc { flex: 1; height: auto; font-size: 16px; }
+	.alc .rtok { --rt: 22px; right: -5px; top: -6px; }
+	.mods { flex-direction: column; align-self: start; max-width: 320px; gap: 10px; }
+	.chip { height: 48px; padding: 0 12px; font-size: 15px; }
 	.chip.grow { flex: none; }
-	.chip .abt { display: block; width: 100%; color: var(--muted-foreground); font-size: 13px; line-height: 17px; }
+	.mods .chip.abc { display: none; }
+	.mods .abfull { display: block; }
+	.mods .abcard .ban h2 { font-size: 17px; }
+	.mods .abcard .face { padding: 10px 12px 12px; gap: 8px; }
+	.mods .abcard .lead { font-size: 14px; line-height: 19px; font-weight: 500; }
+	.mods .abcard ol { display: none; }
+	.mods .abcard .dia { padding: 8px 6px 6px; }
+	.mods .abcard .dia .die { --die: 34px; font-size: 19px; }
 	.sp .v { font-size: 20px; line-height: 20px; }
 	.sp svg { width: 22px; height: 22px; }
+	.sp svg.att { width: 32px; height: 32px; }
 	.pd { font-size: 30px; }
-	.gauge { height: var(--cell); }
+	.spd .n { font-size: 14px; font-stretch: 90%; }
+	.axg i.cur svg { width: 36px; height: 36px; }
 	.hd { margin: 0; }
+	.hand { padding: 8px 12px; }
 }
 </style>
 </head>
@@ -643,7 +806,8 @@ svg.i { width: 16px; height: 16px; flex: none; }
 // =================================================================== icons
 const I = {
 	plane: '<svg viewBox="0 0 24 24"><path d="M12 1.5c.9 0 1.4.8 1.4 1.8v5.6l8.1 4.8v2.1l-8.1-2.5v5l2.4 1.8v1.6L12 20.8l-3.8 1v-1.6l2.4-1.8v-5L2.5 15.8v-2.1l8.1-4.8V3.3c0-1 .5-1.8 1.4-1.8z"/></svg>',
-	axis: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15 21 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 5v2M12 17v2" opacity=".6"/></svg>',
+	// The aircraft seen head-on (the attitude symbol): the axis spaces and the axis marker.
+	att: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 12.2 9.4 11.4h5.2l8.4.8v1.2l-8.4-.2H9.4l-8.4.2z"/><path d="M7.4 8.6 10.6 8.3h2.8l3.2.3v.8l-3.2-.1h-2.8l-3.2.1z"/><path d="M11.2 3.6h1.6l.4 6.4h-2.4z"/><circle cx="12" cy="12.4" r="2.8"/><circle cx="6.6" cy="14.4" r="1.6"/><circle cx="17.4" cy="14.4" r="1.6"/></svg>',
 	engine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 9.8C12 6 14 4.5 16 4.2M14.2 12.8c3.3 1.9 3.6 4.4 2.8 6.3M9.8 13.4c-3.3 1.9-5.6.9-6.8-.7"/></svg>',
 	radio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 2-2 2.5-5 2.5"/></svg>',
 	coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.8 1 .8 1.8 0 3M12 3.5c-.8 1 .8 1.8 0 3"/></svg>',
@@ -652,64 +816,78 @@ const I = {
 	ice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/></svg>',
 	wind: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V3"/><path d="M4 4.5 20 7v6L4 15.5z"/><path d="M9.5 5.4v9.2M15 6.2v7.6" opacity=".7"/></svg>',
 	leak: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/><path d="M10 12l3 2-2 3" stroke-linecap="round"/></svg>',
-	reroll: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg>',
+	notimer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5M10 2.5h4M4 4l16 18"/></svg>',
+	reroll: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg>',
 	tower: '<svg viewBox="0 0 30 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 17V6h4v11M4.5 6h7l-1-3h-5zM10 10h17v7H10M13 12.5h2M17 12.5h2M21 12.5h2M2 17h27"/></svg>',
 	star: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2.8 2.7 6 6.5.6-4.9 4.4 1.4 6.4L12 16.9l-5.7 3.3 1.4-6.4-4.9-4.4 6.5-.6z"/></svg>',
-	help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>',
-	flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
-	theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>',
-	door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h5v16h-5M4 20V5l9-1.5v18zM10 12v.5"/></svg>',
+	// lucide icons, as the shared header buttons use them
+	house: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+	book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
+	flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>',
+	door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H2"/><path d="M11 4.562v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561z"/><path d="M11 4H8a2 2 0 0 0-2 2v14"/><path d="M14 12h.01"/><path d="M22 20h-3"/></svg>',
+	x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+	moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+	sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+	grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>',
+	info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
 	chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>',
 	chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>',
+	chevDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>',
 	swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
-	crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>'
+	crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>',
+	// movement under the speed bands: hold, one step, two steps; landing: ok, crash
+	hold: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h6"/></svg>',
+	step1: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 2 4 4-4 4"/></svg>',
+	step2: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 2 4 4-4 4M9 2l4 4-4 4"/></svg>',
+	ok: '<svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 6.5 3 3 6-7"/></svg>',
+	cross: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>'
 };
 const ic = (n, cls = 'i') => I[n].replace('<svg', `<svg class="${cls}"`);
+const themeToggle = () => `<span class="hb tt" title="Toggle light or dark mode">${ic('moon', 'i moon')}${ic('sun', 'i sun')}</span>`;
+const rtok = (cls = '') => `<span class="rtok ${cls}">${ic('reroll', '')}</span>`;
 
 // =================================================================== panel data
 const SP = {
-	axisPilot: { c: 'b', icon: 'axis' }, axisCopilot: { c: 'o', icon: 'axis' },
+	axisPilot: { c: 'b', icon: 'att' }, axisCopilot: { c: 'o', icon: 'att' },
 	enginesPilot: { c: 'b', icon: 'engine' }, enginesCopilot: { c: 'o', icon: 'engine' },
 	radioPilot: { c: 'b', icon: 'radio' }, radioCopilot1: { c: 'o', icon: 'radio' }, radioCopilot2: { c: 'o', icon: 'radio' },
-	gear12: { c: 'b', v: '1/2', w: 'gear', sw: 1 }, gear34: { c: 'b', v: '3/4', w: 'gear', sw: 1 }, gear56: { c: 'b', v: '5/6', w: 'gear', sw: 1 },
-	flaps12: { c: 'o', v: '1/2', w: 'flaps', sw: 1 }, flaps23: { c: 'o', v: '2/3', w: 'flaps', sw: 1 }, flaps45: { c: 'o', v: '4/5', w: 'flaps', sw: 1 }, flaps56: { c: 'o', v: '5/6', w: 'flaps', sw: 1 },
-	brakes2: { c: 'b', v: '2', w: 'brake', sw: 1 }, brakes4: { c: 'b', v: '4', w: 'brake', sw: 1 }, brakes6: { c: 'b', v: '6', w: 'brake', sw: 1 },
+	gear12: { c: 'b', v: '1/2', sw: 1 }, gear34: { c: 'b', v: '3/4', sw: 1 }, gear56: { c: 'b', v: '5/6', sw: 1 },
+	flaps12: { c: 'o', v: '1/2', sw: 1 }, flaps23: { c: 'o', v: '2/3', sw: 1 }, flaps45: { c: 'o', v: '4/5', sw: 1 }, flaps56: { c: 'o', v: '5/6', sw: 1 },
+	brakes2: { c: 'b', v: '2', sw: 1 }, brakes4: { c: 'b', v: '4', sw: 1 }, brakes6: { c: 'b', v: '6', sw: 1 },
 	conc1: { c: 'x', icon: 'coffee' }, conc2: { c: 'x', icon: 'coffee' }, conc3: { c: 'x', icon: 'coffee' },
 	kerosene: { c: 'x', icon: 'fuel' },
 	internPilot: { c: 'b', icon: 'intern' }, internCopilot: { c: 'o', icon: 'intern' },
-	ice2t: { c: 'b', v: '2', w: 'ice' }, ice3t: { c: 'b', v: '3', w: 'ice' }, ice4t: { c: 'b', v: '4', w: 'ice' }, ice5t: { c: 'b', v: '5', w: 'ice' },
-	ice2b: { c: 'x', v: '2', w: 'ice' }, ice3b: { c: 'x', v: '3', w: 'ice' }, ice4b: { c: 'x', v: '4', w: 'ice' }, ice5b: { c: 'x', v: '5', w: 'ice' }
+	ice2t: { c: 'b', v: '2' }, ice3t: { c: 'b', v: '3' }, ice4t: { c: 'b', v: '4' }, ice5t: { c: 'b', v: '5' },
+	ice2b: { c: 'x', v: '2' }, ice3b: { c: 'x', v: '3' }, ice4b: { c: 'x', v: '4' }, ice5b: { c: 'x', v: '5' }
 };
-const ALT = ['6000', '5000', '4000', '3000', '2000', '1000', 'Land'];
+// Altitudes in thousands of feet: short enough that a reroll token fits beside the label.
+const ALT = ['6k', '5k', '4k', '3k', '2k', '1k', 'Land'];
 const sign = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + -n : '0');
 const NAMES = { P: 'Alex', C: 'Sam' };
 
 const BASE = {
-	code: 'K7QM', me: 'P', sel: null, mod: 0, legal: [], target: null, last: null, aim: null,
+	code: 'K7QM', me: 'P', sel: null, mod: 0, legal: [], target: null, last: null, aim: null, speedAim: null,
 	sw: [], placed: {}, abilities: [], hand: [null, null, null, null], partnerLeft: 4, rerolls: 0, coffee: 0,
 	brakes: 0, blue: 4, orange: 8, axis: 0, phase: 'turn', rerollOn: []
 };
-const YUL = {
-	scenario: 'YUL', level: 'green', apt: 'YUL', N: 7, turns: [], traffic: [0, 0, 0, 0, 0, 0, 0],
-};
+const YUL = { scenario: 'YUL', level: 'green', N: 7, turns: [], traffic: [0, 0, 0, 0, 0, 0, 0] };
 const S = {
 	turn: {
 		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 1, 3, 2], axis: 0, blue: 5, orange: 10, brakes: 0, coffee: 1, rerolls: 1, rerollOn: [5],
 		sw: ['gear12', 'flaps12', 'flaps23'],
 		placed: { axisCopilot: ['C', 4], radioCopilot1: ['C', 2], axisPilot: ['P', 5], enginesCopilot: ['C', 3] },
 		hand: [6, null, 3, 2], sel: 2, partnerLeft: 2, last: 'enginesCopilot',
-		legal: ['enginesPilot', 'radioPilot', 'gear34', 'conc1', 'conc2', 'conc3'], target: 'radioPilot', aim: 5,
-		status: 'Radio 3: clears the plane on space 5.'
+		legal: ['enginesPilot', 'radioPilot', 'gear34', 'conc1', 'conc2', 'conc3'], target: 'radioPilot', aim: 5
 	},
 	discussion: {
-		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 1, 1, 3, 2], axis: 1, blue: 5, orange: 10, coffee: 1, rerolls: 1, rerollOn: [5],
-		sw: ['gear12', 'flaps12', 'flaps23'], hand: ['?', '?', '?', '?'], partnerLeft: 4, phase: 'discussion'
+		...YUL, round: 5, pos: 4, planes: [0, 0, 0, 0, 1, 3, 2], axis: 1, blue: 5, orange: 10, coffee: 1, rerolls: 2, rerollOn: [],
+		sw: ['gear12', 'flaps12', 'flaps23'], hand: ['?', '?', '?', '?'], partnerLeft: 4, phase: 'discussion', pickup: true, partnerReady: true
 	},
 	waiting: {
 		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 0, 3, 2], axis: 0, blue: 5, orange: 10, coffee: 1, rerolls: 1, rerollOn: [5],
 		sw: ['gear12', 'flaps12', 'flaps23'],
 		placed: { axisCopilot: ['C', 4], radioCopilot1: ['C', 2], axisPilot: ['P', 5], enginesCopilot: ['C', 3], radioPilot: ['P', 3] },
-		hand: [6, null, null, 2], partnerLeft: 2, last: 'radioPilot', phase: 'waiting'
+		hand: [6, null, null, 2], partnerLeft: 2, phase: 'waiting'
 	},
 	reroll: {
 		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 1, 3, 2], axis: 0, blue: 5, orange: 10, coffee: 1, rerolls: 0, rerollOn: [5],
@@ -718,58 +896,52 @@ const S = {
 		hand: [6, null, 3, 2], partnerLeft: 2, rr: [3], phase: 'reroll'
 	},
 	tgu: {
-		scenario: 'TGU', level: 'red', apt: 'TGU', round: 3, N: 5, planes: [0, 1, 2, 1, 2], traffic: [3, 0, 2, 0, 0], turns: [null, 'ooxxx', 'xooxx', 'ooxxx', null], pos: 2,
+		scenario: 'TGU', level: 'red', round: 3, N: 5, planes: [0, 1, 2, 1, 2], traffic: [3, 0, 2, 0, 0], turns: [null, 'ooxxx', 'xooxx', 'ooxxx', null], pos: 2,
 		axis: -1, blue: 6, orange: 10, brakes: 1, coffee: 2, rerolls: 1,
 		fuel: 11, wind: { off: -3, v: 2 },
-		abilities: [{ n: 'Synchronisation', icon: 'reroll', used: true, t: 'Black die rolled and placed this round.' }, { n: 'Working together', used: false, t: 'Free this round: put a die on the card to swap values.' }],
+		abilities: [{ id: 'synchronisation', used: true }, { id: 'workingTogether', used: false }],
 		placed: { axisPilot: ['P', 4], gear34: ['P', 3], flaps23: ['C', 2], radioCopilot1: ['C', 5], radioCopilot2: ['T', 3] },
 		sw: ['gear12', 'gear34', 'flaps12', 'flaps23', 'brakes2'],
 		hand: [6, null, 2, null], sel: 0, partnerLeft: 2, last: 'radioCopilot2',
-		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'kerosene'], target: 'gear56',
-		status: 'Gear 5/6: last gear down, blue marker 6 → 7.'
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'kerosene'], target: 'gear56'
 	},
 	kef: {
-		scenario: 'KEF', level: 'black', apt: 'KEF', round: 5, N: 6, planes: [0, 0, 0, 0, 1, 0], traffic: [2, 0, 1, 0, 0, 0], turns: [null, 'oooxx', null, 'xxooo', 'xooox', null], pos: 4,
+		scenario: 'KEF', level: 'black', round: 5, N: 6, planes: [0, 0, 0, 0, 1, 0], traffic: [2, 0, 1, 0, 0, 0], turns: [null, 'oooxx', null, 'xxooo', 'xooox', null], pos: 4,
 		axis: 1, blue: 6, orange: 10, coffee: 1, rerolls: 0,
 		wind: { off: 4, v: 1 }, ice: { marker: 1 },
-		abilities: [{ n: 'Anticipation', used: true, t: 'Used this round: Alex rerolled one die.' }, { n: 'Adaptation', used: false, t: 'Once per game each: flip a die to its opposite face. You: free. Sam: used.' }],
+		abilities: [{ id: 'anticipation', used: true }, { id: 'adaptation', used: false }],
 		placed: { axisPilot: ['P', 2], ice3t: ['P', 3], axisCopilot: ['C', 3], enginesCopilot: ['C', 4] },
 		sw: ['gear12', 'gear34', 'flaps12', 'flaps23'],
 		hand: [5, 3, null, null], sel: 0, partnerLeft: 2, last: 'enginesCopilot',
-		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'ice5t', 'ice5b'], target: 'enginesPilot',
-		status: 'Engines: 4 + 5 + wind 1 = 10, advance 1 to space 5 (turn ok at +1).'
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'ice5t', 'ice5b'], target: 'enginesPilot', speedAim: 10
 	},
 	hnd: {
-		scenario: 'HND', level: 'red', apt: 'HND', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
+		scenario: 'HND', level: 'red', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
 		axis: -1, blue: 7, orange: 11, brakes: 2, coffee: 3, rerolls: 0,
 		fuel: 9, intern: { toks: [3, 5, 2, 6, 1, 4], gone: [0, 1, 4, 5] },
-		abilities: [{ n: 'Control', used: true, t: 'Axis dice matched this round: coffee gained.' }],
+		abilities: [{ id: 'control', used: true }],
 		placed: { internPilot: ['P', 1], gear56: ['I', 5], axisPilot: ['P', 3], axisCopilot: ['C', 3], flaps45: ['C', 4] },
 		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
 		hand: [6, 2, null, null], sel: 1, mod: -1, partnerLeft: 2, last: 'axisPilot',
-		legal: ['enginesCopilot', 'radioCopilot1', 'radioCopilot2', 'flaps12', 'conc1', 'conc2', 'conc3', 'kerosene', 'internCopilot'], target: 'radioCopilot1', aim: 6,
-		status: 'Radio 1 (2 − 1 coffee): clears the plane on your space 6.'
+		legal: ['enginesCopilot', 'radioCopilot1', 'radioCopilot2', 'flaps12', 'conc1', 'conc2', 'conc3', 'kerosene', 'internCopilot'], target: 'radioCopilot1', aim: 6
 	},
 	final: {
 		...YUL, round: 7, pos: 7, planes: [0, 0, 0, 0, 0, 0, 0], axis: 0, blue: 7, orange: 11, brakes: 2, coffee: 2, rerolls: 0,
 		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
-		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 3], radioCopilot1: ['C', 6] },
+		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 2], radioCopilot1: ['C', 6] },
 		hand: [1, 4, null, 6], sel: 0, partnerLeft: 2, last: 'radioCopilot1',
-		legal: ['enginesPilot', 'radioPilot', 'gear12', 'conc1', 'conc2', 'conc3'], target: 'enginesPilot',
-		checks: [['Planes', '0', true], ['Gear', '3/3', true], ['Flaps', '3/4', false], ['Axis', '0', true]],
-		status: 'Engines: speed 1 + Sam’s die must be 4 or less to land.'
+		legal: ['enginesPilot', 'radioPilot', 'gear12', 'conc1', 'conc2', 'conc3'], target: 'enginesPilot'
 	},
 	won: {
 		...YUL, round: 7, pos: 7, planes: [0, 0, 0, 0, 0, 0, 0], axis: 0, blue: 7, orange: 12, brakes: 2, coffee: 1, rerolls: 0,
 		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'flaps56', 'brakes2', 'brakes4'],
-		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 3], radioCopilot1: ['C', 6], enginesPilot: ['P', 1], flaps56: ['C', 5], conc1: ['P', 6], enginesCopilot: ['C', 2], conc2: ['C', 1] },
-		hand: [null, null, null, null], partnerLeft: 0, phase: 'over',
-		checks: [['Planes', '0', true], ['Gear', '3/3', true], ['Flaps', '4/4', true], ['Axis', '0', true]], over: 'won'
+		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 2], radioCopilot1: ['C', 6], enginesPilot: ['P', 1], flaps56: ['C', 5], conc1: ['P', 6], enginesCopilot: ['C', 2], conc2: ['C', 1] },
+		hand: [null, null, null, null], partnerLeft: 0, phase: 'over', over: 'won'
 	},
 	lost: {
-		scenario: 'HND', level: 'red', apt: 'HND', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
+		scenario: 'HND', level: 'red', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
 		axis: -1, blue: 7, orange: 11, brakes: 2, coffee: 2, rerolls: 0, fuel: 9, intern: { toks: [3, 5, 2, 6, 1, 4], gone: [0, 1, 4, 5] },
-		abilities: [{ n: 'Control', used: true, t: '' }],
+		abilities: [{ id: 'control', used: true }],
 		placed: { internPilot: ['P', 1], gear56: ['I', 5], axisPilot: ['P', 3], axisCopilot: ['C', 3], flaps45: ['C', 4], enginesCopilot: ['C', 6], enginesPilot: ['P', 4] },
 		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
 		hand: [2, null, null, null], partnerLeft: 1, last: 'enginesPilot', phase: 'over', over: 'lost'
@@ -777,8 +949,7 @@ const S = {
 };
 
 function state(key) {
-	const s = { ...structuredClone(BASE), ...structuredClone(S[key]), key };
-	return s;
+	return { ...structuredClone(BASE), ...structuredClone(S[key]), key };
 }
 
 // =================================================================== panel parts
@@ -797,33 +968,52 @@ function space(id, s) {
 		const [o, v] = placed;
 		inner = `<div class="pd ${o}">${v}</div>`;
 	} else if (d.icon) {
-		inner = ic(d.icon, '');
+		inner = ic(d.icon, d.icon === 'att' ? 'att' : '');
 	} else {
 		inner = `<span class="v">${d.v}</span>`;
 	}
-	const led = d.sw ? `<span class="led ${s.sw.includes(id) ? 'on' : ''}">${s.sw.includes(id) ? '✓' : ''}</span>` : '';
+	const on = s.sw.includes(id);
+	const led = d.sw ? `<span class="led ${on ? 'on' : ''} ${id.startsWith('brakes') ? 'brk' : ''}">${on ? '✓' : s.round === 7 && !id.startsWith('brakes') ? '✕' : ''}</span>` : '';
 	return `<div class="${cls.join(' ')}">${inner}${led}</div>`;
 }
 
 function axisGauge(s) {
 	let h = '';
 	for (let p = -3; p <= 3; p++) {
-		const end = Math.abs(p) === 3;
+		if (Math.abs(p) === 3) { h += `<i class="end">${ic('cross', '')}</i>`; continue; }
+		const side = p < 0 ? 'P' : p > 0 ? 'C' : 'zero';
 		const cur = p === s.axis;
-		h += `<i class="${end ? 'end' : ''} ${cur ? 'cur' : ''} ${p === 0 ? 'zero' : ''}">${end ? '✕' : cur ? sign(p) : ''}</i>`;
+		h += `<i class="${side} ${cur ? 'cur' : ''}" ${cur ? `style="--tilt:${p * 16}deg"` : ''}>${cur ? ic('att', '') : ''}</i>`;
 	}
-	return `<div class="gauge axg" title="Axis">${h}</div>`;
+	return `<div class="gauge axg" title="Axis ${sign(s.axis)}">${h}</div>`;
+}
+
+/** Highest final speed that lands: below the brake marker (or the ice-brake marker). */
+function landMax(s) {
+	if (s.ice) return s.ice.marker === 0 ? 1 : s.ice.marker + 1;
+	return [1, 2, 4, 6][s.brakes ?? 0];
 }
 
 function speedGauge(s) {
-	if (s.round === 7) {
-		const land = [1, 2, 4, 6][s.brakes];
-		return `<div class="gauge spd"><div class="land"><b>Land ≤ ${land}</b><span>speed with ${s.brakes} brake${s.brakes === 1 ? '' : 's'}</span></div></div>`;
+	const final = s.round === 7;
+	const lm = landMax(s);
+	const zone = (v) => (final ? (v <= lm ? 'land' : 'crash') : v <= s.blue ? 'z0' : v <= s.orange ? 'z1' : 'z2');
+	let nums = '';
+	// Labelled like a printed gauge: even values numbered, odd ones a tick (a previewed sum always shows its number).
+	for (let v = 2; v <= 12; v++) nums += `<span class="n ${zone(v) === 'crash' ? '' : zone(v)} ${s.speedAim === v ? 'aim' : ''}">${v % 2 === 0 || s.speedAim === v ? v : '<i class="tk"></i>'}</span>`;
+	// the movement row: one span per band
+	const bands = [];
+	for (let v = 2; v <= 12; v++) {
+		const z = zone(v);
+		if (bands.length && bands[bands.length - 1].z === z) bands[bands.length - 1].n++;
+		else bands.push({ z, n: 1 });
 	}
-	return `<div class="gauge spd">
-		<div><b>≤${s.blue}</b><span>stay</span></div><i class="mk P"></i>
-		<div><b>${s.blue + 1}–${s.orange}</b><span>+1</span></div><i class="mk C"></i>
-		<div><b>${s.orange + 1}+</b><span>+2</span></div></div>`;
+	const glyph = { z0: 'hold', z1: 'step1', z2: 'step2', land: 'ok', crash: 'cross' };
+	const row = bands.map((b) => `<span class="z ${b.z}" style="grid-column:span ${b.n}">${ic(glyph[b.z], '')}</span>`).join('');
+	const pin = (k, c) => `<i class="pin ${c}" style="left:calc(2px + (100% - 4px) * ${Math.max(0, Math.min(11, k))} / 11)"></i>`;
+	const pins = final ? pin(lm - 1, 'R') : pin(s.blue - 1, 'P') + pin(s.orange - 1, 'C');
+	const title = final ? `Lands at speed ${lm} or less` : `Speed: up to ${s.blue} holds, up to ${s.orange} one space, more two`;
+	return `<div class="gauge spd" title="${title}">${nums}${row}${pins}</div>`;
 }
 
 function brakeRows(s) {
@@ -832,14 +1022,13 @@ function brakeRows(s) {
 		// The marker sits in a slot between the columns: before 2, after 2, …, past 5.
 		const m = s.ice.marker;
 		const x = m === 0 ? '4px' : m === 4 ? 'calc(100% - 4px)' : `calc(${m} * (var(--cell) + var(--gap)) - var(--gap) / 2)`;
-		const labels = cols.map((c, i) => `<b style="left:calc(${i} * (var(--cell) + var(--gap)))">${c}</b>`).join('');
 		return `<div class="prow">${cols.map((c) => space('ice' + c + 't', s)).join('')}</div>
-			<div class="icem" title="Ice-brake marker: must end past 5">${labels}<i style="left:${x}"></i></div>
+			<div class="icem" title="Ice-brake marker: must end past 5"><i style="left:${x}"></i></div>
 			<div class="prow">${cols.map((c) => space('ice' + c + 'b', s)).join('')}</div>`;
 	}
-	const land = [1, 2, 4, 6][s.brakes ?? 0];
-	return `<div class="prow">${space('brakes2', s)}<span class="arrow">▶</span>${space('brakes4', s)}<span class="arrow">▶</span>${space('brakes6', s)}
-		<div class="rd"><span class="mkr"></span>land<b>≤${land}</b></div></div>`;
+	const n = s.brakes ?? 0;
+	const slot = (i) => `<span class="bslot ${i === n ? 'on' : ''}"></span>`;
+	return `<div class="prow" title="Brakes: the final speed must be ${landMax(s)} or less">${slot(0)}${space('brakes2', s)}${slot(1)}${space('brakes4', s)}${slot(2)}${space('brakes6', s)}${slot(3)}</div>`;
 }
 
 function internBoard(s) {
@@ -890,27 +1079,111 @@ function altitude(s) {
 	return `<div class="alt">${ALT.map((a, i) => {
 		const r = i + 1;
 		const fp = r % 2 ? 'P' : 'C';
-		const rr = (s.rerollOn || []).includes(r) && r > s.round ? ic('reroll', '') : '';
-		return `<div class="alc ${fp} ${r === s.round ? 'cur' : ''} ${r < s.round ? 'past' : ''}">${fp === 'P' ? '<span class="ar">◂</span>' : ''}${a}${fp === 'C' ? '<span class="ar">▸</span>' : ''}${rr}</div>`;
+		const tok = (s.rerollOn || []).includes(r) && r >= s.round ? rtok() : '';
+		return `<div class="alc ${fp} ${r === s.round ? 'cur' : ''} ${r < s.round ? 'past' : ''}" title="${a === 'Land' ? 'Landing' : a.replace('k', '000') + ' ft'}, ${fp === 'P' ? 'Pilot' : 'Co-Pilot'} first"><span class="ar"></span>${a}${tok}</div>`;
 	}).join('')}</div>`;
 }
 
 function header(s) {
-	return `<div class="hd"><span class="code mono">${s.code}</span><span class="dot"></span>
-		<span class="lvl ${s.level}">${s.scenario}</span>
-		<span class="rnd">Round <b>${s.round}</b> of 7</span>
-		<span style="margin-left:auto" class="hb" title="Rules">${ic('help')}</span><span class="hb" title="Give up">${ic('flag')}</span><span class="hb" title="Theme">${ic('theme')}</span></div>`;
+	return `<div class="hd"><span class="hb" title="Home">${ic('house')}</span><span class="code mono">${s.code}</span><span class="dot" title="Connected"></span>
+		<span class="sn ${s.level}" title="${s.scenario} ${s.level}">${s.scenario}</span>
+		<span style="margin-left:auto" class="hb" title="Rules">${ic('book')}</span><span class="hb" title="Give up">${ic('flag')}</span>${themeToggle()}</div>`;
 }
 
+// =================================================================== abilities and modules
+const ABIL = {
+	adaptation: {
+		name: 'Adaptation', short: 'Adapt', when: 'Once per game each',
+		line: 'Flip one die to its opposite face.',
+		lead: 'Each of you may once per game turn one of your unplaced dice to its opposite face.',
+		steps: ['Opposite faces add up to 7: 1 and 6, 2 and 5, 3 and 4.', 'You can do it at any time during placement, also on your partner’s turn.'],
+		dia: () => `<figure><span class="die P">1</span>before</figure><span class="arw">→</span><figure><span class="die P">6</span>after</figure>`
+	},
+	anticipation: {
+		name: 'Anticipation', short: 'Anticipate', when: 'Once per round',
+		line: 'The first player rerolls one die before placing.',
+		lead: 'Before the first die of a round is placed, the round’s first player may reroll one of their dice.',
+		steps: ['The altitude track’s arrow shows who goes first.', 'The app offers it before your first placement; skip it if you like your dice.'],
+		dia: () => `<figure><span class="die C">1</span>before</figure><span class="arw">${ic('reroll')}</span><figure><span class="die C hid"></span>rerolled</figure>`
+	},
+	control: {
+		name: 'Control', short: 'Control', when: 'Every round',
+		line: 'Equal axis dice give a coffee.',
+		lead: 'When both axis spaces hold the same value, you gain a coffee at once.',
+		steps: ['Only if fewer than 3 coffees are on the panel.', 'Intern tokens and the black die count as dice.'],
+		dia: () => `<figure><span class="die P">4</span>axis</figure><span class="arw">=</span><figure><span class="die C">4</span>axis</figure><span class="arw">→</span><figure><span class="slot">${ic('coffee')}</span>coffee</figure>`
+	},
+	mastery: {
+		name: 'Mastery', short: 'Mastery', when: 'Every round',
+		line: 'Equal engine dice give a reroll token.',
+		lead: 'When both engine spaces hold the same value, you gain a reroll token at once.',
+		steps: ['Only 2 tokens exist: you gain one only if it is neither on the altitude track nor in your supply.', 'Intern tokens and the black die count as dice.'],
+		dia: () => `<figure><span class="die P">2</span>engines</figure><span class="arw">=</span><figure><span class="die C">2</span>engines</figure><span class="arw">→</span><figure>${rtok()}token</figure>`
+	},
+	synchronisation: {
+		name: 'Synchronisation', short: 'Sync', when: 'Once per round',
+		line: 'Gear and flaps in one round: the black die joins in.',
+		lead: 'As soon as a round has a die on the landing gear and one on the flaps, the black die is rolled.',
+		steps: ['The Co-Pilot places it at once on any empty space it fits, of either colour.', 'It acts like a normal die and is an extra action.', 'No coffee on it, and it can’t go on an intern space.'],
+		dia: () => `<figure><span class="die P">3</span>gear</figure><span class="arw">+</span><figure><span class="die C">2</span>flaps</figure><span class="arw">→</span><figure><span class="die T">5</span>black die</figure>`
+	},
+	workingTogether: {
+		name: 'Working Together', short: 'Together', when: 'Once per round',
+		line: 'Swap the values of one die each.',
+		lead: 'Trade one die’s value with your partner, without naming a number.',
+		steps: [
+			'At any time during placement, one of you puts an unplaced die on the card. Its value is open: you both see it.',
+			'The partner must answer with one of their unplaced dice, if they have one left. That one stays hidden.',
+			'The two dice swap values and go back to their owners.'
+		],
+		dia: () => `<figure><span class="die P">5</span>open</figure><span class="arw">⇄</span><figure><span class="die C hid"></span>hidden</figure>`
+	}
+};
+const MODS = {
+	fuel: { name: 'Kerosene' }, wind: { name: 'Wind' }, ice: { name: 'Ice brakes' }, intern: { name: 'Intern' }, leak: { name: 'Kerosene leak' }
+};
+
+function abCard(id, foot) {
+	const a = ABIL[id];
+	return `<div class="abcard"><div class="ban"><h2>${a.name}</h2><span class="when">${a.when}</span></div>
+		<div class="face"><p class="lead">${a.lead}</p><div class="dia">${a.dia()}</div><ol>${a.steps.map((t) => `<li>${t}</li>`).join('')}</ol></div></div>${foot ?? ''}`;
+}
+
+/* The wind ring: 20 spaces, the value from the space's distance to the top (rules §12.3). */
+function windRing(off) {
+	const V = [3, 3, 2, 2, 1, 0, -1, -2, -2, -3, -3];
+	let segs = '';
+	for (let p = 0; p < 20; p++) {
+		const v = V[Math.min(p, 20 - p)];
+		const a = ((p * 18 - 90) * Math.PI) / 180;
+		const x = 88 + 70 * Math.cos(a), y = 88 + 70 * Math.sin(a);
+		const cur = ((off % 20) + 20) % 20 === p;
+		segs += `<g>${cur ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="var(--glow)"/>` : ''}<text x="${x.toFixed(1)}" y="${(y + 4.5).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" font-family="Saira" fill="${cur ? 'var(--well)' : 'var(--gauge-ink)'}">${sign(v)}</text></g>`;
+	}
+	const rot = (((off % 20) + 20) % 20) * 18;
+	return `<svg viewBox="0 0 176 176"><circle cx="88" cy="88" r="84" fill="var(--gauge)"/><circle cx="88" cy="88" r="56" fill="var(--well)"/>${segs}
+		<g transform="rotate(${rot} 88 88)"><path d="M88 36v18" stroke="var(--glow)" stroke-width="3" stroke-linecap="round"/><g transform="translate(70 70) scale(1.5)" fill="var(--plane)">${I.plane.replace(/<\/?svg[^>]*>/g, '')}</g></g></svg>`;
+}
+
+function moduleSheet() {
+	return `<div class="scrim"></div><div class="sheet mcard"><div class="grab"></div>
+		<div class="ban"><span class="mi">${ic('wind')}</span><h2>Wind</h2></div>
+		<p style="color:var(--foreground);font-weight:600">The wind adds to your speed, and the axis turns it.</p>
+		<div class="wring">${windRing(-3)}</div>
+		<ul><li>The plane on the ring starts at the top, on +3.</li>
+		<li>After the axis resolves each round, the plane turns by the axis position: toward the Pilot counter-clockwise, toward the Co-Pilot clockwise. A level axis leaves it.</li>
+		<li>The value it points at adds to the engine sum, every round including the landing.</li></ul>
+		<div class="row"><span class="btn out">Close</span></div></div>`;
+}
+
+// =================================================================== table
 function mods(s) {
 	let h = '';
-	if (s.checks) {
-		h += s.checks.map(([n, v, ok]) => `<div class="chip ${ok ? 'ok' : 'open'} ${n === 'Planes' ? '' : ''}"><span class="chk">${ok ? '✓' : ''}</span>${n} <b>${v}</b></div>`).join('');
-		return `<div class="mods" style="gap:4px">${h}</div>`;
-	}
-	if (s.fuel !== undefined) h += `<div class="chip grow">${ic('fuel')}<span class="fbar"><i style="left:${(s.fuel / 20) * 100}%"></i></span><b>${s.fuel}</b></div>`;
-	if (s.wind) h += `<div class="chip"><span class="ring" style="--rot:${s.wind.off * 18}deg"></span>Wind <b>${sign(s.wind.v)}</b></div>`;
-	for (const a of s.abilities) h += `<div class="chip"><span class="ab-dot ${a.used ? 'used' : ''}"></span>${a.n === 'Working together' ? 'Together' : a.n === 'Synchronisation' ? 'Sync' : a.n}<span class="abt">${a.t}</span></div>`;
+	if (s.fuel !== undefined) h += `<div class="chip grow" title="Kerosene">${ic('fuel')}<span class="fbar"><i style="left:${(s.fuel / 20) * 100}%"></i></span><b>${s.fuel}</b></div>`;
+	if (s.wind) h += `<div class="chip" title="Wind"><span class="ring" style="--rot:${s.wind.off * 18}deg"></span><b>${sign(s.wind.v)}</b></div>`;
+	for (const a of s.abilities) h += `<div class="chip abc ${a.used ? 'used' : ''}" title="${ABIL[a.id].name}${a.used ? ', used' : ''}"><span class="cardi"></span>${ABIL[a.id].short}</div>`;
+	// Desktop shows the ability cards themselves in the right column.
+	for (const a of s.abilities) h += `<div class="abfull">${abCard(a.id)}</div>`;
 	// The base game has no modules or abilities: the row is left out (its height goes to the panel).
 	return h ? `<div class="mods">${h}</div>` : '';
 }
@@ -918,51 +1191,53 @@ function mods(s) {
 function cups(n) { return `<span class="cups">${[0, 1, 2].map((i) => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</span>`; }
 
 function hand(s) {
-	const me = s.me, pt = me === 'P' ? 'C' : 'P';
+	const me = s.me, pt = me === 'P' ? 'C' : 'P', P = NAMES[pt];
+	const pc = pt === 'P' ? 'var(--pilot)' : 'var(--copilot)';
+	const fd = `<span class="fd" style="--pc:${pc}" title="${P} has ${s.partnerLeft} dice left">${[0, 1, 2, 3].map((i) => `<i class="${i < s.partnerLeft ? '' : 'out'}"></i>`).join('')}</span>`;
+	if (s.phase === 'discussion') {
+		// Before the roll the tray holds the round-start news and the one reminder about talking.
+		const got = s.pickup ? `<span class="got">${rtok()}Reroll token picked up</span>` : '';
+		return `<div class="hand"><div class="talk"><b>Talk strategy, not dice</b><span>${(s.round % 2 ? 'P' : 'C') === me ? 'You place' : P + ' places'} first this round.</span>${got}</div>
+			<div class="who"><b>${P}</b>${s.partnerReady ? 'is ready' : 'is talking'}</div></div>`;
+	}
 	const dice = s.hand.map((v, i) => {
 		if (v === null) return `<span class="die empty"></span>`;
-		if (v === '?') return `<span class="die ${me} blank">0</span>`;
 		const cls = ['die', me];
 		if (i === s.sel) cls.push('sel');
 		if (s.rr && s.rr.includes(v)) cls.push('rr');
 		if (s.phase === 'waiting') cls.push('locked');
 		const shown = i === s.sel && s.mod ? v + s.mod : v;
 		const mod = i === s.sel && s.mod ? `<span class="mod">${sign(s.mod)}</span>` : '';
-		const rri = s.rr && s.rr.includes(v) ? `<span class="rri">${ic('reroll', '')}</span>` : '';
+		const rri = s.rr && s.rr.includes(v) ? rtok() : '';
 		return `<span class="${cls.join(' ')}">${shown}${mod}${rri}</span>`;
 	}).join('');
-	const fd = [0, 1, 2, 3].map((i) => `<i class="${i < s.partnerLeft ? '' : 'out'}"></i>`).join('');
-	const pc = pt === 'P' ? 'var(--pilot)' : 'var(--copilot)';
-	const ready = s.phase === 'discussion' ? '<br>is ready' : `<br>${s.partnerLeft} dice left`;
-	return `<div class="hand ${s.phase === 'turn' ? 'mine' : ''}" style="--me:${me === 'P' ? 'var(--pilot)' : 'var(--copilot)'}">${dice}
-		<div class="partner"><b>${NAMES[pt]}</b>${ready}<br><span class="fd" style="--pc:${pc}">${fd}</span></div></div>`;
-}
-
-function status(s) {
-	const pt = NAMES[s.me === 'P' ? 'C' : 'P'];
-	if (s.phase === 'discussion') return `<div class="status"><span class="pill wait">Round 4</span><span>Talk strategy now, not dice. ${pt} goes first.</span></div>`;
-	if (s.phase === 'waiting') return `<div class="status"><span class="pill wait">${pt}’s turn</span><span>Waiting for ${pt} to place a die.</span></div>`;
-	if (s.phase === 'reroll') return `<div class="status"><span class="pill">Reroll</span><span>${pt} spent the reroll. Pick dice to reroll.</span></div>`;
-	if (s.phase === 'over') return `<div class="status"></div>`;
-	return `<div class="status"><span class="pill">Your turn</span><span>${s.status}</span></div>`;
+	let who;
+	if (s.phase === 'turn') who = `<b>Your turn</b>${fd}`;
+	else if (s.phase === 'waiting') who = `<b>${P}’s turn</b>${fd}`;
+	else if (s.phase === 'reroll') who = `<b>Reroll</b><span>Tap dice to roll again</span>`;
+	else who = `<b>${P}</b>${fd}`;
+	return `<div class="hand ${s.phase === 'turn' ? 'mine' : ''}">${dice}<div class="who">${who}</div></div>`;
 }
 
 function action(s) {
-	const rr = `<span class="btn sq ${s.rerolls ? '' : 'dis'}" title="Spend a reroll">${ic('reroll')}<b>${s.rerolls}</b></span>`;
+	const n = s.rerolls;
+	const rr = `<span class="btn rrb ${n ? '' : 'dis'}" title="${n ? `Spend a reroll token (${n} in the supply)` : 'No reroll token in the supply'}">${rtok(n ? '' : 'gone')}<b>${n}</b></span>`;
+	const P = NAMES[s.me === 'P' ? 'C' : 'P'];
 	if (s.phase === 'reroll') return `<div class="action"><span class="btn out">Keep all</span><span class="btn pri">Reroll 1 die</span></div>`;
-	if (s.phase === 'discussion') return `<div class="action"><span class="btn pri">Ready</span></div>`;
+	if (s.phase === 'discussion') return `<div class="action"><span class="btn pri">Ready</span>${rr}</div>`;
 	const left = s.coffee - Math.abs(s.mod || 0);
 	const on = s.phase === 'turn';
-	return `<div class="action"><div class="stepper"><span class="btn ${on ? '' : 'dis'}">−</span><span class="val">${left}${cups(left)}</span><span class="btn ${on ? '' : 'dis'}">+</span></div><span class="btn pri ${on ? '' : 'dis'}">Place</span>${rr}</div>`;
+	const place = on ? `<span class="btn pri">Place</span>` : `<span class="btn wait">Waiting for ${P}</span>`;
+	return `<div class="action"><div class="stepper"><span class="btn ${on ? '' : 'dis'}">−</span><span class="val">${left}${cups(left)}</span><span class="btn ${on ? '' : 'dis'}">+</span></div>${place}${rr}</div>`;
 }
 
 function overSheet(s) {
 	if (s.over === 'won') {
+		const c = (t, v) => `<span><i class="chk">✓</i>${t} <b>${v}</b></span>`;
 		return `<div class="scrim"></div><div class="sheet"><div class="grab"></div>
 			<span class="badge won"><span class="hz"></span>Landed</span>
 			<h2>Touchdown at YUL Montréal-Trudeau</h2>
-			<div class="checks"><div><span class="chk">✓</span>No planes left</div><div><span class="chk">✓</span>Gear and flaps down</div>
-			<div><span class="chk">✓</span>Axis level</div><div><span class="chk">✓</span>Speed 3, brakes allow 4</div></div>
+			<div class="checks">${c('Planes', '0')}${c('Gear', '3/3')}${c('Flaps', '4/4')}${c('Axis', '0')}${c('Speed', '3 ≤ 4')}</div>
 			<div class="row"><span class="btn pri">Play again</span><span class="btn out">Home</span></div></div>`;
 	}
 	return `<div class="scrim"></div><div class="sheet"><div class="grab"></div>
@@ -973,62 +1248,83 @@ function overSheet(s) {
 		<div class="row"><span class="btn pri">Try again</span><span class="btn out">Home</span></div></div>`;
 }
 
-function game(key) {
+function abilitySheetGame() {
+	return `<div class="scrim"></div><div class="sheet"><div class="grab"></div>${abCard('workingTogether')}
+		<p class="hint">Not used this round. Sam has 2 dice left.</p>
+		<div class="row"><span class="btn out">Close</span><span class="btn pri">Put a die on the card</span></div></div>`;
+}
+
+function game(key, overlay = '') {
 	const s = state(key);
-	return `<div class="screen">${header(s)}
+	return `<div class="screen ${s.round === 7 ? 'landing' : ''}">${header(s)}
 		<div class="track">${approach(s)}${altitude(s)}</div>
 		${mods(s)}
 		<div class="pwrap">${panel(s)}</div>
-		${status(s)}${hand(s)}${action(s)}
-		${s.over ? overSheet(s) : ''}</div>`;
+		${hand(s)}${action(s)}
+		${s.over ? overSheet(s) : ''}${overlay}</div>`;
 }
 
 // =================================================================== lobby
+// The 23 scenarios (rules §9), grouped by colour: airport code, name, modules, ability cards.
 const SCN = [
 	['green', [['YUL', 'Montréal-Trudeau', [], 0], ['LHR', 'Heathrow', [], 0], ['HND', 'Haneda', [], 0], ['OSL', 'Gardermoen', ['fuel'], 0], ['ATL', 'Hartsfield-Jackson', ['intern'], 0], ['PRG', 'Václav Havel', ['fuel'], 2]]],
-	['yellow', [['LHR', 'Heathrow', ['intern'], 0], ['TGU', 'Toncontín', ['fuel'], 2], ['GIG', 'Galeão', ['wind'], 1], ['KEF', 'Keflavík', ['ice'], 1]]],
-	['red', [['TGU', 'Toncontín', ['fuel', 'wind'], 2], ['HND', 'Haneda', ['fuel', 'intern'], 1]]]
+	['yellow', [['LHR', 'Heathrow', ['intern'], 0], ['TGU', 'Toncontín', ['fuel'], 2], ['GIG', 'Galeão', ['wind'], 1], ['KEF', 'Keflavík', ['ice'], 1], ['PRG', 'Václav Havel', ['leak'], 2], ['KUL', 'Kuala Lumpur', ['fuel'], 1], ['ATL', 'Hartsfield-Jackson', ['leak'], 1], ['DUS', 'Düsseldorf', ['leak'], 2]]],
+	['red', [['PBH', 'Paro', ['fuel', 'rt'], 2], ['HND', 'Haneda', ['fuel', 'intern'], 1], ['GIG', 'Galeão', ['wind', 'leak'], 2], ['OSL', 'Gardermoen', ['leak', 'ice'], 2], ['TGU', 'Toncontín', ['fuel', 'wind'], 2]]],
+	['black', [['KEF', 'Keflavík', ['wind', 'ice'], 2], ['KUL', 'Kuala Lumpur', ['fuel', 'rt'], 2], ['PBH', 'Paro', ['fuel', 'rt'], 2], ['DUS', 'Düsseldorf', ['leak', 'rt'], 1]]]
 ];
-const ABIL = [
-	['Adaptation', 'Once per game each: turn one die to its opposite face.'],
-	['Anticipation', 'Each round the first player may reroll one die before placing.'],
-	['Control', 'Matching axis dice: gain a coffee.'],
-	['Mastery', 'Matching engine dice: gain a reroll token.'],
-	['Synchronisation', 'Gear and flaps die in a round: roll the black die, the Co-Pilot places it.'],
-	['Working together', 'Once per round two dice swap values.']
-];
-function scnRow(level, [code, name, mods, ab], cls = '') {
-	const icons = mods.map((m) => `<span>${ic(m, '')}</span>`).join('') + (ab ? `<span>${ab}${ic('star', '')}</span>` : '');
-	return `<div class="scn ${level} ${cls}"><span class="band"></span><div class="body"><span class="apc3">${code}</span><div class="nm"><b>${name}</b><span>${level[0].toUpperCase() + level.slice(1)}${mods.length ? ', ' + mods.map((m) => ({ fuel: 'kerosene', wind: 'wind', ice: 'ice brakes', intern: 'intern', leak: 'kerosene leak' })[m]).join(', ') : ''}</span></div><div class="ic">${icons}</div></div></div>`;
+const cap = (w) => w[0].toUpperCase() + w.slice(1);
+function scnRow(level, [code, name, mods, ab], cls = '', icons = true) {
+	const ics = mods.map((m) => (m === 'rt' ? `<span class="rt" title="Played without the real-time timer">${ic('notimer', '')}</span>` : `<span title="${MODS[m].name}">${ic(m, '')}</span>`)).join('') + (ab ? `<span title="${ab} ability card${ab > 1 ? 's' : ''}">${ab}${ic('star', '')}</span>` : '');
+	return `<div class="scn ${level} ${cls}" title="${code} ${level}"><span class="band"></span><div class="body"><span class="apc3">${code}</span><span class="nm">${name}</span>${icons ? `<div class="ic">${ics}</div>` : ''}</div></div>`;
 }
-function lobby(view) {
+const TGU_R = { ...BASE, N: 5, pos: 1, axis: 9, planes: [0, 1, 1, 1, 2], traffic: [3, 0, 2, 0, 0], turns: [null, 'ooxxx', 'xooxx', 'ooxxx', null], round: 0, rerollOn: [1] };
+function lobby(view, overlay = '', open = null) {
 	const host = view !== 'guest';
-	const chosen = ['Synchronisation', 'Working together'];
-	const abil = ABIL.map(([n, t]) => {
-		const on = chosen.includes(n);
+	const chosen = ['synchronisation', 'workingTogether'];
+	const abil = Object.entries(ABIL).map(([id, a]) => {
+		const on = chosen.includes(id);
 		const cls = on ? 'on' : host ? '' : 'off';
-		return `<div class="ab ${cls}"><div class="band"></div><div class="t"><b>${n}</b>${host || on ? `<span class="ck">${on ? '✓' : ''}</span>` : ''}</div><p>${t}</p></div>`;
+		return `<div class="ab ${cls}"><div class="t"><b>${a.name}</b>${host || on ? `<span class="ck">${on ? '✓' : ''}</span>` : ''}</div><p>${a.line}</p><span class="more">${ic('info')}Details</span></div>`;
 	}).join('');
-	const body = `<div class="lobby">
-		<div class="topbar"><span class="lnk">${ic('chevL')}All games</span><span style="margin-left:auto" class="hb">${ic('theme')}</span></div>
-		<div class="lhd"><h1>Lobby</h1><span style="margin-left:auto" class="hbtn">${ic('door')}Leave</span>${host ? `<span class="hbtn">${ic('flag')}End game</span>` : ''}</div>
+	const modchips = ['fuel', 'wind'].map((m) => `<span class="modchip ${open === m ? 'open' : ''}"><span class="mi">${ic(m)}</span>${MODS[m].name}${ic('info')}</span>`).join('');
+	// With a sheet open the lobby is a fixed backdrop; without, it scrolls.
+	return `<div class="${overlay ? 'ovl' : ''}"><div class="lobby">
+		<div class="lhd"><span class="hb" title="Home">${ic('house')}</span><h1>Lobby</h1><div class="end"><span class="hbtn">${ic('door')}Leave</span>${host ? `<span class="hbtn">${ic('flag')}End game</span>` : ''}${themeToggle()}</div></div>
 		<div class="card share"><h2>Sky Team</h2><div class="cd">Code <b class="mono">K7QM</b></div><div class="inp mono">yoshi-und-kruemli.de/sky-team/join/K7QM</div>
 			<div class="row" style="display:flex;gap:8px"><span class="btn" style="flex:1;height:44px">Copy link</span><span class="btn" style="flex:1;height:44px">Share</span></div></div>
-		<div class="card"><h3>Crew<span class="aside">2 of 2</span></h3>
-			<div class="seat"><span class="role P">P</span><div class="who"><b>${host ? 'Alex (you)' : 'Alex'}</b><span>Pilot, blue dice</span></div><span style="margin-left:auto;color:var(--primary)">${ic('crown')}</span></div>
-			<div class="seat"><span class="role C">C</span><div class="who"><b>${host ? 'Sam' : 'Sam (you)'}</b><span>Co-Pilot, orange dice</span></div></div>
+		<div class="card"><h3>Players (2/2)</h3>
+			<div class="seat"><span class="role P">P</span><div class="who2"><b>${host ? 'Alex (you)' : 'Alex'}</b><span>Pilot, blue dice</span></div><span style="margin-left:auto;color:var(--primary)">${ic('crown')}</span></div>
+			<div class="seat"><span class="role C">C</span><div class="who2"><b>${host ? 'Sam' : 'Sam (you)'}</b><span>Co-Pilot, orange dice</span></div></div>
 			${host ? `<span class="btn out" style="height:44px">${ic('swap')}Swap roles</span>` : ''}</div>
-		<div class="card"><h3>Scenario${host ? '<span class="aside">Change</span>' : ''}</h3>${scnRow('red', ['TGU', 'Toncontín', ['fuel', 'wind'], 2], host ? '' : '')}
-			<p style="margin:0;font-size:13px;color:var(--muted-foreground)">7 rounds. Kerosene: put a die on fuel each round or lose 6. Wind: the axis turns the wind ring, its value adds to the speed.</p></div>
-		<div class="card"><h3>Abilities<span class="aside">${host ? '2 of 2 chosen' : 'Alex picks 2'}</span></h3><div class="abs">${abil}</div></div>
+		<div class="card"><h3>Scenario${host ? '<span class="lnk">Change</span>' : ''}</h3>${scnRow('red', ['TGU', 'Toncontín', [], 0], '', false)}
+			<div class="prev" title="Approach: 5 spaces, 5 planes, 2 traffic spaces, 3 turns; 7 rounds, 1 reroll token">${approach(TGU_R)}${altitude(TGU_R)}</div>
+			<div class="mods2">${modchips}</div></div>
+		<div class="card"><h3>Abilities<span class="aside">${host ? '2 of 2 picked' : 'Alex picks 2'}</span></h3><div class="abs">${abil}</div></div>
 		<div class="sticky">${host ? '<span class="btn pri">Start game</span>' : '<p>Waiting for Alex to start.</p>'}</div>
-	</div>`;
-	return body;
+	</div>${overlay}</div>`;
 }
 function picker() {
-	const groups = SCN.map(([lv, rows]) => `<div class="grp">${lv[0].toUpperCase() + lv.slice(1)}</div>` + rows.map((r) => scnRow(lv, r, `sm ${lv === 'red' && r[0] === 'TGU' ? 'on' : ''}`)).join('')).join('');
-	return `<div class="picker" style="position:relative;height:100%">${lobby('host')}<div class="scrim"></div>
-		<div class="sheet"><div class="grab"></div><h2 style="font-size:20px">Scenario</h2><div class="list">${groups}</div></div></div>`;
+	const groups = SCN.map(([lv, rows]) => `<div class="grp ${lv}">${cap(lv)}</div>` + rows.map((r) => scnRow(lv, r, `sm ${lv === 'red' && r[0] === 'TGU' ? 'on' : ''}`)).join('')).join('');
+	// Scrolled to the chosen scenario, as the open sheet would be.
+	return lobby('host', `<div class="scrim"></div><div class="sheet picker" id="pick"><div class="pkh"><div class="grab"></div><h2 style="font-size:20px">Scenario</h2></div><div class="list">${groups}</div></div>`);
+}
+function abilityPick() {
+	return lobby('host', `<div class="scrim"></div><div class="sheet"><div class="grab"></div>${abCard('workingTogether')}
+		<div class="row"><span class="btn out">Remove</span><span class="btn pri">Done</span></div></div>`);
+}
+
+// =================================================================== home
+function home() {
+	return `<div class="home">
+		<div class="tb"><span class="hbtn">${ic('grid')}All games</span><span style="margin-left:auto">${themeToggle()}</span></div>
+		<div class="homecol"><div class="card hero">${skyArt(TILE, 'band', 'home')}
+			<div class="hh"><h1>Sky Team</h1><p>Two pilots, one landing. Place your dice without a word.</p></div>
+			<div class="form"><div><label>Your name</label><div class="inp">Alex</div></div>
+				<span class="btn pri big">Host a game</span>
+				<div class="or">or</div>
+				<div><label>Game code</label><div class="grow-row"><div class="inp mono">K7QM</div><span class="btn big" style="padding:0 24px">Join</span></div></div></div></div>
+		<div class="card"><h3>Continue</h3><div class="gamerow"><div class="c"><b class="mono">R4TX</b><span>Alex, 22 Oct 21:40</span></div><span class="bdg">Playing</span></div></div></div>
+	</div>`;
 }
 
 // =================================================================== tiles
@@ -1047,52 +1343,110 @@ function deepArt() {
 		<g transform="translate(166 84)" fill="var(--deep-temple)"><path d="M-27 -2a27 27 0 0 1 54 0z"/><rect x="-34" y="-2" width="68" height="5"/>${[-28, -17, -6, 5, 16, 27].map((c) => `<rect x="${c - 1.5}" y="3" width="4.5" height="20"/>`).join('')}</g>
 		<g transform="translate(92 12) rotate(22) scale(2.05)"><rect x="4.5" y="4.6" width="9" height="3.6" rx="1.8" fill="currentColor"/><rect x="1.5" y="9.5" width="13" height="8" rx="4" fill="currentColor"/><circle cx="15" cy="13.5" r="5.2" fill="currentColor"/><circle cx="15.6" cy="13.3" r="3.6" fill="var(--deep-ink)"/></g></svg>`;
 }
-/* Sky Team: the attitude indicator, banked over the horizon, a blue and an orange die on the glare shield. */
-function skyArt(id) {
-	return `<svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice">
-		<defs><linearGradient id="sk${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-sky-top)"/><stop offset="1" stop-color="var(--sky-sky)"/></linearGradient></defs>
-		<g transform="rotate(-9 120 54)">
-			<rect x="-40" y="-60" width="320" height="114" fill="url(#sk${id})"/>
-			<rect x="-40" y="54" width="320" height="120" fill="var(--sky-earth)"/>
-			<path d="M-40 54H280" stroke="white" stroke-width="1.6"/>
-			<g stroke="white" stroke-opacity=".7" stroke-width="1.2"><path d="M108 40h24M112 26h16M108 68h24M112 82h16"/></g>
-		</g>
-		<g fill="none" stroke="var(--sky-wings)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M86 56h20l6 7M154 56h-20l-6 7"/></g>
-		<circle cx="120" cy="56" r="3.6" fill="var(--sky-wings)"/>
-		<g transform="translate(176 62) rotate(-8)"><rect width="24" height="24" rx="5" fill="var(--sky-pilot)"/><circle cx="7" cy="7" r="2.2" fill="white"/><circle cx="17" cy="17" r="2.2" fill="white"/><circle cx="12" cy="12" r="2.2" fill="white"/></g>
-		<g transform="translate(206 70) rotate(10)"><rect width="22" height="22" rx="5" fill="var(--sky-copilot)"/><circle cx="6.5" cy="6.5" r="2" fill="#2a1a0e"/><circle cx="15.5" cy="15.5" r="2" fill="#2a1a0e"/></g>
-	</svg>`;
+/* The airliner head-on, as on the box and the screens: white fuselage with a blue belly, swept wings,
+   engines glowing orange inside, landing lights on. Drawn around (0, 0), wingspan 72. */
+function headOn(lights = true) {
+	return `<path d="M-36 -3.5 -7 .4h14L36 -3.5v2L7 3.2H-7L-36 -1.5z" fill="var(--sky-plane)"/>
+		<path d="M-14 -12.5-2 -10.6h4l12 -1.9v1.2L2 -8.6h-4l-12 -2.7z" fill="var(--sky-plane)"/>
+		<rect x="-1.4" y="-24" width="2.8" height="15" rx="1.3" fill="var(--sky-plane)"/><rect x="-1.4" y="-24" width="2.8" height="5" rx="1.3" fill="var(--sky-engine-glow)"/>
+		<circle r="8.6" fill="var(--sky-plane)"/><path d="M-8.6 0a8.6 8.6 0 0 0 17.2 0z" fill="var(--sky-belly)"/>
+		<path d="M-5.4 -3.4Q0 -6 5.4 -3.4l-.6 1.5Q0 -4 -4.8 -1.9z" fill="var(--sky-engine)"/>
+		${[-17, 17].map((x) => `<g transform="translate(${x} 5.5)"><circle r="5.2" fill="var(--sky-plane-shade)"/><circle r="4.2" fill="var(--sky-engine)"/><circle r="2" fill="var(--sky-engine-glow)"/></g>`).join('')}
+		${lights ? [-6.5, 6.5].map((x) => `<circle cx="${x}" cy="4.6" r="5" fill="var(--sky-lights)" opacity=".35"/><circle cx="${x}" cy="4.6" r="1.5" fill="var(--sky-lights)"/>`).join('') : ''}`;
 }
+const planeTop = (tf) => `<g transform="${tf}"><path d="${I.plane.match(/d="([^"]+)"/)[1]}" fill="var(--sky-plane)" stroke="var(--sky-belly)" stroke-width=".5"/><circle cx="2.8" cy="14.6" r=".9" fill="var(--sky-nav-red)"/><circle cx="21.2" cy="14.6" r=".9" fill="var(--sky-nav-green)"/></g>`;
+/* Three options for the tile art (viewBox 240 × 100, sliced: the phone tile shows x 70–170).
+   kind 'band' is the home card's strip: a wider, flatter cut of the same scene. */
+function skyArt(opt, kind, id) {
+	const vb = kind === 'band' ? '-40 12 320 70' : '0 0 240 100';
+	const cls = kind === 'band' ? 'class="band"' : '';
+	if (opt === 'a') {
+		return `<svg ${cls} viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+			<defs><linearGradient id="a${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-haze)"/></linearGradient></defs>
+			<rect x="-60" y="-10" width="360" height="130" fill="url(#a${id})"/>
+			<g fill="none" stroke-linecap="round">
+				<path d="M-60 74C0 40 60 98 128 64S220 30 300 56" stroke="var(--sky-cloud)" stroke-width="18" opacity=".9"/>
+				<path d="M-60 96C10 72 80 118 150 90S240 72 300 84" stroke="var(--sky-peach)" stroke-width="14" opacity=".85"/>
+				<path d="M-40 28C10 8 60 40 108 20" stroke="var(--sky-cloud)" stroke-width="8" opacity=".6"/>
+				<path d="M150 16C182 2 214 26 290 10" stroke="var(--sky-sun)" stroke-width="7" opacity=".75"/>
+			</g>
+			${planeTop('translate(120 50) rotate(42) scale(2.5) translate(-12 -12)')}</svg>`;
+	}
+	if (opt === 'c') {
+		return `<svg ${cls} viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+			<rect x="-60" y="-10" width="360" height="130" fill="var(--sky-pilot)"/>
+			<path d="M150 -10H300V120H82z" fill="var(--sky-copilot)"/>
+			<g fill="none" stroke-linecap="round"><path d="M-60 80C0 56 50 96 104 70" stroke="var(--sky-cloud)" stroke-width="10" opacity=".35"/><path d="M150 30C190 14 230 40 300 22" stroke="var(--sky-cloud)" stroke-width="9" opacity=".55"/></g>
+			<circle cx="196" cy="74" r="14" fill="var(--sky-cloud)" opacity=".6"/>
+			${planeTop('translate(120 50) rotate(38) scale(2.4) translate(-12 -12)')}</svg>`;
+	}
+	// b: final approach at sunrise, the runway lit, the airliner coming in over it
+	const dots = (side) => [0.06, 0.2, 0.36, 0.54, 0.74, 0.96].map((t) => `<circle cx="${(120 + side * (6 + 70 * t)).toFixed(1)}" cy="${(64 + 36 * t).toFixed(1)}" r="${(0.6 + 1.5 * t).toFixed(2)}" fill="var(--sky-lights)"/>`).join('');
+	return `<svg ${cls} viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+		<defs><linearGradient id="b${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset=".6" stop-color="var(--sky-haze)"/><stop offset="1" stop-color="var(--sky-sun)"/></linearGradient>
+		<radialGradient id="g${id}" cx=".5" cy="1" r=".7"><stop offset="0" stop-color="var(--sky-sun)"/><stop offset="1" stop-color="var(--sky-sun)" stop-opacity="0"/></radialGradient></defs>
+		<rect x="-60" y="-10" width="360" height="74" fill="url(#b${id})"/>
+		<ellipse cx="120" cy="64" rx="110" ry="30" fill="url(#g${id})"/>
+		<g fill="none" stroke-linecap="round"><path d="M-60 24C0 4 60 36 120 16S220 6 300 22" stroke="var(--sky-cloud)" stroke-width="9" opacity=".75"/><path d="M-60 44C10 30 50 54 96 42" stroke="var(--sky-peach)" stroke-width="6" opacity=".7"/><path d="M160 46C200 34 240 52 300 40" stroke="var(--sky-peach)" stroke-width="6" opacity=".7"/></g>
+		<rect x="-60" y="64" width="360" height="56" fill="var(--sky-ground)"/>
+		<path d="M115 64h10l72 40H43z" fill="var(--sky-runway)"/>
+		<path d="M120 66V104" stroke="var(--sky-lights)" stroke-width="1.3" stroke-dasharray="2.5 3.5" opacity=".8"/>
+		${dots(-1)}${dots(1)}
+		<g transform="translate(120 39) scale(1.22)">${headOn()}</g></svg>`;
+}
+const TILE_OPTS = {
+	a: ['A: Through the clouds', 'The box cover’s sky: cyan with the cream and peach cloud swirls, the airliner from above, banking through them. Nav lights at the wingtips.'],
+	b: ['B: Final approach', 'The box’s bottom half and the Co-Pilot screen: sunrise over the lit runway, the airliner head-on with its landing lights. Says "landing" at a glance; at night the runway lights carry it.'],
+	c: ['C: Two screens', 'The two player screens side by side, Pilot blue and Co-Pilot amber, the airliner crossing between them. Says "two players"; boldest of the three, least like the box art.']
+};
+const REC = 'b';
+const TILE = new URLSearchParams(location.search).get('tile') || REC;
 const chev = `<span class="chev">${ic('chevR')}</span>`;
+const SKY_TXT = ['Sky Team', '2 players', 'Land the plane together, one die at a time.', 'Cooperative dice placement for a pilot and a co-pilot: 23 scenarios at 12 airports, without talking about your dice.'];
+const shelfTile = (c, n, p, tag, art) => `<div class="tile ${c}"><div class="art">${art}</div><div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1"><h2>${n}</h2><span class="pl2">${p}</span><p>${tag}</p></div>${chev}</div>`;
+const wallTile = (c, n, p, desc, art, cls = '') => `<div class="tile ${c} ${cls}"><div class="art">${art}</div><div class="txt"><h2>${n}</h2><span class="pl2">${p}</span><p>${desc}</p></div></div>`;
 function tiles(kind) {
 	const t = [
 		['t-crew', 'The Crew', '2–5 players', 'Trick-taking through 50 missions, without talking.', 'Cooperative trick-taking through 50 missions. No talking about your cards.', crewArt()],
 		['t-deep', 'The Crew: Mission Deep Sea', '2–5 players', 'Trick-taking missions with task cards on the ocean floor.', 'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.', deepArt()],
-		['t-sky', 'Sky Team', '2 players', 'Land the plane together, one die at a time.', 'Cooperative dice placement for a pilot and a co-pilot: land at 21 airports without talking about your dice.', skyArt(kind)]
+		['t-sky', ...SKY_TXT, skyArt(TILE, 'tile', kind)]
 	];
-	if (kind === 'shelf') {
-		return `<div class="stpage"><div class="shelf">${t.map(([c, n, p, tag, , art]) => `<div class="tile ${c}"><div class="art">${art}</div><div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1"><h2>${n}</h2><span class="pl2">${p}</span><p>${tag}</p></div>${chev}</div>`).join('')}</div></div>`;
-	}
-	return `<div class="stpage"><div class="wall">${t.map(([c, n, p, , desc, art]) => `<div class="tile ${c}"><div class="art">${art}</div><div class="txt"><h2>${n}</h2><span class="pl2">${p}</span><p>${desc}</p></div></div>`).join('')}</div></div>`;
+	if (kind === 'shelf') return `<div class="stpage"><div class="shelf">${t.map(([c, n, p, tag, , art]) => shelfTile(c, n, p, tag, art)).join('')}</div></div>`;
+	return `<div class="stpage"><div class="wall">${t.map(([c, n, p, , desc, art]) => wallTile(c, n, p, desc, art)).join('')}</div></div>`;
+}
+function tileOptions() {
+	const [n, p, tag, desc] = SKY_TXT;
+	return `<div class="topts">${Object.entries(TILE_OPTS).map(([k, [title, why]]) => `<div class="topt ${k === TILE ? 'chosen' : ''}">
+		<h3>${title}${k === REC ? '<span class="rec">Recommended</span>' : ''}<a href="?tile=${k}#tiles">${k === TILE ? 'In the previews' : 'Use in previews'}</a></h3>
+		<p class="why">${why}</p>
+		${['lt', 'dk'].map((m) => `<div class="${m} stpage">${shelfTile('t-sky', n, p, tag, skyArt(k, 'tile', k + m + 's'))}</div>`).join('')}
+		${['lt', 'dk'].map((m) => `<div class="${m} stpage">${wallTile('t-sky', n, p, desc, skyArt(k, 'tile', k + m + 'w'), 'wcard')}</div>`).join('')}
+	</div>`).join('')}</div>`;
 }
 
 // =================================================================== screens and page
 const SCREENS = {
+	home: { name: 'Home (host or join), tile option ' + TILE.toUpperCase() + ' as its band', html: home, scroll: true },
 	'lobby-host': { name: 'Lobby, host', html: () => lobby('host'), scroll: true },
 	'lobby-picker': { name: 'Lobby, scenario picker', html: picker },
+	'lobby-module': { name: 'Lobby, a module chip tapped (Wind)', html: () => lobby('host', moduleSheet(), 'wind') },
+	'lobby-ability': { name: 'Lobby, an ability tapped: its card', html: abilityPick },
 	'lobby-guest': { name: 'Lobby, guest', html: () => lobby('guest'), scroll: true },
-	discussion: { name: 'Round start (discussion)', html: () => game('discussion'), game: true },
-	turn: { name: 'Your turn, die selected', html: () => game('turn'), game: true },
+	discussion: { name: 'Round start (discussion), token picked up', html: () => game('discussion'), game: true },
+	turn: { name: 'Your turn, die selected (radio aims at space 5)', html: () => game('turn'), game: true },
 	waiting: { name: 'Waiting for the partner', html: () => game('waiting'), game: true },
 	reroll: { name: 'Reroll step', html: () => game('reroll'), game: true },
 	tgu: { name: 'TGU red, most crowded', html: () => game('tgu'), game: true },
-	kef: { name: 'KEF black, most crowded', html: () => game('kef'), game: true },
+	kef: { name: 'KEF black, engines preview rings speed 10', html: () => game('kef'), game: true },
 	hnd: { name: 'HND red (Co-Pilot), most crowded', html: () => game('hnd'), game: true },
+	ability: { name: 'TGU, ability chip tapped: the same card', html: () => game('tgu', abilitySheetGame()), game: true },
 	final: { name: 'Final round, landing', html: () => game('final'), game: true },
 	won: { name: 'Game over, won', html: () => game('won'), game: true },
 	lost: { name: 'Game over, lost', html: () => game('lost'), game: true },
+	'tile-options': { name: 'Start-page tile options, light and dark, real size', html: tileOptions, w: 1280, h: 1060 },
 	'tile-shelf': { name: 'Start page, phone shelf', html: () => tiles('shelf') },
-	'tile-wall': { name: 'Start page, desktop tiles', html: () => tiles('wall'), w: 1280, h: 420 }
+	'tile-wall': { name: 'Start page, desktop tiles', html: () => tiles('wall'), w: 1280, h: 420 },
+	desktop: { name: 'Desktop, TGU red', html: () => game('tgu'), w: 1280, h: 800 }
 };
 
 // contrast check: oklch -> sRGB luminance
@@ -1125,20 +1479,23 @@ const frame = (key, w = 375, h = 812) => {
 	const sc = SCREENS[key];
 	return `<div class="frame ${sc.scroll ? 'scroll' : ''}" style="--fw:${sc.w ?? w}px;--fh:${sc.h ?? h}px">${sc.html()}</div>`;
 };
+// The scenario picker opens scrolled to the chosen scenario.
+const scrollPicker = () => document.querySelectorAll('#pick').forEach((p) => { const on = p.querySelector('.scn.on'); if (on) p.scrollTop = on.offsetTop - p.clientHeight / 2; });
 
 if (solo) {
 	document.body.classList.add('solo');
 	app.innerHTML = frame(solo).replace(/--fw:\d+px;--fh:\d+px/, '--fw:100vw;--fh:100dvh');
+	scrollPicker();
 } else {
 	const fig = (key, w, h, cap) => `<figure class="shot"><div class="fwrap" data-w="${SCREENS[key].w ?? w}">${frame(key, w, h)}</div><figcaption>${cap ?? SCREENS[key].name}${w && h ? ` (${w}×${h})` : ''} · <a href="?s=${key}">open</a></figcaption></figure>`;
 	const PAL = [
 		['Aluminium', '--panel', 'Panel, its column strips (--panel-strip)'],
-		['Instrument navy', '--well', 'Track and altitude cells, wells; primary in light mode'],
+		['Instrument navy', '--well', 'Track and altitude cells, wells, card banners; primary in light mode'],
 		['Pilot blue', '--pilot', 'Pilot dice (white numerals); spaces --pilot-well with --pilot-glow labels'],
 		['Co-Pilot orange', '--copilot', 'Co-Pilot dice (dark numerals); spaces --copilot-well with --copilot-glow labels'],
-		['Gauge black', '--gauge', 'Axis, speed and ice-marker strips, red crosses (--forbidden)'],
+		['Gauge black', '--gauge', 'Axis, speed and ice-marker strips, red crosses and the brake marker (--forbidden)'],
 		['Hazard yellow', '--hazard', 'Your plane marker, panel edge marks, turn-mask axis mark; never text'],
-		['Switch green', '--led', 'Deployed switches; landing checks'],
+		['Switch green', '--led', 'Deployed switches; the landing band on the speed scale'],
 		['Cockpit glow', '--glow', 'Primary in dark mode, focus rings, airport icon']
 	];
 	const pairs = [
@@ -1146,57 +1503,75 @@ if (solo) {
 		['--pilot-ink', '--pilot', 'Pilot numeral'], ['--copilot-ink', '--copilot', 'Co-Pilot numeral'],
 		['--pilot-glow', '--pilot-well', 'Pilot space label'], ['--copilot-glow', '--copilot-well', 'Co-Pilot space label'],
 		['--gauge-ink', '--gauge', 'gauge numbers'], ['--glow', '--well', 'track icons'], ['--ring', '--panel', 'legal ring on panel (mark)'],
-		['--led', '--led-off', 'LED on vs off (mark)'], ['--forbidden', '--gauge', 'red cross on gauge (mark)'], ['--pilot', '--pilot-well', 'Pilot die in its well (mark)'], ['--copilot', '--copilot-well', 'Co-Pilot die in its well (mark)'], ['--copilot', '--card', 'Co-Pilot die in the hand (edge ring added)']
+		['--led', '--led-off', 'LED on vs off (mark)'], ['--forbidden', '--gauge', 'red cross, brake marker on gauge (mark)'], ['--pilot', '--pilot-well', 'Pilot die in its well (mark)'], ['--copilot', '--copilot-well', 'Co-Pilot die in its well (mark)'], ['--copilot', '--card', 'Co-Pilot die in the hand (edge ring added)']
 	];
 	const gameKeys = Object.keys(SCREENS).filter((k) => SCREENS[k].game);
 	app.innerHTML = `<div class="doc">
 	<h1>Sky Team look</h1>
 	<p class="lede">Theme plan and mockup for the new app, layout concept A ("whole cockpit"). The look comes from the box: a brushed-aluminium control panel with navy instrument wells, Pilot spaces in deep blue with ice-blue numerals, Co-Pilot spaces in brick with backlit yellow numerals, black gauge strips with white numbers and red crosses, green switch LEDs, the navy approach and altitude tracks with cyan and yellow frames. The bold part is the dice and wells; page, cards and dialogs stay quiet shadcn.</p>
 
+	<h2>Round 2</h2>
+	<ul>
+		<li><b>Headers</b> are the other games' headers: lobby = Home, "Lobby", Leave / End game (or Close lobby alone) with labels, theme toggle; table = Home, code, connection dot, the scenario (like The Crew's "Mission 12"), then Rules, Give up and the theme toggle as icons. No "All games" bar on game pages (it stays on home and join). The round sits on the altitude track, so the header doesn't repeat it.</li>
+		<li><b>No narration line.</b> Whose turn moved into the dice tray ("Your turn" with the ring, "Sam's turn"; waiting says "Waiting for Sam" on the disabled Place button). The effect preview moved onto the board: the radio's target space gets a ring, an engine die rings the resulting speed on the scale, the selected space gets the dashed target. Reasons for dimmed spaces show on tap (a toast). The freed row makes the spaces 45 px (were 42) and the dice 52 px at 630 px height.</li>
+		<li><b>The chip row</b> holds only the scenario's extras: kerosene, wind and the ability cards (a tiny card each, ticked once used). Each chip opens its rules. It is absent in scenarios without modules or abilities, and it no longer turns into a landing checklist: in the final round the open conditions show where they live (switches still up get a red LED with a cross, the axis 0 gets a green frame, the speed scale shows the landing band).</li>
+		<li><b>Axis, speed, brakes</b> redrawn after the board: the axis is −2 … +2 between the red crosses, blue half and orange half, with the head-on aircraft symbol banked on the current position (also the axis spaces' icon). Speed is the printed scale 2 … 12 with the blue and orange markers between the numbers and the movement (hold, one, two chevrons) under each band; in round 7 the same scale shows the landing band and the red brake marker. Brakes show the red marker in its slot, no "land ≤" box.</li>
+		<li><b>Reroll tokens</b> are one piece everywhere: a navy disc with a blue and orange ring and the reroll arrows, like the physical token. On the altitude track on their round, in the supply on the reroll button (bottom right, with the count), on a die being rerolled, and in the discussion tray when picked up. Altitudes read 6k … 1k; label, arrow and token have fixed places, so nothing shifts.</li>
+		<li><b>Scenario picker</b> rows: code, airport, module icons, ability count, no colour or module words (the group says the colour). The chosen scenario shows its approach and altitude tracks with the table's own pieces, and module chips that open the module's rules.</li>
+		<li><b>Ability cards</b> after the physical cards: navy banner, a worked example, numbered steps. The same card opens from the lobby tile (Pick) and from the table's chip (refresher, and Start for Working Together).</li>
+		<li><b>Game over</b> lists the conditions as short chips. <b>Desktop</b> uses the right column for the full ability cards and lets the tracks fill the height.</li>
+	</ul>
+
 	<h2>Palette</h2>
 	<table><tr><th></th><th>Name</th><th>Token</th><th>Role</th></tr>
 	${PAL.map(([n, t, r]) => `<tr><td><span class="sw" style="background:var(${t})"></span></td><td>${n}</td><td class="mono">${t}</td><td>${r}</td></tr>`).join('')}</table>
-	<p>Scenario colours (--level-green/yellow/red/black) mark difficulty as on the track headers, always next to the scenario name. Intern tokens are their own green disc (--intern), traffic die black (--traffic), plane tokens white (--plane).</p>
+	<p>Scenario colours (--level-green/yellow/red/black) mark difficulty as on the track headers, always next to the scenario code. Intern tokens are their own green disc (--intern), traffic die black (--traffic), plane tokens white (--plane).</p>
 	<h3>Contrast in this mode (switch the system theme or add <span class="mono">?theme=dark</span>)</h3>
 	<table><tr><th>Pair</th><th>Use</th><th>Ratio</th></tr>${pairs.map(([f, b, u]) => `<tr><td class="mono">${f} on ${b}</td><td>${u}</td><td>${contrast(f, b)}:1</td></tr>`).join('')}</table>
 
 	<h2>Type</h2>
-	<p><span class="display" style="font-size:28px;font-weight:700">Saira</span> (variable, width 112 %, weights 600–800): the display face for the game title, airport codes, altitudes, die numerals and space values, close to the board's wide avionics lettering. <span style="font-size:20px;font-weight:600">IBM Plex Sans</span> (variable): all UI text and numbers, sentence case, tabular figures; the technical-manual voice of a cockpit. Fontsource: <span class="mono">@fontsource-variable/saira</span>, <span class="mono">@fontsource-variable/ibm-plex-sans</span>. Neither is used by another app. Game codes stay mono (shared).</p>
+	<p><span class="display" style="font-size:28px;font-weight:700">Saira</span> (variable, width 112 %, weights 600–800): the display face for the game title, airport codes, altitudes, die numerals and space values, close to the board's wide avionics lettering; the speed scale uses its 75 % width. <span style="font-size:20px;font-weight:600">IBM Plex Sans</span> (variable): all UI text and numbers, sentence case, tabular figures; the technical-manual voice of a cockpit. Fontsource: <span class="mono">@fontsource-variable/saira</span>, <span class="mono">@fontsource-variable/ibm-plex-sans</span>. Neither is used by another app. Game codes stay mono (shared).</p>
 
 	<h2>Dice and spaces at real size</h2>
 	<div class="screen" style="display:block;height:auto;padding:0">
-		<div class="dies" style="--die:50px">
+		<div class="dies" style="--die:52px">
 			<span class="die P">1</span><span class="die P">6</span><span class="die C">3</span><span class="die C">5</span><span class="die T">4</span>
-			<span class="die P sel">2</span><span class="die C sel">4<span class="mod">+1</span></span>
+			<span class="die P sel">2</span><span class="die C sel">4<span class="mod">+1</span></span>${rtok()}<span style="--rt:24px;display:contents">${rtok()}</span>
 		</div>
-		<p class="lede" style="font-size:14px">Hand dice 50 px (56 at 812 px height): blue with white numerals, orange with dark numerals (as the physical dice, so colour is not the only carrier), black traffic die. Selected: lifted with a ring; coffee shows as a badge.</p>
-		<div class="panel" style="width:auto;display:inline-flex;--cell:44px">
+		<p class="lede" style="font-size:14px">Hand dice 52 px (56 at 812 px height): blue with white numerals, orange with dark numerals (as the physical dice, so colour is not the only carrier), black traffic die. Selected: lifted with a ring; coffee shows as a badge. The reroll token at its two sizes.</p>
+		<div class="panel" style="width:auto;display:inline-flex;--cell:45px">
 			<div class="pcol">${['radioPilot', 'gear12', 'gear34'].map((id) => space(id, { ...BASE, sw: ['gear12'], placed: { gear34: ['P', 3] } })).join('')}</div>
 			<div class="pmid" style="flex:none">
 				<div class="prow">${['conc1', 'kerosene', 'internPilot'].map((id) => space(id, { ...BASE })).join('')}</div>
-				<div class="prow">${space('conc2', { ...BASE, placed: { conc2: ['T', 4] } })}${space('axisPilot', { ...BASE, placed: { axisPilot: ['I', 5] } })}${space('brakes2', { ...BASE, legal: ['brakes2'] })}</div>
+				<div class="prow">${space('conc2', { ...BASE, placed: { conc2: ['T', 4] } })}${space('axisPilot', { ...BASE, placed: { axisPilot: ['I', 5] } })}${space('axisCopilot', { ...BASE, legal: ['axisCopilot'] })}</div>
 				<div class="prow">${space('brakes4', { ...BASE, target: 'brakes4', legal: ['brakes4'] })}${space('conc3', { ...BASE, placed: { conc3: ['C', 6] }, last: 'conc3' })}${space('brakes6', { ...BASE, sw: ['brakes6'] })}</div>
 			</div>
 			<div class="pcol">${['radioCopilot1', 'flaps12', 'flaps23'].map((id) => space(id, { ...BASE, sw: ['flaps12'], placed: { flaps23: ['C', 2] } })).join('')}</div>
 		</div>
-		<p class="lede" style="font-size:14px">Spaces 44 px at 375×630 (48 px at 812, 60 on desktop). Wells carry an icon (axis, engine, radio, coffee, fuel, intern) or the printed value (gear, flaps, brakes, ice) in the glow colour; a corner LED shows the switch. A placed piece fills the well: die, black traffic die, green intern disc. Legal spaces for the selected die get the ring, the tapped one a thicker ring and a dashed inset; the partner's last placement a cyan dot and ring.</p>
+		<p class="lede" style="font-size:14px">Spaces 45 px at 375×630 (48 px at 812, 64 on desktop). Wells carry an icon (axis aircraft, engine, radio, coffee, fuel, intern) or the printed value (gear, flaps, brakes, ice) in the glow colour; a corner LED shows the switch. A placed piece fills the well: die, black traffic die, green intern disc. Legal spaces for the selected die get the ring, the tapped one a thicker ring and a dashed inset; the partner's last placement a cyan dot and ring.</p>
 	</div>
 
-	<h2>Start-page tile</h2>
-	<p>Art: the attitude indicator from the middle of the board, banked over sky and earth, hazard-yellow aircraft symbol, a blue and an orange die. Name in Saira, instrument navy (light) or the backlit yellow of the Co-Pilot numerals (dark; cyan would collide with The Crew's dark tile). Shown next to The Crew and Deep Sea as they are today.</p>
-	<div class="gallery">${fig('tile-shelf', 375, 420)}</div>
-	<div class="gallery">${fig('tile-wall', 1280, 420)}</div>
+	<h2 id="tiles">Start-page tile: options</h2>
+	<p>Three box-inspired arts, each as the phone shelf tile and the desktop card, light and dark, at real size. "Use in previews" puts an option into the start-page previews and the home screen's band below (<span class="mono">?tile=a|b|c</span>). Text fixed: 23 scenarios (21 from the flight log plus the two Düsseldorf promos) at 12 airports.</p>
+	<p><b>Recommendation: B, final approach.</b> It is the one picture that says what the game is about (getting the plane down), it uses the box's own sunrise palette, it stays legible at 88 px (runway lines and a head-on plane), its light tile is the only pale, warm one between the two navy Crew tiles, and its strip makes a good home band. A is prettier up close but reads as "a plane" rather than "landing"; C is the most graphic but the least like the box.</p>
+	<div class="gallery">${fig('tile-options', 1280, 1060)}</div>
+	<div class="gallery">${fig('tile-shelf', 375, 420)}${fig('tile-wall', 1280, 420)}</div>
+
+	<h2>Home</h2>
+	<p>The shared HomePage (as fox-duet and the-crew <span class="mono">routes/+page.svelte</span>): the hero card's top strip is the chosen tile's scene (a <span class="mono">HomeBand.svelte</span>), title in Saira, tagline, then the shared form and lists. The join page is the shared JoinPage, unchanged.</p>
+	<div class="gallery">${fig('home', 375, 812)}</div>
 
 	<h2>Lobby</h2>
-	<div class="gallery">${['lobby-host', 'lobby-picker', 'lobby-guest'].map((k) => fig(k, 375, 812)).join('')}</div>
+	<div class="gallery">${['lobby-host', 'lobby-picker', 'lobby-module', 'lobby-ability', 'lobby-guest'].map((k) => fig(k, 375, 812)).join('')}</div>
 
 	<h2>Game screen, 375×812</h2>
 	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 812)).join('')}</div>
 	<h2>Game screen, 375×630</h2>
 	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 630)).join('')}</div>
 	<h2>Desktop, 1280×800</h2>
-	<div class="gallery">${fig('tgu', 1280, 800)}</div>
+	<div class="gallery">${fig('desktop', 1280, 800)}</div>
 	</div>`;
+	scrollPicker();
 	const fit = () => document.querySelectorAll('.fwrap').forEach((w) => { w.style.zoom = Math.min(1, w.parentElement.parentElement.clientWidth / Number(w.dataset.w)); });
 	fit();
 	addEventListener('resize', fit);
