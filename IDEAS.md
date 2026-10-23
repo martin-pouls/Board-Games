@@ -11,7 +11,7 @@ Short list of games we might add. Not a plan: no rules have been checked against
 | Aeon's End | 1–4 | ~60 min | Cooperative deckbuilder | Large card pool, many effects | High |
 | Marvel Champions | 1–4 | 45–90 min | Cooperative Living Card Game | Huge card pool and effect system | Very high |
 
-Cheap wins first: the four trick-taking games (The Crew ×2, Sail, LOTR ×2) can share one trick-taking module of the domain (follow suit, trick winner, trump, goals checked per trick).
+Cheap wins first: the four trick-taking games (The Crew ×2, Sail) can share one trick-taking module of the domain (follow suit, trick winner, trump, goals checked per trick).
 
 ## Regicide Inferno
 
