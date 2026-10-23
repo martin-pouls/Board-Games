@@ -360,7 +360,7 @@ All acceptance runs from the repo root; "check" = `bash .claude/skills/check/che
 | 1 | done | 98f6613 | Lobby-only skeleton. `fixtures.test.ts` has a per-phase flag: flip playing/won/lost when their fixtures arrive. |
 | 2 | done | d2ba725 | Placeholder tile with neutral `--sky-*` tokens (the real tile comes in WP15); dependabot entry added. |
 | 3 | in progress | | Opus agent working in the main checkout (`sky-team/backend/internal/core/domain/**`), uncommitted. |
-| 14 | in progress | | Sonnet agent in worktree `.claude/worktrees/agent-a96c981cfeec49d1b`, uncommitted. |
+| 14 | done | d24720d | All 29 fixtures plus `presets`. **WP13 must use the error codes in `frontend/src/lib/errors.ts` verbatim** (snake_case of the §5.6 sentinels). Wire details beyond §6: `POST /api/games` body `{name, flight}`; `diePlaced.role` is null for the traffic die; `brakeLimit` is the highest speed that lands; `approach.position` 1-based; reroll supply + track + spent = 2. WP16: add a `preset` prop to `GameScreen` and pass `data.preset` (marked in `dev/fixtures/[name]/+page.svelte`); `fixtureLegal.ts` is for fixtures only. WP18/19: wire `flightPref.load()` into the home page's create call. |
 | 4–13 | open | | Backend track: 4 ∥ 5 after 3, 6 ∥ 7 after 3, then 8 → 9 → 12 → 13; 10 and 11 per §10. |
 | 15–18 | open | | Wait for mockup approval (checkpoint B). |
 | 19 | open | | |
