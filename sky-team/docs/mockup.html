@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sky Team look</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wdth,wght@85..100,300..700&family=Saira:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>
+/*
+ * Cockpit panel: a brushed-aluminium panel with navy instrument wells, Pilot spaces in deep blue
+ * with ice-blue numerals, Co-Pilot spaces in brick with backlit yellow numerals, black gauge strips,
+ * green switch LEDs. Dice are the bold part: blue with white numerals, orange with dark numerals,
+ * as the physical dice. By night the aluminium turns gunmetal and the glows carry the panel.
+ * Token names follow the future sky-team/frontend/src/routes/layout.css.
+ */
+:root {
+	--background: oklch(0.935 0.012 240);
+	--foreground: oklch(0.24 0.035 258);
+	--card: oklch(0.982 0.005 240);
+	--card-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.34 0.1 262);
+	--primary-foreground: oklch(0.975 0.008 240);
+	--secondary: oklch(0.895 0.016 240);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.895 0.016 240);
+	--muted-foreground: oklch(0.45 0.03 252);
+	--accent: oklch(0.9 0.02 240);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.54 0.2 27);
+	--border: oklch(0.3 0.04 255 / 17%);
+	--input: oklch(0.3 0.04 255 / 20%);
+	--ring: oklch(0.34 0.1 262);
+	--radius: 0.6rem;
+
+	/* Panel: brushed aluminium, its darker column strips, the hazard-yellow edge marks. */
+	--panel: oklch(0.835 0.02 238);
+	--panel-strip: oklch(0.765 0.022 240);
+	--hazard: oklch(0.84 0.16 92);
+	/* Instrument wells: navy, with the cyan glow of their frames and labels. */
+	--well: oklch(0.29 0.075 262);
+	--glow: oklch(0.84 0.1 222);
+	/* Pilot: die body and numeral, space and its label. */
+	--pilot: oklch(0.56 0.155 256);
+	--pilot-ink: oklch(0.985 0.005 250);
+	--pilot-well: oklch(0.31 0.115 263);
+	--pilot-glow: oklch(0.85 0.09 232);
+	/* Co-Pilot: die body and numeral (dark, as the physical dice), space and its backlit label. */
+	--copilot: oklch(0.73 0.165 55);
+	--copilot-ink: oklch(0.2 0.03 45);
+	--copilot-well: oklch(0.43 0.135 33);
+	--copilot-glow: oklch(0.9 0.14 90);
+	/* Gauge strips (axis, speed, ice marker): black with white numbers, red crosses. */
+	--gauge: oklch(0.21 0.012 255);
+	--gauge-ink: oklch(0.96 0.005 250);
+	--forbidden: oklch(0.6 0.21 27);
+	/* Switch LEDs: lit green when deployed, dark when not. */
+	--led: oklch(0.76 0.2 142);
+	--led-off: oklch(0.36 0.02 250);
+	/* Pieces: traffic die, intern token (its own green piece), plane tokens. */
+	--traffic: oklch(0.17 0.005 255);
+	--intern: oklch(0.52 0.11 165);
+	--plane: oklch(0.985 0.003 240);
+	/* Attitude indicator (start-page art, game over): sky and earth. */
+	--sky: oklch(0.72 0.11 232);
+	--earth: oklch(0.56 0.085 62);
+	/* Kerosene gauge: full green to empty red, as on the track. */
+	--fuel-full: oklch(0.72 0.17 145);
+	--fuel-empty: oklch(0.6 0.2 30);
+	/* Scenario colours (difficulty): green, yellow, red, black, with the ink on them. */
+	--level-green: oklch(0.78 0.17 128);
+	--level-yellow: oklch(0.84 0.16 88);
+	--level-red: oklch(0.6 0.2 30);
+	--level-black: oklch(0.25 0.01 255);
+	--online: oklch(0.62 0.16 150);
+	--new-card: oklch(0.6 0.14 210);
+	--shade: oklch(0.2 0.03 258 / 40%);
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--background: oklch(0.185 0.022 255);
+		--foreground: oklch(0.94 0.01 240);
+		--card: oklch(0.225 0.025 255);
+		--popover: var(--card);
+		--primary: oklch(0.83 0.1 222);
+		--primary-foreground: oklch(0.2 0.04 258);
+		--secondary: oklch(0.29 0.03 255);
+		--muted: oklch(0.27 0.028 255);
+		--muted-foreground: oklch(0.75 0.025 245);
+		--accent: oklch(0.3 0.03 255);
+		--destructive: oklch(0.68 0.19 25);
+		--border: oklch(0.9 0.02 240 / 14%);
+		--input: oklch(1 0 0 / 14%);
+		--ring: oklch(0.83 0.1 222);
+		--panel: oklch(0.3 0.024 248);
+		--panel-strip: oklch(0.26 0.024 250);
+		--hazard: oklch(0.8 0.15 90);
+		--well: oklch(0.19 0.05 262);
+		--glow: oklch(0.82 0.11 222);
+		--pilot: oklch(0.55 0.16 256);
+		--pilot-ink: oklch(0.99 0.004 250);
+		--pilot-well: oklch(0.28 0.11 263);
+		--pilot-glow: oklch(0.83 0.1 232);
+		--copilot: oklch(0.74 0.165 56);
+		--copilot-ink: oklch(0.2 0.03 45);
+		--copilot-well: oklch(0.34 0.11 33);
+		--copilot-glow: oklch(0.88 0.15 90);
+		--gauge: oklch(0.13 0.01 255);
+		--gauge-ink: oklch(0.95 0.005 250);
+		--forbidden: oklch(0.66 0.2 27);
+		--led: oklch(0.8 0.2 142);
+		--led-off: oklch(0.4 0.02 250);
+		--traffic: oklch(0.1 0.005 255);
+		--intern: oklch(0.6 0.12 165);
+		--plane: oklch(0.97 0.003 240);
+		--sky: oklch(0.55 0.1 236);
+		--earth: oklch(0.45 0.07 60);
+		--fuel-full: oklch(0.72 0.17 145);
+		--fuel-empty: oklch(0.64 0.2 30);
+		--level-green: oklch(0.74 0.16 128);
+		--level-yellow: oklch(0.82 0.15 88);
+		--level-red: oklch(0.62 0.19 30);
+		--level-black: oklch(0.12 0.01 255);
+		--online: oklch(0.72 0.16 150);
+		--new-card: oklch(0.75 0.12 210);
+		--shade: oklch(0 0 0 / 55%);
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--background: oklch(0.185 0.022 255);
+	--foreground: oklch(0.94 0.01 240);
+	--card: oklch(0.225 0.025 255);
+	--popover: var(--card);
+	--primary: oklch(0.83 0.1 222);
+	--primary-foreground: oklch(0.2 0.04 258);
+	--secondary: oklch(0.29 0.03 255);
+	--muted: oklch(0.27 0.028 255);
+	--muted-foreground: oklch(0.75 0.025 245);
+	--accent: oklch(0.3 0.03 255);
+	--destructive: oklch(0.68 0.19 25);
+	--border: oklch(0.9 0.02 240 / 14%);
+	--input: oklch(1 0 0 / 14%);
+	--ring: oklch(0.83 0.1 222);
+	--panel: oklch(0.3 0.024 248);
+	--panel-strip: oklch(0.26 0.024 250);
+	--hazard: oklch(0.8 0.15 90);
+	--well: oklch(0.19 0.05 262);
+	--glow: oklch(0.82 0.11 222);
+	--pilot: oklch(0.55 0.16 256);
+	--pilot-ink: oklch(0.99 0.004 250);
+	--pilot-well: oklch(0.28 0.11 263);
+	--pilot-glow: oklch(0.83 0.1 232);
+	--copilot: oklch(0.74 0.165 56);
+	--copilot-ink: oklch(0.2 0.03 45);
+	--copilot-well: oklch(0.34 0.11 33);
+	--copilot-glow: oklch(0.88 0.15 90);
+	--gauge: oklch(0.13 0.01 255);
+	--gauge-ink: oklch(0.95 0.005 250);
+	--forbidden: oklch(0.66 0.2 27);
+	--led: oklch(0.8 0.2 142);
+	--led-off: oklch(0.4 0.02 250);
+	--traffic: oklch(0.1 0.005 255);
+	--intern: oklch(0.6 0.12 165);
+	--plane: oklch(0.97 0.003 240);
+	--sky: oklch(0.55 0.1 236);
+	--earth: oklch(0.45 0.07 60);
+	--fuel-full: oklch(0.72 0.17 145);
+	--fuel-empty: oklch(0.64 0.2 30);
+	--level-green: oklch(0.74 0.16 128);
+	--level-yellow: oklch(0.82 0.15 88);
+	--level-red: oklch(0.62 0.19 30);
+	--level-black: oklch(0.12 0.01 255);
+	--online: oklch(0.72 0.16 150);
+	--new-card: oklch(0.75 0.12 210);
+	--shade: oklch(0 0 0 / 55%);
+	color-scheme: dark;
+}
+
+/* Start page tokens for the new tile (go into start-page/frontend/src/routes/layout.css), plus the
+   two neighbours as they are today. */
+:root {
+	--st-background: oklch(0.955 0.008 250);
+	--st-foreground: oklch(0.22 0.02 255);
+	--st-muted: oklch(0.47 0.02 255);
+	--tile-shadow: oklch(0.2 0.03 255 / 9%);
+	--sky-tile: oklch(0.965 0.012 238);
+	--sky-fg: oklch(0.24 0.035 258);
+	--sky-text: oklch(0.34 0.1 262);
+	--sky-muted: oklch(0.47 0.03 252);
+	--sky-ring: oklch(0.34 0.1 262 / 28%);
+	--sky-sky: oklch(0.74 0.1 232);
+	--sky-sky-top: oklch(0.58 0.12 245);
+	--sky-earth: oklch(0.58 0.085 62);
+	--sky-wings: oklch(0.86 0.16 92);
+	--sky-pilot: oklch(0.53 0.155 256);
+	--sky-copilot: oklch(0.73 0.165 55);
+	--crew-tile: oklch(0.96 0.015 270);
+	--crew-ink: oklch(0.32 0.11 275);
+	--crew-accent: oklch(0.7 0.17 40);
+	--crew-text: oklch(0.52 0.17 35);
+	--crew-planet: oklch(0.24 0.08 275);
+	--deep-tile: oklch(0.96 0.018 222);
+	--deep-ink: oklch(0.3 0.07 232);
+	--deep-accent: oklch(0.56 0.165 42);
+	--deep-text: oklch(0.52 0.16 42);
+	--deep-sub: oklch(0.8 0.16 85);
+	--deep-beam: oklch(0.9 0.1 200);
+	--deep-temple: oklch(0.22 0.06 240);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--st-background: oklch(0.17 0.012 255);
+		--st-foreground: oklch(0.95 0.005 250);
+		--st-muted: oklch(0.74 0.015 250);
+		--tile-shadow: oklch(0 0 0 / 35%);
+		--sky-tile: oklch(0.215 0.03 256);
+		--sky-fg: oklch(0.95 0.008 240);
+		--sky-text: oklch(0.87 0.13 88);
+		--sky-muted: oklch(0.75 0.025 245);
+		--sky-ring: oklch(0.83 0.1 222 / 28%);
+		--sky-sky: oklch(0.5 0.1 238);
+		--sky-sky-top: oklch(0.3 0.08 258);
+		--sky-earth: oklch(0.42 0.07 58);
+		--sky-wings: oklch(0.84 0.15 90);
+		--sky-pilot: oklch(0.55 0.16 256);
+		--sky-copilot: oklch(0.74 0.165 56);
+		--crew-tile: oklch(0.2 0.05 265);
+		--crew-ink: oklch(0.26 0.08 268);
+		--crew-accent: oklch(0.82 0.12 210);
+		--crew-text: oklch(0.84 0.11 210);
+		--crew-planet: oklch(0.17 0.05 270);
+		--deep-tile: oklch(0.19 0.04 240);
+		--deep-ink: oklch(0.22 0.06 242);
+		--deep-accent: oklch(0.76 0.15 58);
+		--deep-text: oklch(0.8 0.14 60);
+		--deep-sub: oklch(0.86 0.16 90);
+		--deep-beam: oklch(0.85 0.12 200);
+		--deep-temple: oklch(0.14 0.04 245);
+	}
+}
+:root[data-theme="dark"] {
+	--st-background: oklch(0.17 0.012 255);
+	--st-foreground: oklch(0.95 0.005 250);
+	--st-muted: oklch(0.74 0.015 250);
+	--tile-shadow: oklch(0 0 0 / 35%);
+	--sky-tile: oklch(0.215 0.03 256);
+	--sky-fg: oklch(0.95 0.008 240);
+	--sky-text: oklch(0.87 0.13 88);
+	--sky-muted: oklch(0.75 0.025 245);
+	--sky-ring: oklch(0.83 0.1 222 / 28%);
+	--sky-sky: oklch(0.5 0.1 238);
+	--sky-sky-top: oklch(0.3 0.08 258);
+	--sky-earth: oklch(0.42 0.07 58);
+	--sky-wings: oklch(0.84 0.15 90);
+	--sky-pilot: oklch(0.55 0.16 256);
+	--sky-copilot: oklch(0.74 0.165 56);
+	--crew-tile: oklch(0.2 0.05 265);
+	--crew-ink: oklch(0.26 0.08 268);
+	--crew-accent: oklch(0.82 0.12 210);
+	--crew-text: oklch(0.84 0.11 210);
+	--crew-planet: oklch(0.17 0.05 270);
+	--deep-tile: oklch(0.19 0.04 240);
+	--deep-ink: oklch(0.22 0.06 242);
+	--deep-accent: oklch(0.76 0.15 58);
+	--deep-text: oklch(0.8 0.14 60);
+	--deep-sub: oklch(0.86 0.16 90);
+	--deep-beam: oklch(0.85 0.12 200);
+	--deep-temple: oklch(0.14 0.04 245);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+	background: var(--background);
+	color: var(--foreground);
+	font-family: 'IBM Plex Sans', system-ui, sans-serif;
+	font-size: 16px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+.display { font-family: 'Saira', 'IBM Plex Sans', sans-serif; font-stretch: 112%; }
+.mono { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; }
+svg.i { width: 16px; height: 16px; flex: none; }
+
+/* ---------------- plan document ---------------- */
+.doc { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+.doc h1 { font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 32px; line-height: 1.15; margin: 0 0 8px; font-weight: 700; }
+.doc h2 { font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 22px; margin: 48px 0 8px; font-weight: 700; }
+.doc h3 { font-size: 16px; margin: 20px 0 6px; }
+.doc p, .doc li { max-width: 74ch; }
+.doc .lede { color: var(--muted-foreground); }
+.doc table { border-collapse: collapse; font-size: 14px; margin: 8px 0 16px; display: block; overflow-x: auto; max-width: 100%; }
+.doc th, .doc td { border-bottom: 1px solid var(--border); padding: 6px 12px 6px 0; text-align: left; vertical-align: top; }
+.doc th { color: var(--muted-foreground); font-weight: 600; }
+.sw { display: inline-block; width: 28px; height: 28px; border-radius: 6px; vertical-align: middle; border: 1px solid var(--border); }
+.gallery { display: flex; flex-wrap: wrap; gap: 24px 20px; margin-top: 16px; align-items: flex-start; }
+.shot { display: flex; flex-direction: column; gap: 6px; max-width: 100%; margin: 0; }
+.shot figcaption { font-size: 13px; color: var(--muted-foreground); max-width: 375px; }
+.frame {
+	width: var(--fw, 375px); height: var(--fh, 812px);
+	container-type: size; overflow: hidden; position: relative;
+	background: var(--background); color: var(--foreground);
+	border: 1px solid var(--border); border-radius: 22px;
+}
+.frame.scroll { overflow-y: auto; scrollbar-width: none; }
+.solo .frame { border: 0; border-radius: 0; }
+.dies { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* ---------------- game screen ---------------- */
+.screen {
+	--g: 12px;
+	--cell: 42px;
+	--die: 50px;
+	--gap: 4px;
+	--tok: 20px;
+	height: 100%;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto auto auto 1fr auto auto auto;
+	grid-template-areas: "head" "track" "mods" "panel" "status" "hand" "action";
+	gap: 6px;
+	padding: 12px var(--g) max(12px, env(safe-area-inset-bottom));
+	font-size: 14px; line-height: 1.25;
+	font-variant-numeric: tabular-nums;
+	position: relative;
+}
+@container (min-height: 740px) {
+	.screen { --cell: 48px; --die: 56px; --gap: 5px; gap: 12px; }
+}
+
+/* header row: 32 px, as the shared headerRow */
+.hd { grid-area: head; display: flex; align-items: center; gap: 6px; height: 32px; margin: -4px -8px 0; padding: 0 0 0 8px; white-space: nowrap; font-size: 14px; }
+.hd .code { font-weight: 600; letter-spacing: .15em; font-size: 16px; }
+.hd .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--online); }
+.hd .rnd { color: var(--muted-foreground); }
+.hd .rnd b { color: var(--foreground); font-weight: 700; }
+.hb { width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted-foreground); border-radius: 8px; }
+.lvl { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px 0 6px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: 'Saira', sans-serif; font-stretch: 112%; color: var(--gauge-ink); background: var(--well); }
+.lvl::before { content: ""; width: 4px; height: 12px; border-radius: 2px; background: var(--c); }
+.lvl.green { --c: var(--level-green); } .lvl.yellow { --c: var(--level-yellow); } .lvl.red { --c: var(--level-red); } .lvl.black { --c: oklch(0.9 0 0); }
+
+/* approach + altitude */
+.track { grid-area: track; display: flex; flex-direction: column; gap: 3px; }
+.ap { display: flex; gap: 3px; }
+.apc {
+	flex: 1; min-width: 0; height: 46px; border-radius: 6px; position: relative;
+	background: radial-gradient(120% 90% at 50% 100%, oklch(0.42 0.12 250), var(--well) 70%);
+	display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+	padding: 3px 1px 4px; color: var(--plane);
+}
+.apc.past { opacity: .35; }
+.apc.here { box-shadow: 0 0 0 2px var(--glow); }
+.apc.here::before { content: ""; position: absolute; top: -6px; left: 50%; translate: -50% 0; border: 6px solid transparent; border-top-color: var(--hazard); border-bottom: 0; filter: drop-shadow(0 1px 0 var(--well)); }
+.apc.aim { box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring); }
+.apc.here.aim { box-shadow: 0 0 0 2px var(--glow), 0 0 0 4px var(--ring); }
+.apc .apt { position: absolute; inset: 3px 0 auto; text-align: center; font-size: 12px; font-weight: 700; line-height: 13px; color: var(--glow); }
+.apc .apt svg { display: block; margin: 0 auto; width: 20px; height: 12px; }
+.tm { display: flex; gap: 1px; height: 10px; padding: 1px 2px; border-radius: 3px; background: var(--plane); }
+.tm i { width: 6px; height: 8px; position: relative; }
+.tm i.ok::after { content: ""; position: absolute; left: 0; top: 1px; border: 3px solid transparent; border-top: 5px solid var(--gauge); border-bottom: 0; opacity: .55; }
+.tm i.x::before, .tm i.x::after { content: ""; position: absolute; left: 2.5px; top: 0; width: 1.6px; height: 8px; background: var(--forbidden); rotate: 40deg; }
+.tm i.x::after { rotate: -40deg; }
+.tm i.cur { box-shadow: 0 2px 0 0 var(--hazard); }
+.tm.none { visibility: hidden; }
+.pl { display: flex; gap: 0; height: 14px; align-items: center; }
+.pl svg { width: 13px; height: 13px; fill: var(--plane); }
+.pl .n { font-size: 12px; font-weight: 700; margin-left: 1px; }
+.trf { display: flex; gap: 1px; height: 9px; }
+.trf i { width: 9px; height: 9px; border-radius: 2px; background: var(--plane); position: relative; }
+.trf i::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--traffic); }
+.alt { display: flex; gap: 3px; }
+.alc { flex: 1; height: 20px; border-radius: 4px; background: var(--well); color: var(--gauge-ink); font-size: 12px; font-family: 'Saira', sans-serif; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 0 0 1px var(--fp); opacity: .9; }
+.alc.P { --fp: var(--pilot-glow); }
+.alc.C { --fp: var(--copilot-glow); }
+.alc .ar { color: var(--fp); font-size: 11px; }
+.alc.cur { box-shadow: inset 0 0 0 2px var(--fp); background: oklch(from var(--well) calc(l + .08) c h); opacity: 1; }
+.alc.past { opacity: .4; }
+.alc svg { width: 11px; height: 11px; color: var(--glow); }
+
+/* chips: modules, abilities, landing checks */
+.mods { grid-area: mods; display: flex; gap: 4px; }
+.chip { height: 34px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; padding: 0 7px; font-size: 13px; white-space: nowrap; flex: none; min-width: 0; }
+.chip b { font-weight: 700; }
+.chip.grow { flex: 1 1 0; }
+.chip svg { color: var(--muted-foreground); }
+.fbar { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--fuel-empty), var(--hazard) 45%, var(--fuel-full)); position: relative; min-width: 34px; }
+.fbar i { position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: var(--foreground); box-shadow: 0 0 0 1.5px var(--card); }
+.ring { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--panel-strip); position: relative; flex: none; }
+.ring::after { content: ""; position: absolute; left: 50%; top: -1px; width: 2px; height: 9px; border-radius: 1px; background: var(--pilot); transform-origin: 50% 8px; transform: translateX(-50%) rotate(var(--rot)); }
+.chip .ab-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--foreground); flex: none; }
+.chip .ab-dot.used { background: var(--foreground); }
+.chip .abt { display: none; }
+.chip.ok { border-color: color-mix(in oklch, var(--led) 60%, transparent); }
+.chip .chk { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex: none; }
+.chip.ok .chk { background: var(--led); color: oklch(0.2 0.05 145); }
+.chip.open .chk { border: 2px solid var(--muted-foreground); }
+
+/* panel */
+.pwrap { grid-area: panel; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.panel {
+	display: flex; gap: 6px; align-items: stretch; justify-content: center; width: 100%;
+	padding: 5px; border-radius: 14px;
+	background:
+		repeating-linear-gradient(90deg, oklch(1 0 0 / 3%) 0 1px, transparent 1px 3px),
+		var(--panel);
+	box-shadow: inset 0 1px 0 oklch(1 0 0 / 22%), 0 1px 2px var(--shade);
+	position: relative;
+}
+.panel::before, .panel::after { content: ""; position: absolute; width: 3px; height: 34px; border-radius: 2px; background: var(--hazard); top: 50%; }
+.panel::before { left: -1px; } .panel::after { right: -1px; }
+.pcol { display: flex; flex-direction: column; gap: var(--gap); padding: 3px; margin: -3px; border-radius: 10px; background: var(--panel-strip); }
+.pmid { display: flex; flex-direction: column; gap: var(--gap); flex: 1 1 auto; min-width: 0; justify-content: flex-start; }
+.prow { display: flex; gap: var(--gap); align-items: center; justify-content: center; }
+.sp {
+	width: var(--cell); height: var(--cell); flex: none; border-radius: 9px; position: relative;
+	display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+	box-shadow: inset 0 2px 4px oklch(0 0 0 / 35%), inset 0 0 0 1px oklch(1 0 0 / 8%);
+	color: var(--lab);
+	font-size: 12px; line-height: 13px;
+}
+.sp.b { background: var(--pilot-well); --lab: var(--pilot-glow); }
+.sp.o { background: var(--copilot-well); --lab: var(--copilot-glow); }
+.sp.x { background: linear-gradient(135deg, var(--pilot-well) 50%, var(--copilot-well) 50%); --lab: var(--gauge-ink); }
+.sp .v { font-family: 'Saira', sans-serif; font-stretch: 105%; font-weight: 700; font-size: 16px; line-height: 16px; text-shadow: 0 0 6px color-mix(in oklch, var(--lab) 45%, transparent); }
+.sp .w { font-size: 12px; line-height: 12px; opacity: .85; }
+.sp svg { width: 18px; height: 18px; filter: drop-shadow(0 0 3px color-mix(in oklch, var(--lab) 40%, transparent)); }
+.led { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%; background: var(--led-off); box-shadow: 0 0 0 2px var(--panel-strip); display: grid; place-items: center; font-size: 9px; font-weight: 900; color: transparent; }
+.led.on { background: var(--led); color: oklch(0.22 0.06 145); box-shadow: 0 0 0 2px var(--panel-strip), 0 0 6px var(--led); }
+.sp.closed { opacity: .4; }
+.sp.closed .v { text-decoration: line-through; }
+/* dice and pieces on the panel */
+.pd { position: absolute; inset: 2px; border-radius: 8px; display: grid; place-items: center; font-family: 'Saira', sans-serif; font-stretch: 105%; font-weight: 700; font-size: 22px; line-height: 1; }
+.pd.P { background: linear-gradient(150deg, oklch(from var(--pilot) calc(l + .08) c h), var(--pilot) 60%); color: var(--pilot-ink); box-shadow: inset 0 -2px 0 oklch(0 0 0 / 20%), inset 0 0 0 1px oklch(1 0 0 / 30%); }
+.pd.C { background: linear-gradient(150deg, oklch(from var(--copilot) calc(l + .07) c h), var(--copilot) 60%); color: var(--copilot-ink); box-shadow: inset 0 -2px 0 oklch(0 0 0 / 18%); }
+.pd.T { background: linear-gradient(150deg, oklch(0.32 0.01 255), var(--traffic) 60%); color: var(--plane); box-shadow: inset 0 -2px 0 oklch(0 0 0 / 40%); }
+.pd.I { inset: 4px; border-radius: 50%; background: var(--intern); color: oklch(0.99 0 0); box-shadow: 0 0 0 2px oklch(1 0 0 / 70%); font-size: 18px; }
+.sp.last .pd { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--new-card); }
+.sp.last::after { content: ""; position: absolute; top: -4px; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--new-card); box-shadow: 0 0 0 2px var(--panel); z-index: 2; }
+/* selection */
+.selecting .sp:not(.legal):not(.has) { opacity: .42; }
+.selecting .sp.has:not(.target) { opacity: .9; }
+.sp.legal { outline: 2px solid var(--ring); outline-offset: 1px; }
+.sp.target { outline: 3px solid var(--ring); outline-offset: 2px; }
+.sp.target::before { content: ""; position: absolute; inset: 5px; border-radius: 6px; border: 2px dashed var(--lab); opacity: .9; }
+
+/* gauges inside the panel */
+.gauge { flex: 1; display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--gauge); color: var(--gauge-ink); height: var(--cell); align-items: stretch; min-width: 0; }
+.axg i { flex: 1; border-radius: 4px; display: grid; place-items: center; font-style: normal; font-size: 12px; font-family: 'Saira', sans-serif; font-weight: 700; color: oklch(from var(--gauge-ink) l c h / 40%); }
+.axg i.end { color: var(--forbidden); font-size: 14px; }
+.axg i.cur { background: var(--gauge-ink); color: var(--gauge); font-size: 14px; }
+.axg i.zero { box-shadow: inset 0 0 0 1px oklch(from var(--gauge-ink) l c h / 25%); }
+.spd { position: relative; }
+.spd div { flex: 1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 13px; }
+.spd div b { font-family: 'Saira', sans-serif; font-weight: 700; font-size: 14px; line-height: 15px; }
+.spd div span { font-size: 12px; opacity: .75; }
+.spd .mk { flex: none; width: 3px; border-radius: 2px; }
+.spd .mk.P { background: var(--pilot); box-shadow: 0 0 0 1px var(--pilot-glow); }
+.spd .mk.C { background: var(--copilot); }
+.spd .land b { color: var(--copilot-glow); }
+.rd { font-size: 12px; line-height: 13px; text-align: center; color: var(--foreground); min-width: 38px; }
+.rd b { display: block; font-family: 'Saira', sans-serif; font-weight: 700; font-size: 15px; line-height: 16px; }
+.rd .mkr { display: block; width: 10px; height: 10px; margin: 0 auto 2px; border-radius: 2px; background: var(--forbidden); }
+.arrow { color: var(--foreground); opacity: .5; font-size: 10px; }
+.icem { align-self: center; position: relative; width: calc(var(--cell) * 4 + var(--gap) * 3); height: 12px; border-radius: 6px; background: var(--gauge); }
+.icem i { position: absolute; top: -3px; width: 8px; height: 18px; margin-left: -4px; border-radius: 3px; background: var(--forbidden); box-shadow: 0 0 0 2px var(--panel); }
+.icem b { position: absolute; top: 0; width: var(--cell); text-align: center; font-size: 10px; line-height: 12px; color: oklch(from var(--gauge-ink) l c h / 55%); font-weight: 700; }
+.intern { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.toks { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--panel-strip); }
+.tok { width: var(--tok); height: var(--tok); border-radius: 50%; background: var(--intern); color: oklch(0.99 0 0); font-size: 12px; font-weight: 700; font-family: 'Saira', sans-serif; display: grid; place-items: center; }
+.tok.gone { background: transparent; box-shadow: inset 0 0 0 1.5px oklch(from var(--foreground) l c h / 25%); color: transparent; }
+.tok.nP { box-shadow: 0 0 0 2px var(--pilot); }
+.tok.nC { box-shadow: 0 0 0 2px var(--copilot); }
+
+/* status, hand, action */
+.status { grid-area: status; min-height: 30px; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 17px; }
+.pill { flex: none; height: 24px; padding: 0 10px; border-radius: 12px; display: inline-flex; align-items: center; font-weight: 600; font-size: 13px; background: var(--primary); color: var(--primary-foreground); }
+.pill.wait { background: var(--muted); color: var(--foreground); }
+.hand { grid-area: hand; display: flex; align-items: center; gap: 7px; padding: 7px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); position: relative; }
+.hand.mine { box-shadow: 0 0 0 2px var(--ring); border-color: transparent; }
+.hand .tab { position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: var(--me); }
+.die { width: var(--die); height: var(--die); border-radius: 11px; flex: none; display: grid; place-items: center; font-family: 'Saira', sans-serif; font-stretch: 105%; font-weight: 700; font-size: 27px; line-height: 1; position: relative; }
+.die.P { background: linear-gradient(150deg, oklch(from var(--pilot) calc(l + .09) c h), var(--pilot) 55%); color: var(--pilot-ink); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 22%), 0 1px 2px var(--shade); }
+.die.C { background: linear-gradient(150deg, oklch(from var(--copilot) calc(l + .07) c h), var(--copilot) 55%); color: var(--copilot-ink); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 18%), inset 0 0 0 1px oklch(0.45 0.12 45 / 55%), 0 1px 2px var(--shade); }
+.die.T { background: linear-gradient(150deg, oklch(0.34 0.01 255), var(--traffic) 55%); color: var(--plane); }
+.die.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
+.die.blank { color: transparent; opacity: .45; }
+.die.sel { translate: 0 -4px; box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring), 0 6px 10px var(--shade); }
+.die .mod { position: absolute; right: -7px; top: -9px; height: 18px; padding: 0 5px; border-radius: 9px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 700; line-height: 18px; background: var(--foreground); color: var(--background); }
+.die.rr::after { content: ""; position: absolute; inset: -5px; border-radius: 14px; border: 2px dashed var(--ring); }
+.die.rr .rri { position: absolute; right: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; }
+.die.rr .rri svg { width: 13px; height: 13px; }
+.die.locked { opacity: .6; }
+.partner { margin-left: auto; text-align: right; font-size: 13px; color: var(--muted-foreground); line-height: 16px; }
+.partner b { color: var(--foreground); font-size: 14px; }
+.fd { display: inline-flex; gap: 3px; margin-top: 4px; }
+.fd i { width: 13px; height: 13px; border-radius: 3px; background: var(--pc); }
+.fd i.out { background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
+.action { grid-area: action; display: flex; gap: 6px; align-items: center; height: 44px; }
+.btn { height: 44px; border-radius: 10px; border: 0; background: var(--secondary); color: var(--secondary-foreground); font: inherit; font-weight: 600; font-size: 15px; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.btn.pri { background: var(--primary); color: var(--primary-foreground); flex: 1; }
+.btn.out { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+.btn.dis { opacity: .45; }
+.btn.sq { width: 52px; padding: 0; gap: 3px; }
+.btn.sq b { font-weight: 700; }
+.stepper { display: flex; align-items: center; border-radius: 10px; height: 44px; background: var(--secondary); }
+.stepper .btn { width: 40px; padding: 0; background: transparent; font-size: 18px; }
+.stepper .val { min-width: 44px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; line-height: 15px; }
+.cups { display: inline-flex; gap: 2px; }
+.cups i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--foreground); }
+.cups i.f { background: var(--foreground); }
+
+/* sheets over the table: game over */
+.scrim { position: absolute; inset: 0; background: var(--shade); z-index: 4; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--card); border-radius: 18px 18px 0 0; padding: 10px 16px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -10px 30px var(--shade); }
+.sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto; }
+.sheet h2 { margin: 0; font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 26px; line-height: 1.1; font-weight: 700; }
+.sheet p { margin: 0; color: var(--muted-foreground); font-size: 15px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 2px 10px 2px 4px; border-radius: 12px; }
+.badge.won { background: color-mix(in oklch, var(--led) 25%, var(--card)); }
+.badge.lost { background: color-mix(in oklch, var(--destructive) 18%, var(--card)); }
+.badge .hz { width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: linear-gradient(var(--sky) 50%, var(--earth) 50%); rotate: var(--tilt, 0deg); }
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; }
+.checks div { display: flex; gap: 8px; align-items: center; }
+.checks .chk { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--led); color: oklch(0.2 0.05 145); flex: none; }
+.checks .chk.no { background: var(--destructive); color: oklch(0.99 0 0); }
+.reveal { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted-foreground); }
+.reveal .die { --die: 34px; font-size: 19px; border-radius: 8px; }
+.sheet .row { display: flex; gap: 8px; }
+
+/* ---------------- lobby ---------------- */
+.lobby { min-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 0; font-size: 15px; }
+.topbar { display: flex; align-items: center; height: 32px; margin: -4px -8px 4px; gap: 6px; font-size: 14px; color: var(--muted-foreground); }
+.topbar .lnk { display: flex; align-items: center; gap: 6px; padding: 0 8px; height: 32px; }
+.lhd { display: flex; align-items: center; height: 32px; margin: -4px -8px 0; gap: 4px; }
+.lhd h1 { margin: 0 0 0 8px; font-size: 18px; font-weight: 600; }
+.lhd .hbtn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; color: var(--muted-foreground); font-size: 14px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.card h3 { margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.card h3 .aside { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.share h2 { margin: 0; font-family: 'Saira', sans-serif; font-stretch: 112%; font-size: 26px; font-weight: 700; line-height: 1.1; }
+.share .cd { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
+.share .cd b { color: var(--foreground); font-size: 16px; letter-spacing: .2em; }
+.inp { height: 40px; border-radius: 9px; box-shadow: inset 0 0 0 1px var(--input); display: flex; align-items: center; padding: 0 10px; font-size: 15px; color: var(--muted-foreground); overflow: hidden; white-space: nowrap; }
+.seat { display: flex; align-items: center; gap: 10px; height: 44px; }
+.seat .role { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-family: 'Saira', sans-serif; font-weight: 700; font-size: 13px; }
+.seat .role.P { background: var(--pilot); color: var(--pilot-ink); }
+.seat .role.C { background: var(--copilot); color: var(--copilot-ink); }
+.seat .who { display: flex; flex-direction: column; line-height: 18px; }
+.seat .who span { font-size: 13px; color: var(--muted-foreground); }
+.scn { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; background: var(--well); color: var(--gauge-ink); min-height: 64px; }
+.scn .band { width: 8px; background: var(--c); flex: none; }
+.scn .body { flex: 1; display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-width: 0; }
+.scn .apc3 { font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: .02em; }
+.scn .nm { display: flex; flex-direction: column; min-width: 0; line-height: 18px; }
+.scn .nm span { font-size: 13px; opacity: .78; }
+.scn .ic { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.scn .ic span { min-width: 24px; padding: 0 3px; gap: 1px; height: 24px; display: inline-flex !important; align-items: center; justify-content: center; border-radius: 6px; background: var(--plane); color: var(--traffic); display: grid; place-items: center; font-size: 12px; font-weight: 800; font-family: 'Saira', sans-serif; }
+.scn .ic svg { width: 15px; height: 15px; }
+.scn .ic span svg:not(:only-child) { width: 11px; height: 11px; }
+.scn.sm { min-height: 52px; }
+.scn.sm .apc3 { font-size: 20px; width: 50px; }
+.scn.on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
+.green { --c: var(--level-green); } .yellow { --c: var(--level-yellow); } .red { --c: var(--level-red); } .black { --c: var(--level-black); }
+.black.scn .band { background: repeating-linear-gradient(45deg, var(--level-black) 0 4px, oklch(0.45 0 0) 4px 6px); }
+.abs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ab { border-radius: 10px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 0 0 1px var(--border); background: var(--card); position: relative; min-height: 92px; }
+.ab .t { display: flex; align-items: center; gap: 6px; }
+.ab .t b { font-family: 'Saira', sans-serif; font-stretch: 108%; font-weight: 700; font-size: 15px; }
+.ab .t .ck { margin-left: auto; width: 20px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--input); display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+.ab p { margin: 0; font-size: 13px; line-height: 17px; color: var(--muted-foreground); }
+.ab.on { box-shadow: inset 0 0 0 2px var(--ring); background: color-mix(in oklch, var(--primary) 7%, var(--card)); }
+.ab.on .ck { background: var(--primary); color: var(--primary-foreground); box-shadow: none; }
+.ab.off { opacity: .5; }
+.ab .band { height: 4px; border-radius: 2px; background: var(--well); margin: -2px 0 2px; }
+.ab.on .band { background: var(--primary); }
+.sticky { position: sticky; bottom: 0; margin: auto -12px 0; padding: 8px 12px max(8px, env(safe-area-inset-bottom)); background: color-mix(in oklch, var(--background) 85%, transparent); backdrop-filter: blur(8px); }
+.sticky .btn { height: 48px; width: 100%; font-size: 16px; }
+.sticky p { margin: 0 0 6px; text-align: center; font-size: 13px; color: var(--muted-foreground); }
+.picker .sheet { max-height: 86%; overflow: hidden; }
+.picker .list { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.grp { font-size: 13px; color: var(--muted-foreground); font-weight: 600; margin: 4px 0 0; }
+
+/* ---------------- start page tiles ---------------- */
+.stpage { background: var(--st-background); color: var(--st-foreground); min-height: 100%; padding: 12px; font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif; }
+.shelf { display: flex; flex-direction: column; gap: 10px; }
+.tile { display: flex; align-items: center; gap: 14px; padding: 8px 12px 8px 8px; border-radius: 16px; box-shadow: 0 4px 6px var(--tile-shadow), 0 0 0 1px var(--ring-c); }
+.tile .art { width: 88px; height: 88px; border-radius: 12px; overflow: hidden; flex: none; position: relative; }
+.tile .art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tile h2 { margin: 0; font-size: 18px; line-height: 1.2; font-weight: 800; }
+.tile .pl2 { font-size: 14px; }
+.tile p { margin: 0; font-size: 14px; opacity: .9; line-height: 1.35; }
+.tile .chev { margin-left: auto; flex: none; }
+.t-crew { background: var(--crew-tile); --ring-c: color-mix(in oklch, var(--crew-accent) 30%, transparent); color: var(--st-foreground); }
+.t-crew h2 { color: var(--crew-text); }
+.t-deep { background: var(--deep-tile); --ring-c: color-mix(in oklch, var(--deep-accent) 30%, transparent); color: var(--st-foreground); }
+.t-deep h2 { color: var(--deep-text); }
+.t-sky { background: var(--sky-tile); --ring-c: var(--sky-ring); color: var(--sky-fg); }
+.t-sky h2 { color: var(--sky-text); font-family: 'Saira', sans-serif; font-stretch: 112%; font-weight: 800; }
+.t-sky .pl2, .t-sky .chev { color: var(--sky-muted); }
+.t-crew .pl2, .t-deep .pl2, .t-crew .chev, .t-deep .chev { color: var(--st-muted); }
+.wall { display: grid; grid-template-columns: repeat(3, 296px); gap: 16px; justify-content: center; padding-top: 24px; }
+.wall .tile { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+.wall .tile .art { width: 100%; height: 132px; border-radius: 0; }
+.wall .tile .txt { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 2px; }
+.wall .tile h2 { font-size: 20px; }
+.wall .tile .chev { display: none; }
+
+/* ---------------- desktop (game screen frame ≥ 900 px) ---------------- */
+@container (min-width: 900px) {
+	.screen {
+		--cell: 60px; --die: 64px; --gap: 8px; --tok: 26px;
+		grid-template-columns: 1fr 600px 1fr;
+		grid-template-rows: 32px 1fr auto auto auto;
+		grid-template-areas: "head head head" "track panel mods" "track status mods" "track hand mods" "track action mods";
+		column-gap: 32px; row-gap: 12px; padding: 16px 32px 24px; max-width: 1280px; margin: 0 auto;
+	}
+	.track { flex-direction: row; gap: 8px; align-self: start; justify-self: end; }
+	.ap { flex-direction: column-reverse; width: 140px; gap: 4px; }
+	.apc { height: 64px; flex: none; }
+	.apc .apt { inset: 4px 0 auto; }
+	.alt { flex-direction: column-reverse; width: 92px; gap: 4px; }
+	.alc { height: 64px; flex: none; flex-direction: column; font-size: 14px; }
+	.mods { flex-direction: column; align-self: start; max-width: 300px; gap: 8px; }
+	.chip { height: auto; min-height: 44px; padding: 8px 12px; white-space: normal; flex-wrap: wrap; font-size: 14px; }
+	.chip.grow { flex: none; }
+	.chip .abt { display: block; width: 100%; color: var(--muted-foreground); font-size: 13px; line-height: 17px; }
+	.sp .v { font-size: 20px; line-height: 20px; }
+	.sp svg { width: 22px; height: 22px; }
+	.pd { font-size: 30px; }
+	.gauge { height: var(--cell); }
+	.hd { margin: 0; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// =================================================================== icons
+const I = {
+	plane: '<svg viewBox="0 0 24 24"><path d="M12 1.5c.9 0 1.4.8 1.4 1.8v5.6l8.1 4.8v2.1l-8.1-2.5v5l2.4 1.8v1.6L12 20.8l-3.8 1v-1.6l2.4-1.8v-5L2.5 15.8v-2.1l8.1-4.8V3.3c0-1 .5-1.8 1.4-1.8z"/></svg>',
+	axis: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15 21 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 5v2M12 17v2" opacity=".6"/></svg>',
+	engine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 9.8C12 6 14 4.5 16 4.2M14.2 12.8c3.3 1.9 3.6 4.4 2.8 6.3M9.8 13.4c-3.3 1.9-5.6.9-6.8-.7"/></svg>',
+	radio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 2-2 2.5-5 2.5"/></svg>',
+	coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.8 1 .8 1.8 0 3M12 3.5c-.8 1 .8 1.8 0 3"/></svg>',
+	fuel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16zM4 21h12"/><path d="M8 7h4" stroke-linecap="round"/><path d="M15 10h1.5a1.5 1.5 0 0 1 1.5 1.5V16a1.5 1.5 0 0 0 3 0V8l-2.5-2.5" stroke-linecap="round"/></svg>',
+	intern: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 8.5 12 4.5l9.5 4L12 12.5z"/><path d="M6.5 10.5V15c1.5 1.6 3.4 2.4 5.5 2.4s4-.8 5.5-2.4v-4.5M21.5 8.5V14" stroke-linecap="round"/></svg>',
+	ice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/></svg>',
+	wind: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V3"/><path d="M4 4.5 20 7v6L4 15.5z"/><path d="M9.5 5.4v9.2M15 6.2v7.6" opacity=".7"/></svg>',
+	leak: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/><path d="M10 12l3 2-2 3" stroke-linecap="round"/></svg>',
+	reroll: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg>',
+	tower: '<svg viewBox="0 0 30 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 17V6h4v11M4.5 6h7l-1-3h-5zM10 10h17v7H10M13 12.5h2M17 12.5h2M21 12.5h2M2 17h27"/></svg>',
+	star: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2.8 2.7 6 6.5.6-4.9 4.4 1.4 6.4L12 16.9l-5.7 3.3 1.4-6.4-4.9-4.4 6.5-.6z"/></svg>',
+	help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>',
+	flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+	theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>',
+	door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h5v16h-5M4 20V5l9-1.5v18zM10 12v.5"/></svg>',
+	chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>',
+	chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>',
+	swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
+	crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>'
+};
+const ic = (n, cls = 'i') => I[n].replace('<svg', `<svg class="${cls}"`);
+
+// =================================================================== panel data
+const SP = {
+	axisPilot: { c: 'b', icon: 'axis' }, axisCopilot: { c: 'o', icon: 'axis' },
+	enginesPilot: { c: 'b', icon: 'engine' }, enginesCopilot: { c: 'o', icon: 'engine' },
+	radioPilot: { c: 'b', icon: 'radio' }, radioCopilot1: { c: 'o', icon: 'radio' }, radioCopilot2: { c: 'o', icon: 'radio' },
+	gear12: { c: 'b', v: '1/2', w: 'gear', sw: 1 }, gear34: { c: 'b', v: '3/4', w: 'gear', sw: 1 }, gear56: { c: 'b', v: '5/6', w: 'gear', sw: 1 },
+	flaps12: { c: 'o', v: '1/2', w: 'flaps', sw: 1 }, flaps23: { c: 'o', v: '2/3', w: 'flaps', sw: 1 }, flaps45: { c: 'o', v: '4/5', w: 'flaps', sw: 1 }, flaps56: { c: 'o', v: '5/6', w: 'flaps', sw: 1 },
+	brakes2: { c: 'b', v: '2', w: 'brake', sw: 1 }, brakes4: { c: 'b', v: '4', w: 'brake', sw: 1 }, brakes6: { c: 'b', v: '6', w: 'brake', sw: 1 },
+	conc1: { c: 'x', icon: 'coffee' }, conc2: { c: 'x', icon: 'coffee' }, conc3: { c: 'x', icon: 'coffee' },
+	kerosene: { c: 'x', icon: 'fuel' },
+	internPilot: { c: 'b', icon: 'intern' }, internCopilot: { c: 'o', icon: 'intern' },
+	ice2t: { c: 'b', v: '2', w: 'ice' }, ice3t: { c: 'b', v: '3', w: 'ice' }, ice4t: { c: 'b', v: '4', w: 'ice' }, ice5t: { c: 'b', v: '5', w: 'ice' },
+	ice2b: { c: 'x', v: '2', w: 'ice' }, ice3b: { c: 'x', v: '3', w: 'ice' }, ice4b: { c: 'x', v: '4', w: 'ice' }, ice5b: { c: 'x', v: '5', w: 'ice' }
+};
+const ALT = ['6000', '5000', '4000', '3000', '2000', '1000', 'Land'];
+const sign = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + -n : '0');
+const NAMES = { P: 'Alex', C: 'Sam' };
+
+const BASE = {
+	code: 'K7QM', me: 'P', sel: null, mod: 0, legal: [], target: null, last: null, aim: null,
+	sw: [], placed: {}, abilities: [], hand: [null, null, null, null], partnerLeft: 4, rerolls: 0, coffee: 0,
+	brakes: 0, blue: 4, orange: 8, axis: 0, phase: 'turn', rerollOn: []
+};
+const YUL = {
+	scenario: 'YUL', level: 'green', apt: 'YUL', N: 7, turns: [], traffic: [0, 0, 0, 0, 0, 0, 0],
+};
+const S = {
+	turn: {
+		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 1, 3, 2], axis: 0, blue: 5, orange: 10, brakes: 0, coffee: 1, rerolls: 1, rerollOn: [5],
+		sw: ['gear12', 'flaps12', 'flaps23'],
+		placed: { axisCopilot: ['C', 4], radioCopilot1: ['C', 2], axisPilot: ['P', 5], enginesCopilot: ['C', 3] },
+		hand: [6, null, 3, 2], sel: 2, partnerLeft: 2, last: 'enginesCopilot',
+		legal: ['enginesPilot', 'radioPilot', 'gear34', 'conc1', 'conc2', 'conc3'], target: 'radioPilot', aim: 5,
+		status: 'Radio 3: clears the plane on space 5.'
+	},
+	discussion: {
+		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 1, 1, 3, 2], axis: 1, blue: 5, orange: 10, coffee: 1, rerolls: 1, rerollOn: [5],
+		sw: ['gear12', 'flaps12', 'flaps23'], hand: ['?', '?', '?', '?'], partnerLeft: 4, phase: 'discussion'
+	},
+	waiting: {
+		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 0, 3, 2], axis: 0, blue: 5, orange: 10, coffee: 1, rerolls: 1, rerollOn: [5],
+		sw: ['gear12', 'flaps12', 'flaps23'],
+		placed: { axisCopilot: ['C', 4], radioCopilot1: ['C', 2], axisPilot: ['P', 5], enginesCopilot: ['C', 3], radioPilot: ['P', 3] },
+		hand: [6, null, null, 2], partnerLeft: 2, last: 'radioPilot', phase: 'waiting'
+	},
+	reroll: {
+		...YUL, round: 4, pos: 3, planes: [0, 0, 0, 0, 1, 3, 2], axis: 0, blue: 5, orange: 10, coffee: 1, rerolls: 0, rerollOn: [5],
+		sw: ['gear12', 'flaps12', 'flaps23'],
+		placed: { axisCopilot: ['C', 4], radioCopilot1: ['C', 2], axisPilot: ['P', 5], enginesCopilot: ['C', 3] },
+		hand: [6, null, 3, 2], partnerLeft: 2, rr: [3], phase: 'reroll'
+	},
+	tgu: {
+		scenario: 'TGU', level: 'red', apt: 'TGU', round: 3, N: 5, planes: [0, 1, 2, 1, 2], traffic: [3, 0, 2, 0, 0], turns: [null, 'ooxxx', 'xooxx', 'ooxxx', null], pos: 2,
+		axis: -1, blue: 6, orange: 10, brakes: 1, coffee: 2, rerolls: 1,
+		fuel: 11, wind: { off: -3, v: 2 },
+		abilities: [{ n: 'Synchronisation', icon: 'reroll', used: true, t: 'Black die rolled and placed this round.' }, { n: 'Working together', used: false, t: 'Free this round: put a die on the card to swap values.' }],
+		placed: { axisPilot: ['P', 4], gear34: ['P', 3], flaps23: ['C', 2], radioCopilot1: ['C', 5], radioCopilot2: ['T', 3] },
+		sw: ['gear12', 'gear34', 'flaps12', 'flaps23', 'brakes2'],
+		hand: [6, null, 2, null], sel: 0, partnerLeft: 2, last: 'radioCopilot2',
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'kerosene'], target: 'gear56',
+		status: 'Gear 5/6: last gear down, blue marker 6 → 7.'
+	},
+	kef: {
+		scenario: 'KEF', level: 'black', apt: 'KEF', round: 5, N: 6, planes: [0, 0, 0, 0, 1, 0], traffic: [2, 0, 1, 0, 0, 0], turns: [null, 'oooxx', null, 'xxooo', 'xooox', null], pos: 4,
+		axis: 1, blue: 6, orange: 10, coffee: 1, rerolls: 0,
+		wind: { off: 4, v: 1 }, ice: { marker: 1 },
+		abilities: [{ n: 'Anticipation', used: true, t: 'Used this round: Alex rerolled one die.' }, { n: 'Adaptation', used: false, t: 'Once per game each: flip a die to its opposite face. You: free. Sam: used.' }],
+		placed: { axisPilot: ['P', 2], ice3t: ['P', 3], axisCopilot: ['C', 3], enginesCopilot: ['C', 4] },
+		sw: ['gear12', 'gear34', 'flaps12', 'flaps23'],
+		hand: [5, 3, null, null], sel: 0, partnerLeft: 2, last: 'enginesCopilot',
+		legal: ['enginesPilot', 'radioPilot', 'gear56', 'conc1', 'conc2', 'conc3', 'ice5t', 'ice5b'], target: 'enginesPilot',
+		status: 'Engines: 4 + 5 + wind 1 = 10, advance 1 to space 5 (turn ok at +1).'
+	},
+	hnd: {
+		scenario: 'HND', level: 'red', apt: 'HND', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
+		axis: -1, blue: 7, orange: 11, brakes: 2, coffee: 3, rerolls: 0,
+		fuel: 9, intern: { toks: [3, 5, 2, 6, 1, 4], gone: [0, 1, 4, 5] },
+		abilities: [{ n: 'Control', used: true, t: 'Axis dice matched this round: coffee gained.' }],
+		placed: { internPilot: ['P', 1], gear56: ['I', 5], axisPilot: ['P', 3], axisCopilot: ['C', 3], flaps45: ['C', 4] },
+		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
+		hand: [6, 2, null, null], sel: 1, mod: -1, partnerLeft: 2, last: 'axisPilot',
+		legal: ['enginesCopilot', 'radioCopilot1', 'radioCopilot2', 'flaps12', 'conc1', 'conc2', 'conc3', 'kerosene', 'internCopilot'], target: 'radioCopilot1', aim: 6,
+		status: 'Radio 1 (2 − 1 coffee): clears the plane on your space 6.'
+	},
+	final: {
+		...YUL, round: 7, pos: 7, planes: [0, 0, 0, 0, 0, 0, 0], axis: 0, blue: 7, orange: 11, brakes: 2, coffee: 2, rerolls: 0,
+		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
+		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 3], radioCopilot1: ['C', 6] },
+		hand: [1, 4, null, 6], sel: 0, partnerLeft: 2, last: 'radioCopilot1',
+		legal: ['enginesPilot', 'radioPilot', 'gear12', 'conc1', 'conc2', 'conc3'], target: 'enginesPilot',
+		checks: [['Planes', '0', true], ['Gear', '3/3', true], ['Flaps', '3/4', false], ['Axis', '0', true]],
+		status: 'Engines: speed 1 + Sam’s die must be 4 or less to land.'
+	},
+	won: {
+		...YUL, round: 7, pos: 7, planes: [0, 0, 0, 0, 0, 0, 0], axis: 0, blue: 7, orange: 12, brakes: 2, coffee: 1, rerolls: 0,
+		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'flaps56', 'brakes2', 'brakes4'],
+		placed: { axisPilot: ['P', 2], axisCopilot: ['C', 3], radioCopilot1: ['C', 6], enginesPilot: ['P', 1], flaps56: ['C', 5], conc1: ['P', 6], enginesCopilot: ['C', 2], conc2: ['C', 1] },
+		hand: [null, null, null, null], partnerLeft: 0, phase: 'over',
+		checks: [['Planes', '0', true], ['Gear', '3/3', true], ['Flaps', '4/4', true], ['Axis', '0', true]], over: 'won'
+	},
+	lost: {
+		scenario: 'HND', level: 'red', apt: 'HND', round: 6, N: 8, me: 'C', planes: [0, 0, 0, 0, 0, 1, 2, 1], traffic: [3, 0, 0, 1, 1, 1, 0, 0], turns: [null, 'xooxx', null, 'ooxxx', 'xooxx', null, 'ooxxx', null], pos: 6,
+		axis: -1, blue: 7, orange: 11, brakes: 2, coffee: 2, rerolls: 0, fuel: 9, intern: { toks: [3, 5, 2, 6, 1, 4], gone: [0, 1, 4, 5] },
+		abilities: [{ n: 'Control', used: true, t: '' }],
+		placed: { internPilot: ['P', 1], gear56: ['I', 5], axisPilot: ['P', 3], axisCopilot: ['C', 3], flaps45: ['C', 4], enginesCopilot: ['C', 6], enginesPilot: ['P', 4] },
+		sw: ['gear12', 'gear34', 'gear56', 'flaps12', 'flaps23', 'flaps45', 'brakes2', 'brakes4'],
+		hand: [2, null, null, null], partnerLeft: 1, last: 'enginesPilot', phase: 'over', over: 'lost'
+	}
+};
+
+function state(key) {
+	const s = { ...structuredClone(BASE), ...structuredClone(S[key]), key };
+	return s;
+}
+
+// =================================================================== panel parts
+function space(id, s) {
+	const d = SP[id];
+	const placed = s.placed[id];
+	const cls = ['sp', d.c];
+	if (placed) cls.push('has');
+	if (s.legal.includes(id)) cls.push('legal');
+	if (s.target === id) cls.push('target');
+	if (s.last === id) cls.push('last');
+	if (id.startsWith('ice') && s.ice && Number(id[3]) - 2 < s.ice.marker) cls.push('closed');
+	if (id.startsWith('brakes') && s.sw.includes(id)) cls.push('closed');
+	let inner;
+	if (placed) {
+		const [o, v] = placed;
+		inner = `<div class="pd ${o}">${v}</div>`;
+	} else if (d.icon) {
+		inner = ic(d.icon, '');
+	} else {
+		inner = `<span class="v">${d.v}</span>`;
+	}
+	const led = d.sw ? `<span class="led ${s.sw.includes(id) ? 'on' : ''}">${s.sw.includes(id) ? '✓' : ''}</span>` : '';
+	return `<div class="${cls.join(' ')}">${inner}${led}</div>`;
+}
+
+function axisGauge(s) {
+	let h = '';
+	for (let p = -3; p <= 3; p++) {
+		const end = Math.abs(p) === 3;
+		const cur = p === s.axis;
+		h += `<i class="${end ? 'end' : ''} ${cur ? 'cur' : ''} ${p === 0 ? 'zero' : ''}">${end ? '✕' : cur ? sign(p) : ''}</i>`;
+	}
+	return `<div class="gauge axg" title="Axis">${h}</div>`;
+}
+
+function speedGauge(s) {
+	if (s.round === 7) {
+		const land = [1, 2, 4, 6][s.brakes];
+		return `<div class="gauge spd"><div class="land"><b>Land ≤ ${land}</b><span>speed with ${s.brakes} brake${s.brakes === 1 ? '' : 's'}</span></div></div>`;
+	}
+	return `<div class="gauge spd">
+		<div><b>≤${s.blue}</b><span>stay</span></div><i class="mk P"></i>
+		<div><b>${s.blue + 1}–${s.orange}</b><span>+1</span></div><i class="mk C"></i>
+		<div><b>${s.orange + 1}+</b><span>+2</span></div></div>`;
+}
+
+function brakeRows(s) {
+	if (s.ice) {
+		const cols = [2, 3, 4, 5];
+		// The marker sits in a slot between the columns: before 2, after 2, …, past 5.
+		const m = s.ice.marker;
+		const x = m === 0 ? '4px' : m === 4 ? 'calc(100% - 4px)' : `calc(${m} * (var(--cell) + var(--gap)) - var(--gap) / 2)`;
+		const labels = cols.map((c, i) => `<b style="left:calc(${i} * (var(--cell) + var(--gap)))">${c}</b>`).join('');
+		return `<div class="prow">${cols.map((c) => space('ice' + c + 't', s)).join('')}</div>
+			<div class="icem" title="Ice-brake marker: must end past 5">${labels}<i style="left:${x}"></i></div>
+			<div class="prow">${cols.map((c) => space('ice' + c + 'b', s)).join('')}</div>`;
+	}
+	const land = [1, 2, 4, 6][s.brakes ?? 0];
+	return `<div class="prow">${space('brakes2', s)}<span class="arrow">▶</span>${space('brakes4', s)}<span class="arrow">▶</span>${space('brakes6', s)}
+		<div class="rd"><span class="mkr"></span>land<b>≤${land}</b></div></div>`;
+}
+
+function internBoard(s) {
+	if (!s.intern) return '';
+	const t = s.intern.toks;
+	const live = t.map((_, i) => i).filter((i) => !s.intern.gone.includes(i));
+	const left = live[0], right = live[live.length - 1];
+	const toks = t.map((v, i) => `<span class="tok ${s.intern.gone.includes(i) ? 'gone' : ''} ${i === left ? 'nP' : ''} ${i === right ? 'nC' : ''}">${v}</span>`).join('');
+	return `<div class="intern">${space('internPilot', s)}<div class="toks">${toks}</div>${space('internCopilot', s)}</div>`;
+}
+
+function panel(s) {
+	const blue = ['radioPilot', 'gear12', 'gear34', 'gear56'];
+	const orange = ['radioCopilot1', 'radioCopilot2', 'flaps12', 'flaps23', 'flaps45', 'flaps56'];
+	return `<div class="panel ${s.sel !== null ? 'selecting' : ''}">
+		<div class="pcol">${blue.map((id) => space(id, s)).join('')}${s.fuel !== undefined ? space('kerosene', s) : ''}</div>
+		<div class="pmid">
+			<div class="prow">${space('axisPilot', s)}${axisGauge(s)}${space('axisCopilot', s)}</div>
+			<div class="prow">${space('enginesPilot', s)}${speedGauge(s)}${space('enginesCopilot', s)}</div>
+			${brakeRows(s)}
+			<div class="prow">${['conc1', 'conc2', 'conc3'].map((id) => space(id, s)).join('')}</div>
+			${internBoard(s)}
+		</div>
+		<div class="pcol">${orange.map((id) => space(id, s)).join('')}</div>
+	</div>`;
+}
+
+function approach(s) {
+	let h = '';
+	for (let i = 0; i < s.N; i++) {
+		const n = i + 1;
+		const cls = ['apc'];
+		if (n < s.pos) cls.push('past');
+		if (n === s.pos) cls.push('here');
+		if (s.aim === n) cls.push('aim');
+		const t = s.turns[i];
+		const tm = t ? `<div class="tm">${[...t].map((c, k) => `<i class="${c === 'x' ? 'x' : 'ok'} ${k - 2 === s.axis ? 'cur' : ''}"></i>`).join('')}</div>` : '<div class="tm none"></div>';
+		const p = s.planes[i];
+		const pl = `<div class="pl">${p > 2 ? ic('plane', '') + `<span class="n">×${p}</span>` : ic('plane', '').repeat(p)}</div>`;
+		const tr = `<div class="trf">${'<i></i>'.repeat(n >= s.pos ? s.traffic[i] : 0)}</div>`;
+		const apt = n === s.N ? `<span class="apt">${ic('tower', '')}</span>` : '';
+		h += `<div class="${cls.join(' ')}" title="Space ${n}">${apt}${n === s.N ? '<div class="tm none"></div>' : tm}${pl}${tr}</div>`;
+	}
+	return `<div class="ap">${h}</div>`;
+}
+
+function altitude(s) {
+	return `<div class="alt">${ALT.map((a, i) => {
+		const r = i + 1;
+		const fp = r % 2 ? 'P' : 'C';
+		const rr = (s.rerollOn || []).includes(r) && r > s.round ? ic('reroll', '') : '';
+		return `<div class="alc ${fp} ${r === s.round ? 'cur' : ''} ${r < s.round ? 'past' : ''}">${fp === 'P' ? '<span class="ar">◂</span>' : ''}${a}${fp === 'C' ? '<span class="ar">▸</span>' : ''}${rr}</div>`;
+	}).join('')}</div>`;
+}
+
+function header(s) {
+	return `<div class="hd"><span class="code mono">${s.code}</span><span class="dot"></span>
+		<span class="lvl ${s.level}">${s.scenario}</span>
+		<span class="rnd">Round <b>${s.round}</b> of 7</span>
+		<span style="margin-left:auto" class="hb" title="Rules">${ic('help')}</span><span class="hb" title="Give up">${ic('flag')}</span><span class="hb" title="Theme">${ic('theme')}</span></div>`;
+}
+
+function mods(s) {
+	let h = '';
+	if (s.checks) {
+		h += s.checks.map(([n, v, ok]) => `<div class="chip ${ok ? 'ok' : 'open'} ${n === 'Planes' ? '' : ''}"><span class="chk">${ok ? '✓' : ''}</span>${n} <b>${v}</b></div>`).join('');
+		return `<div class="mods" style="gap:4px">${h}</div>`;
+	}
+	if (s.fuel !== undefined) h += `<div class="chip grow">${ic('fuel')}<span class="fbar"><i style="left:${(s.fuel / 20) * 100}%"></i></span><b>${s.fuel}</b></div>`;
+	if (s.wind) h += `<div class="chip"><span class="ring" style="--rot:${s.wind.off * 18}deg"></span>Wind <b>${sign(s.wind.v)}</b></div>`;
+	for (const a of s.abilities) h += `<div class="chip"><span class="ab-dot ${a.used ? 'used' : ''}"></span>${a.n === 'Working together' ? 'Together' : a.n === 'Synchronisation' ? 'Sync' : a.n}<span class="abt">${a.t}</span></div>`;
+	// The base game has no modules or abilities: the row is left out (its height goes to the panel).
+	return h ? `<div class="mods">${h}</div>` : '';
+}
+
+function cups(n) { return `<span class="cups">${[0, 1, 2].map((i) => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</span>`; }
+
+function hand(s) {
+	const me = s.me, pt = me === 'P' ? 'C' : 'P';
+	const dice = s.hand.map((v, i) => {
+		if (v === null) return `<span class="die empty"></span>`;
+		if (v === '?') return `<span class="die ${me} blank">0</span>`;
+		const cls = ['die', me];
+		if (i === s.sel) cls.push('sel');
+		if (s.rr && s.rr.includes(v)) cls.push('rr');
+		if (s.phase === 'waiting') cls.push('locked');
+		const shown = i === s.sel && s.mod ? v + s.mod : v;
+		const mod = i === s.sel && s.mod ? `<span class="mod">${sign(s.mod)}</span>` : '';
+		const rri = s.rr && s.rr.includes(v) ? `<span class="rri">${ic('reroll', '')}</span>` : '';
+		return `<span class="${cls.join(' ')}">${shown}${mod}${rri}</span>`;
+	}).join('');
+	const fd = [0, 1, 2, 3].map((i) => `<i class="${i < s.partnerLeft ? '' : 'out'}"></i>`).join('');
+	const pc = pt === 'P' ? 'var(--pilot)' : 'var(--copilot)';
+	const ready = s.phase === 'discussion' ? '<br>is ready' : `<br>${s.partnerLeft} dice left`;
+	return `<div class="hand ${s.phase === 'turn' ? 'mine' : ''}" style="--me:${me === 'P' ? 'var(--pilot)' : 'var(--copilot)'}">${dice}
+		<div class="partner"><b>${NAMES[pt]}</b>${ready}<br><span class="fd" style="--pc:${pc}">${fd}</span></div></div>`;
+}
+
+function status(s) {
+	const pt = NAMES[s.me === 'P' ? 'C' : 'P'];
+	if (s.phase === 'discussion') return `<div class="status"><span class="pill wait">Round 4</span><span>Talk strategy now, not dice. ${pt} goes first.</span></div>`;
+	if (s.phase === 'waiting') return `<div class="status"><span class="pill wait">${pt}’s turn</span><span>Waiting for ${pt} to place a die.</span></div>`;
+	if (s.phase === 'reroll') return `<div class="status"><span class="pill">Reroll</span><span>${pt} spent the reroll. Pick dice to reroll.</span></div>`;
+	if (s.phase === 'over') return `<div class="status"></div>`;
+	return `<div class="status"><span class="pill">Your turn</span><span>${s.status}</span></div>`;
+}
+
+function action(s) {
+	const rr = `<span class="btn sq ${s.rerolls ? '' : 'dis'}" title="Spend a reroll">${ic('reroll')}<b>${s.rerolls}</b></span>`;
+	if (s.phase === 'reroll') return `<div class="action"><span class="btn out">Keep all</span><span class="btn pri">Reroll 1 die</span></div>`;
+	if (s.phase === 'discussion') return `<div class="action"><span class="btn pri">Ready</span></div>`;
+	const left = s.coffee - Math.abs(s.mod || 0);
+	const on = s.phase === 'turn';
+	return `<div class="action"><div class="stepper"><span class="btn ${on ? '' : 'dis'}">−</span><span class="val">${left}${cups(left)}</span><span class="btn ${on ? '' : 'dis'}">+</span></div><span class="btn pri ${on ? '' : 'dis'}">Place</span>${rr}</div>`;
+}
+
+function overSheet(s) {
+	if (s.over === 'won') {
+		return `<div class="scrim"></div><div class="sheet"><div class="grab"></div>
+			<span class="badge won"><span class="hz"></span>Landed</span>
+			<h2>Touchdown at YUL Montréal-Trudeau</h2>
+			<div class="checks"><div><span class="chk">✓</span>No planes left</div><div><span class="chk">✓</span>Gear and flaps down</div>
+			<div><span class="chk">✓</span>Axis level</div><div><span class="chk">✓</span>Speed 3, brakes allow 4</div></div>
+			<div class="row"><span class="btn pri">Play again</span><span class="btn out">Home</span></div></div>`;
+	}
+	return `<div class="scrim"></div><div class="sheet"><div class="grab"></div>
+		<span class="badge lost"><span class="hz" style="--tilt:-28deg"></span>Lost: collision</span>
+		<h2>Collision over Haneda</h2>
+		<p>Speed 10 moved the plane on while a plane was still on space 6.</p>
+		<div class="reveal">Unplaced dice: you <span class="die C">2</span> Alex <span class="die P">5</span></div>
+		<div class="row"><span class="btn pri">Try again</span><span class="btn out">Home</span></div></div>`;
+}
+
+function game(key) {
+	const s = state(key);
+	return `<div class="screen">${header(s)}
+		<div class="track">${approach(s)}${altitude(s)}</div>
+		${mods(s)}
+		<div class="pwrap">${panel(s)}</div>
+		${status(s)}${hand(s)}${action(s)}
+		${s.over ? overSheet(s) : ''}</div>`;
+}
+
+// =================================================================== lobby
+const SCN = [
+	['green', [['YUL', 'Montréal-Trudeau', [], 0], ['LHR', 'Heathrow', [], 0], ['HND', 'Haneda', [], 0], ['OSL', 'Gardermoen', ['fuel'], 0], ['ATL', 'Hartsfield-Jackson', ['intern'], 0], ['PRG', 'Václav Havel', ['fuel'], 2]]],
+	['yellow', [['LHR', 'Heathrow', ['intern'], 0], ['TGU', 'Toncontín', ['fuel'], 2], ['GIG', 'Galeão', ['wind'], 1], ['KEF', 'Keflavík', ['ice'], 1]]],
+	['red', [['TGU', 'Toncontín', ['fuel', 'wind'], 2], ['HND', 'Haneda', ['fuel', 'intern'], 1]]]
+];
+const ABIL = [
+	['Adaptation', 'Once per game each: turn one die to its opposite face.'],
+	['Anticipation', 'Each round the first player may reroll one die before placing.'],
+	['Control', 'Matching axis dice: gain a coffee.'],
+	['Mastery', 'Matching engine dice: gain a reroll token.'],
+	['Synchronisation', 'Gear and flaps die in a round: roll the black die, the Co-Pilot places it.'],
+	['Working together', 'Once per round two dice swap values.']
+];
+function scnRow(level, [code, name, mods, ab], cls = '') {
+	const icons = mods.map((m) => `<span>${ic(m, '')}</span>`).join('') + (ab ? `<span>${ab}${ic('star', '')}</span>` : '');
+	return `<div class="scn ${level} ${cls}"><span class="band"></span><div class="body"><span class="apc3">${code}</span><div class="nm"><b>${name}</b><span>${level[0].toUpperCase() + level.slice(1)}${mods.length ? ', ' + mods.map((m) => ({ fuel: 'kerosene', wind: 'wind', ice: 'ice brakes', intern: 'intern', leak: 'kerosene leak' })[m]).join(', ') : ''}</span></div><div class="ic">${icons}</div></div></div>`;
+}
+function lobby(view) {
+	const host = view !== 'guest';
+	const chosen = ['Synchronisation', 'Working together'];
+	const abil = ABIL.map(([n, t]) => {
+		const on = chosen.includes(n);
+		const cls = on ? 'on' : host ? '' : 'off';
+		return `<div class="ab ${cls}"><div class="band"></div><div class="t"><b>${n}</b>${host || on ? `<span class="ck">${on ? '✓' : ''}</span>` : ''}</div><p>${t}</p></div>`;
+	}).join('');
+	const body = `<div class="lobby">
+		<div class="topbar"><span class="lnk">${ic('chevL')}All games</span><span style="margin-left:auto" class="hb">${ic('theme')}</span></div>
+		<div class="lhd"><h1>Lobby</h1><span style="margin-left:auto" class="hbtn">${ic('door')}Leave</span>${host ? `<span class="hbtn">${ic('flag')}End game</span>` : ''}</div>
+		<div class="card share"><h2>Sky Team</h2><div class="cd">Code <b class="mono">K7QM</b></div><div class="inp mono">yoshi-und-kruemli.de/sky-team/join/K7QM</div>
+			<div class="row" style="display:flex;gap:8px"><span class="btn" style="flex:1;height:44px">Copy link</span><span class="btn" style="flex:1;height:44px">Share</span></div></div>
+		<div class="card"><h3>Crew<span class="aside">2 of 2</span></h3>
+			<div class="seat"><span class="role P">P</span><div class="who"><b>${host ? 'Alex (you)' : 'Alex'}</b><span>Pilot, blue dice</span></div><span style="margin-left:auto;color:var(--primary)">${ic('crown')}</span></div>
+			<div class="seat"><span class="role C">C</span><div class="who"><b>${host ? 'Sam' : 'Sam (you)'}</b><span>Co-Pilot, orange dice</span></div></div>
+			${host ? `<span class="btn out" style="height:44px">${ic('swap')}Swap roles</span>` : ''}</div>
+		<div class="card"><h3>Scenario${host ? '<span class="aside">Change</span>' : ''}</h3>${scnRow('red', ['TGU', 'Toncontín', ['fuel', 'wind'], 2], host ? '' : '')}
+			<p style="margin:0;font-size:13px;color:var(--muted-foreground)">7 rounds. Kerosene: put a die on fuel each round or lose 6. Wind: the axis turns the wind ring, its value adds to the speed.</p></div>
+		<div class="card"><h3>Abilities<span class="aside">${host ? '2 of 2 chosen' : 'Alex picks 2'}</span></h3><div class="abs">${abil}</div></div>
+		<div class="sticky">${host ? '<span class="btn pri">Start game</span>' : '<p>Waiting for Alex to start.</p>'}</div>
+	</div>`;
+	return body;
+}
+function picker() {
+	const groups = SCN.map(([lv, rows]) => `<div class="grp">${lv[0].toUpperCase() + lv.slice(1)}</div>` + rows.map((r) => scnRow(lv, r, `sm ${lv === 'red' && r[0] === 'TGU' ? 'on' : ''}`)).join('')).join('');
+	return `<div class="picker" style="position:relative;height:100%">${lobby('host')}<div class="scrim"></div>
+		<div class="sheet"><div class="grab"></div><h2 style="font-size:20px">Scenario</h2><div class="list">${groups}</div></div></div>`;
+}
+
+// =================================================================== tiles
+const CREW_STARS = [[18, 14, 1.3, .8], [52, 30, 1, .6], [38, 70, 1.1, .7], [84, 12, 1.2, .8], [150, 14, 1, .7], [178, 40, 1.3, .8], [214, 18, 1, .6], [228, 54, 1.1, .5], [96, 86, .9, .5], [140, 34, .9, .6], [8, 50, .9, .5]];
+function crewArt() {
+	return `<svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" style="background:linear-gradient(135deg,var(--crew-ink) 50%,var(--crew-tile));color:var(--crew-accent)">
+		${CREW_STARS.map(([x, y, r, o]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="white" fill-opacity="${o}"/>`).join('')}
+		<circle cx="172" cy="128" r="62" fill="var(--crew-planet)"/><circle cx="172" cy="128" r="62" fill="none" stroke="currentColor" stroke-width="7" stroke-opacity=".22"/><circle cx="172" cy="128" r="62" fill="none" stroke="currentColor" stroke-width="2"/>
+		<path d="M14 98C46 94 80 84 106 68" fill="none" stroke="white" stroke-opacity=".55" stroke-width="1.8" stroke-dasharray="0.1 5" stroke-linecap="round"/>
+		<g transform="translate(96 18) scale(1.9) rotate(40 14 17)"><path d="M14 4c3 2.6 4.4 6 4.4 10v7h-8.8v-7c0-4 1.4-7.4 4.4-10z" fill="currentColor"/><circle cx="14" cy="12.5" r="2" fill="white" fill-opacity=".85"/><path d="M9.6 17 6 22.5l3.6-1zm8.8 0 3.6 5.5-3.6-1z" fill="currentColor"/><path d="M11.8 22.5h4.4L14 27.5z" fill="white" fill-opacity=".85"/></g></svg>`;
+}
+function deepArt() {
+	return `<svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" style="background:linear-gradient(135deg,var(--deep-ink) 50%,var(--deep-tile));color:var(--deep-sub)">
+		<defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--deep-beam)" stop-opacity=".32"/><stop offset="1" stop-color="var(--deep-beam)" stop-opacity="0"/></linearGradient></defs>
+		<path d="M124 -4 L190 -4 L172 100 L98 100z" fill="url(#bm)"/>
+		<g transform="translate(166 84)" fill="var(--deep-temple)"><path d="M-27 -2a27 27 0 0 1 54 0z"/><rect x="-34" y="-2" width="68" height="5"/>${[-28, -17, -6, 5, 16, 27].map((c) => `<rect x="${c - 1.5}" y="3" width="4.5" height="20"/>`).join('')}</g>
+		<g transform="translate(92 12) rotate(22) scale(2.05)"><rect x="4.5" y="4.6" width="9" height="3.6" rx="1.8" fill="currentColor"/><rect x="1.5" y="9.5" width="13" height="8" rx="4" fill="currentColor"/><circle cx="15" cy="13.5" r="5.2" fill="currentColor"/><circle cx="15.6" cy="13.3" r="3.6" fill="var(--deep-ink)"/></g></svg>`;
+}
+/* Sky Team: the attitude indicator, banked over the horizon, a blue and an orange die on the glare shield. */
+function skyArt(id) {
+	return `<svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice">
+		<defs><linearGradient id="sk${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-sky-top)"/><stop offset="1" stop-color="var(--sky-sky)"/></linearGradient></defs>
+		<g transform="rotate(-9 120 54)">
+			<rect x="-40" y="-60" width="320" height="114" fill="url(#sk${id})"/>
+			<rect x="-40" y="54" width="320" height="120" fill="var(--sky-earth)"/>
+			<path d="M-40 54H280" stroke="white" stroke-width="1.6"/>
+			<g stroke="white" stroke-opacity=".7" stroke-width="1.2"><path d="M108 40h24M112 26h16M108 68h24M112 82h16"/></g>
+		</g>
+		<g fill="none" stroke="var(--sky-wings)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M86 56h20l6 7M154 56h-20l-6 7"/></g>
+		<circle cx="120" cy="56" r="3.6" fill="var(--sky-wings)"/>
+		<g transform="translate(176 62) rotate(-8)"><rect width="24" height="24" rx="5" fill="var(--sky-pilot)"/><circle cx="7" cy="7" r="2.2" fill="white"/><circle cx="17" cy="17" r="2.2" fill="white"/><circle cx="12" cy="12" r="2.2" fill="white"/></g>
+		<g transform="translate(206 70) rotate(10)"><rect width="22" height="22" rx="5" fill="var(--sky-copilot)"/><circle cx="6.5" cy="6.5" r="2" fill="#2a1a0e"/><circle cx="15.5" cy="15.5" r="2" fill="#2a1a0e"/></g>
+	</svg>`;
+}
+const chev = `<span class="chev">${ic('chevR')}</span>`;
+function tiles(kind) {
+	const t = [
+		['t-crew', 'The Crew', '2–5 players', 'Trick-taking through 50 missions, without talking.', 'Cooperative trick-taking through 50 missions. No talking about your cards.', crewArt()],
+		['t-deep', 'The Crew: Mission Deep Sea', '2–5 players', 'Trick-taking missions with task cards on the ocean floor.', 'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.', deepArt()],
+		['t-sky', 'Sky Team', '2 players', 'Land the plane together, one die at a time.', 'Cooperative dice placement for a pilot and a co-pilot: land at 21 airports without talking about your dice.', skyArt(kind)]
+	];
+	if (kind === 'shelf') {
+		return `<div class="stpage"><div class="shelf">${t.map(([c, n, p, tag, , art]) => `<div class="tile ${c}"><div class="art">${art}</div><div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1"><h2>${n}</h2><span class="pl2">${p}</span><p>${tag}</p></div>${chev}</div>`).join('')}</div></div>`;
+	}
+	return `<div class="stpage"><div class="wall">${t.map(([c, n, p, , desc, art]) => `<div class="tile ${c}"><div class="art">${art}</div><div class="txt"><h2>${n}</h2><span class="pl2">${p}</span><p>${desc}</p></div></div>`).join('')}</div></div>`;
+}
+
+// =================================================================== screens and page
+const SCREENS = {
+	'lobby-host': { name: 'Lobby, host', html: () => lobby('host'), scroll: true },
+	'lobby-picker': { name: 'Lobby, scenario picker', html: picker },
+	'lobby-guest': { name: 'Lobby, guest', html: () => lobby('guest'), scroll: true },
+	discussion: { name: 'Round start (discussion)', html: () => game('discussion'), game: true },
+	turn: { name: 'Your turn, die selected', html: () => game('turn'), game: true },
+	waiting: { name: 'Waiting for the partner', html: () => game('waiting'), game: true },
+	reroll: { name: 'Reroll step', html: () => game('reroll'), game: true },
+	tgu: { name: 'TGU red, most crowded', html: () => game('tgu'), game: true },
+	kef: { name: 'KEF black, most crowded', html: () => game('kef'), game: true },
+	hnd: { name: 'HND red (Co-Pilot), most crowded', html: () => game('hnd'), game: true },
+	final: { name: 'Final round, landing', html: () => game('final'), game: true },
+	won: { name: 'Game over, won', html: () => game('won'), game: true },
+	lost: { name: 'Game over, lost', html: () => game('lost'), game: true },
+	'tile-shelf': { name: 'Start page, phone shelf', html: () => tiles('shelf') },
+	'tile-wall': { name: 'Start page, desktop tiles', html: () => tiles('wall'), w: 1280, h: 420 }
+};
+
+// contrast check: oklch -> sRGB luminance
+function oklchToLum(str) {
+	const m = str.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+	if (!m) return null;
+	const [L, C, H] = [+m[1], +m[2], (+m[3] * Math.PI) / 180];
+	const a = C * Math.cos(H), b = C * Math.sin(H);
+	const l_ = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+	const m_ = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+	const s_ = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+	const r = 4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+	const g = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+	const bb = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_;
+	const cl = (x) => Math.min(1, Math.max(0, x));
+	return 0.2126 * cl(r) + 0.7152 * cl(g) + 0.0722 * cl(bb);
+}
+function contrast(fg, bg) {
+	const cs = getComputedStyle(document.documentElement);
+	const a = oklchToLum(cs.getPropertyValue(fg)), b = oklchToLum(cs.getPropertyValue(bg));
+	if (a === null || b === null) return '–';
+	return ((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toFixed(1);
+}
+
+const params = new URLSearchParams(location.search);
+if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme');
+const solo = params.get('s');
+const app = document.getElementById('app');
+const frame = (key, w = 375, h = 812) => {
+	const sc = SCREENS[key];
+	return `<div class="frame ${sc.scroll ? 'scroll' : ''}" style="--fw:${sc.w ?? w}px;--fh:${sc.h ?? h}px">${sc.html()}</div>`;
+};
+
+if (solo) {
+	document.body.classList.add('solo');
+	app.innerHTML = frame(solo).replace(/--fw:\d+px;--fh:\d+px/, '--fw:100vw;--fh:100dvh');
+} else {
+	const fig = (key, w, h, cap) => `<figure class="shot"><div class="fwrap" data-w="${SCREENS[key].w ?? w}">${frame(key, w, h)}</div><figcaption>${cap ?? SCREENS[key].name}${w && h ? ` (${w}×${h})` : ''} · <a href="?s=${key}">open</a></figcaption></figure>`;
+	const PAL = [
+		['Aluminium', '--panel', 'Panel, its column strips (--panel-strip)'],
+		['Instrument navy', '--well', 'Track and altitude cells, wells; primary in light mode'],
+		['Pilot blue', '--pilot', 'Pilot dice (white numerals); spaces --pilot-well with --pilot-glow labels'],
+		['Co-Pilot orange', '--copilot', 'Co-Pilot dice (dark numerals); spaces --copilot-well with --copilot-glow labels'],
+		['Gauge black', '--gauge', 'Axis, speed and ice-marker strips, red crosses (--forbidden)'],
+		['Hazard yellow', '--hazard', 'Your plane marker, panel edge marks, turn-mask axis mark; never text'],
+		['Switch green', '--led', 'Deployed switches; landing checks'],
+		['Cockpit glow', '--glow', 'Primary in dark mode, focus rings, airport icon']
+	];
+	const pairs = [
+		['--foreground', '--background', 'text'], ['--muted-foreground', '--background', 'muted text'], ['--primary-foreground', '--primary', 'button'],
+		['--pilot-ink', '--pilot', 'Pilot numeral'], ['--copilot-ink', '--copilot', 'Co-Pilot numeral'],
+		['--pilot-glow', '--pilot-well', 'Pilot space label'], ['--copilot-glow', '--copilot-well', 'Co-Pilot space label'],
+		['--gauge-ink', '--gauge', 'gauge numbers'], ['--glow', '--well', 'track icons'], ['--ring', '--panel', 'legal ring on panel (mark)'],
+		['--led', '--led-off', 'LED on vs off (mark)'], ['--forbidden', '--gauge', 'red cross on gauge (mark)'], ['--pilot', '--pilot-well', 'Pilot die in its well (mark)'], ['--copilot', '--copilot-well', 'Co-Pilot die in its well (mark)'], ['--copilot', '--card', 'Co-Pilot die in the hand (edge ring added)']
+	];
+	const gameKeys = Object.keys(SCREENS).filter((k) => SCREENS[k].game);
+	app.innerHTML = `<div class="doc">
+	<h1>Sky Team look</h1>
+	<p class="lede">Theme plan and mockup for the new app, layout concept A ("whole cockpit"). The look comes from the box: a brushed-aluminium control panel with navy instrument wells, Pilot spaces in deep blue with ice-blue numerals, Co-Pilot spaces in brick with backlit yellow numerals, black gauge strips with white numbers and red crosses, green switch LEDs, the navy approach and altitude tracks with cyan and yellow frames. The bold part is the dice and wells; page, cards and dialogs stay quiet shadcn.</p>
+
+	<h2>Palette</h2>
+	<table><tr><th></th><th>Name</th><th>Token</th><th>Role</th></tr>
+	${PAL.map(([n, t, r]) => `<tr><td><span class="sw" style="background:var(${t})"></span></td><td>${n}</td><td class="mono">${t}</td><td>${r}</td></tr>`).join('')}</table>
+	<p>Scenario colours (--level-green/yellow/red/black) mark difficulty as on the track headers, always next to the scenario name. Intern tokens are their own green disc (--intern), traffic die black (--traffic), plane tokens white (--plane).</p>
+	<h3>Contrast in this mode (switch the system theme or add <span class="mono">?theme=dark</span>)</h3>
+	<table><tr><th>Pair</th><th>Use</th><th>Ratio</th></tr>${pairs.map(([f, b, u]) => `<tr><td class="mono">${f} on ${b}</td><td>${u}</td><td>${contrast(f, b)}:1</td></tr>`).join('')}</table>
+
+	<h2>Type</h2>
+	<p><span class="display" style="font-size:28px;font-weight:700">Saira</span> (variable, width 112 %, weights 600–800): the display face for the game title, airport codes, altitudes, die numerals and space values, close to the board's wide avionics lettering. <span style="font-size:20px;font-weight:600">IBM Plex Sans</span> (variable): all UI text and numbers, sentence case, tabular figures; the technical-manual voice of a cockpit. Fontsource: <span class="mono">@fontsource-variable/saira</span>, <span class="mono">@fontsource-variable/ibm-plex-sans</span>. Neither is used by another app. Game codes stay mono (shared).</p>
+
+	<h2>Dice and spaces at real size</h2>
+	<div class="screen" style="display:block;height:auto;padding:0">
+		<div class="dies" style="--die:50px">
+			<span class="die P">1</span><span class="die P">6</span><span class="die C">3</span><span class="die C">5</span><span class="die T">4</span>
+			<span class="die P sel">2</span><span class="die C sel">4<span class="mod">+1</span></span>
+		</div>
+		<p class="lede" style="font-size:14px">Hand dice 50 px (56 at 812 px height): blue with white numerals, orange with dark numerals (as the physical dice, so colour is not the only carrier), black traffic die. Selected: lifted with a ring; coffee shows as a badge.</p>
+		<div class="panel" style="width:auto;display:inline-flex;--cell:44px">
+			<div class="pcol">${['radioPilot', 'gear12', 'gear34'].map((id) => space(id, { ...BASE, sw: ['gear12'], placed: { gear34: ['P', 3] } })).join('')}</div>
+			<div class="pmid" style="flex:none">
+				<div class="prow">${['conc1', 'kerosene', 'internPilot'].map((id) => space(id, { ...BASE })).join('')}</div>
+				<div class="prow">${space('conc2', { ...BASE, placed: { conc2: ['T', 4] } })}${space('axisPilot', { ...BASE, placed: { axisPilot: ['I', 5] } })}${space('brakes2', { ...BASE, legal: ['brakes2'] })}</div>
+				<div class="prow">${space('brakes4', { ...BASE, target: 'brakes4', legal: ['brakes4'] })}${space('conc3', { ...BASE, placed: { conc3: ['C', 6] }, last: 'conc3' })}${space('brakes6', { ...BASE, sw: ['brakes6'] })}</div>
+			</div>
+			<div class="pcol">${['radioCopilot1', 'flaps12', 'flaps23'].map((id) => space(id, { ...BASE, sw: ['flaps12'], placed: { flaps23: ['C', 2] } })).join('')}</div>
+		</div>
+		<p class="lede" style="font-size:14px">Spaces 44 px at 375×630 (48 px at 812, 60 on desktop). Wells carry an icon (axis, engine, radio, coffee, fuel, intern) or the printed value (gear, flaps, brakes, ice) in the glow colour; a corner LED shows the switch. A placed piece fills the well: die, black traffic die, green intern disc. Legal spaces for the selected die get the ring, the tapped one a thicker ring and a dashed inset; the partner's last placement a cyan dot and ring.</p>
+	</div>
+
+	<h2>Start-page tile</h2>
+	<p>Art: the attitude indicator from the middle of the board, banked over sky and earth, hazard-yellow aircraft symbol, a blue and an orange die. Name in Saira, instrument navy (light) or the backlit yellow of the Co-Pilot numerals (dark; cyan would collide with The Crew's dark tile). Shown next to The Crew and Deep Sea as they are today.</p>
+	<div class="gallery">${fig('tile-shelf', 375, 420)}</div>
+	<div class="gallery">${fig('tile-wall', 1280, 420)}</div>
+
+	<h2>Lobby</h2>
+	<div class="gallery">${['lobby-host', 'lobby-picker', 'lobby-guest'].map((k) => fig(k, 375, 812)).join('')}</div>
+
+	<h2>Game screen, 375×812</h2>
+	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 812)).join('')}</div>
+	<h2>Game screen, 375×630</h2>
+	<div class="gallery">${gameKeys.map((k) => fig(k, 375, 630)).join('')}</div>
+	<h2>Desktop, 1280×800</h2>
+	<div class="gallery">${fig('tgu', 1280, 800)}</div>
+	</div>`;
+	const fit = () => document.querySelectorAll('.fwrap').forEach((w) => { w.style.zoom = Math.min(1, w.parentElement.parentElement.clientWidth / Number(w.dataset.w)); });
+	fit();
+	addEventListener('resize', fit);
+}
+</script>
+</body>
+</html>
