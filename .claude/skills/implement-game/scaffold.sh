@@ -6,7 +6,8 @@
 #   scaffold.sh <dir> "<Title>" <vite-port> <backend-port>
 #   scaffold.sh sail "Sail" 5180 8086
 #
-# Skips fox-duet/CLAUDE.md and docs/rules.md (the new game writes its own). Prints the files that
+# Skips fox-duet/CLAUDE.md and docs/ (the new game has its own; an existing <dir>/docs/ with the
+# rules, plan and mockup is allowed and never touched). Prints the files that
 # still mention Fox Duet's game (fox, forest, decree, gem, ...): the scaffold agent's work list.
 set -euo pipefail
 
@@ -17,7 +18,10 @@ cd "$root"
 dir=$1 title=$2 vport=$3 bport=$4
 
 [[ $dir =~ ^[a-z][a-z0-9-]*$ ]] || { echo "dir must be lower-case kebab: $dir" >&2; exit 2; }
-[[ -e $dir ]] && { echo "$dir already exists" >&2; exit 2; }
+if [[ -e $dir ]] && [[ -n $(find "$dir" -mindepth 1 -maxdepth 1 ! -name docs) ]]; then
+	echo "$dir already exists (only $dir/docs/ may)" >&2
+	exit 2
+fi
 [[ $vport =~ ^[0-9]+$ && $bport =~ ^[0-9]+$ ]] || { echo "ports must be numbers" >&2; exit 2; }
 for p in "$vport" "$bport"; do
 	if grep -qE "[\" ]$p[\" ]" .claude/skills/run/run.sh; then
@@ -27,7 +31,7 @@ for p in "$vport" "$bport"; do
 done
 
 src=fox-duet
-mapfile -t files < <(git ls-files "$src" | grep -vE "^$src/(CLAUDE\.md|docs/rules\.md)$")
+mapfile -t files < <(git ls-files "$src" | grep -vE "^$src/(CLAUDE\.md|docs/)")
 for f in "${files[@]}"; do
 	dst="$dir/${f#"$src"/}"
 	dst=${dst//fox-duet.caddy/$dir.caddy}
@@ -37,7 +41,7 @@ done
 
 # Identity renames. Order matters: the module path before the bare directory name.
 esc_title=$(printf '%s' "$title" | sed 's/[&/\]/\\&/g')
-grep -rlIE 'fox-duet|Fox Duet|5176|8082' "$dir" | while read -r f; do
+grep -rlIE --exclude-dir=docs 'fox-duet|Fox Duet|5176|8082' "$dir" | while read -r f; do
 	sed -i \
 		-e "s#github.com/martin-pouls/fox-duet#github.com/martin-pouls/$dir#g" \
 		-e "s#fox-duet#$dir#g" \
@@ -52,7 +56,7 @@ echo "Scaffolded $dir/ from $src/ (${#files[@]} files): module github.com/martin
 echo
 echo "Files that still carry Fox Duet's game (strip or rewrite them):"
 grep -rliIE 'fox|forest|decree|gem|traveller|levelPref|Foxtrot' "$dir" \
-	--exclude=package-lock.json --exclude-dir=node_modules --exclude-dir=ui | sed 's/^/  /' || true
+	--exclude=package-lock.json --exclude-dir=node_modules --exclude-dir=ui --exclude-dir=docs | sed 's/^/  /' || true
 echo
 echo "Not done here (scaffold work package): npm ci in $dir/frontend, strip the domain to a lobby-only"
 echo "game, comments naming other apps' ports, and the integration list in the add-app skill."

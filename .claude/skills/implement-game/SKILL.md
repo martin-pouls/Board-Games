@@ -24,7 +24,7 @@ You are the **orchestrator**. Agents do the reading-heavy and writing-heavy work
 
 **Models:** an agent file's `model` is its default; the Agent tool's `model` parameter overrides it per call. The plan's WP table sets the model per package (the planner decides at plan time; domain design, step machine, hidden information and the table layout are opus). Follow it. Raise a WP to opus before spawning when it turns out to touch the step machine, the views or objective/rule semantics; never lower a WP the plan put on opus.
 
-**Briefs** (at most ~20 lines): the WP id and plan path (don't paste the plan), the rules.md §, the files to read and mirror, the files it may touch, the acceptance command, "report as your agent file says". Follow-ups to the same agent (fix this failure, fold in these answers) go through `SendMessage`, which keeps its context; spawn fresh only for new work. Run independent WPs in parallel; give parallel writers `isolation: "worktree"`.
+**Briefs** (at most ~20 lines): the WP id and plan path (don't paste the plan), the rules.md §, the files to read and mirror, the files it may touch, the acceptance command, "report as your agent file says". Follow-ups to the same agent (fix this failure, fold in these answers) go through `SendMessage`, which keeps its context; spawn fresh only for new work, or when the agent's context is heavy with images (mockup and screenshot agents). Run independent WPs in parallel; give parallel writers `isolation: "worktree"`.
 
 **Worktrees** hold only committed files, so:
 - Commit everything the WP needs before spawning (rules.md, plan, mockup, the WPs it depends on).
@@ -77,7 +77,7 @@ In parallel:
 
 Read the plan yourself. Check: every rules.md § lands in a WP; the hidden information is listed per field; WPs are small, have models, files and acceptance; gates are marked; the UI track depends on the plan's wire contract, not on the adapters. Fix it via `SendMessage` to the planner.
 
-**Checkpoint B (plan and mockup):** the plan in ≤ 15 lines (placement, scope, domain shape, WPs with models, gates, risks), the theme plan, and the mockup screenshots (Read them). Also publish `mockup.html` as a private artifact (Artifact tool, `icon: "cards"`) and give the link, so the user can open it on a real phone; locally it's at `http://localhost:5190/mockup.html` while the server runs. Feedback on the mockup, in chat or as artifact comments, goes to the same agent via `SendMessage`; republish from the same path after each revision (same URL) until the user approves; then stop the server. Commit the plan and the mockup: they brief the theme and table UI WPs.
+**Checkpoint B (plan and mockup):** the plan in ≤ 15 lines (placement, scope, domain shape, WPs with models, gates, risks), the theme plan, and the mockup screenshots (Read them). Also publish `mockup.html` as a private artifact (Artifact tool, `icon: "cards"`) and give the link, so the user can open it on a real phone; locally it's at `http://localhost:5190/mockup.html` while the server runs. Commit the mockup as a baseline, then send each round of feedback (chat or artifact comments) to a **fresh** `game-implementer` (`model: "opus"`), not the mockup agent via `SendMessage`. That agent's transcript carries the reference photos and dozens of screenshots, so resuming it costs hundreds of thousands of tokens per step. The brief carries the feedback, the mockup path (its theme-plan section explains the earlier choices), the photos' path, and "shoot only the changed screens into `mockup<n>/`, view only what you need to check". Republish from the same path after each revision (same URL) until the user approves; then stop the server. Commit the plan and the mockup: they brief the theme and table UI WPs.
 
 ## 3. Build
 
@@ -106,7 +106,7 @@ The UI is now real but nothing is final-reviewed yet, so changes here are still 
 2. `/code-review` on the branch (`code-review` skill, target the branch against `main`). Fix the confirmed findings.
 3. No second visual review. If fixes since checkpoint C changed UI files, the agent that made them reshoots only the affected fixtures (375×812, light and dark); show those at checkpoint D.
 4. `bash .claude/skills/check/check.sh --base main`.
-5. Integration complete? Start-page tile and dev link, privacy policy (new data, fonts or third parties?), `run.sh` table, root `CLAUDE.md` tables, the game's `CLAUDE.md` (modelled on `fox-duet/CLAUDE.md`: intents and per-player view, domain modelling, look and feel), `IDEAS.md` (mark implemented), a `TODO.md` section, the gate's port comment.
+5. Integration complete? Start-page tile and dev link, `run.sh` table, root `CLAUDE.md` tables, the game's `CLAUDE.md` (modelled on `fox-duet/CLAUDE.md`: intents and per-player view, domain modelling, look and feel), `IDEAS.md` (mark implemented), a `TODO.md` section, the gate's port comment.
 
 ## 6. Checkpoint D (play and ship)
 
