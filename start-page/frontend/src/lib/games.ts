@@ -1,6 +1,6 @@
 /** A game listed on the start page. Each game is its own app, served by Caddy next to this one. */
 export interface Game {
-	id: 'the-game' | 'regicide' | 'fox-duet' | 'the-crew' | 'deep-sea';
+	id: 'the-game' | 'regicide' | 'fox-duet' | 'the-crew' | 'deep-sea' | 'sky-team';
 	name: string;
 	/** Absolute path of the game's app on the same host in production (outside this app's base path). */
 	path: `/${string}/`;
@@ -62,6 +62,16 @@ export const games: Game[] = [
 		tagline: 'Trick-taking missions with task cards on the ocean floor.',
 		description:
 			'Cooperative trick-taking on the ocean floor: submarines, sonar and new tasks. No talking about your cards.'
+	},
+	{
+		id: 'sky-team',
+		name: 'Sky Team',
+		path: '/sky-team/',
+		devPort: 5180,
+		players: '2 players',
+		tagline: 'Land the plane together with secret dice.',
+		description:
+			'Cooperative landing for two: place your dice on the cockpit controls without telling your partner what you rolled.'
 	}
 ];
 

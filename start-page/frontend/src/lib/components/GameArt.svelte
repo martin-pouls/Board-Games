@@ -15,7 +15,8 @@
 		regicide: 'bg-regicide-band',
 		'fox-duet': 'bg-fox-band',
 		'the-crew': 'bg-linear-to-br from-crew-ink via-crew-ink to-crew-tile',
-		'deep-sea': 'bg-linear-to-br from-deep-ink via-deep-ink to-deep-tile'
+		'deep-sea': 'bg-linear-to-br from-deep-ink via-deep-ink to-deep-tile',
+		'sky-team': 'bg-sky-band'
 	};
 
 	/* Fox Duet's forest path: a gentle meander with stepping stones, a gem tile above and below. */
@@ -189,7 +190,7 @@
 				<path d="M11.8 22.5h4.4L14 27.5z" fill="white" fill-opacity="0.85" />
 			</g>
 		</svg>
-	{:else}
+	{:else if game === 'deep-sea'}
 		<!-- A slice of the deep, 240 × 100: the bathyscaphe dives down a trail of bubbles into the
 		     lamp-lit water, towards the dome of the sunken temple rising from the corner. -->
 		<svg class="scene text-deep-sub" viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice">

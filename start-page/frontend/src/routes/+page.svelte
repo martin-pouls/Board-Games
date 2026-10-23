@@ -29,6 +29,10 @@
 			tile: 'bg-deep-tile text-foreground ring-deep-accent/30',
 			name: 'text-deep-text',
 			muted: 'text-muted-foreground'
+		},
+		'sky-team': {
+			tile: 'bg-sky-tile text-sky-fg ring-sky-ring',
+			muted: 'text-sky-muted'
 		}
 	};
 

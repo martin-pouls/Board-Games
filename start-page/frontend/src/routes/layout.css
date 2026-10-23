@@ -96,6 +96,12 @@
 	--deep-sub: oklch(0.8 0.16 85);
 	--deep-beam: oklch(0.9 0.1 200);
 	--deep-temple: oklch(0.22 0.06 240);
+	/* Sky Team (placeholder tile until its theme): tile, band, text, muted text, ring. */
+	--sky-tile: oklch(0.97 0.012 240);
+	--sky-band: oklch(0.9 0.04 240);
+	--sky-fg: oklch(0.27 0.04 250);
+	--sky-muted: oklch(0.46 0.04 245);
+	--sky-ring: oklch(0.5 0.08 245 / 28%);
 }
 
 .dark {
@@ -160,6 +166,11 @@
 	--deep-sub: oklch(0.86 0.16 90);
 	--deep-beam: oklch(0.85 0.12 200);
 	--deep-temple: oklch(0.14 0.04 245);
+	--sky-tile: oklch(0.22 0.03 250);
+	--sky-band: oklch(0.3 0.05 250);
+	--sky-fg: oklch(0.93 0.01 240);
+	--sky-muted: oklch(0.74 0.03 240);
+	--sky-ring: oklch(0.7 0.08 240 / 30%);
 }
 
 @theme inline {
@@ -195,6 +206,11 @@
 	--color-deep-accent: var(--deep-accent);
 	--color-deep-text: var(--deep-text);
 	--color-deep-sub: var(--deep-sub);
+	--color-sky-tile: var(--sky-tile);
+	--color-sky-band: var(--sky-band);
+	--color-sky-fg: var(--sky-fg);
+	--color-sky-muted: var(--sky-muted);
+	--color-sky-ring: var(--sky-ring);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

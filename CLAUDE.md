@@ -9,6 +9,7 @@ Web implementations of cooperative board and card games, played live in the brow
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
 | The Crew | [the-crew/](the-crew/) | `/the-crew/` | "The Crew: The Quest for Planet Nine" (Kosmos), 2–5 players (2 with JARVIS), 50 missions. See [the-crew/CLAUDE.md](the-crew/CLAUDE.md). |
+| Sky Team | [sky-team/](sky-team/) | `/sky-team/` | "Sky Team" (Le Scorpion Masqué), 2 players (Pilot and Co-Pilot), 23 scenarios. See [sky-team/CLAUDE.md](sky-team/CLAUDE.md). |
 | Deep Sea | [deep-sea/](deep-sea/) | `/deep-sea/` | "The Crew: Mission Deep Sea" (Kosmos), 2–5 players. **No code of its own**: the-crew built with `EDITION=deepSea`, own deploy. See [deep-sea/CLAUDE.md](deep-sea/CLAUDE.md). |
 | Gate | [gate/](gate/) | `/gate/` | Shared-password login in front of the start page and the games (Caddy `forward_auth`). See [gate/CLAUDE.md](gate/CLAUDE.md). |
 
@@ -76,6 +77,7 @@ Backend env vars: `ADDR` (default: the game's backend port below; the images set
 | Fox Duet | `:5176` | `:8082` |
 | The Crew | `:5177` | `:8084` |
 | Deep Sea | `:5179` | `:8085` |
+| Sky Team | `:5180` | `:8086` |
 | Start page | `:5175` | — |
 | Gate | `:5178` (login page only) | `:8083` |
 

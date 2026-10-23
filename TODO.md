@@ -28,5 +28,8 @@
 - scenario screen instead of a bunch of text under the picked scenario "7 rounds. Kerosene: put a die on fuel each round or lose 6. Wind: the axis turns the wind ring, its value adds to the speed." maybe allow to tap the icons for the special stuff and see niceliy formatted rules there. also info about the track (7 rounds, etc.) viewable somewhere instead of text. maybe even a preview of the track?
 - abilities in the abilities select need more info, e.g. working together is unclear with the simultaneous die placement. again maybe tap and then show a nice preview card. could also be reused in game to get a refresh.
 - generally dont take my advice literally, if you have better ideas to solve the problems feel free.
+- Progress tracking over several flights (campaign) is not in v1 (rules.md §7.2).
+- Real-time module (§12.4) is not built; its four scenarios are played without it. Notes in `sky-team/docs/implementation-plan.md` §5.8.
+- Plumbing copied from Fox Duet a fifth time (service `mutate/act`, ws dispatch skeleton, sqlite codec): candidates for `shared/` once the pattern settles.
 
 # General

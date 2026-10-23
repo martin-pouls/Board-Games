@@ -29,7 +29,7 @@ func env(key, fallback string) string {
 }
 
 func run(logger *slog.Logger) error {
-	// :8080 is The Game's, :8081 Regicide's, :8082 Fox Duet's, :8084 The Crew's; the image sets ADDR=:8080.
+	// :8080 is The Game's, :8081 Regicide's, :8082 Fox Duet's, :8084 The Crew's, :8086 Sky Team's; the image sets ADDR=:8080.
 	addr := env("ADDR", ":8083")
 	cfg, err := gate.LoadConfig(
 		env("GATE_SECRET_FILE", "data/secret"),

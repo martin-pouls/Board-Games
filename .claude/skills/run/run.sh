@@ -23,6 +23,7 @@ declare -A apps=(
 	[fox-duet]="fox-duet 5176 8082 -"
 	[the-crew]="the-crew 5177 8084 -"
 	[deep-sea]="the-crew 5179 8085 deepSea"
+	[sky-team]="sky-team 5180 8086 -"
 )
 
 answers() { curl -s -o /dev/null --max-time 2 "$1"; }
@@ -111,7 +112,7 @@ case ${1:-} in
 esac
 
 if [[ $cmd == status ]]; then
-	for a in the-game regicide start-page fox-duet the-crew deep-sea; do
+	for a in the-game regicide start-page fox-duet the-crew deep-sea sky-team; do
 		read -r dir fport bport mode <<<"${apps[$a]}"
 		f=down; answers "http://localhost:$fport/" && f=up
 		b=""; [[ $bport != - ]] && { b="  backend :$bport down"; answers "http://localhost:$bport/api/health" && b="  backend :$bport up"; }
@@ -121,7 +122,7 @@ if [[ $cmd == status ]]; then
 fi
 
 targets=("$@")
-[[ $cmd == stop && ${targets[0]:-} == --all ]] && targets=(the-game regicide start-page fox-duet the-crew deep-sea)
+[[ $cmd == stop && ${targets[0]:-} == --all ]] && targets=(the-game regicide start-page fox-duet the-crew deep-sea sky-team)
 for a in "${targets[@]}"; do check_app "$a"; done
 
 status=0
