@@ -14,5 +14,6 @@
 </svelte:head>
 
 {#key data.name}
+	<!-- data.preset (the table's starting UI state) goes to GameScreen once the table reads it. -->
 	<GameScreen {client} view={data.view} />
 {/key}

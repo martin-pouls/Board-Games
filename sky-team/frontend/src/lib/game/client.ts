@@ -6,5 +6,27 @@ import type { GameConnection } from './connection.svelte.js';
  */
 export type GameClient = Pick<
 	GameConnection,
-	'code' | 'view' | 'online' | 'status' | 'lastEvents' | 'me' | 'isHost' | 'endGame'
+	| 'code'
+	| 'view'
+	| 'online'
+	| 'status'
+	| 'lastEvents'
+	| 'me'
+	| 'isHost'
+	| 'mustAct'
+	| 'configure'
+	| 'swapRoles'
+	| 'startGame'
+	| 'ready'
+	| 'place'
+	| 'spendReroll'
+	| 'confirmReroll'
+	| 'adapt'
+	| 'anticipate'
+	| 'offerSwap'
+	| 'answerSwap'
+	| 'placeSync'
+	| 'giveUp'
+	| 'endGame'
+	| 'rematch'
 >;
