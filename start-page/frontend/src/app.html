@@ -28,19 +28,6 @@
 				media.addEventListener('change', function (e) {
 					if (mode === 'system') apply(e.matches);
 				});
-				// The footer's legal links open their dialog (shared LegalDialog) instead of the page; a
-				// tap on a dialog's backdrop closes it. Esc and the close button work without this.
-				document.addEventListener('click', function (e) {
-					var t = e.target;
-					if (t instanceof HTMLDialogElement && t.classList.contains('legal-dialog'))
-						return t.close();
-					var link = t instanceof Element && t.closest('[data-legal]');
-					if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-					var dialog = document.getElementById('legal-' + link.getAttribute('data-legal'));
-					if (!(dialog instanceof HTMLDialogElement)) return;
-					e.preventDefault();
-					dialog.showModal();
-				});
 				document.addEventListener('click', function (e) {
 					if (!(e.target instanceof Element) || !e.target.closest('[data-theme-toggle]')) return;
 					mode = root.classList.contains('dark') ? 'light' : 'dark';

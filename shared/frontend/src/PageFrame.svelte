@@ -1,28 +1,20 @@
 <!--
-	The frame of every page (games, start page, gate): the top bar, a centred column for the page and
-	the footer with the imprint and privacy links, which open LegalDialog (left out on the games'
-	table). The games use it through AppFrame.
+	The frame of every page (games, start page, gate): the top bar and a centred column for the page.
+	The games use it through AppFrame.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import TopBar from './TopBar.svelte';
-	import LegalDialog from './legal/LegalDialog.svelte';
-	import { legalDialogId, type LegalPage } from './legal/legal.js';
 
 	let {
-		imprintHref,
-		privacyHref,
 		allGamesHref,
 		onToggleTheme,
 		wide = false,
 		topBar = true,
 		topBarWidth,
-		footer = true,
 		start,
 		children
 	}: {
-		imprintHref: string;
-		privacyHref: string;
 		/** Shows the "All games" link in the top bar. */
 		allGamesHref?: string;
 		/** Click handler of the theme toggle; without it, the page's theme script handles the click. */
@@ -34,37 +26,11 @@
 		/** A max-width class for the top bar, when the page's column is narrower than the frame's:
 		 *  the bar then lines up with it. */
 		topBarWidth?: string;
-		/** false hides the imprint and privacy footer (the games' table, which must fit a phone). */
-		footer?: boolean;
 		/** More items on the left of the top bar. */
 		start?: Snippet;
 		children: Snippet;
 	} = $props();
-
-	/** Opens the page's dialog instead of following the link (a new tab still follows it). */
-	function openLegal(e: MouseEvent, page: LegalPage) {
-		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-		const dialog = document.getElementById(legalDialogId(page));
-		if (!(dialog instanceof HTMLDialogElement)) return;
-		e.preventDefault();
-		dialog.showModal();
-	}
 </script>
-
-<!--
-	The legal pages open as dialogs over the page, in its theme. The links stay links to the start
-	page's pages (full page loads), the way there without JS. In the games the click handler opens
-	the dialog; the start page and the gate ship no JS, so their app.html script handles data-legal.
--->
-{#snippet legalLink(page: LegalPage, href: string, label: string)}
-	<a
-		{href}
-		rel="external"
-		data-legal={page}
-		onclick={(e) => openLegal(e, page)}
-		class="underline-offset-4 hover:underline">{label}</a
-	>
-{/snippet}
 
 <main
 	class={[
@@ -78,14 +44,4 @@
 		</div>
 	{/if}
 	{@render children()}
-	{#if footer}
-		<footer
-			class="mt-auto flex justify-center gap-4 pt-10 text-center text-xs text-muted-foreground"
-		>
-			{@render legalLink('impressum', imprintHref, 'Impressum')}
-			{@render legalLink('datenschutz', privacyHref, 'Datenschutz')}
-		</footer>
-		<LegalDialog page="impressum" />
-		<LegalDialog page="datenschutz" />
-	{/if}
 </main>
