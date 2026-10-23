@@ -27,6 +27,7 @@ You are the **orchestrator**. Agents do the reading-heavy and writing-heavy work
 **Briefs** (at most ~20 lines): the WP id and plan path (don't paste the plan), the rules.md §, the files to read and mirror, the files it may touch, the acceptance command, "report as your agent file says". Follow-ups to the same agent (fix this failure, fold in these answers) go through `SendMessage`, which keeps its context; spawn fresh only for new work, or when the agent's context is heavy with images (mockup and screenshot agents). Run independent WPs in parallel; give parallel writers `isolation: "worktree"`.
 
 **Worktrees** hold only committed files, so:
+- They start from `main`, not from `game/<dir>`: every worktree brief says "run `git merge --ff-only game/<dir>` first".
 - Commit everything the WP needs before spawning (rules.md, plan, mockup, the WPs it depends on).
 - No `node_modules`: a WP that touches a frontend says in its brief "run `npm ci` in `<app>/frontend` (and `shared/frontend` if you touch it) first". Without it the format hook silently skips Prettier and the checks fail.
 - No gitignored files: pass `<game-docs>/reference/` and screenshot directories as absolute paths into the main checkout.
