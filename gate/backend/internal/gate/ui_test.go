@@ -82,6 +82,10 @@ func TestBuiltLoginPage(t *testing.T) {
 	h, _, _ := newTestHandler(t)
 	body := do(h, "GET", "/login", nil, "").Body.String()
 	for _, want := range []string{
+		`/board-games/datenschutz/`,
+		// The privacy dialog and the script that opens it.
+		`id="legal-datenschutz"`,
+		`data-legal`,
 		`mode-watcher-mode`,
 		`data-theme-toggle`,
 		`[-webkit-text-security:disc]`,

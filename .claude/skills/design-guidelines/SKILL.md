@@ -17,7 +17,7 @@ When rules pull apart: **playability > clarity > familiarity across games > look
 - **Avoid generic AI defaults:** cream + terracotta, near-black + one acid accent, identical rounded cards with the same soft shadow, all-caps eyebrow labels, `A · B · C` meta strings, `→` on buttons, gradients and glows for their own sake.
 
 ## Familiar across games
-- **Shared and identical:** PageFrame, home and join pages, HeaderButton (X close lobby, DoorOpen leave, Flag give up/end; text in the lobby, icon + tooltip in game), LobbyActions and its confirmations, ShareInvite, ConnectionBanner, card motion, NewCardMark, theme toggle, RulesHelp in the table header. Need something different? Add a prop or snippet in `shared/`, don't fork.
+- **Shared and identical:** PageFrame (incl. the privacy dialog), home and join pages, HeaderButton (X close lobby, DoorOpen leave, Flag give up/end; text in the lobby, icon + tooltip in game), LobbyActions and its confirmations, ShareInvite, ConnectionBanner, card motion, NewCardMark, theme toggle, RulesHelp in the table header. Need something different? Add a prop or snippet in `shared/`, don't fork.
 - **Same concept, same treatment:**
   - *Whose turn:* always visible on the game screen. Your turn is unmistakable (seat or hand highlight **plus** text), never colour alone.
   - *Waiting:* plain text in the action area, "Waiting for Alice to play." No spinner: a spinner means the app is loading.

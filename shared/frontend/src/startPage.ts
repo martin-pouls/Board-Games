@@ -9,3 +9,8 @@ export const START_PAGE_DEV_PORT = 5175;
 export function startPageHref(url: Pick<URL, 'protocol' | 'hostname'>, dev: boolean): string {
 	return dev ? `${url.protocol}//${url.hostname}:${START_PAGE_DEV_PORT}/` : '/board-games/';
 }
+
+/** The privacy policy (Datenschutzerklärung), a page of the start page app. */
+export function privacyHref(url: Pick<URL, 'protocol' | 'hostname'>, dev: boolean): string {
+	return `${startPageHref(url, dev)}datenschutz/`;
+}

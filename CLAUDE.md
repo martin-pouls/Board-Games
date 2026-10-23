@@ -4,7 +4,7 @@ Web implementations of cooperative board and card games, played live in the brow
 
 | App | Directory | URL path | What |
 |---|---|---|---|
-| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game. Frontend only. See [start-page/CLAUDE.md](start-page/CLAUDE.md). |
+| Start page | [start-page/](start-page/) | `/board-games/` | Static page linking to every game, plus the privacy policy. Frontend only. See [start-page/CLAUDE.md](start-page/CLAUDE.md). |
 | The Game | [the-game/](the-game/) | `/the-game/` | "The Game" (NSV), 1–5 players, incl. Pro and Extreme. See [the-game/CLAUDE.md](the-game/CLAUDE.md). |
 | Regicide | [regicide/](regicide/) | `/regicide/` | Regicide (Badgers From Mars), 1–4 players, incl. solo. See [regicide/CLAUDE.md](regicide/CLAUDE.md). |
 | Fox Duet | [fox-duet/](fox-duet/) | `/fox-duet/` | "The Fox in the Forest: Duet" (Foxtrot Games), 2 players, 3 difficulty levels. See [fox-duet/CLAUDE.md](fox-duet/CLAUDE.md). |
@@ -28,7 +28,7 @@ The wire contract is the code: `apidto` (Go) and `frontend/src/lib/types.ts` (TS
 
 **Exception: [deep-sea/](deep-sea/CLAUDE.md)** has no code. An app depends on every top-level directory its Dockerfile (named by `dockerfile:` in its `deploy/compose.yaml`) copies from, so a change in `the-crew/` or `shared/` redeploys Deep Sea too.
 
-- **What goes there:** code that is identical in every game, changes only for plumbing reasons and has no game-specific behaviour. Today: the lobby REST/WS/session/persistence plumbing (incl. WS view publishing, bearer auth, typed IDs, the SQLite snapshot repository), the page frame, the site header of the start page and the gate, the home and join pages, the remembered-games list, the lobby's leave/end actions, connection banner, card motion and new-card marks.
+- **What goes there:** code that is identical in every game, changes only for plumbing reasons and has no game-specific behaviour. Today: the lobby REST/WS/session/persistence plumbing (incl. WS view publishing, bearer auth, typed IDs, the SQLite snapshot repository), the page frame (with the privacy dialog), the site header of the start page and the gate, the home and join pages, the remembered-games list, the lobby's leave/end actions, connection banner, card motion and new-card marks.
 - **What stays in the game:** rules, domain and DTOs, the service, WS command dispatch, and the Lobby/Table/GameOver screens: everything that defines how a game plays or feels. Differences are props, snippets or parameters, never switches on game names.
 - **A change in `shared/` changes every game:** run the checks in `shared/` and in every app, and CI redeploys them all.
 
@@ -110,9 +110,10 @@ Hetzner arm64 Ubuntu box (root via `~/.ssh/hetzner_ed25519`), one container per 
 - **Secure-context APIs** (`crypto.randomUUID`, `navigator.clipboard`, `navigator.share`) are missing when phones test over `http://192.168.x.x`: feature-detect and fall back.
 - **Tokens:** the player token travels in the WS query string: never log full URLs (the apps log paths only, Caddy writes no access log).
 - **Abuse limits** (`shared/backend/httpkit/ratelimit.go`) cap game creation, 404 lookups and WS connections per client IP (last `X-Forwarded-For` entry), answering 429 `rate_limited`. Loopback is exempt. New routes under `/api/games/` or `/ws/` are covered automatically.
+- **Privacy policy** ([Privacy](shared/frontend/src/legal/Privacy.svelte), German; operator data in `shared/frontend/src/site.ts`). One text for every app: `PageFrame`'s footer opens it as a dialog in the app's theme; the start page's `/datenschutz/` page is the public copy and the way without JS. Update the privacy policy whenever the processed data changes: stored fields, browser storage, IP logging, cookies, third-party resources.
 - **Adding shadcn components** (from `<app>/frontend/`): `npx shadcn-svelte@latest add <name> -y`. If it fails with `File '$app/tsconfig' not found`, run `npx svelte-kit sync` first.
 - **bits-ui `AlertDialog.Action` does not close its dialog.** Set the bound `open` flag to `false` in its `onclick`.
 - **Go:** wrap errors with `%w`; `context.Context` first on anything doing I/O; domain errors are typed sentinels.
 - Files that run on the Linux server (`*.sh`, `Dockerfile`, `**/deploy/**`) keep LF line endings (`.gitattributes`).
-- **No imprint or privacy policy:** the site is private (password gate, friends and family, non-commercial), so neither is required. Should it ever open to the public or turn commercial, add them back (see git history before this note).
+- **No imprint:** the site is private (password gate, friends and family, non-commercial), so none is required. Should it ever open to the public or turn commercial, add it back (see git history).
 - **Mobile-first:** everything must work on a phone in portrait.

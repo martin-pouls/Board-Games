@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
     environment:
       # A crew plays its 50 missions over many evenings: keep idle games (and their logbook) longer
-      # than the default 7 days.
+      # than the default 7 days. The privacy policy states this.
       GAME_RETENTION: 720h
     volumes:
       - data:/data # SQLite DB: games survive redeploys

@@ -1,10 +1,11 @@
 # Start page
 
-The landing page at `/board-games/`: one tile per game. Frontend only, fully prerendered with `csr = false`, so no framework JS ships. The game list is `src/lib/games.ts`.
+The landing page at `/board-games/`: one tile per game, plus the privacy policy (German). Frontend only, fully prerendered with `csr = false`, so no framework JS ships. The game list is `src/lib/games.ts`.
 
 ## Look
 
 - **Header:** the shared `SiteHeader` (meeple and site name on one line, the tagline below), also on the gate's login page.
+- **Privacy page:** `/datenschutz/` renders the shared text (`shared/frontend/src/legal/`). The footer link opens it as a dialog (the inline script in `src/app.html`); the page is the public copy and the way without JS.
 - **Slate table:** quiet slate background tokens in `src/routes/layout.css`, red meeple as the accent. The gate's login page uses the same base tokens: change both together, including `theme-color` in `src/app.html` and `static/favicon.svg`.
 - **One title face for the whole page:** every tile title is Inter extra bold, like the page heading, in its game's colour. The games' own fonts (League Gothic, Alegreya) appear only inside the tile art. Don't give titles a per-game font.
 - **Each tile borrows its game's look through colour and art only:** tile, text and ring colours come from `--<game>-*` tokens in layout.css (copied from the game's theme, since apps can't import each other), the art from `src/lib/components/GameArt.svelte`. A game's theme change updates its tokens and art here too (the `game-theme` skill covers it).
