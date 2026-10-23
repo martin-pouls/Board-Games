@@ -355,6 +355,7 @@ All acceptance runs from the repo root; "check" = `bash .claude/skills/check/che
 
 | WP | Status | Commit | Notes |
 |---|---|---|---|
-| 1–19 | open | | |
+| 1 | done | see `git log` ("Sky Team: WP1 Scaffold") | Lobby-only skeleton; `fixtures.test.ts` has a per-phase flag, flip playing/won/lost when their fixtures arrive. `run.sh` doesn't know sky-team until WP2. |
+| 2–19 | open | | Paused by the user after WP1 until the mockup round 2 is approved. WP2 waits for the unrelated uncommitted changes in `CLAUDE.md`, `shared/`, `start-page/` to be committed. |
 
 **Open items:** none. Checkpoint B answers (intern token counts as a die; Sync die without coffee or intern; Working Together die public; planner decisions) are App decisions in rules.md. Discards stay as written in §5.2 even with a reroll left.

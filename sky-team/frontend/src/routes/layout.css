@@ -1,0 +1,189 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/alegreya';
+@import '@fontsource-variable/nunito';
+
+/* The shared frontend code (shared/frontend/src) is compiled as part of this app. */
+@source '../../../../shared/frontend/src';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Placeholder theme from the scaffold (the base palette of the app this one was copied from):
+ * the theme work package replaces these tokens, the fonts and the favicon colours. The theme is
+ * set before first paint by the script in app.html and kept by mode-watcher afterwards.
+ */
+:root {
+	--background: oklch(0.935 0.035 118);
+	--foreground: oklch(0.26 0.04 140);
+	--card: oklch(0.965 0.02 110);
+	--card-foreground: var(--foreground);
+	--popover: oklch(0.965 0.02 110);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.62 0.17 45);
+	--primary-foreground: oklch(0.2 0.03 50);
+	--secondary: oklch(0.895 0.04 118);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.895 0.04 118);
+	--muted-foreground: oklch(0.45 0.05 135);
+	--accent: oklch(0.88 0.05 118);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.54 0.2 27);
+	--border: oklch(0.4 0.04 150 / 22%);
+	--input: oklch(0.26 0.04 140 / 18%);
+	--ring: oklch(0.62 0.17 45 / 60%);
+	--radius: 0.6rem;
+	--chart-1: oklch(0.87 0 0);
+	--chart-2: oklch(0.556 0 0);
+	--chart-3: oklch(0.439 0 0);
+	--chart-4: oklch(0.371 0 0);
+	--chart-5: oklch(0.269 0 0);
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.141 0.005 285.823);
+	--sidebar-primary: oklch(0.21 0.006 285.885);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.967 0.001 286.375);
+	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+	--sidebar-border: oklch(0.92 0.004 286.32);
+	--sidebar-ring: oklch(0.705 0.015 286.067);
+
+	/* A player who is connected. */
+	--online: oklch(0.6 0.15 150);
+	/* Tint of the glow at the top of the page. */
+	--glow: oklch(0.97 0.03 105 / 70%);
+	/* Marks cards that just came into the hand (NewCardMark). */
+	--new-card: oklch(0.63 0.12 195);
+}
+
+.dark {
+	--background: oklch(0.2 0.035 150);
+	--foreground: oklch(0.93 0.02 100);
+	--card: oklch(0.25 0.035 150);
+	--card-foreground: var(--foreground);
+	--popover: oklch(0.25 0.035 150);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.72 0.16 52);
+	--primary-foreground: oklch(0.2 0.03 50);
+	--secondary: oklch(0.3 0.04 150);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.28 0.035 150);
+	--muted-foreground: oklch(0.74 0.04 130);
+	--accent: oklch(0.32 0.05 150);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.65 0.2 25);
+	--border: oklch(0.85 0.03 150 / 18%);
+	--input: oklch(1 0 0 / 12%);
+	--ring: oklch(0.72 0.16 52 / 60%);
+	--radius: 0.6rem;
+	--chart-1: oklch(0.87 0 0);
+	--chart-2: oklch(0.556 0 0);
+	--chart-3: oklch(0.439 0 0);
+	--chart-4: oklch(0.371 0 0);
+	--chart-5: oklch(0.269 0 0);
+	--sidebar: oklch(0.21 0.006 285.885);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.488 0.243 264.376);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.274 0.006 286.033);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.552 0.016 285.938);
+
+	--online: oklch(0.7 0.15 150);
+	--glow: oklch(0.28 0.05 145 / 60%);
+	--new-card: oklch(0.74 0.11 195);
+}
+
+@theme inline {
+	--font-sans: 'Nunito Variable', system-ui, sans-serif;
+	--font-display: 'Alegreya Variable', Georgia, serif;
+	--color-online: var(--online);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	/* The background sits on a fixed layer: iOS Safari ignores background-attachment: fixed and
+	   would size (and repeat) it to the page, cutting it off with hard edges. iOS 26 Safari fills
+	   the status bar and the area around its toolbar with the plain background colour, so the
+	   layer fades out (eased) towards the top and bottom edges instead of ending there. */
+	body::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		mask-image: linear-gradient(
+			to bottom,
+			transparent,
+			rgb(0 0 0 / 0.12) 2rem,
+			rgb(0 0 0 / 0.45) 4rem,
+			rgb(0 0 0 / 0.82) 6rem,
+			#000 8rem,
+			#000 calc(100% - 8rem),
+			rgb(0 0 0 / 0.82) calc(100% - 6rem),
+			rgb(0 0 0 / 0.45) calc(100% - 4rem),
+			rgb(0 0 0 / 0.12) calc(100% - 2rem),
+			transparent
+		);
+		background: radial-gradient(ellipse at top, var(--glow), transparent 60%) no-repeat;
+	}
+	html {
+		@apply font-sans;
+		font-variant-numeric: lining-nums tabular-nums;
+	}
+	h1,
+	h2,
+	h3 {
+		@apply font-display;
+	}
+	/* No double-tap zoom delay on phones. */
+	button,
+	a,
+	[role='button'] {
+		touch-action: manipulation;
+	}
+}
