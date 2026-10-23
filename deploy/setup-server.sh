@@ -44,7 +44,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git ufw unattended-upgrades cron >/dev/null
 
-# Logs are kept for 24 hours at most (the privacy policy says so). Caddy writes no access log and
+# Logs are kept for 24 hours at most (data minimisation). Caddy writes no access log and
 # the apps log no IP addresses, but error output may contain one. The containers log to journald,
 # which keeps entries 22 hours; an hourly job closes the current journal file and deletes the old
 # ones, so nothing is older than 24 hours. Nothing is forwarded to syslog (/var/log/syslog would keep

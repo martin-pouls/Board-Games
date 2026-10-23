@@ -82,12 +82,6 @@ func TestBuiltLoginPage(t *testing.T) {
 	h, _, _ := newTestHandler(t)
 	body := do(h, "GET", "/login", nil, "").Body.String()
 	for _, want := range []string{
-		`/board-games/impressum/`,
-		`/board-games/datenschutz/`,
-		// The legal dialogs and the script that opens them.
-		`id="legal-impressum"`,
-		`id="legal-datenschutz"`,
-		`data-legal`,
 		`mode-watcher-mode`,
 		`data-theme-toggle`,
 		`[-webkit-text-security:disc]`,

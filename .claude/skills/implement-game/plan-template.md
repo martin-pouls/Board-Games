@@ -68,7 +68,7 @@ UI decisions taken at the UI checkpoint that deviate from the mockup are recorde
 ## 8. Integration checklist
 
 Every place outside the game's directory: start page (`games.ts`, tile in `+page.svelte`, tile tokens
-in `layout.css`), `shared/frontend/src/startPage.ts`, privacy policy, `.claude/skills/run/run.sh`
+in `layout.css`), `shared/frontend/src/startPage.ts`, `.claude/skills/run/run.sh`
 ports table, root `CLAUDE.md` (apps table, ports table), gate port comment, `IDEAS.md`, `TODO.md`
 section, the game's own `CLAUDE.md`.
 
