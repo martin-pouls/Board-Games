@@ -185,3 +185,17 @@ func TestLookupsReturnCopies(t *testing.T) {
 		t.Fatal("track spaces shared")
 	}
 }
+
+func TestAllScenarioCounts(t *testing.T) {
+	if len(Scenarios()) != 23 || len(tracks) != 23 {
+		t.Fatalf("%d scenarios, %d tracks, want 23 each", len(Scenarios()), len(tracks))
+	}
+	tr, _ := TrackFor("PRG-Y")
+	total := 0
+	for _, sp := range tr.Spaces {
+		total += sp.Planes
+	}
+	if total != PlaneTokens {
+		t.Fatalf("PRG-Y has %d planes, want %d", total, PlaneTokens)
+	}
+}
