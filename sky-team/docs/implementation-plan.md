@@ -353,11 +353,21 @@ All acceptance runs from the repo root; "check" = `bash .claude/skills/check/che
 
 ## 12. Status
 
+**Run state (2026-10-23):** step 3 (build) has begun while checkpoint B is still open for the mockup. The plan and rules are approved; mockup round 2 is in progress. Branch `game/sky-team`, not pushed.
+
 | WP | Status | Commit | Notes |
 |---|---|---|---|
-| 1 | done | see `git log` ("Sky Team: WP1 Scaffold") | Lobby-only skeleton; `fixtures.test.ts` has a per-phase flag, flip playing/won/lost when their fixtures arrive. `run.sh` doesn't know sky-team until WP2. |
-| 2 | done | see `git log` ("Sky Team: WP2 Integration") | Placeholder tile with neutral `--sky-*` tokens; dependabot entry added. |
-| 3, 14 | in progress | | |
-| 4–13, 15–19 | open | | WP15–18 wait for mockup round 2 approval. |
+| 1 | done | 98f6613 | Lobby-only skeleton. `fixtures.test.ts` has a per-phase flag: flip playing/won/lost when their fixtures arrive. |
+| 2 | done | d2ba725 | Placeholder tile with neutral `--sky-*` tokens (the real tile comes in WP15); dependabot entry added. |
+| 3 | in progress | | Opus agent working in the main checkout (`sky-team/backend/internal/core/domain/**`), uncommitted. |
+| 14 | in progress | | Sonnet agent in worktree `.claude/worktrees/agent-a96c981cfeec49d1b`, uncommitted. |
+| 4–13 | open | | Backend track: 4 ∥ 5 after 3, 6 ∥ 7 after 3, then 8 → 9 → 12 → 13; 10 and 11 per §10. |
+| 15–18 | open | | Wait for mockup approval (checkpoint B). |
+| 19 | open | | |
 
-**Open items:** none. Checkpoint B answers (intern token counts as a die; Sync die without coffee or intern; Working Together die public; planner decisions) are App decisions in rules.md. Discards stay as written in §5.2 even with a reroll left.
+**Resuming in a fresh session** (`/implement-game sky-team`):
+1. Check for leftovers of the session that ran out: `git status` (uncommitted WP3 domain files in the main checkout, an edited `sky-team/docs/mockup.html`) and `git worktree list` (the WP14 worktree). Run `bash .claude/skills/check/check.sh sky-team` on what is there. If it's green and complete for its WP, review and commit it; else re-run that WP with a fresh agent. Remove stale worktrees.
+2. **Mockup round 2:** the feedback is in `TODO.md` § Sky Team (the user's 11 points, plus Working Together's die now being public). The round-1 mockup is committed (9fcd8c7), so `git diff sky-team/docs/mockup.html` shows round 2's changes. Screenshots go to `.playwright-mcp/implement-sky-team/mockup2/`. Publish to the existing artifact https://claude.ai/artifact/WZeWdkJR13z1DA6jXTaqra (same file path; icon "cards"). Answer the user's questions on the top bar and the reroll tokens. Each round goes to a fresh agent. After approval, commit the mockup and unblock WP15–18.
+3. Continue the backend track from the first open WP.
+
+**Open items:** none. The checkpoint B answers are App decisions in rules.md: the intern token counts as a die, the Sync die takes no coffee and no intern space, the Working Together die is public, and the planner's decisions. Discards stay as written in §5.2, even with a reroll left.
