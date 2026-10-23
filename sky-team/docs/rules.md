@@ -251,7 +251,8 @@ The final round starts when the plane is at the airport and the altitude track s
 
 Plus module conditions: all intern tokens used (§12.2), ice-brake marker past 5 (§12.6), kerosene not below 0.
 
-- **App decision:** a condition that can no longer change ends the game at once: C after the second axis die of round 7, D after the second engine die of round 7. A and B are checked at the end of the round.
+- **App decision:** a condition that can no longer change ends the game at once: C after the second axis die of round 7, D after the second engine die of round 7, against the brake (or ice-brake) marker at that moment; brakes placed later in round 7 don't help. A and B are checked at the end of the round.
+- **App decision:** a `landing` loss lists every failed condition, including the module conditions. When several losses apply at the end of the game, the reported reason is the first of `landing`, `intern`, `iceBrakes`; the others are listed too.
 
 ### 7.2 Losses
 
@@ -270,7 +271,8 @@ The game is lost immediately when any of these happens:
 | `intern` | Intern tokens left at the end of the game (§12.2). |
 | `iceBrakes` | Ice-brake marker not past 5 at the end of the game (§12.6). |
 
-- **App decision:** the game-over screen names the loss (and for `landing` the failed conditions). Unplaced dice of both players are revealed.- **App decision:** any player may **give up** at any time, with confirmation (→ lost). The host can end a game in the lobby, and finished games can be rematched (same scenario) as in the other games.
+- **App decision:** the game-over screen names the loss (and for `landing` the failed conditions). Unplaced dice of both players are revealed.
+- **App decision:** any player may **give up** at any time, with confirmation (→ lost). The host can end a game in the lobby, and finished games can be rematched as in the other games. A rematch keeps the scenario, the abilities and the roles.
 
 There is no score. The flight log has a check box per scenario for victories.
 
@@ -531,7 +533,7 @@ The start space never has a turn icon; the airport never has one either.
 - **Training** (on your turn, as your placement): place a die of any value on your colour's intern space. Its value must differ from the **next available token on your side** (the Pilot takes from the left end of the row, the Co-Pilot from the right end). Take that token and place it on any free space you could place a die on, except concentration. It acts there as a die with the token's value. Coffee cannot modify it.
 - Each player has one intern space, so each player trains at most once per round.
 - If tokens are left on the intern board at the end of the game, the game is lost.
-- **App decision:** training and placing the token are one intent in the same turn; the token is never kept for later. The token is its own (green) piece, not a blue or orange die: it occupies the space (and covers it for the mandatory check, §5.5), but it is no player's die (it does not count as a die for Control or Mastery, §13). At the end of the round used tokens are removed from the game.
+- **App decision:** training and placing the token are one intent in the same turn; the token is never kept for later. The token is shown as its own (green) piece, but it counts as a die for all purposes: it covers its space (mandatory check, §5.5) and counts for Control, Mastery and Synchronisation (§13). Only two exceptions: it cannot go on concentration, and coffee cannot modify it. At the end of the round used tokens are removed from the game.
 
 ### 12.3 Wind
 
@@ -572,7 +574,7 @@ In the box: a 60-second timer starts right after the roll; when it runs out the 
 
 A scenario gives 0, 1 or 2 cards (§9). The players choose which cards from the 6. Texts transcribed from the cards (German edition; German name in brackets).
 
-- **App decision:** the host picks the cards in the lobby, exactly the scenario's number. Both players see the chosen cards in the lobby and during the game.
+- **App decision:** the host picks the cards in the lobby, exactly the scenario's number. The lobby accepts a partial selection while the host chooses; *Start* requires the full number. Both players see the chosen cards in the lobby and during the game.
 
 | ID | Name | Effect |
 |---|---|---|
@@ -583,9 +585,10 @@ A scenario gives 0, 1 or 2 cards (§9). The players choose which cards from the 
 | `synchronisation` | Synchronisation (Teamwork) | When, in the same round, at least one die is on the landing gear and one on the flaps, roll the traffic die immediately. The Co-Pilot places it on an empty space of their choice, of any colour, respecting the space's value constraint, and it resolves like a normal die. It is an extra action. |
 | `workingTogether` | Working Together (Hilfsbereitschaft) | Once per round, at any time, one player puts one of their unplaced dice on the card. The other must then put one of theirs there too (if they have any left). The two dice swap values and go back behind their owners' screens. |
 
-- **App decision (Control, Mastery):** only dice count: players' dice and the Synchronisation traffic die, not intern tokens.
-- **App decision (Synchronisation):** it triggers at most once per round, the moment the round has both a gear die and a flaps die. The traffic die follows all normal rules for its space (value constraints, ordered flaps and brakes, switches already green); concentration is allowed. If no space is legal, the die is discarded. The Co-Pilot places it right away, before the next turn; it covers its space like any die (§5.5).
-- **App decision:** Adaptation and Working Together are intents outside the turn order; Anticipation is offered to the first player before their first placement. Working Together pauses placement until the partner has chosen their die.
+- **App decision (Control, Mastery):** everything on the space counts: players' dice, intern tokens (§12.2) and the Synchronisation traffic die.
+- **App decision (Synchronisation):** it triggers at most once per round, the moment the round has both a gear die and a flaps die. The traffic die follows all normal rules for its space (value constraints, ordered flaps and brakes, switches already green); concentration is allowed. Two exceptions: coffee cannot modify it, and it cannot go on an intern space. If no space is legal, the die is discarded. An intern token on the gear or flaps counts toward the trigger. The Co-Pilot places it right away, before the next turn; it covers its space like any die (§5.5).
+- **App decision:** Adaptation and Working Together are intents outside the turn order; Anticipation is offered to the first player before their first placement. Working Together pauses placement until the partner has chosen their die. The partner sees the value of the die the initiator put on the card (it is public, as on the physical card). It cannot be started when the partner has no unplaced dice.
+- **App decision:** the side intents (spend a reroll, Adaptation, Working Together, Anticipation) are allowed only during placement (step `place`), not during discussion, a reroll or a swap.
 
 ## 14. Player count
 
@@ -596,5 +599,5 @@ Exactly 2 players. There is no solo or 3+ variant.
 - **Physical actions:** sliding the tracks is a position index; the screens are the per-player view; the server rolls every die (player dice, rerolls, traffic die) and shuffles the intern tokens.
 - **Automatic resolution:** axis, engines, approach movement, radio, switches, markers, coffee gain, kerosene and wind resolve automatically when the triggering die is placed. A reroll pickup and traffic rolls run at round start.
 - **No undo.** Every placement is final.
-- **Hidden information:** a player sees only their own unplaced dice. Their partner's unplaced dice, reroll selection and Working Together choice stay hidden until revealed by the rules.
+- **Hidden information:** a player sees only their own unplaced dice. Their partner's unplaced dice and reroll selection stay hidden until revealed by the rules. The die a player puts on the Working Together card is public; the partner's answer stays hidden (it goes back behind the initiator's screen with a new value).
 - **No timers:** nothing in the app is timed (the real-time module is left out, §12.4).
